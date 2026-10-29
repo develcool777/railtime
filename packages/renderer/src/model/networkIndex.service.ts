@@ -152,6 +152,19 @@ export class NetworkIndex {
   }
 
   /**
+   * When a line first ran as itself: its first opening, or, for a line drawn as another until a
+   * date (an alias), that date.
+   *
+   * @param line - A line id.
+   * @returns A timestamp; `Infinity` for a line only a plan builds.
+   */
+  public lineOpens(line: string): number {
+    const opens = Math.min(...this.lineSegments.filter(lineSegment => lineSegment.line === line).map(lineSegment => lineSegment.opens));
+    const ownFrom = Math.max(...(this.lineOf(line).aliases ?? []).map(alias => toTimestamp(alias.until)));
+    return Math.max(opens, ownFrom);
+  }
+
+  /**
    * The stations a station has a transfer to.
    *
    * @param station - A station id.

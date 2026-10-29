@@ -1,78 +1,107 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden">
-    <!-- MapLibre sets `position: relative` on its container, unlayered, so it beats Tailwind's `absolute`: the wrapper positions, the container fills it. -->
-    <div class="absolute inset-0">
-      <div ref="mapElement" class="explorer-map h-full w-full" />
-    </div>
+  <div class="explorer bg-page h-full w-full">
+    <aside class="explorer-panel border-default bg-default flex min-h-0 flex-col sm:border-r max-sm:border-t">
+      <PanelHeader :city @city="emit('city', $event)" />
+      <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
 
-    <div class="absolute top-4 left-4 flex max-w-[calc(100%-32px)] flex-col gap-3 sm:top-5 sm:left-6">
-      <div v-if="mode === 'explore'" class="flex items-center gap-2">
-        <UTooltip text="All cities">
-          <UButton to="/" icon="i-lucide-layout-grid" color="neutral" variant="soft" aria-label="All cities" />
-        </UTooltip>
-        <USelect
-          :modelValue="city"
-          :items="CITY_MENU"
-          icon="i-lucide-map-pin"
-          class="w-52"
-          aria-label="City"
-          @update:modelValue="emit('city', String($event))" />
-        <USelect
-          v-if="planItems.length > (planOnly ? 0 : 1)"
-          :modelValue="plan ?? NO_PLAN"
-          :items="planItems"
-          icon="i-lucide-route"
-          class="w-60"
-          aria-label="Future plan"
-          @update:modelValue="choosePlan(String($event))" />
-      </div>
-      <ExplorerHud :mode :time :stepActive="mode === 'history' && step !== null" />
-      <StepCard v-if="mode === 'history'" :step :revealed />
-      <StationPanel v-if="station" :station @close="closeStation" @select="openStation" />
-    </div>
+      <!-- On a phone the panel is a sheet: the date always, the rest when opened. -->
+      <button
+        v-if="mode === 'explore' && !station"
+        type="button"
+        class="border-muted text-muted flex items-center justify-center gap-1.5 border-b py-1.5 text-xs font-semibold sm:hidden"
+        :aria-expanded="sheetOpen"
+        @click="sheetOpen = !sheetOpen">
+        {{ sheetOpen ? 'Hide' : tabs.map(entry => entry.label).join(' · ') }}
+        <UIcon :name="sheetOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'" class="size-3.5" />
+      </button>
 
-    <div class="absolute top-4 right-4 flex flex-col items-end gap-3 sm:top-5 sm:right-5">
-      <div
-        v-show="mode === 'history'"
-        ref="minimapElement"
-        class="hidden h-44 w-60 overflow-hidden rounded-xl border border-default shadow-lg sm:block"
-        aria-label="Overview of the whole city" />
-      <LinePanel class="hidden sm:block" :lines :visible @change="setVisible" />
-      <!-- On a phone the panel would cover the map: a button opens it. -->
-      <UPopover class="sm:hidden">
-        <UButton icon="i-lucide-layers" color="neutral" variant="soft" aria-label="Lines" />
-        <template #content>
-          <LinePanel :lines :visible @change="setVisible" />
+      <div class="explorer-sheet flex min-h-0 flex-1 flex-col" :class="{ open: sheetOpen || station || mode === 'history' }">
+        <div v-if="mode === 'history'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
+          <StepCard :step :revealed />
+        </div>
+        <StationView
+          v-else-if="station"
+          class="min-h-0 flex-1 overflow-auto"
+          :station
+          :backLabel="tabLabel"
+          :date="shownDate"
+          @close="closeStation"
+          @select="openStation" />
+        <template v-else>
+          <div class="border-muted flex gap-1 border-b px-4 pt-2.5" role="tablist" aria-label="Panel">
+            <button
+              v-for="entry in tabs"
+              :key="entry.id"
+              type="button"
+              role="tab"
+              :aria-selected="tab === entry.id"
+              class="-mb-px flex items-baseline gap-1.5 border-b-2 px-2.5 pt-2 pb-2.5 text-sm font-semibold transition-colors duration-150"
+              :class="tab === entry.id ? 'border-primary text-highlighted' : 'text-muted hover:text-highlighted border-transparent'"
+              @click="tab = entry.id">
+              {{ entry.label }}
+              <span class="text-xs font-medium tabular-nums">{{ entry.count }}</span>
+            </button>
+          </div>
+          <div class="min-h-0 flex-1 overflow-auto" role="tabpanel">
+            <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" />
+            <PlansTab v-else :network :plan @choose="choosePlan" />
+          </div>
         </template>
-      </UPopover>
+      </div>
+    </aside>
+
+    <div class="explorer-map relative min-h-0">
+      <!-- MapLibre sets `position: relative` on its container, unlayered, so it beats Tailwind's `absolute`: the wrapper positions, the container fills it. -->
+      <div class="absolute inset-0">
+        <div ref="mapElement" class="h-full w-full" />
+      </div>
+      <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" class="absolute top-4 left-4" />
+      <!-- The same wrapper as the map's: MapLibre makes the minimap's container relative too. -->
+      <div
+        v-show="mode === 'history' && camera !== 'overview'"
+        class="border-default shadow-soft absolute right-4 bottom-4 hidden h-32 w-50 overflow-hidden rounded-lg border sm:block">
+        <div ref="minimapElement" class="h-full w-full" aria-label="Overview of the whole city" />
+      </div>
     </div>
 
-    <div class="absolute bottom-6 left-1/2 w-[min(880px,calc(100%-32px))] -translate-x-1/2">
-      <ExploreBar
-        v-if="mode === 'explore'"
-        :time="time?.time ?? range.end"
-        :range
-        :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
-        :isFuture="time?.future === true"
-        :hasPlan="!!plan"
-        :hasHistory="!planOnly"
-        @playHistory="playHistory"
-        @seek="showDate"
-        @future="showFuture" />
-      <PlaybackBar
-        v-else
-        :time="time?.time ?? range.start"
-        :range
-        :playing="time?.playing ?? false"
-        :speed
-        :camera
-        @play="map?.play()"
-        @pause="map?.pause()"
-        @skip="map?.skip()"
-        @seek="seek"
-        @speed="setSpeed"
-        @camera="setCamera"
-        @exit="exitHistory" />
+    <div class="explorer-dock border-default bg-default flex flex-col gap-1.5 border-t px-5 pt-3 pb-2 max-sm:px-3 max-sm:pb-4">
+      <div class="flex items-center gap-2">
+        <ExploreDock
+          v-if="mode === 'explore'"
+          class="min-w-0 flex-1"
+          :time="time?.time ?? range.end"
+          :range
+          :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
+          :isFuture="time?.future === true"
+          :hasPlan="!!plan"
+          :hasHistory="!planOnly"
+          @play="playHistory"
+          @seek="showDate"
+          @future="showFuture" />
+        <PlaybackDock
+          v-else
+          class="min-w-0 flex-1"
+          :time="time?.time ?? range.start"
+          :range
+          :playing="time?.playing ?? false"
+          :speed
+          :camera
+          @play="map?.play()"
+          @pause="map?.pause()"
+          @skip="map?.skip()"
+          @seek="seek"
+          @speed="setSpeed"
+          @camera="setCamera"
+          @exit="exitHistory" />
+        <!-- On a phone the credits fold into a button, still a tap away. -->
+        <UPopover class="sm:hidden">
+          <UButton icon="i-lucide-info" color="neutral" variant="ghost" aria-label="Credits" />
+          <template #content>
+            <MapCredits :credits class="max-w-72 p-3" />
+          </template>
+        </UPopover>
+      </div>
+      <MapCredits :credits class="text-right max-sm:hidden" />
     </div>
   </div>
 </template>
@@ -85,14 +114,18 @@
 
   import { useTransitMap } from '~/composables/transitMap.composable';
   import { DEFAULT_SPEED } from '~/utils/explorer.constants';
-  import { cityMenu, isPlanOnly } from '~/utils/city.utils';
+  import { isPlanOnly } from '~/utils/city.utils';
   import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
 
-  import ExploreBar from './ExploreBar.vue';
-  import ExplorerHud from './ExplorerHud.vue';
-  import LinePanel from './LinePanel.vue';
-  import PlaybackBar from './PlaybackBar.vue';
-  import StationPanel from './StationPanel.vue';
+  import DateBlock from './DateBlock.vue';
+  import ExploreDock from './ExploreDock.vue';
+  import LinesTab from './LinesTab.vue';
+  import MapCredits from './MapCredits.vue';
+  import PanelHeader from './PanelHeader.vue';
+  import PlanLegend from './PlanLegend.vue';
+  import PlansTab from './PlansTab.vue';
+  import PlaybackDock from './PlaybackDock.vue';
+  import StationView from './StationView.vue';
   import StepCard from './StepCard.vue';
 
   const props = defineProps<{ network: Network; city: string; plan?: string }>();
@@ -112,18 +145,12 @@
     ...(props.plan ? { plan: props.plan } : {}),
   });
 
-  const CITY_MENU = cityMenu();
-
-  /** The select's value for the network as it is. */
-  const NO_PLAN = 'none';
   const planOnly = isPlanOnly(props.network);
-  const planItems = computed(() => [
-    // A network never built has nothing to show without a plan.
-    ...(planOnly ? [] : [{ label: 'Current network', value: NO_PLAN }]),
-    ...Object.entries(props.network.plans ?? {}).map(([id, plan]) => ({ label: plan.name, value: id })),
-  ]);
+  const planCount = Object.keys(props.network.plans ?? {}).length;
   const chosenPlan = computed(() => (props.plan ? props.network.plans?.[props.plan] : undefined));
-  const choosePlan = (id: string) => emit('plan', id === NO_PLAN ? undefined : id);
+  const choosePlan = (id: string | undefined) => {
+    if (id !== props.plan) emit('plan', id);
+  };
 
   /** `explore`: the map as it is, or was via the year slider. `history`: the playback. */
   const mode = ref<'explore' | 'history'>('explore');
@@ -131,6 +158,20 @@
   const camera = ref<CameraMode>('follow');
   const visible = ref(new Set([...Object.keys(props.network.lines), ...Object.keys(chosenPlan.value?.lines ?? {})]));
   const range = computed(() => map.value?.range ?? { start: 0, end: Date.now(), today: Date.now() });
+  const credits = computed(() => map.value?.credits ?? []);
+
+  /** The panel's tabs. A plan opens on Plans, where it was picked; a city without plans has only Lines. */
+  const tab = ref<'lines' | 'plans'>(props.plan ? 'plans' : 'lines');
+  const tabs = computed(() => [
+    { id: 'lines' as const, label: 'Lines', count: `${lines.value.filter(line => visible.value.has(line.id)).length}/${lines.value.length}` },
+    ...(planCount > 0 ? [{ id: 'plans' as const, label: 'Plans', count: String(planCount) }] : []),
+  ]);
+  const tabLabel = computed(() => tabs.value.find(entry => entry.id === tab.value)?.label ?? 'Lines');
+  /** On a phone, whether the sheet shows the tabs. */
+  const sheetOpen = ref(false);
+
+  /** The date shown, for what had opened by then; `null` in a plan's future. */
+  const shownDate = computed(() => (!time.value || time.value.future ? null : time.value.time));
 
   watch(map, transitMap => {
     if (!transitMap) return;
@@ -172,7 +213,7 @@
     map.value?.selectStation(null);
   };
 
-  /** Opens a station's panel and rings it, as a click on it would. */
+  /** Opens a station's view and rings it, as a click on it would. */
   const openStation = (id: string) => {
     if (!map.value) return;
     station.value = map.value.getStationInfo(id);
@@ -219,3 +260,43 @@
     map.value?.setCameraMode(value);
   };
 </script>
+
+<style scoped>
+  /* The panel down the side, the map beside it, the dock under the map. */
+  .explorer {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'panel map'
+      'panel dock';
+  }
+  .explorer-panel {
+    grid-area: panel;
+  }
+  .explorer-map {
+    grid-area: map;
+  }
+  .explorer-dock {
+    grid-area: dock;
+  }
+
+  /* A phone: the map, the panel as a sheet under it, then the dock. */
+  @media (width < 40rem) {
+    .explorer {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        'map'
+        'panel'
+        'dock';
+    }
+    .explorer-sheet {
+      display: none;
+      max-height: 45dvh;
+    }
+    .explorer-sheet.open {
+      display: flex;
+    }
+  }
+</style>

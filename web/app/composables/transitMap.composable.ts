@@ -5,18 +5,18 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { TransitMapBinding, TransitMapMount } from './transitMap.composable.types';
 
-/** Below this width the panels stack and the camera keeps less room clear. */
-const NARROW_SCREEN = 700;
+/** Below this width the panel is a sheet under the map: the camera keeps less room clear. */
+const NARROW_SCREEN = 640;
 
 /**
- * Room the explorer's own panels take, so the camera frames changes clear of them.
+ * Room the camera keeps clear around what it frames: the panel and dock sit beside the map, not
+ * over it, so only the plan legend and the minimap overlap its edges.
  *
  * @returns Padding for the current window size.
  */
 const panelPadding = (): Padding => {
-  const width = window.innerWidth;
-  if (width < NARROW_SCREEN) return { top: 210, bottom: 120, left: 30, right: 30 };
-  return { top: 120, bottom: 120, left: Math.min(420, width * 0.3), right: Math.min(280, width * 0.2) };
+  if (window.innerWidth < NARROW_SCREEN) return { top: 32, bottom: 24, left: 24, right: 24 };
+  return { top: 64, bottom: 48, left: 48, right: 48 };
 };
 
 /**
@@ -46,6 +46,8 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       network: mount.network,
       theme: theme(),
       padding: panelPadding(),
+      // The dock shows the credits, off the map.
+      attributionControl: false,
       workerUrl,
       ...(mount.view ? { view: mount.view } : {}),
       ...(mount.plan ? { plan: mount.plan } : {}),

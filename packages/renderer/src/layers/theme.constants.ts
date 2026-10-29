@@ -1,4 +1,4 @@
-import type { Theme } from '../transitMap.types';
+import type { Credit, Theme } from '../transitMap.types';
 import type { Palette } from './theme.types';
 
 /** Each theme's palette. The basemap is recoloured in code so both themes match the overlay exactly. */
@@ -43,6 +43,12 @@ export const PALETTES: Record<Theme, Palette> = {
 
 /** OpenFreeMap's Positron: free OSM vector tiles, no key. Recoloured per theme by `basemap.utils.ts`. */
 export const DEFAULT_BASEMAP = 'https://tiles.openfreemap.org/styles/positron';
+
+/** What the default basemap asks to be credited with. */
+export const DEFAULT_BASEMAP_CREDITS: Credit[] = [
+  { text: 'OpenFreeMap', url: 'https://openfreemap.org' },
+  { text: '© OpenMapTiles', url: 'https://www.openmaptiles.org' },
+];
 
 /** Used when the basemap has no font of its own to offer. */
 export const FALLBACK_FONT = ['Noto Sans Regular'];

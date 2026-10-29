@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/model/date.utils';
 import { NetworkIndex } from '../../../src/model/networkIndex.service';
+import { buildPlan } from '@railtime/schema/plan.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
 describe('NetworkIndex', () => {
@@ -38,5 +39,24 @@ describe('NetworkIndex', () => {
   test('leaves out another name that is the same as the English one', () => {
     const index = new NetworkIndex(tinyNetwork());
     expect(index.otherNames({ name: 'Arena', names: { uk: 'Арена', pl: 'Arena' } })).toEqual(['Арена']);
+  });
+
+  test('knows when each line first ran as itself, and that a line only a plan builds has not', () => {
+    const network = tinyNetwork();
+    network.plans = {
+      ...network.plans,
+      newLine: {
+        name: 'New line',
+        lines: { purple: { name: 'Purple', network: 'metro', mode: 'metro', color: '#800080' } },
+        sections: [{ line: 'purple', stations: ['a', 'b'] }],
+      },
+    };
+    const plan = buildPlan(network, 'newLine');
+    const index = new NetworkIndex(plan.network, plan.sections);
+    expect(index.lineOpens('red')).toBe(toTimestamp('1900-01-01'));
+    expect(index.lineOpens('green')).toBe(toTimestamp('1970-01-01'));
+    // Drawn as red until 1990.
+    expect(index.lineOpens('pink')).toBe(toTimestamp('1990-01-01'));
+    expect(index.lineOpens('purple')).toBe(Infinity);
   });
 });
