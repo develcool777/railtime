@@ -1,0 +1,80 @@
+{
+  "meta": {"city":"Bratislava","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "networks": {
+    "metro": {"name":"Bratislava Metro","names":{"sk":"Bratislavské metro"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "temporary-line-1983": {
+      "name": "1983 temporary rapid line",
+      "names": {"sk":"Dočasná rýchlodráha (1983)"},
+      "status": "abandoned",
+      "description": "A 2.6 km surface stand-in for the metro from Petržalka over the Old Bridge's railway deck to Mlynské Nivy, meant to run from 1986 until the metro was ready; building began in autumn 1983 and stopped about two years later with only a few structures done.",
+      "lines": {
+        "t": {"name":"Temporary line","names":{"sk":"Dočasná rýchlodráha"},"network":"metro","mode":"metro","color":"#E4312B"}
+      },
+      "stations": {
+        "martanovicova": {"name":"Martanovičova","coordinate":[17.1191,48.142]},
+        "mlynske-nivy": {"name":"Mlynské Nivy","coordinate":[17.1245,48.1464]},
+        "petrzalka-centrum": {"name":"Petržalka Centrum","coordinate":[17.11686,48.12769]}
+      },
+      "sections": [
+        {"line":"t","stations":["petrzalka-centrum","martanovicova","mlynske-nivy"]}
+      ]
+    },
+    "metro-1988": {
+      "name": "1988 metro (rýchlodráha) project",
+      "names": {"sk":"Projekt metra (rýchlodráhy) z roku 1988"},
+      "status": "abandoned",
+      "description": "A Soviet-type metro of two lines, of which line B was started in 1988: about 10 km and 9 stations from Lúky Juh in Petržalka under the Danube to the main station, the section to Dunaj due in 1997; the city stopped all work in May 1990, leaving the Janíkov dvor depot and some excavations. Line A was to cross it at Prior, but its stations were never published.",
+      "lines": {
+        "b": {"name":"B","names":{"sk":"Trasa B"},"network":"metro","mode":"metro","color":"#E4312B"}
+      },
+      "stations": {
+        "dunaj": {"name":"Dunaj","coordinate":[17.117,48.141]},
+        "haje-juh": {"name":"Háje Juh","coordinate":[17.10857,48.11718]},
+        "haje-sever": {"name":"Háje Sever","coordinate":[17.113,48.1222]},
+        "hlavne-nadrazie": {"name":"Hlavné Nádražie","coordinate":[17.10708,48.15809]},
+        "luky-juh": {"name":"Lúky Juh","coordinate":[17.10929,48.1]},
+        "luky-sever": {"name":"Lúky Sever","coordinate":[17.10795,48.11045]},
+        "obchodna": {"name":"Obchodná","coordinate":[17.1075,48.1462]},
+        "petrzalka-centrum": {"name":"Petržalka Centrum","coordinate":[17.11686,48.12769]},
+        "prior": {"name":"Prior","coordinate":[17.11415,48.14527]}
+      },
+      "sections": [
+        {"line":"b","stations":["luky-juh","luky-sever","haje-juh","haje-sever","petrzalka-centrum","dunaj"]},
+        {"line":"b","stations":["dunaj","prior","obchodna","hlavne-nadrazie"]}
+      ]
+    },
+    "light-metro-1990s": {
+      "name": "1990s light metro plan",
+      "names": {"sk":"Ľahké metro (90. roky)"},
+      "status": "abandoned",
+      "description": "The light-metro plan of the city's company Metro a.s. (founded 1997), 29 km in two lines: line B's 9.5 km backbone from the Janíkov dvor depot through Petržalka, under the Danube and the centre to Trnavské mýto was to come first, partly on a viaduct in Petržalka; the turnkey contract was never signed (1998) and the city chose a tram in 2003.",
+      "lines": {
+        "b": {"name":"B","names":{"sk":"Trasa B"},"network":"metro","mode":"metro","color":"#E4312B"}
+      },
+      "stations": {
+        "drazdiak": {"name":"Draždiak","coordinate":[17.10752,48.10494]},
+        "dunaj": {"name":"Dunaj","coordinate":[17.117,48.141]},
+        "haje-juh": {"name":"Háje Juh","coordinate":[17.10857,48.11718]},
+        "haje-sever": {"name":"Háje Sever","coordinate":[17.113,48.1222]},
+        "hlavna-stanica": {"name":"Hlavná stanica","coordinate":[17.10708,48.15809]},
+        "janikov-dvor": {"name":"Janíkov dvor","coordinate":[17.10928,48.0939]},
+        "kamenne-namestie": {"name":"Kamenné námestie","coordinate":[17.11415,48.14527]},
+        "luky-juh": {"name":"Lúky Juh","coordinate":[17.10929,48.1]},
+        "luky-sever": {"name":"Lúky Sever","coordinate":[17.10795,48.11045]},
+        "obchodna": {"name":"Obchodná","coordinate":[17.1075,48.1462]},
+        "petrzalka-centrum": {"name":"Petržalka Centrum","coordinate":[17.11686,48.12769]},
+        "trnavske-myto": {"name":"Trnavské mýto","coordinate":[17.1275,48.15783]}
+      },
+      "sections": [
+        {"line":"b","stations":["janikov-dvor","luky-juh","drazdiak","luky-sever"]},
+        {"line":"b","stations":["luky-sever","haje-juh","haje-sever","petrzalka-centrum","dunaj"]},
+        {"line":"b","stations":["dunaj","kamenne-namestie","obchodna","hlavna-stanica","trnavske-myto"]}
+      ]
+    }
+  }
+}

@@ -23,6 +23,13 @@ export const CITIES = [
   { label: 'Odesa', value: 'odesa', country: 'Ukraine' },
   { label: 'Zaporizhzhia', value: 'zaporizhzhia', country: 'Ukraine' },
   { label: 'Chernivtsi', value: 'chernivtsi', country: 'Ukraine' },
+  { label: 'Prague', value: 'prague', country: 'Czechia' },
+  { label: 'Budapest', value: 'budapest', country: 'Hungary' },
+  { label: 'Riga', value: 'riga', country: 'Latvia' },
+  { label: 'Warsaw', value: 'warsaw', country: 'Poland' },
+  { label: 'Kraków', value: 'krakow', country: 'Poland' },
+  { label: 'Lisbon', value: 'lisbon', country: 'Portugal' },
+  { label: 'Bratislava', value: 'bratislava', country: 'Slovakia' },
 ];
 
 /** Playback speeds offered. */

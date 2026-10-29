@@ -1,0 +1,84 @@
+{
+  "meta": {"city":"Kraków","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "networks": {
+    "metro": {"name":"Kraków Metro","names":{"pl":"Metro w Krakowie"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "central-section-2025": {
+      "name": "2024–2025 central section",
+      "names": {"pl":"Odcinek centralny (2024–2025)"},
+      "status": "planned",
+      "description": "The tunnel section of the 2021 premetro scheme under the city centre, from Reymonta to the fast-tram line at Rondo Młyńskie, which the new city government turned into the first metro section in 2024 and put forward for an environmental decision with six stations in January 2025; it was overtaken by the September 2025 study.",
+      "lines": {
+        "m1": {"name":"M1","names":{"pl":"Linia M1"},"network":"metro","mode":"metro","color":"#E4312B"}
+      },
+      "stations": {
+        "agh": {"name":"AGH","coordinate":[19.923,50.0655]},
+        "dworzec-glowny": {"name":"Dworzec Główny","coordinate":[19.9454,50.0678]},
+        "olsza": {"name":"Olsza","coordinate":[19.96823,50.07593]},
+        "rondo-mogilskie": {"name":"Rondo Mogilskie","coordinate":[19.9589,50.0653]},
+        "stadion-miejski": {"name":"Stadion Miejski","coordinate":[19.911,50.0635]},
+        "stare-miasto": {"name":"Stare Miasto","coordinate":[19.93,50.065]}
+      },
+      "sections": [
+        {"line":"m1","stations":["stare-miasto","dworzec-glowny","rondo-mogilskie","olsza"]},
+        {"line":"m1","stations":["stare-miasto","agh","stadion-miejski"]}
+      ]
+    },
+    "metro-2025": {
+      "name": "2025 metro study",
+      "names": {"pl":"Studium kierunków rozwoju metra (2025)"},
+      "status": "proposed",
+      "description": "Two automatic metro lines, 28.5 km and 29 stations, chosen by the city in September 2025: M1 from Nowa Huta through the main station and the centre, under the Vistula to Opatkowice, and later M2 branching at Brożka to Kurdwanów, its trains running through to Nowa Huta; the tender is due by 2030 and the opening about 2035.",
+      "lines": {
+        "m1": {"name":"M1","names":{"pl":"Linia M1"},"network":"metro","mode":"metro","color":"#E4312B"},
+        "m2": {"name":"M2","names":{"pl":"Linia M2"},"network":"metro","mode":"metro","color":"#0072BC"}
+      },
+      "stations": {
+        "aleja-roz": {"name":"Aleja Róż","coordinate":[20.03954,50.07891]},
+        "bobrzynskiego": {"name":"Bobrzyńskiego","coordinate":[19.89807,50.02046]},
+        "bora-komorowskiego": {"name":"Bora-Komorowskiego","coordinate":[19.97963,50.08563]},
+        "brozka": {"name":"Brożka","coordinate":[19.9258,50.03048]},
+        "czyzyny": {"name":"Czyżyny","coordinate":[20.00765,50.08135]},
+        "dworzec-glowny": {"name":"Dworzec Główny","coordinate":[19.9454,50.0678]},
+        "halszki": {"name":"Halszki","coordinate":[19.94998,50.01394]},
+        "kampus-uj": {"name":"Kampus UJ","coordinate":[19.90582,50.02694]},
+        "kliny": {"name":"Kliny","coordinate":[19.89745,49.99851]},
+        "kobierzyn": {"name":"Kobierzyn","coordinate":[19.9045,50.0069]},
+        "kurdwanow": {"name":"Kurdwanów","coordinate":[19.96334,50.00473]},
+        "lagiewniki": {"name":"Łagiewniki","coordinate":[19.93374,50.02309]},
+        "lubostron": {"name":"Lubostroń","coordinate":[19.8952,50.0158]},
+        "ludwinow": {"name":"Ludwinów","coordinate":[19.9348,50.0437]},
+        "muzeum-narodowe": {"name":"Muzeum Narodowe","coordinate":[19.92496,50.05931]},
+        "nowa-huta": {"name":"Nowa Huta","coordinate":[20.06606,50.07919]},
+        "olsza": {"name":"Olsza","coordinate":[19.96823,50.07593]},
+        "opatkowice": {"name":"Opatkowice","coordinate":[19.89835,49.98837]},
+        "rondo-grunwaldzkie": {"name":"Rondo Grunwaldzkie","coordinate":[19.9315,50.0488]},
+        "rondo-kocmyrzowskie": {"name":"Rondo Kocmyrzowskie","coordinate":[20.0274,50.0796]},
+        "rondo-mlynskie": {"name":"Rondo Młyńskie","coordinate":[19.9738,50.0806]},
+        "rondo-mogilskie": {"name":"Rondo Mogilskie","coordinate":[19.9589,50.0653]},
+        "ruczaj": {"name":"Ruczaj","coordinate":[19.91473,50.02804]},
+        "sanktuarium": {"name":"Sanktuarium","coordinate":[19.9338,50.01392]},
+        "stary-kleparz": {"name":"Stary Kleparz","coordinate":[19.93911,50.06626]},
+        "teatr-bagatela": {"name":"Teatr Bagatela","coordinate":[19.93297,50.06342]},
+        "wislicka": {"name":"Wiślicka","coordinate":[20.00134,50.08773]},
+        "witosa": {"name":"Witosa","coordinate":[19.96143,50.01306]},
+        "zalew-nowohucki": {"name":"Zalew Nowohucki","coordinate":[20.05231,50.07616]}
+      },
+      "sections": [
+        {"line":"m1","stations":["rondo-mogilskie","dworzec-glowny","stary-kleparz","teatr-bagatela","muzeum-narodowe"]},
+        {"line":"m1","stations":["rondo-mogilskie","olsza","rondo-mlynskie","bora-komorowskiego"]},
+        {"line":"m1","stations":["bora-komorowskiego","wislicka","czyzyny","rondo-kocmyrzowskie"]},
+        {"line":"m1","stations":["rondo-kocmyrzowskie","aleja-roz","zalew-nowohucki","nowa-huta"]},
+        {"line":"m1","stations":["muzeum-narodowe","rondo-grunwaldzkie","ludwinow","brozka"]},
+        {"line":"m1","stations":["brozka","ruczaj","kampus-uj","bobrzynskiego","lubostron"]},
+        {"line":"m1","stations":["lubostron","kobierzyn","kliny","opatkowice"]},
+        {"line":"m2","stations":["brozka","lagiewniki","sanktuarium","halszki"]},
+        {"line":"m2","stations":["halszki","witosa","kurdwanow"]}
+      ]
+    }
+  }
+}

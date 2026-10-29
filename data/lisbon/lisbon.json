@@ -1,0 +1,275 @@
+{
+  "meta": {"city":"Lisbon","start":"1959-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "networks": {
+    "metro": {"name":"Lisbon Metro","names":{"pt":"Metropolitano de Lisboa"}}
+  },
+  "lines": {
+    "azul": {"name":"Blue","names":{"pt":"Linha Azul"},"network":"metro","mode":"metro","color":"#4E84C4","aliases":[{"until":"1995-07-15","as":"rede","text":"The Y splits at Rotunda: the Blue line becomes its own line"}]},
+    "amarela": {"name":"Yellow","names":{"pt":"Linha Amarela"},"network":"metro","mode":"metro","color":"#F4BC18","aliases":[{"until":"1995-07-15","as":"rede","text":"The Y splits at Rotunda: the Yellow line becomes its own line"}]},
+    "verde": {"name":"Green","names":{"pt":"Linha Verde"},"network":"metro","mode":"metro","color":"#00AAA6","aliases":[{"until":"1995-07-15","as":"rede","text":"Rossio–Campo Grande becomes part of the Blue line"},{"until":"1998-03-03","as":"azul","text":"Restauradores–Rossio closes: Rossio–Campo Grande becomes the Green line"}]},
+    "vermelha": {"name":"Red","names":{"pt":"Linha Vermelha"},"network":"metro","mode":"metro","color":"#DF096F"},
+    "rede": {"name":"Metro","names":{"pt":"Metropolitano"},"network":"metro","mode":"metro","color":"#5B6770","darkColor":"#A7B1B9","pseudo":true}
+  },
+  "stations": {
+    "aeroporto": {"name":"Aeroporto","coordinate":[-9.12832,38.76858]},
+    "alameda": {"name":"Alameda","coordinate":[-9.13323,38.73717]},
+    "alfornelos": {"name":"Alfornelos","coordinate":[-9.20453,38.76033]},
+    "alto-dos-moinhos": {"name":"Alto dos Moinhos","coordinate":[-9.17979,38.7499]},
+    "alvalade": {"name":"Alvalade","coordinate":[-9.14404,38.75328]},
+    "amadora-este": {"name":"Amadora Este","coordinate":[-9.21833,38.75842]},
+    "ameixoeira": {"name":"Ameixoeira","coordinate":[-9.15946,38.7796]},
+    "anjos": {"name":"Anjos","coordinate":[-9.13488,38.7267]},
+    "areeiro": {"name":"Areeiro","coordinate":[-9.13346,38.74221]},
+    "arroios": {"name":"Arroios","coordinate":[-9.1343,38.73271]},
+    "avenida": {"name":"Avenida","coordinate":[-9.14481,38.71902]},
+    "baixa-chiado": {"name":"Baixa-Chiado","coordinate":[-9.1404,38.71046]},
+    "bela-vista": {"name":"Bela Vista","coordinate":[-9.11766,38.74754]},
+    "cabo-ruivo": {"name":"Cabo Ruivo","coordinate":[-9.10406,38.76296],"infill":{"vermelha":"1998-07-18"}},
+    "cais-do-sodre": {"name":"Cais do Sodré","coordinate":[-9.14674,38.70614]},
+    "campo-grande": {"name":"Campo Grande","coordinate":[-9.15793,38.76015]},
+    "campo-pequeno": {"name":"Campo Pequeno","coordinate":[-9.14678,38.74111]},
+    "carnide": {"name":"Carnide","coordinate":[-9.19271,38.75923]},
+    "chelas": {"name":"Chelas","coordinate":[-9.11387,38.75482]},
+    "cidade-universitaria": {"name":"Cidade Universitária","coordinate":[-9.15904,38.75152]},
+    "colegio-militar-luz": {"name":"Colégio Militar/Luz","coordinate":[-9.18927,38.7534]},
+    "encarnacao": {"name":"Encarnação","coordinate":[-9.11556,38.77505]},
+    "entre-campos": {"name":"Entre Campos","coordinate":[-9.1482,38.74705]},
+    "intendente": {"name":"Intendente","coordinate":[-9.13525,38.72315]},
+    "jardim-zoologico": {"name":"Jardim Zoológico","coordinate":[-9.16891,38.74209],"formerNames":[{"name":"Sete Rios","until":"1998-03-01"}]},
+    "laranjeiras": {"name":"Laranjeiras","coordinate":[-9.17304,38.74825]},
+    "lumiar": {"name":"Lumiar","coordinate":[-9.15925,38.77293]},
+    "marques-de-pombal": {"name":"Marquês de Pombal","coordinate":[-9.14993,38.72444],"formerNames":[{"name":"Rotunda","until":"1998-03-01"}]},
+    "martim-moniz": {"name":"Martim Moniz","coordinate":[-9.13597,38.71719],"formerNames":[{"name":"Socorro","until":"1998-03-01"}]},
+    "moscavide": {"name":"Moscavide","coordinate":[-9.10305,38.7749]},
+    "odivelas": {"name":"Odivelas","coordinate":[-9.17298,38.79327]},
+    "olaias": {"name":"Olaias","coordinate":[-9.12395,38.73947]},
+    "olivais": {"name":"Olivais","coordinate":[-9.11183,38.76091],"infill":{"vermelha":"1998-11-07"}},
+    "oriente": {"name":"Oriente","coordinate":[-9.09972,38.76798]},
+    "parque": {"name":"Parque","coordinate":[-9.15018,38.72909]},
+    "picoas": {"name":"Picoas","coordinate":[-9.14683,38.73053]},
+    "pontinha": {"name":"Pontinha","coordinate":[-9.19682,38.76222]},
+    "praca-de-espanha": {"name":"Praça de Espanha","coordinate":[-9.15925,38.73768],"formerNames":[{"name":"Palhavã","until":"1998-03-01"}]},
+    "quinta-das-conchas": {"name":"Quinta das Conchas","coordinate":[-9.15556,38.76723]},
+    "rato": {"name":"Rato","coordinate":[-9.15484,38.7201]},
+    "reboleira": {"name":"Reboleira","coordinate":[-9.22411,38.75217]},
+    "restauradores": {"name":"Restauradores","coordinate":[-9.14163,38.71533]},
+    "roma": {"name":"Roma","coordinate":[-9.14135,38.74824]},
+    "rossio": {"name":"Rossio","coordinate":[-9.13838,38.71397]},
+    "saldanha": {"name":"Saldanha","coordinate":[-9.14465,38.73477]},
+    "santa-apolonia": {"name":"Santa Apolónia","coordinate":[-9.12245,38.71369]},
+    "sao-sebastiao": {"name":"São Sebastião","coordinate":[-9.15313,38.73443]},
+    "senhor-roubado": {"name":"Senhor Roubado","coordinate":[-9.17186,38.7856]},
+    "telheiras": {"name":"Telheiras","coordinate":[-9.16639,38.76002]},
+    "terreiro-do-paco": {"name":"Terreiro do Paço","coordinate":[-9.13449,38.70709]}
+  },
+  "segments": [
+    {"stationA":"alameda","stationB":"areeiro","lines":{"verde":{"open":"1972-06-18"}},"coordinates":[[-9.13387,38.73697],[-9.1334,38.74076],[-9.13338,38.74111],[-9.1335,38.74233]]},
+    {"stationA":"alameda","stationB":"olaias","lines":{"vermelha":{"open":"1998-05-19"}},"coordinates":[[-9.13245,38.737],[-9.1271,38.73781],[-9.1264,38.73799],[-9.12581,38.73827],[-9.12395,38.73949]]},
+    {"stationA":"alfornelos","stationB":"amadora-este","lines":{"azul":{"open":"2004-05-15"}},"coordinates":[[-9.20456,38.76033],[-9.20527,38.76049],[-9.20674,38.76073],[-9.20775,38.76077],[-9.20905,38.76069],[-9.20994,38.76057],[-9.21082,38.7604],[-9.21832,38.75841]]},
+    {"stationA":"alto-dos-moinhos","stationB":"colegio-militar-luz","lines":{"azul":{"open":"1988-10-14"}},"coordinates":[[-9.17979,38.7499],[-9.18174,38.75007],[-9.18325,38.7503],[-9.18436,38.75078],[-9.186,38.75157],[-9.18929,38.75338]]},
+    {"stationA":"alvalade","stationB":"campo-grande","lines":{"verde":{"open":"1993-04-03","suspended":[{"from":"2023-04-15","until":"2023-04-27"}]}},"coordinates":[[-9.14403,38.75311],[-9.14774,38.76004],[-9.14825,38.76074],[-9.14885,38.76117],[-9.14912,38.76132],[-9.14988,38.76166],[-9.15022,38.76177],[-9.15099,38.7619],[-9.15157,38.76195],[-9.15196,38.76195],[-9.15293,38.76187],[-9.15337,38.7618],[-9.15397,38.76163],[-9.15608,38.7607],[-9.15782,38.76008]]},
+    {"stationA":"amadora-este","stationB":"reboleira","lines":{"azul":{"open":"2016-04-13"}},"coordinates":[[-9.21832,38.75841],[-9.22073,38.75769],[-9.22125,38.75743],[-9.22152,38.75724],[-9.22181,38.75696],[-9.22202,38.75669],[-9.22222,38.75633],[-9.2232,38.7538],[-9.22409,38.75219]]},
+    {"stationA":"ameixoeira","stationB":"senhor-roubado","lines":{"amarela":{"open":"2004-03-27"}},"coordinates":[[-9.15967,38.77933],[-9.15906,38.78054],[-9.15897,38.78087],[-9.15894,38.78119],[-9.15898,38.78158],[-9.15914,38.78211],[-9.15942,38.78257],[-9.15967,38.78285],[-9.15997,38.78312],[-9.16025,38.78331],[-9.16231,38.78454],[-9.1628,38.78473],[-9.16405,38.785],[-9.16462,38.78505],[-9.16517,38.78502],[-9.16552,38.78495],[-9.16579,38.78486],[-9.16791,38.78382],[-9.16849,38.78366],[-9.16895,38.78367],[-9.16924,38.78371],[-9.16985,38.78391],[-9.17038,38.78413],[-9.17107,38.78451],[-9.17133,38.78471],[-9.1715,38.78489],[-9.17183,38.78562]]},
+    {"stationA":"anjos","stationB":"arroios","lines":{"verde":{"open":"1972-06-18"}},"coordinates":[[-9.1349,38.72697],[-9.13433,38.7327]]},
+    {"stationA":"areeiro","stationB":"roma","lines":{"verde":{"open":"1972-06-18"}},"coordinates":[[-9.1335,38.74233],[-9.13357,38.7433],[-9.13363,38.7435],[-9.1338,38.74382],[-9.13409,38.74415],[-9.13522,38.74502],[-9.13554,38.74521],[-9.13587,38.74535],[-9.13641,38.74547],[-9.13697,38.74549],[-9.13871,38.74536],[-9.13903,38.74539],[-9.13929,38.74545],[-9.13961,38.74558],[-9.13994,38.74579],[-9.14021,38.74608],[-9.14124,38.74799]]},
+    {"stationA":"arroios","stationB":"alameda","lines":{"verde":{"open":"1972-06-18"}},"coordinates":[[-9.13433,38.7327],[-9.13387,38.73697]]},
+    {"stationA":"avenida","stationB":"marques-de-pombal","lines":{"azul":{"open":"1959-12-29"}},"coordinates":[[-9.14483,38.71901],[-9.14844,38.72309],[-9.14889,38.72368],[-9.14915,38.72416]]},
+    {"stationA":"baixa-chiado","stationB":"restauradores","lines":{"azul":{"open":"1998-08-08"}},"coordinates":[[-9.14004,38.71042],[-9.14017,38.71219],[-9.14029,38.71276],[-9.14055,38.71352],[-9.14073,38.71391],[-9.14116,38.71456],[-9.14171,38.7153],[-9.14231,38.716]]},
+    {"stationA":"baixa-chiado","stationB":"rossio","lines":{"verde":{"open":"1998-04-18"}},"coordinates":[[-9.14033,38.71041],[-9.14041,38.71221],[-9.14034,38.71255],[-9.14017,38.71291],[-9.1398,38.71334],[-9.13937,38.71363],[-9.13879,38.71385],[-9.13792,38.71404]]},
+    {"stationA":"bela-vista","stationB":"chelas","lines":{"vermelha":{"open":"1998-05-19"}},"coordinates":[[-9.11768,38.74754],[-9.11474,38.75301],[-9.11389,38.75483]]},
+    {"stationA":"cabo-ruivo","stationB":"oriente","lines":{"vermelha":{"open":"1998-05-19"}},"coordinates":[[-9.10406,38.76298],[-9.10228,38.76299],[-9.10182,38.76304],[-9.10119,38.76323],[-9.10085,38.76344],[-9.10052,38.76372],[-9.10038,38.76391],[-9.10017,38.7643],[-9.10007,38.76467],[-9.09998,38.76519],[-9.09973,38.76786]]},
+    {"stationA":"cais-do-sodre","stationB":"baixa-chiado","lines":{"verde":{"open":"1998-04-18"}},"coordinates":[[-9.14683,38.70614],[-9.14464,38.7061],[-9.1441,38.70614],[-9.14263,38.70645],[-9.14217,38.70664],[-9.14188,38.70679],[-9.14087,38.70759],[-9.14056,38.70796],[-9.14038,38.70829],[-9.14028,38.70863],[-9.14025,38.70886],[-9.14033,38.71041]]},
+    {"stationA":"campo-grande","stationB":"quinta-das-conchas","lines":{"amarela":{"open":"2004-03-27"}},"coordinates":[[-9.15792,38.76027],[-9.15652,38.76075],[-9.15623,38.76087],[-9.15589,38.76105],[-9.15556,38.76131],[-9.15534,38.76153],[-9.15513,38.76184],[-9.15498,38.76214],[-9.1549,38.76247],[-9.15482,38.7632],[-9.15485,38.76375],[-9.15495,38.7644],[-9.15547,38.76675],[-9.15556,38.76731]]},
+    {"stationA":"campo-grande","stationB":"telheiras","lines":{"verde":{"open":"2002-11-02","suspended":[{"from":"2023-04-15","until":"2023-04-27"},{"from":"2023-05-02","until":"2023-07-08"},{"from":"2024-08-03","until":"2024-08-19"}]}},"coordinates":[[-9.15782,38.76008],[-9.16042,38.75919],[-9.16094,38.75909],[-9.16141,38.75906],[-9.16181,38.75906],[-9.16227,38.75912],[-9.16489,38.75969],[-9.16582,38.75986],[-9.16643,38.75994]]},
+    {"stationA":"campo-pequeno","stationB":"entre-campos","lines":{"amarela":{"open":"1959-12-29"}},"coordinates":[[-9.14679,38.74111],[-9.1482,38.74703]]},
+    {"stationA":"carnide","stationB":"pontinha","lines":{"azul":{"open":"1997-10-18"}},"coordinates":[[-9.19274,38.75924],[-9.19231,38.75982],[-9.19215,38.76011],[-9.19202,38.76049],[-9.19198,38.76085],[-9.19205,38.76127],[-9.19224,38.76168],[-9.19251,38.76201],[-9.19288,38.76232],[-9.19319,38.7625],[-9.19367,38.76268],[-9.19398,38.76274],[-9.19445,38.76278],[-9.19484,38.76276],[-9.19525,38.76269],[-9.19684,38.76223]]},
+    {"stationA":"chelas","stationB":"olivais","lines":{"vermelha":{"open":"1998-05-19"}},"coordinates":[[-9.11389,38.75483],[-9.11361,38.75555],[-9.11314,38.75646],[-9.11301,38.75686],[-9.11293,38.75734],[-9.11295,38.75856],[-9.11287,38.75911],[-9.11268,38.75956],[-9.11201,38.76061]]},
+    {"stationA":"cidade-universitaria","stationB":"campo-grande","lines":{"amarela":{"open":"1993-04-03","suspended":[{"from":"2023-05-02","until":"2023-07-08"},{"from":"2024-08-03","until":"2024-08-19"}]}},"coordinates":[[-9.15911,38.7515],[-9.15971,38.75278],[-9.16019,38.75362],[-9.16075,38.75436],[-9.16221,38.75599],[-9.16256,38.7565],[-9.16268,38.75674],[-9.1628,38.75708],[-9.16284,38.75739],[-9.16282,38.7577],[-9.16268,38.75822],[-9.16243,38.75864],[-9.16208,38.75902],[-9.16159,38.75935],[-9.16131,38.75948],[-9.161,38.75959],[-9.15916,38.75991],[-9.15849,38.76008],[-9.15792,38.76027]]},
+    {"stationA":"colegio-militar-luz","stationB":"carnide","lines":{"azul":{"open":"1997-10-18"}},"coordinates":[[-9.18929,38.75338],[-9.18995,38.75374],[-9.1904,38.75391],[-9.19167,38.7546],[-9.19227,38.75498],[-9.19282,38.75526],[-9.19374,38.75566],[-9.19412,38.75601],[-9.19422,38.75619],[-9.19427,38.75661],[-9.19404,38.75729],[-9.19353,38.75818],[-9.19274,38.75924]]},
+    {"stationA":"encarnacao","stationB":"aeroporto","lines":{"vermelha":{"open":"2012-07-17"}},"coordinates":[[-9.11551,38.77507],[-9.11734,38.77399],[-9.12082,38.77165],[-9.12166,38.77098],[-9.12296,38.76975],[-9.12362,38.76932],[-9.12426,38.76904],[-9.12498,38.76886],[-9.12828,38.76842]]},
+    {"stationA":"entre-campos","stationB":"cidade-universitaria","lines":{"amarela":{"open":"1988-10-14"}},"coordinates":[[-9.1482,38.74703],[-9.14849,38.74811],[-9.14863,38.7484],[-9.14889,38.74879],[-9.14911,38.74903],[-9.14945,38.74928],[-9.14974,38.74945],[-9.15016,38.74965],[-9.15075,38.74985],[-9.1513,38.74996],[-9.15192,38.75],[-9.15247,38.74998],[-9.15292,38.74992],[-9.15342,38.7498],[-9.15481,38.74927],[-9.15524,38.74915],[-9.15563,38.7491],[-9.15609,38.74908],[-9.15669,38.74916],[-9.15712,38.74927],[-9.15759,38.74947],[-9.15789,38.74965],[-9.15823,38.74993],[-9.1586,38.7504],[-9.15911,38.7515]]},
+    {"stationA":"intendente","stationB":"anjos","lines":{"verde":{"open":"1966-09-28"}},"coordinates":[[-9.13528,38.72317],[-9.1349,38.72697]]},
+    {"stationA":"jardim-zoologico","stationB":"laranjeiras","lines":{"azul":{"open":"1988-10-14","suspended":[{"from":"2020-09-29","until":"2020-10-02"}]}},"coordinates":[[-9.16891,38.74209],[-9.16918,38.74258],[-9.16929,38.74324],[-9.16935,38.74475],[-9.16949,38.74532],[-9.16981,38.7459],[-9.1705,38.74644],[-9.17215,38.74742],[-9.1726,38.74777],[-9.17304,38.74825]]},
+    {"stationA":"laranjeiras","stationB":"alto-dos-moinhos","lines":{"azul":{"open":"1988-10-14"}},"coordinates":[[-9.17304,38.74825],[-9.17382,38.7494],[-9.17412,38.74963],[-9.17455,38.74975],[-9.17568,38.74984],[-9.17979,38.7499]]},
+    {"stationA":"lumiar","stationB":"ameixoeira","lines":{"amarela":{"open":"2004-03-27"}},"coordinates":[[-9.15937,38.77339],[-9.16047,38.77603],[-9.16058,38.77647],[-9.1606,38.77675],[-9.16059,38.77717],[-9.16047,38.77767],[-9.15967,38.77933]]},
+    {"stationA":"marques-de-pombal","stationB":"parque","lines":{"azul":{"open":"1959-12-29","suspended":[{"from":"2020-09-29","until":"2020-10-02"}]}},"coordinates":[[-9.14915,38.72416],[-9.14931,38.72451],[-9.1495,38.72506],[-9.14999,38.72602],[-9.15004,38.72634],[-9.15026,38.72952]]},
+    {"stationA":"marques-de-pombal","stationB":"picoas","lines":{"amarela":{"open":"1959-12-29"}},"coordinates":[[-9.15033,38.72472],[-9.15005,38.72514],[-9.14695,38.73036]]},
+    {"stationA":"martim-moniz","stationB":"intendente","lines":{"verde":{"open":"1966-09-28"}},"coordinates":[[-9.1358,38.71761],[-9.13528,38.72317]]},
+    {"stationA":"moscavide","stationB":"encarnacao","lines":{"vermelha":{"open":"2012-07-17"}},"coordinates":[[-9.103,38.77489],[-9.10565,38.77477],[-9.10601,38.77477],[-9.10656,38.77483],[-9.10722,38.77498],[-9.11104,38.77636],[-9.11163,38.77648],[-9.11209,38.77651],[-9.11285,38.77643],[-9.11337,38.77627],[-9.11389,38.77602],[-9.11551,38.77507]]},
+    {"stationA":"olaias","stationB":"bela-vista","lines":{"vermelha":{"open":"1998-05-19"}},"coordinates":[[-9.12395,38.73949],[-9.12137,38.74122],[-9.12105,38.74147],[-9.12078,38.74176],[-9.12044,38.7423],[-9.11768,38.74754]]},
+    {"stationA":"olivais","stationB":"cabo-ruivo","lines":{"vermelha":{"open":"1998-05-19"}},"coordinates":[[-9.11201,38.76061],[-9.1113,38.76171],[-9.11086,38.76221],[-9.11057,38.76243],[-9.11029,38.7626],[-9.10965,38.76284],[-9.10925,38.76292],[-9.10878,38.76296],[-9.10406,38.76298]]},
+    {"stationA":"oriente","stationB":"moscavide","lines":{"vermelha":{"open":"2012-07-17"}},"coordinates":[[-9.09973,38.76786],[-9.09924,38.77292],[-9.09925,38.77341],[-9.09937,38.77379],[-9.09959,38.77412],[-9.09991,38.77443],[-9.10026,38.77466],[-9.10066,38.77482],[-9.10103,38.77491],[-9.10145,38.77495],[-9.103,38.77489]]},
+    {"stationA":"parque","stationB":"sao-sebastiao","lines":{"azul":{"open":"1959-12-29","suspended":[{"from":"2020-09-29","until":"2020-10-02"}]}},"coordinates":[[-9.15026,38.72952],[-9.15031,38.72999],[-9.15039,38.73015],[-9.15361,38.73394]]},
+    {"stationA":"picoas","stationB":"saldanha","lines":{"amarela":{"open":"1959-12-29"}},"coordinates":[[-9.14695,38.73036],[-9.14556,38.73263],[-9.14533,38.73308],[-9.14518,38.73357],[-9.14513,38.73395],[-9.14515,38.73423],[-9.14529,38.73483]]},
+    {"stationA":"pontinha","stationB":"alfornelos","lines":{"azul":{"open":"2004-05-15"}},"coordinates":[[-9.19684,38.76223],[-9.19861,38.76172],[-9.20018,38.76118],[-9.20259,38.76018],[-9.20302,38.76012],[-9.20339,38.76012],[-9.20385,38.76018],[-9.20456,38.76033]]},
+    {"stationA":"praca-de-espanha","stationB":"jardim-zoologico","lines":{"azul":{"open":"1959-12-29","suspended":[{"from":"2020-09-29","until":"2020-10-02"}]}},"coordinates":[[-9.15925,38.73768],[-9.16268,38.73833],[-9.16371,38.73858],[-9.16527,38.73887],[-9.16621,38.73915],[-9.16672,38.73945],[-9.16789,38.74092],[-9.16891,38.74209]]},
+    {"stationA":"quinta-das-conchas","stationB":"lumiar","lines":{"amarela":{"open":"2004-03-27"}},"coordinates":[[-9.15556,38.76731],[-9.15575,38.76829],[-9.15598,38.76884],[-9.15614,38.76906],[-9.15646,38.7694],[-9.15789,38.77046],[-9.1582,38.77078],[-9.15844,38.77116],[-9.15937,38.77339]]},
+    {"stationA":"rato","stationB":"marques-de-pombal","lines":{"amarela":{"open":"1997-12-29"}},"coordinates":[[-9.15485,38.72011],[-9.15285,38.7209],[-9.15252,38.72122],[-9.15196,38.72202],[-9.15066,38.72422],[-9.15033,38.72472]]},
+    {"stationA":"restauradores","stationB":"avenida","lines":{"azul":{"open":"1959-12-29"}},"coordinates":[[-9.14231,38.716],[-9.14483,38.71901]]},
+    {"stationA":"restauradores","stationB":"rossio","lines":{"azul":{"open":"1963-01-27","close":"1998-03-03"}},"coordinates":[[-9.14231,38.716],[-9.1415,38.7148],[-9.14,38.714],[-9.13792,38.71404]]},
+    {"stationA":"roma","stationB":"alvalade","lines":{"verde":{"open":"1972-06-18"}},"coordinates":[[-9.14124,38.74799],[-9.14403,38.75311]]},
+    {"stationA":"rossio","stationB":"martim-moniz","lines":{"verde":{"open":"1966-09-28"}},"coordinates":[[-9.13792,38.71404],[-9.1372,38.71421],[-9.1368,38.71437],[-9.13644,38.71461],[-9.13621,38.71491],[-9.13609,38.71516],[-9.13602,38.71551],[-9.1358,38.71761]]},
+    {"stationA":"saldanha","stationB":"alameda","lines":{"vermelha":{"open":"2009-08-29"}},"coordinates":[[-9.14434,38.7352],[-9.1397,38.73533],[-9.13912,38.73538],[-9.13847,38.73553],[-9.13705,38.73613],[-9.13621,38.73637],[-9.13551,38.73651],[-9.13245,38.737]]},
+    {"stationA":"saldanha","stationB":"campo-pequeno","lines":{"amarela":{"open":"1959-12-29"}},"coordinates":[[-9.14529,38.73483],[-9.14679,38.74111]]},
+    {"stationA":"santa-apolonia","stationB":"terreiro-do-paco","lines":{"azul":{"open":"2007-12-19"}},"coordinates":[[-9.12244,38.71367],[-9.12339,38.71278],[-9.12412,38.71225],[-9.12485,38.71181],[-9.12548,38.71148],[-9.12649,38.71106],[-9.12718,38.7107],[-9.12983,38.70902],[-9.13048,38.70869],[-9.13179,38.70811],[-9.13437,38.70701]]},
+    {"stationA":"sao-sebastiao","stationB":"praca-de-espanha","lines":{"azul":{"open":"1959-12-29","suspended":[{"from":"2020-09-29","until":"2020-10-02"}]}},"coordinates":[[-9.15361,38.73394],[-9.15542,38.73611],[-9.15631,38.73685],[-9.15684,38.73715],[-9.15724,38.73729],[-9.15925,38.73768]]},
+    {"stationA":"sao-sebastiao","stationB":"saldanha","lines":{"vermelha":{"open":"2009-08-29"}},"coordinates":[[-9.15303,38.73463],[-9.15222,38.7349],[-9.15153,38.735],[-9.14434,38.7352]]},
+    {"stationA":"senhor-roubado","stationB":"odivelas","lines":{"amarela":{"open":"2004-03-27"}},"coordinates":[[-9.17183,38.78562],[-9.17229,38.78678],[-9.17236,38.78722],[-9.1723,38.78776],[-9.17221,38.78801],[-9.17199,38.7884],[-9.171,38.78954],[-9.17076,38.78994],[-9.1706,38.79047],[-9.17062,38.79098],[-9.17073,38.7914],[-9.17085,38.79164],[-9.17105,38.79191],[-9.17135,38.7922],[-9.17208,38.79272],[-9.173,38.79326]]},
+    {"stationA":"terreiro-do-paco","stationB":"baixa-chiado","lines":{"azul":{"open":"2007-12-19"}},"coordinates":[[-9.13437,38.70701],[-9.13594,38.70637],[-9.13639,38.70624],[-9.13678,38.70618],[-9.13721,38.70617],[-9.13776,38.70624],[-9.13834,38.70642],[-9.13873,38.70661],[-9.13912,38.7069],[-9.13943,38.70719],[-9.13968,38.70757],[-9.13983,38.7079],[-9.13992,38.70835],[-9.14004,38.71042]]}
+  ],
+  "plans": {
+    "linha-circular": {
+      "name": "Circular line (Rato – Cais do Sodré)",
+      "names": {"pt":"Linha Circular (Rato – Cais do Sodré)"},
+      "status": "under-construction",
+      "description": "A 2 km tunnel from Rato to Cais do Sodré with new stations at Estrela and Santos, plus new viaducts at Campo Grande, under construction since 2021 and due to open by March 2027. It turns the Green line into a loop: Cais do Sodré – Rossio – Alameda – Campo Grande – Entre Campos – Marquês de Pombal – Rato – Cais do Sodré, with the Yellow line cut back to run Odivelas – Campo Grande – Telheiras.",
+      "stations": {
+        "estrela": {"name":"Estrela","coordinate":[-9.15922,38.71342]},
+        "santos": {"name":"Santos","coordinate":[-9.15393,38.70949]}
+      },
+      "sections": [
+        {"line":"verde","stations":["rato","estrela","santos","cais-do-sodre"]}
+      ]
+    },
+    "vermelha-alcantara": {
+      "name": "Red line to Alcântara",
+      "names": {"pt":"Prolongamento da Linha Vermelha a Alcântara"},
+      "status": "planned",
+      "description": "A 4 km extension of the Red line from São Sebastião through Campolide/Amoreiras, Campo de Ourique and Infante Santo to Alcântara, approved in 2022 and contracted in December 2023 for €322 million. Works have been held up by environmental reviews, lost recovery-plan funding and Court of Auditors approval; opening is now expected around 2030.",
+      "stations": {
+        "alcantara": {"name":"Alcântara","coordinate":[-9.1753,38.70685]},
+        "campo-de-ourique": {"name":"Campo de Ourique","coordinate":[-9.16539,38.7176]},
+        "campolide-amoreiras": {"name":"Campolide/Amoreiras","coordinate":[-9.15995,38.72478]},
+        "infante-santo": {"name":"Infante Santo","coordinate":[-9.16621,38.71044]}
+      },
+      "sections": [
+        {"line":"vermelha","stations":["sao-sebastiao","campolide-amoreiras","campo-de-ourique","infante-santo","alcantara"]}
+      ]
+    },
+    "linha-violeta": {
+      "name": "Violet line (Loures – Odivelas light metro)",
+      "names": {"pt":"Linha Violeta (metro ligeiro Loures – Odivelas)"},
+      "status": "planned",
+      "description": "An 11.5 km, 17-stop surface light metro agreed in 2021 between the Metro and the Loures and Odivelas councils, running in a C from Hospital Beatriz Ângelo through Ramada to the Yellow line at Odivelas and on through Santo António dos Cavaleiros and Loures to Várzea de Loures. Its first tender (2024) was cancelled; a second (2025) was stalled by an EU inquiry into the rolling-stock supplier, with opening now expected in 2029.",
+      "lines": {
+        "violeta": {"name":"Violet","names":{"pt":"Linha Violeta"},"network":"metro","mode":"metro","color":"#8E5BA6"}
+      },
+      "stations": {
+        "chafariz-del-rei": {"name":"Chafariz d'El Rei","coordinate":[-9.16276,38.79743]},
+        "conventinho": {"name":"Conventinho","coordinate":[-9.15827,38.82186]},
+        "flamenga": {"name":"Flamenga","coordinate":[-9.15672,38.81048]},
+        "herois-de-chaimite": {"name":"Heróis de Chaimite","coordinate":[-9.16918,38.79759]},
+        "hospital-beatriz-angelo": {"name":"Hospital Beatriz Ângelo","coordinate":[-9.1752,38.8222]},
+        "jardim-da-radial": {"name":"Jardim da Radial","coordinate":[-9.18442,38.80549]},
+        "jardim-do-castelinho": {"name":"Jardim do Castelinho","coordinate":[-9.18153,38.7942]},
+        "loures": {"name":"Loures","coordinate":[-9.15975,38.82638]},
+        "planalto-da-caldeira": {"name":"Planalto da Caldeira","coordinate":[-9.17771,38.82574]},
+        "povoa-de-santo-adriao": {"name":"Póvoa de Santo Adrião","coordinate":[-9.16281,38.80018]},
+        "quinta-do-almirante": {"name":"Quinta do Almirante","coordinate":[-9.1565,38.8162]},
+        "ramada-escolas": {"name":"Ramada Escolas","coordinate":[-9.18483,38.80263]},
+        "ribeirada": {"name":"Ribeirada","coordinate":[-9.18276,38.79763]},
+        "santo-antonio-dos-cavaleiros": {"name":"Santo António dos Cavaleiros","coordinate":[-9.16134,38.81263]},
+        "torres-da-bela-vista": {"name":"Torres da Bela Vista","coordinate":[-9.17998,38.81306]},
+        "varzea-de-loures": {"name":"Várzea de Loures","coordinate":[-9.15569,38.83357]}
+      },
+      "sections": [
+        {"line":"violeta","stations":["odivelas","herois-de-chaimite","chafariz-del-rei","povoa-de-santo-adriao","flamenga","santo-antonio-dos-cavaleiros"]},
+        {"line":"violeta","stations":["santo-antonio-dos-cavaleiros","quinta-do-almirante","conventinho","loures","varzea-de-loures"]},
+        {"line":"violeta","stations":["odivelas","jardim-do-castelinho","ribeirada","ramada-escolas","jardim-da-radial"]},
+        {"line":"violeta","stations":["jardim-da-radial","torres-da-bela-vista","planalto-da-caldeira","hospital-beatriz-angelo"]}
+      ]
+    },
+    "amarela-benfica": {
+      "name": "Yellow line to Benfica",
+      "names": {"pt":"Prolongamento da Linha Amarela a Benfica"},
+      "status": "proposed",
+      "description": "Once the Circular line opens and the Yellow line ends at Telheiras, the Metro means to take it west through São Francisco (Horta Nova, Lispolis) and Colégio Militar to Benfica by the Palácio Baldaya. The route is only sketched and has no funding or date.",
+      "stations": {
+        "benfica": {"name":"Benfica","coordinate":[-9.2004,38.7505]},
+        "sao-francisco": {"name":"São Francisco","coordinate":[-9.182,38.7665]}
+      },
+      "sections": [
+        {"line":"amarela","stations":["telheiras","sao-francisco","colegio-militar-luz","benfica"]}
+      ]
+    },
+    "loures-sacavem-2009": {
+      "name": "Loures and Sacavém extensions (2009)",
+      "names": {"pt":"Prolongamentos a Loures e Sacavém (2009)"},
+      "status": "abandoned",
+      "description": "Presented by the government in July 2009: the Yellow line from Odivelas through Codivel, Santo António, Torres da Bela Vista/Frielas and Loures to Infantado, and the Red line from Moscavide to Portela and Sacavém, about €565 million for 2014–2015. All extensions beyond the city were suspended in the 2011 debt crisis.",
+      "stations": {
+        "codivel": {"name":"Codivel","coordinate":[-9.1716,38.7968]},
+        "frielas": {"name":"Torres da Bela Vista/Frielas","coordinate":[-9.1485,38.8167]},
+        "infantado": {"name":"Infantado","coordinate":[-9.15876,38.83892]},
+        "loures": {"name":"Loures","coordinate":[-9.15975,38.82638]},
+        "portela": {"name":"Portela","coordinate":[-9.11131,38.78383]},
+        "sacavem": {"name":"Sacavém","coordinate":[-9.1,38.795]},
+        "santo-antonio-dos-cavaleiros": {"name":"Santo António dos Cavaleiros","coordinate":[-9.16134,38.81263]}
+      },
+      "sections": [
+        {"line":"amarela","stations":["odivelas","codivel","santo-antonio-dos-cavaleiros","frielas"]},
+        {"line":"amarela","stations":["frielas","loures","infantado"]},
+        {"line":"vermelha","stations":["moscavide","portela","sacavem"]}
+      ]
+    },
+    "plano-2010-2020": {
+      "name": "Expansion plan 2010–2020",
+      "names": {"pt":"Plano de Expansão 2010/2020"},
+      "status": "abandoned",
+      "description": "The plan presented in September 2009 for a 102 km network by 2020: infill stations at Alfândega, Calvanas and Madrid, the Red line to Campo de Ourique by Campolide and Amoreiras, the Yellow line from Rato by Estrela and Infante Santo to Alcântara-Mar, the Green line from Telheiras by Horta Nova to the Blue line, and a Blue branch to Benfica. Shelved in 2011.",
+      "stations": {
+        "alcantara-mar": {"name":"Alcântara-Mar","coordinate":[-9.17367,38.70246]},
+        "alfandega": {"name":"Alfândega","coordinate":[-9.13179,38.70811]},
+        "amoreiras": {"name":"Amoreiras","coordinate":[-9.1607,38.7241]},
+        "benfica": {"name":"Benfica","coordinate":[-9.2004,38.7505]},
+        "calvanas": {"name":"Calvanas","coordinate":[-9.14885,38.76117]},
+        "campo-de-ourique": {"name":"Campo de Ourique","coordinate":[-9.16539,38.7176]},
+        "campolide": {"name":"Campolide","coordinate":[-9.1646,38.7279]},
+        "estrela": {"name":"Estrela","coordinate":[-9.15922,38.71342]},
+        "horta-nova": {"name":"Horta Nova","coordinate":[-9.18136,38.76731]},
+        "infante-santo": {"name":"Infante Santo","coordinate":[-9.16621,38.71044]},
+        "madrid": {"name":"Madrid","coordinate":[-9.13522,38.74502]},
+        "uruguai": {"name":"Uruguai","coordinate":[-9.1965,38.7534]}
+      },
+      "sections": [
+        {"line":"azul","stations":["terreiro-do-paco","alfandega","santa-apolonia"]},
+        {"line":"verde","stations":["alvalade","calvanas","campo-grande"]},
+        {"line":"verde","stations":["areeiro","madrid","roma"]},
+        {"line":"vermelha","stations":["sao-sebastiao","campolide","amoreiras","campo-de-ourique"]},
+        {"line":"amarela","stations":["rato","estrela","infante-santo","alcantara-mar"]},
+        {"line":"verde","stations":["telheiras","horta-nova","carnide"]},
+        {"line":"azul","stations":["colegio-militar-luz","uruguai","benfica"]}
+      ]
+    },
+    "linha-das-colinas": {
+      "name": "Hills line",
+      "names": {"pt":"Linha das Colinas"},
+      "status": "concept",
+      "description": "A long-term fifth line through the historic hill districts from Campo de Ourique to Santa Apolónia, 8.5 km with 16 stations crossing all four lines; it follows Line III of the Metro's original 1950s plan and was declared not a priority in 2005.",
+      "lines": {
+        "colinas": {"name":"Hills","names":{"pt":"Linha das Colinas"},"network":"metro","mode":"metro","color":"#E87722"}
+      },
+      "stations": {
+        "academia-das-ciencias": {"name":"Academia das Ciências","coordinate":[-9.14969,38.71314]},
+        "campo-de-ourique": {"name":"Campo de Ourique","coordinate":[-9.16539,38.7176]},
+        "campo-martires-da-patria": {"name":"Campo Mártires da Pátria","coordinate":[-9.13988,38.72168]},
+        "cerca-moura": {"name":"Cerca Moura","coordinate":[-9.13048,38.71233]},
+        "estefania": {"name":"Estefânia","coordinate":[-9.14102,38.73176]},
+        "estrela": {"name":"Estrela","coordinate":[-9.15922,38.71342]},
+        "gomes-freire": {"name":"Gomes Freire","coordinate":[-9.14003,38.72424]},
+        "graca": {"name":"Graça","coordinate":[-9.13071,38.71599]},
+        "paiva-couceiro": {"name":"Paiva Couceiro","coordinate":[-9.12747,38.73093]},
+        "penha-de-franca": {"name":"Penha de França","coordinate":[-9.131,38.7299]},
+        "principe-real": {"name":"Príncipe Real","coordinate":[-9.14865,38.71629]},
+        "sao-bento": {"name":"São Bento","coordinate":[-9.15351,38.71078]},
+        "sapadores": {"name":"Sapadores","coordinate":[-9.12722,38.72116]}
+      },
+      "sections": [
+        {"line":"colinas","stations":["avenida","principe-real","academia-das-ciencias","sao-bento","estrela","campo-de-ourique"]},
+        {"line":"colinas","stations":["avenida","campo-martires-da-patria","gomes-freire","estefania","arroios"]},
+        {"line":"colinas","stations":["arroios","paiva-couceiro","penha-de-franca","sapadores","graca"]},
+        {"line":"colinas","stations":["graca","cerca-moura","santa-apolonia"]}
+      ]
+    }
+  }
+}
