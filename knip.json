@@ -12,7 +12,7 @@
       "entry": ["test/**/*.test.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
-    "apps/web": {
+    "web": {
       "entry": ["app/pages/**/*.vue"],
       "project": ["app/**/*.{ts,vue,css}"],
       "ignoreDependencies": ["@iconify-json/lucide", "vue-tsc"]

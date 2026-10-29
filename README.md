@@ -9,7 +9,7 @@ Tyne and Wear Metro (1980 to today).
 data/london/london.json   the dataset: lines, stations, track and when each line opened where
         │  (served as it is, at /data/london/london.json)
         ▼
-renderer (packages/renderer, MapLibre)  →  explorer (apps/web, Nuxt + Nuxt UI)
+renderer (packages/renderer, MapLibre)  →  explorer (web, Nuxt + Nuxt UI)
 ```
 
 Live at **https://develcool777.github.io/railtime/**: every push to `main` is built with `nuxt generate`
@@ -42,7 +42,7 @@ pnpm data:format london  # check data/london/london.json against the schema and 
 | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `packages/schema`   | The `Network` format every dataset is in and the renderer reads, with a Zod validator.                                |
 | `packages/renderer` | The engine: `TransitMap`. See [its README](packages/renderer/_README.md).                                             |
-| `apps/web`          | The explorer: Nuxt 4 + Nuxt UI. The map, minimap and history player come from the renderer; every control is Nuxt UI. |
+| `web`               | The explorer: Nuxt 4 + Nuxt UI. The map, minimap and history player come from the renderer; every control is Nuxt UI. |
 | `scripts/`          | `cli.formatCity.ts` (`pnpm data:format <city>`): validates a city's dataset and keeps its layout.                     |
 | `data/<city>/`      | `<city>.json`: the city's dataset and source of truth. The app serves it, the tests check it.                         |
 
@@ -58,7 +58,7 @@ then `pnpm data:format london`; a test fails while the file is invalid or untidy
   Hammersmith & City until 1990, the Overground as one line until 2024).
 
 A new city is a new dataset in the same format, `data/<city>/<city>.json`, checked by the same test,
-plus one entry in `CITIES` (`apps/web/app/utils/explorer.constants.ts`): it gets a card on the
+plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the
 landing page and its own page at `/<city>`.
 
 Known gaps: only two closed sections (Jubilee to Charing Cross, Aldwych); today's station names

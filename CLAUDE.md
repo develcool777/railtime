@@ -6,7 +6,7 @@ enforces them: `pnpm eslint-check` must pass.
 ## What this is
 
 A pnpm monorepo: `packages/schema` (the network format), `packages/renderer` (the MapLibre engine,
-`TransitMap`), `apps/web` (the Nuxt 4 + Nuxt UI explorer) and `scripts/` (`pnpm data:format`, which validates and tidies a city's dataset).
+`TransitMap`), `web` (the Nuxt 4 + Nuxt UI explorer) and `scripts/` (`pnpm data:format`, which validates and tidies a city's dataset).
 `README.md` has the commands; `packages/renderer/_README.md` explains steps, cursors and the frame model.
 
 ## Checks
@@ -33,7 +33,7 @@ After editing `data/<city>/<city>.json`, run `pnpm data:format <city>`.
 
 ## Architecture
 
-- **The renderer has no UI.** Controls, captions and panels are Nuxt UI components in `apps/web`;
+- **The renderer has no UI.** Controls, captions and panels are Nuxt UI components in `web`;
   the renderer exposes methods and events (`transitMap.types.ts`) and never imports Vue.
 - **Pure first.** `model/`, `playback/` (but `camera.service.ts`), `steps/` and
   `layers/networkSnapshot.utils.ts` take no map: keep new logic there and test it (see Tests).
