@@ -135,6 +135,15 @@ strategy (an East End circle, Cathcart and Maryhill) and four earlier schemes, f
 Leeds, Bristol and Liverpool never built theirs: Leeds Supertram (cancelled 2005), Bristol's
 Supertram (2001–04) and the 2022 underground options, and Merseytram (funding withdrawn 2005).
 
+Lisbon's metro opened in 1959 as one Y-shaped line, drawn as one grey network until it was split
+into the Blue and Yellow lines in 1995; the Green line runs as part of the Blue until 1998, when the
+Red opens. Prague's three lines date from 1974, and twelve of its stations take their present names
+on 22 February 1990 (Leninova becomes Dejvická, Gottwaldova Vyšehrad). Budapest's M1 opened in 1896,
+its surface end replaced in 1973; the M2, M3 and M4 follow from 1970. Warsaw's M1 opened in 1995 and
+its M2 in 2015. Their plans run from line D and the M5 to pre-war and 1950s schemes. Bratislava,
+Kraków and Riga never built theirs: Bratislava's 1988 metro was begun and stopped in 1990, Kraków's
+is the 2025 study, and Riga's is the 1980s project's first section.
+
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from
 2002). The Red (Pelaw–Benton) and Blue (St James–North Shields) routes of the 1980s and 1990s are left

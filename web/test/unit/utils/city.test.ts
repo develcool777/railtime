@@ -6,7 +6,7 @@ describe('CityUtils', () => {
   describe('citiesByCountry', () => {
     test('groups every city under its country, in menu order', () => {
       const groups = citiesByCountry();
-      expect(groups.map(group => group.country)).toEqual(['United Kingdom', 'Ukraine']);
+      expect(groups.map(group => group.country)).toEqual(['United Kingdom', 'Ukraine', 'Czechia', 'Hungary', 'Latvia', 'Poland', 'Portugal', 'Slovakia']);
       expect(groups.flatMap(group => group.cities.map(city => city.value))).toContain('kyiv');
     });
   });
