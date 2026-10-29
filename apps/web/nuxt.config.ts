@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { fileURLToPath } from 'node:url';
+import { CITIES } from './app/utils/explorer.constants';
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
@@ -9,6 +10,10 @@ export default defineNuxtConfig({
   colorMode: { preference: 'system', fallback: 'dark' },
   typescript: { strict: true },
   // Each city's dataset, data/<city>/<city>.json, served as it is kept: /data/london/london.json.
-  nitro: { publicAssets: [{ dir: fileURLToPath(new URL('../../data', import.meta.url)), baseURL: '/data' }] },
+  // `nuxt generate` (GitHub Pages) prerenders the landing page and every city's page.
+  nitro: {
+    publicAssets: [{ dir: fileURLToPath(new URL('../../data', import.meta.url)), baseURL: '/data' }],
+    prerender: { routes: ['/', ...CITIES.map(city => `/${city.value}`)] },
+  },
   devtools: { enabled: true },
 });

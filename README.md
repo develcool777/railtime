@@ -12,6 +12,9 @@ data/london/london.json   the dataset: lines, stations, track and when each line
 renderer (packages/renderer, MapLibre)  →  explorer (apps/web, Nuxt + Nuxt UI)
 ```
 
+Live at **https://develcool777.github.io/railtime/**: every push to `main` is built with `nuxt generate`
+and published on GitHub Pages (`.github/workflows/pages.yml`).
+
 ## Getting started
 
 ```bash

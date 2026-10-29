@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-  import { useColorMode, useFetch } from '#imports';
+  import { useColorMode, useFetch, useRuntimeConfig } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { computed } from 'vue';
 
@@ -32,7 +32,7 @@
 
   const name = computed(() => cityNameOf(props.city));
   // Fetched in the browser like the map's: the city page reuses it.
-  const { data: network, error } = useFetch<Network>(networkUrlOf(props.city), { server: false, lazy: true });
+  const { data: network, error } = useFetch<Network>(networkUrlOf(props.city), { server: false, lazy: true, baseURL: useRuntimeConfig().app.baseURL });
   const summary = computed(() => (network.value ? summaryOf(network.value) : null));
   const description = computed(() => {
     if (!summary.value) return 'Loading…';

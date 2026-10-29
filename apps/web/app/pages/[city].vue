@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-  import { definePageMeta, navigateTo, useFetch, useHead, useRoute } from '#imports';
+  import { definePageMeta, navigateTo, useFetch, useHead, useRoute, useRuntimeConfig } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { computed } from 'vue';
 
@@ -29,7 +29,7 @@
   useHead({ title: () => `Railtime · ${cityName.value}` });
 
   // The map only runs in the browser, so the network is fetched there too.
-  const { data: network, error } = useFetch<Network>(() => networkUrlOf(city.value), { server: false });
+  const { data: network, error } = useFetch<Network>(() => networkUrlOf(city.value), { server: false, baseURL: useRuntimeConfig().app.baseURL });
 
   const selectCity = (next: string) => navigateTo(`/${next}`);
 </script>

@@ -11,12 +11,12 @@ import { CITIES } from './explorer.constants';
 export const isCity = (city: unknown): city is string => CITIES.some(candidate => candidate.value === city);
 
 /**
- * Where a city's dataset is served.
+ * Where a city's dataset is served, under the site's base URL (`/railtime/` on GitHub Pages).
  *
  * @param city - A city id.
- * @returns Its URL.
+ * @returns Its path, relative to the base URL.
  */
-export const networkUrlOf = (city: string): string => `/data/${city}/${city}.json`;
+export const networkUrlOf = (city: string): string => `data/${city}/${city}.json`;
 
 /**
  * A city's name for display.
