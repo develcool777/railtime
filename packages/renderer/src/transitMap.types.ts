@@ -1,4 +1,4 @@
-import type { FormerName, IsoDate, Network } from '@railtime/schema/network.types';
+import type { FormerName, IsoDate, LngLat, Network } from '@railtime/schema/network.types';
 import type { Step } from './model/timeline.types';
 
 /** The map's colour theme. */
@@ -9,6 +9,9 @@ export type CameraMode = 'follow' | 'overview' | 'free';
 
 /** Room around the map's edges that the camera keeps clear, in pixels. */
 export type Padding = { top: number; bottom: number; left: number; right: number };
+
+/** Where the map looks. */
+export type MapView = { center: LngLat; zoom: number };
 
 /** What a `TransitMap` is created with. */
 export type TransitMapOptions = {
@@ -21,6 +24,8 @@ export type TransitMapOptions = {
   minimapContainer?: HTMLElement;
   /** Room the app's own panels take up, kept clear when the camera frames something. */
   padding?: Padding;
+  /** Where the map opens. Without one it fits the whole network. */
+  view?: MapView;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.
@@ -84,4 +89,6 @@ export type TransitMapEvents = {
   stationClick: StationInfo | null;
   /** Playback reached today. */
   end: undefined;
+  /** The map stopped moving, by the user's hand or the camera's: where it looks now. */
+  view: MapView;
 };

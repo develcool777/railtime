@@ -1,6 +1,6 @@
 import { useColorMode } from '#imports';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { LineInfo, Padding, StationInfo, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
+import type { LineInfo, MapView, Padding, StationInfo, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { TransitMapBinding, TransitMapMount } from './transitMap.composable.types';
@@ -35,6 +35,8 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
   const revealed = ref(0);
   const station = ref<StationInfo | null>(null);
   const lines = ref<LineInfo[]>([]);
+  // Where it opens, until it first moves: a linked view stays in the address.
+  const view = ref<MapView | null>(mount.view ?? null);
   const onResize = () => map.value?.setPadding(panelPadding());
 
   onMounted(() => {
@@ -45,6 +47,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       theme: theme(),
       padding: panelPadding(),
       workerUrl,
+      ...(mount.view ? { view: mount.view } : {}),
     });
     transitMap.on('time', state => (time.value = state));
     transitMap.on('step', info => {
@@ -52,6 +55,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       revealed.value = 0;
     });
     transitMap.on('stepProgress', count => (revealed.value = count));
+    transitMap.on('view', where => (view.value = where));
     transitMap.on('stationClick', info => {
       station.value = info;
       transitMap.selectStation(info?.id ?? null);
@@ -77,5 +81,5 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
     },
   );
 
-  return { map, time, step, revealed, station, lines };
+  return { map, time, step, revealed, station, lines, view };
 };

@@ -34,7 +34,7 @@ import {
   SELECTED_STATION_ZOOM,
   SELECT_FLY_MS,
 } from './transitMap.constants';
-import type { CameraMode, LineInfo, Padding, StationInfo, Theme, TimeState, TransitMapEvents, TransitMapOptions } from './transitMap.types';
+import type { CameraMode, LineInfo, MapView, Padding, StationInfo, Theme, TimeState, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 
 /**
  * An interactive transit map with a history player: the renderer's one public entry.
@@ -99,12 +99,17 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
     const padding = options.padding ?? DEFAULT_PADDING;
+    const opening = options.view
+      ? { center: options.view.center, zoom: options.view.zoom }
+      : {
+          bounds: this.index.bounds as LngLatBoundsLike,
+          // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
+          fitBoundsOptions: { padding: { top: padding.top, bottom: padding.bottom, left: OPENING_SIDE_PADDING, right: OPENING_SIDE_PADDING } },
+        };
     this.map = new MapLibreMap({
       container: options.container,
       style: basemap,
-      bounds: this.index.bounds as LngLatBoundsLike,
-      // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
-      fitBoundsOptions: { padding: { top: padding.top, bottom: padding.bottom, left: OPENING_SIDE_PADDING, right: OPENING_SIDE_PADDING } },
+      ...opening,
       attributionControl: { compact: true, customAttribution: options.network.meta.attribution },
     });
     this.camera = new CameraDirector(this.map, padding);
@@ -123,6 +128,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.map.on('mouseenter', LAYERS.stations, () => (this.map.getCanvas().style.cursor = 'pointer'));
     this.map.on('mouseleave', LAYERS.stations, () => (this.map.getCanvas().style.cursor = ''));
     this.map.on('move', () => this.updateMinimapViewport());
+    this.map.on('moveend', () => this.emit('view', this.getView()));
     this.frameRequest = requestAnimationFrame(this.renderFrame);
   }
 
@@ -224,6 +230,25 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
+   * Where the map looks now.
+   *
+   * @returns Its centre and zoom.
+   */
+  public getView(): MapView {
+    const { lng, lat } = this.map.getCenter();
+    return { center: [lng, lat], zoom: this.map.getZoom() };
+  }
+
+  /**
+   * Moves the map to a view at once.
+   *
+   * @param view - The centre and zoom.
+   */
+  public setView(view: MapView): void {
+    this.map.jumpTo({ center: view.center, zoom: view.zoom });
+  }
+
+  /**
    * Fits the whole network in view.
    *
    * @param durationMs - How long the move takes.
@@ -306,6 +331,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     const font = basemapFont(this.map);
     for (const layer of this.layers) layer.install(font);
     this.applyPalette();
+    // A station selected before the style loaded (from a link) gets its ring now.
+    this.stationLayer.select(this.selectedStation);
     this.ready = true;
     this.snapshotStale = true;
     this.instant = true;

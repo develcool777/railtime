@@ -53,12 +53,14 @@
 </template>
 
 <script setup lang="ts">
+  import { useRoute, useRouter } from '#imports';
   import type { CameraMode } from '@railtime/renderer/transitMap.types';
   import type { Network } from '@railtime/schema/network.types';
-  import { computed, ref, useTemplateRef } from 'vue';
+  import { computed, ref, useTemplateRef, watch } from 'vue';
 
   import { useTransitMap } from '~/composables/transitMap.composable';
   import { CITIES, DEFAULT_SPEED } from '~/utils/explorer.constants';
+  import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
 
   import ExploreBar from './ExploreBar.vue';
   import ExplorerHud from './ExplorerHud.vue';
@@ -72,7 +74,16 @@
 
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
-  const { map, time, step, revealed, station, lines } = useTransitMap({ container: mapElement, minimapContainer: minimapElement, network: props.network });
+  const route = useRoute();
+  const router = useRouter();
+  // The address says what to open on: a day, a view, a station's panel.
+  const opening = parseExplorerQuery(route.query);
+  const { map, time, step, revealed, station, lines, view } = useTransitMap({
+    container: mapElement,
+    minimapContainer: minimapElement,
+    network: props.network,
+    ...(opening.view ? { view: opening.view } : {}),
+  });
 
   /** `explore`: the map as it is, or was via the year slider. `history`: the playback. */
   const mode = ref<'explore' | 'history'>('explore');
@@ -80,6 +91,31 @@
   const camera = ref<CameraMode>('follow');
   const visible = ref(new Set(Object.keys(props.network.lines)));
   const range = computed(() => map.value?.range ?? { start: 0, end: Date.now() });
+
+  watch(map, transitMap => {
+    if (!transitMap) return;
+    const { start, end } = transitMap.range;
+    if (opening.date !== undefined) transitMap.setDate(Math.min(Math.max(opening.date, start), end));
+    // A station the network does not have is a stale link: open without it.
+    if (opening.station && props.network.stations[opening.station]) {
+      station.value = transitMap.getStationInfo(opening.station);
+      transitMap.selectStation(opening.station);
+    }
+  });
+
+  // While exploring, the address follows the map, so it can be shared; playback leaves it alone.
+  const query = computed(() => {
+    const isToday = !time.value || time.value.cursor === time.value.stepCount;
+    return formatExplorerQuery({
+      ...(time.value && !isToday ? { date: time.value.time } : {}),
+      ...(view.value ? { view: view.value } : {}),
+      ...(station.value ? { station: station.value.id } : {}),
+    });
+  });
+  watch(query, next => {
+    if (mode.value !== 'explore') return;
+    if (JSON.stringify(next) !== JSON.stringify(route.query)) void router.replace({ query: next });
+  });
 
   const setVisible = (next: Set<string>) => {
     visible.value = next;

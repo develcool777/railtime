@@ -22,6 +22,11 @@ pnpm install
 pnpm dev                 # http://localhost:5180
 ```
 
+Links keep your place: `/london?date=1935-06-01&map=13.00/51.51300/-0.11500&station=aldwych` opens
+London on 1 June 1935, zoomed on Aldwych with its panel open. `date` also takes a bare year (its last
+day), and `map` is `zoom/latitude/longitude` as on openstreetmap.org. The address follows the map as
+you explore; playback leaves it alone.
+
 ## Commands
 
 ```bash
