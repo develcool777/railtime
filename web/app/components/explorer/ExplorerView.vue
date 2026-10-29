@@ -2,7 +2,7 @@
   <div class="relative h-full w-full overflow-hidden">
     <!-- MapLibre sets `position: relative` on its container, unlayered, so it beats Tailwind's `absolute`: the wrapper positions, the container fills it. -->
     <div class="absolute inset-0">
-      <div ref="mapElement" class="h-full w-full" />
+      <div ref="mapElement" class="explorer-map h-full w-full" />
     </div>
 
     <div class="absolute top-4 left-4 flex max-w-[calc(100%-32px)] flex-col gap-3 sm:top-5 sm:left-6">
@@ -21,9 +21,16 @@
       <div
         v-show="mode === 'history'"
         ref="minimapElement"
-        class="h-32 w-44 overflow-hidden rounded-xl border border-default shadow-lg sm:h-44 sm:w-60"
+        class="hidden h-44 w-60 overflow-hidden rounded-xl border border-default shadow-lg sm:block"
         aria-label="Overview of the whole city" />
       <LinePanel class="hidden sm:block" :lines :visible @change="setVisible" />
+      <!-- On a phone the panel would cover the map: a button opens it. -->
+      <UPopover class="sm:hidden">
+        <UButton icon="i-lucide-layers" color="neutral" variant="soft" aria-label="Lines" />
+        <template #content>
+          <LinePanel :lines :visible @change="setVisible" />
+        </template>
+      </UPopover>
     </div>
 
     <div class="absolute bottom-6 left-1/2 w-[min(880px,calc(100%-32px))] -translate-x-1/2">
