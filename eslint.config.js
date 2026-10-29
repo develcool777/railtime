@@ -37,7 +37,7 @@ const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable)).@(ser
 const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|utils|types)';
 
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */
-const TEST_FILES = ['packages/*/test/**/*.ts', 'scripts/test/**/*.ts', 'data/test/**/*.ts'];
+const TEST_FILES = ['packages/*/test/**/*.ts', 'scripts/test/**/*.ts', 'data/test/**/*.ts', 'web/test/**/*.ts'];
 
 /**
  * Tests run the real code, as in dataroom-ui: a test that mocks our own module ends up testing the

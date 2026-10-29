@@ -13,6 +13,7 @@ map.on('time', state => …); // clock, cursor, stats: for a date display
 map.on('step', info => …); // the change playing now: for a caption (null = hide)
 map.on('stepProgress', count => …); // how many of the step's stations have appeared
 map.on('stationClick', info => …); // a station's lines and dates, or null
+map.on('view', view => …); // where the map looks once it stops moving: { center, zoom }
 
 map.setDate(Date.UTC(1950, 0, 1)); // explore: the network as of a date
 map.play(); // history: from the current date onwards
@@ -20,6 +21,7 @@ map.pause();
 map.skip(); // finish this change, or jump to the next
 map.setVisibleLines(['line-a', 'line-b']);
 map.setTheme('light');
+map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
 ```
 
 ## Structure

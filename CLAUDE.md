@@ -52,6 +52,7 @@ packages/renderer/
   test/unit/                mirrors src/: test/unit/model/timeline.test.ts tests src/model/timeline.*.ts
   test/support/             what tests share: factories/ (tinyNetwork), playback.utils.ts
 scripts/test/unit/          mirrors scripts/; its project is in the root vitest.config.ts
+web/test/unit/              mirrors web/app/ for its plain helpers (utils/); components are checked in the browser
 data/test/unit/             one test per city: london.test.ts checks data/london/london.json, played
                             through the renderer; its project is in the root vitest.config.ts
 ```
