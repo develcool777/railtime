@@ -7,21 +7,12 @@ it could become.
 Live at **https://develcool777.github.io/railtime/**: every push to `main` is built with `nuxt generate`
 and published on GitHub Pages (`.github/workflows/pages.yml`).
 
-```
-packages/data (a city's dataset)  →  packages/renderer (MapLibre)  →  web (Nuxt + Nuxt UI)
-```
-
 ## Getting started
 
 ```bash
 pnpm install
 pnpm dev                 # http://localhost:5180
 ```
-
-Links keep your place: `/london?date=1935-06-01&map=13.00/51.51300/-0.11500&station=aldwych` opens
-London on 1 June 1935, zoomed on Aldwych with its panel open. `date` also takes a bare year (its last
-day), `map` is `zoom/latitude/longitude` as on openstreetmap.org, and `plan=<id>` opens a plan. The
-address follows the map as you explore; playback leaves it alone.
 
 ## Commands
 
@@ -37,14 +28,33 @@ pnpm code-quality:dead-code   # knip
 pnpm data:format london  # check a city's dataset against the schema, tidy it and rewrite the index
 ```
 
-## Layout
+## How it's built
 
-| Path                | What it is                                                                                                            |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `packages/schema`   | The `Network` format every dataset is in and the renderer reads, with a Zod validator.                                |
-| `packages/renderer` | The engine: `TransitMap`. See [its README](packages/renderer/_README.md).                                             |
-| `packages/data`     | Every city's dataset, by country, and the index of them. See [its README](packages/data/README.md).                   |
-| `web`               | The explorer: Nuxt 4 + Nuxt UI. The map, minimap and history player come from the renderer; every control is Nuxt UI. |
+A pnpm workspace of TypeScript packages; every package keeps its tests beside its code.
+
+```text
+railtime/
+├── packages/
+│   ├── schema/      the Network format every dataset is in (types + Zod validator)
+│   ├── renderer/    the engine, TransitMap: draws a network on MapLibre and plays its history; no UI
+│   └── data/        every city's dataset, by country (cities/<country>/<city>/), the index of them
+│                    (cities/cities.json), pnpm data:format, and a test per city
+├── web/             the app: Nuxt 4 pages and Nuxt UI components around the renderer
+└── .github/         CI (checks on every pull request) and the GitHub Pages deploy
+```
+
+A city's dataset flows one way: `data` → `schema` validates it → `renderer` draws it → `web` puts
+controls around it. The landing page reads only the small index; a city's page loads its own dataset.
+
+| What         | Used                                                                         |
+| ------------ | ---------------------------------------------------------------------------- |
+| App          | Nuxt 4 (Vue 3), Nuxt UI 4, Tailwind CSS 4; built static with `nuxt generate` |
+| Map          | MapLibre GL, OpenFreeMap vector tiles, OpenStreetMap data                    |
+| Data         | JSON datasets, validated with Zod                                            |
+| Code quality | TypeScript (strict), Vitest, ESLint, Prettier, knip                          |
+
+More: [the renderer's README](packages/renderer/_README.md) (steps, cursors, frames) and
+[the data's](packages/data/README.md) (the dataset format and each city).
 
 ## Licence
 
