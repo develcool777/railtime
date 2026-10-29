@@ -43,7 +43,7 @@ const objectLines = (fields: [string, unknown][], indent: string): string => {
     const text = typeof value === 'object' && value !== null && 'text' in value ? (value as Written).text : JSON.stringify(value);
     return `${indent}  ${JSON.stringify(key)}: ${text}`;
   });
-  return `{\n${body.join(',\n')}\n${indent}}`;
+  return body.length > 0 ? `{\n${body.join(',\n')}\n${indent}}` : '{}';
 };
 
 /**
@@ -55,7 +55,7 @@ const objectLines = (fields: [string, unknown][], indent: string): string => {
  */
 const arrayLines = (items: unknown[], indent: string): Written => {
   const body = items.map(item => `${indent}  ${JSON.stringify(item)}`).join(',\n');
-  return { text: `[\n${body}\n${indent}]` };
+  return { text: items.length > 0 ? `[\n${body}\n${indent}]` : '[]' };
 };
 
 /**
@@ -73,9 +73,14 @@ const recordLines = (entries: [string, unknown][], indent: string): Written => (
  *
  * @param parts - The parts it has.
  * @param indent - The indentation of the object they are in.
+ * @param required - Write stations and segments even when there are none, as a network must have them.
  * @returns Their fields, written out, without those it does not have.
  */
-const partFields = (parts: Pick<Network, 'stations' | 'segments' | 'transfers'> & { lines?: Network['lines'] }, indent: string): [string, Written][] => {
+const partFields = (
+  parts: Pick<Network, 'stations' | 'segments' | 'transfers'> & { lines?: Network['lines'] },
+  indent: string,
+  required = false,
+): [string, Written][] => {
   const level = `${indent}  `;
   const stations = Object.entries(parts.stations)
     .sort(([first], [second]) => first.localeCompare(second))
@@ -88,8 +93,8 @@ const partFields = (parts: Pick<Network, 'stations' | 'segments' | 'transfers'> 
     .sort((first, second) => first.stationA.localeCompare(second.stationA) || first.stationB.localeCompare(second.stationB));
   return [
     ...(parts.lines ? [['lines', recordLines(Object.entries(parts.lines), level)] as [string, Written]] : []),
-    ...(stations.length > 0 ? [['stations', recordLines(stations, level)] as [string, Written]] : []),
-    ...(segments.length > 0 ? [['segments', arrayLines(segments, level)] as [string, Written]] : []),
+    ...(required || stations.length > 0 ? [['stations', recordLines(stations, level)] as [string, Written]] : []),
+    ...(required || segments.length > 0 ? [['segments', arrayLines(segments, level)] as [string, Written]] : []),
     ...(transfers.length > 0 ? [['transfers', arrayLines(transfers, level)] as [string, Written]] : []),
   ];
 };
@@ -129,7 +134,8 @@ export const formatNetwork = (network: Network): string => {
   const fields: [string, unknown][] = [
     ['meta', network.meta],
     ['networks', recordLines(Object.entries(network.networks), '  ')],
-    ...partFields(network, ''),
+    // A network never built still has its (empty) lines, stations and track.
+    ...partFields(network, '', true),
     ...(plans.length > 0 ? [['plans', { text: objectLines(plans, '  ') }] as [string, unknown]] : []),
   ];
   return `${objectLines(fields, '')}\n`;

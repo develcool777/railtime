@@ -94,6 +94,11 @@ over the old railway via Werneth to the temporary Oldham Mumps stop. Stops that 
 track stayed (Mosley Street, High Street, Woodlands Road) and renamed ones (G-Mex, Barton Dock Road)
 are in the dataset.
 
+Kryvyi Rih's Metrotram, a light metro partly underground, is drawn as its two metro routes, 1M
+(1986) and 2M (1999), on track from OpenStreetMap; its later hybrid routes, which run on as street
+tram, are left out. Its plans are the unfinished Vovnopriadylna station, the 2021 Rokuvata extension
+tender, and the 1972 project with an east–west line.
+
 Kyiv, Kharkiv and Dnipro are in English: each station's Ukrainian name in OpenStreetMap maps to one
 English name, romanised as English Wikipedia writes it, and its earlier names (Soviet, the 2016
 decommunisation, Kharkiv's 2022–24 renamings) are former names. Every station, line, network and
@@ -101,7 +106,19 @@ former name also has its Ukrainian name (`names: { "uk": … }`), which the map 
 panel show beneath the English one. Sviatoshyn's earlier name (Sviatoshyno, until 1991) is left out: no source gives
 the day. Dnipro's extension to the centre is still unopened. Kyiv has two plans: the Varshavska extension under construction, and
 the long-term plan (the unapproved 2020 draft General Plan with the Kyiv Metro's own plans), with the
-Podilsko-Vyhurivska line.
+Podilsko-Vyhurivska line. Dnipro has its centre extension (under construction since 2008, stopped
+in 2022) and its General Plan's long-term network, with a second line. Kharkiv has the Oleksiivska line's
+extension to Odeska (funded, its contract not yet signed) and its General Plan's long-term network:
+every line extended, the Oleksiivska to the airport, and a fourth, Saltivsko-Zavodska line, whose
+station order is laid out by geography, as no source gives it.
+
+Some cities were never built: their dataset has no lines, stations or track, only plans, and the
+explorer opens on the first. Lviv has three: the 1980s underground tram, begun around 1990; the
+General Plan's light metro; and a mid-2000s proposal. Chernivtsi never planned a metro: its one plan
+is a fan scheme found online, its stations placed on the places they are named after. Zaporizhzhia's is
+the 2000s light-metro project, one line of 14 stations along Sobornyi Avenue. Odesa has two: the 1985
+design's first line, and the two lines of the 2007 draft General Plan. Donetsk's metro was begun in
+1992 and frozen: its plan is the Soviet three-line scheme, its first stage first.
 
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from

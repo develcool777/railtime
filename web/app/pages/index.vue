@@ -9,9 +9,12 @@
       </div>
       <UColorModeButton class="flex-none" />
     </header>
-    <UPageGrid class="mt-10 lg:grid-cols-2">
-      <CityCard v-for="city in CITIES" :key="city.value" :city="city.value" />
-    </UPageGrid>
+    <section v-for="{ country, cities } in COUNTRIES" :key="country" class="mt-10">
+      <h2 class="text-highlighted text-xl font-semibold">{{ country }}</h2>
+      <UPageGrid class="mt-4 lg:grid-cols-2">
+        <CityCard v-for="city in cities" :key="city.value" :city="city.value" />
+      </UPageGrid>
+    </section>
   </UContainer>
 </template>
 
@@ -19,10 +22,11 @@
   import { navigateTo, useHead, useRoute } from '#imports';
 
   import CityCard from '~/components/cities/CityCard.vue';
-  import { isCity } from '~/utils/city.utils';
-  import { CITIES } from '~/utils/explorer.constants';
+  import { citiesByCountry, isCity } from '~/utils/city.utils';
 
   useHead({ title: 'Railtime' });
+
+  const COUNTRIES = citiesByCountry();
 
   // Links from before city pages (`/?city=tyne-and-wear`) still land on the city.
   const route = useRoute();

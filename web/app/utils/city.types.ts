@@ -12,8 +12,10 @@ export type CitySummary = {
   stations: number;
   /** The brands its lines run under ("Underground", "Overground"). */
   networks: string[];
-  /** The year its first line opened, or `null` for an empty network. */
+  /** The year its first line opened, or `null` for a network never built. */
   openedYear: number | null;
+  /** Nothing built: its lines and stations are its first plan's. */
+  planOnly: boolean;
 };
 
 /** One segment of a network sketch, as an SVG path in each theme's colour. */

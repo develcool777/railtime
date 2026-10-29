@@ -1,0 +1,41 @@
+{
+  "meta": {"city":"Zaporizhzhia","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "networks": {
+    "metro": {"name":"Zaporizhzhia Metro","names":{"uk":"Запорізький метрополітен"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "light-metro-project": {
+      "name": "2000s light-metro project",
+      "names": {"uk":"Проєкт легкого метро 2000-х"},
+      "description": "The 16 km, 14-station first line of an automated light metro (the RADAN system) designed by Zaporizhzhia architects in 2007, from the Pivdennyi microdistrict past the Zaporizhzhia-1 station and along Sobornyi Avenue to Zaporizka Square, in shallow tunnels with its depot in Pivdennyi; building was to start about 2015 and open by 2025, and it never left paper.",
+      "lines": {
+        "m1": {"name":"Line 1","names":{"uk":"Перша лінія"},"network":"metro","mode":"metro","color":"#1E5FD8"}
+      },
+      "stations": {
+        "avtovokzal": {"name":"Avtovokzal","names":{"uk":"Автовокзал"},"coordinate":[35.1852,47.8045]},
+        "avtozavodska": {"name":"Avtozavodska","names":{"uk":"Автозаводська"},"coordinate":[35.1879,47.7847]},
+        "bulvar-shevchenka": {"name":"Bulvar Shevchenka","names":{"uk":"Бульвар Шевченка"},"coordinate":[35.1151,47.8507]},
+        "festyvalna-ploshcha": {"name":"Festyvalna Ploshcha","names":{"uk":"Фестивальна площа"},"coordinate":[35.1391,47.8383]},
+        "komunarivska": {"name":"Komunarivska","names":{"uk":"Комунарівська"},"coordinate":[35.1652,47.8256]},
+        "pivdenna": {"name":"Pivdenna","names":{"uk":"Південна"},"coordinate":[35.1917,47.7732]},
+        "ploshcha-svobody": {"name":"Ploshcha Svobody","names":{"uk":"Площа Свободи"},"coordinate":[35.1774,47.8156]},
+        "proletarska": {"name":"Proletarska","names":{"uk":"Пролетарська"},"coordinate":[35.17,47.8215]},
+        "prospekt-maiakovskoho": {"name":"Prospekt Maiakovskoho","names":{"uk":"Проспект Маяковського"},"coordinate":[35.1257,47.8449]},
+        "prospekt-metalurhiv": {"name":"Prospekt Metalurhiv","names":{"uk":"Проспект Металургів"},"coordinate":[35.1032,47.8572]},
+        "sobornyi-prospekt": {"name":"Sobornyi Prospekt","names":{"uk":"Соборний проспект"},"coordinate":[35.1478,47.8343]},
+        "ukrainskyi-bulvar": {"name":"Ukrainskyi Bulvar","names":{"uk":"Український бульвар"},"coordinate":[35.1591,47.8302]},
+        "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[35.1877,47.7952]},
+        "zaporizka-ploshcha": {"name":"Zaporizka Ploshcha","names":{"uk":"Запорізька площа"},"coordinate":[35.093,47.8625]}
+      },
+      "sections": [
+        {"line":"m1","stations":["pivdenna","avtozavodska","vokzalna","avtovokzal"]},
+        {"line":"m1","stations":["avtovokzal","ploshcha-svobody","proletarska","komunarivska"]},
+        {"line":"m1","stations":["komunarivska","ukrainskyi-bulvar","sobornyi-prospekt","festyvalna-ploshcha"]},
+        {"line":"m1","stations":["festyvalna-ploshcha","prospekt-maiakovskoho","bulvar-shevchenka","prospekt-metalurhiv","zaporizka-ploshcha"]}
+      ]
+    }
+  }
+}

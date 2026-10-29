@@ -38,8 +38,9 @@
   const summary = computed(() => (network.value ? summaryOf(network.value) : null));
   const description = computed(() => {
     if (!summary.value) return 'Loading…';
-    const since = summary.value.openedYear ? `${summary.value.openedYear} to today` : '';
-    return [summary.value.networks.join(' and '), since].filter(Boolean).join(' · ');
+    const { planOnly, openedYear, networks } = summary.value;
+    const since = openedYear ? `${openedYear} to today` : '';
+    return [networks.join(' and '), planOnly ? 'never built' : since].filter(Boolean).join(' · ');
   });
 
   const colorMode = useColorMode();

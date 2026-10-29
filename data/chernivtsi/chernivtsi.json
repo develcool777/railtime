@@ -1,0 +1,51 @@
+{
+  "meta": {"city":"Chernivtsi","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plan: a fan scheme found online, placed by railtime"},
+  "networks": {
+    "metro": {"name":"Chernivtsi Metro","names":{"uk":"Чернівецький метрополітен"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "fan-scheme": {
+      "name": "Fan scheme",
+      "names": {"uk":"Фанатська схема"},
+      "description": "An unofficial fan-made concept found online, \"Схема ліній чернівецького метрополітену\": two lines through the centre and a ring, drawn as a diagram. Chernivtsi has never planned a metro; this is not a city plan, and the stations are placed on the places they are named after.",
+      "lines": {
+        "prutska": {"name":"Prutska","names":{"uk":"Прутська лінія"},"network":"metro","mode":"metro","color":"#D52B1E"},
+        "sadhirsko-pivdenna": {"name":"Sadhirsko-Pivdenna","names":{"uk":"Садгірсько-південна лінія"},"network":"metro","mode":"metro","color":"#2F80ED"},
+        "kiltseva": {"name":"Kiltseva","names":{"uk":"Кільцева лінія"},"network":"metro","mode":"metro","color":"#2E8B3A"}
+      },
+      "stations": {
+        "aeroport": {"name":"Aeroport","names":{"uk":"Аеропорт"},"coordinate":[25.9676,48.2668]},
+        "dubynska": {"name":"Dubynska","names":{"uk":"Дубинська"},"coordinate":[25.9221,48.2695]},
+        "fastivska": {"name":"Fastivska","names":{"uk":"Фастівська"},"coordinate":[25.9726,48.2852]},
+        "horikhivska": {"name":"Horikhivska","names":{"uk":"Горіхівська"},"coordinate":[25.9078,48.2816]},
+        "hraviton": {"name":"Hraviton","names":{"uk":"Гравітон"},"coordinate":[25.993,48.2738]},
+        "kalynivskyi-rynok": {"name":"Kalynivskyi Rynok","names":{"uk":"Калинівський ринок"},"coordinate":[25.9627,48.3131]},
+        "moskovska": {"name":"Moskovska","names":{"uk":"Московська"},"coordinate":[25.9493,48.3461]},
+        "ozerna": {"name":"Ozerna","names":{"uk":"Озерна"},"coordinate":[25.9704,48.2774]},
+        "park-imeni-shevchenka": {"name":"Park imeni Shevchenka","names":{"uk":"Парк ім. Шевченка"},"coordinate":[25.9398,48.2791]},
+        "prospekt-nezalezhnosti": {"name":"Prospekt Nezalezhnosti","names":{"uk":"Проспект Незалежності"},"coordinate":[25.9458,48.269]},
+        "prutska": {"name":"Prutska","names":{"uk":"Прутська"},"coordinate":[25.9235,48.3085]},
+        "sadhirska": {"name":"Sadhirska","names":{"uk":"Садгірська"},"coordinate":[25.96,48.341]},
+        "tsentralna": {"name":"Tsentralna","names":{"uk":"Центральна"},"coordinate":[25.9352,48.2921]},
+        "tsetsyno": {"name":"Tsetsyno","names":{"uk":"Цецино"},"coordinate":[25.887,48.295]},
+        "universytet": {"name":"Universytet","names":{"uk":"Університет"},"coordinate":[25.9242,48.2968]},
+        "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[25.9302,48.3009]},
+        "zavodska": {"name":"Zavodska","names":{"uk":"Заводська"},"coordinate":[25.9212,48.3188]},
+        "zelena": {"name":"Zelena","names":{"uk":"Зелена"},"coordinate":[25.9559,48.2918]}
+      },
+      "sections": [
+        {"line":"prutska","stations":["vokzalna","tsentralna","zelena"]},
+        {"line":"prutska","stations":["zelena","fastivska","hraviton"]},
+        {"line":"prutska","stations":["vokzalna","prutska","zavodska"]},
+        {"line":"sadhirsko-pivdenna","stations":["tsentralna","park-imeni-shevchenka","prospekt-nezalezhnosti","ozerna"]},
+        {"line":"sadhirsko-pivdenna","stations":["tsentralna","kalynivskyi-rynok","sadhirska","moskovska"]},
+        {"line":"kiltseva","stations":["vokzalna","kalynivskyi-rynok","fastivska"]},
+        {"line":"kiltseva","stations":["fastivska","aeroport","prospekt-nezalezhnosti"]},
+        {"line":"kiltseva","stations":["prospekt-nezalezhnosti","dubynska","horikhivska","tsetsyno","universytet","vokzalna"]}
+      ]
+    }
+  }
+}

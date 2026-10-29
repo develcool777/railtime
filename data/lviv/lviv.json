@@ -1,0 +1,116 @@
+{
+  "meta": {"city":"Lviv","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "networks": {
+    "metro": {"name":"Lviv Metro","names":{"uk":"Львівський метрополітен"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "soviet-project": {
+      "name": "1980s underground tram",
+      "names": {"uk":"Підземний трамвай 1980-х"},
+      "description": "Kharkivmetroproekt's 1978–79 technical project for UkrkomunNDIproekt: metro-sized tunnels under the centre, entered by surface tram lines, in two radii crossing at Vozziednannia (Soborna) Square, then a third radius to the station. Its surface feeder on Sakharova and Kniahyni Olhy streets opened in 1987 and the first shaft was sunk behind the Potocki Palace in 1989, then the work was frozen.",
+      "lines": {
+        "m1": {"name":"Radius 1","names":{"uk":"Перший радіус, Північно-Південна лінія"},"network":"metro","mode":"metro","color":"#1E5AA8"},
+        "m2": {"name":"Radius 2","names":{"uk":"Другий радіус, Західно-Східна лінія"},"network":"metro","mode":"metro","color":"#D2232A"},
+        "m3": {"name":"Radius 3","names":{"uk":"Третій радіус, Вокзальна лінія"},"network":"metro","mode":"metro","color":"#2E9E48"}
+      },
+      "stations": {
+        "haidamatska": {"name":"Haidamatska","names":{"uk":"Гайдамацька"},"coordinate":[24.02823,49.8535]},
+        "levandivska": {"name":"Levandivska","names":{"uk":"Левандівська"},"coordinate":[23.99602,49.84927]},
+        "mechnykova": {"name":"Mechnykova","names":{"uk":"Мечникова"},"coordinate":[24.0552,49.83848]},
+        "ploshcha-ivana-franka": {"name":"Ploshcha Ivana Franka","names":{"uk":"Площа Івана Франка"},"coordinate":[24.03127,49.82997]},
+        "ploshcha-kropyvnytskoho": {"name":"Ploshcha Kropyvnytskoho","names":{"uk":"Площа Кропивницького"},"coordinate":[24.00418,49.83648]},
+        "ploshcha-vozziednannia": {"name":"Ploshcha Vozziednannia","names":{"uk":"Площа Возз'єднання"},"coordinate":[24.034,49.8387]},
+        "politekhnichnyi-instytut": {"name":"Politekhnichnyi Instytut","names":{"uk":"Політехнічний інститут"},"coordinate":[24.01451,49.8359]},
+        "sakharova": {"name":"Sakharova","names":{"uk":"Сахарова"},"coordinate":[24.01854,49.83267]},
+        "snopkivska": {"name":"Snopkivska","names":{"uk":"Снопківська"},"coordinate":[24.0348,49.8278]},
+        "stare-misto": {"name":"Stare Misto","names":{"uk":"Старе місто"},"coordinate":[24.03237,49.84193]},
+        "universytet": {"name":"Universytet","names":{"uk":"Університет"},"coordinate":[24.0245,49.8368]},
+        "vokzal": {"name":"Vokzal","names":{"uk":"Вокзал"},"coordinate":[23.99434,49.83973]},
+        "vynnykivskyi-rynok": {"name":"Vynnykivskyi Rynok","names":{"uk":"Винниківський ринок"},"coordinate":[24.04763,49.84077]}
+      },
+      "sections": [
+        {"line":"m1","stations":["haidamatska","stare-misto","ploshcha-vozziednannia","snopkivska"]},
+        {"line":"m2","stations":["sakharova","universytet","ploshcha-vozziednannia","vynnykivskyi-rynok","mechnykova"]},
+        {"line":"m3","stations":["levandivska","vokzal","ploshcha-kropyvnytskoho","politekhnichnyi-instytut","ploshcha-ivana-franka"]}
+      ]
+    },
+    "general-plan": {
+      "name": "General Plan light metro",
+      "names": {"uk":"Легке метро Генплану"},
+      "description": "The light metro (the Radan system) that Lviv's General Plan 2010–2025 sets aside for after 2025, drawn by Mistoproekt as three directions without stations: Stryiska–Mykolaichuka under the High Castle, Pivdennyi–Dubliany under Horodotska and Khmelnytskoho, and Riasne–Lysynychi through the station, the Citadel and Lychakiv. Nothing was designed or built.",
+      "lines": {
+        "m1": {"name":"Stryisko-Mykolaichukivska","names":{"uk":"Стрийсько-Миколайчуківська лінія"},"network":"metro","mode":"metro","color":"#D2232A"},
+        "m2": {"name":"Pivdenno-Dublianska","names":{"uk":"Південно-Дублянська лінія"},"network":"metro","mode":"metro","color":"#1E5AA8"},
+        "m3": {"name":"Riasnensko-Lysynytska","names":{"uk":"Рясненсько-Лисиницька лінія"},"network":"metro","mode":"metro","color":"#2E9E48"}
+      },
+      "stations": {
+        "bohdana-khmelnytskoho": {"name":"Bohdana Khmelnytskoho","names":{"uk":"Богдана Хмельницького"},"coordinate":[24.0276,49.8447]},
+        "dubliany": {"name":"Dubliany","names":{"uk":"Дубляни"},"coordinate":[24.08762,49.90268]},
+        "hlynianskyi-trakt": {"name":"Hlynianskyi Trakt","names":{"uk":"Глинянський тракт"},"coordinate":[24.07036,49.83614]},
+        "horodotska": {"name":"Horodotska","names":{"uk":"Городоцька"},"coordinate":[24.015,49.8405]},
+        "levandivka": {"name":"Levandivka","names":{"uk":"Левандівка"},"coordinate":[23.97891,49.84622]},
+        "lychakiv": {"name":"Lychakiv","names":{"uk":"Личаків"},"coordinate":[24.04764,49.83757]},
+        "lysynychi": {"name":"Lysynychi","names":{"uk":"Лисиничі"},"coordinate":[24.12108,49.83547]},
+        "mykolaichuka": {"name":"Mykolaichuka","names":{"uk":"Миколайчука"},"coordinate":[24.04092,49.87617]},
+        "pivdennyi": {"name":"Pivdennyi","names":{"uk":"Південний"},"coordinate":[23.9739,49.8117]},
+        "politekhnichnyi-instytut": {"name":"Politekhnichnyi Instytut","names":{"uk":"Політехнічний інститут"},"coordinate":[24.01451,49.8359]},
+        "promyslova": {"name":"Promyslova","names":{"uk":"Промислова"},"coordinate":[24.0406,49.8543]},
+        "pryvokzalna": {"name":"Pryvokzalna","names":{"uk":"Привокзальна"},"coordinate":[23.9998,49.8363]},
+        "riasne": {"name":"Riasne","names":{"uk":"Рясне"},"coordinate":[23.94858,49.87448]},
+        "sofiivka": {"name":"Sofiivka","names":{"uk":"Софіївка"},"coordinate":[24.03385,49.82333]},
+        "stryiska": {"name":"Stryiska","names":{"uk":"Стрийська"},"coordinate":[24.014,49.779]},
+        "stryiska-naukova": {"name":"Stryiska-Naukova","names":{"uk":"Стрийська-Наукова"},"coordinate":[24.018,49.8019]},
+        "tsytadel": {"name":"Tsytadel","names":{"uk":"Цитадель"},"coordinate":[24.0242,49.83356]},
+        "vokzal": {"name":"Vokzal","names":{"uk":"Вокзал"},"coordinate":[23.99434,49.83973]},
+        "znesinnia": {"name":"Znesinnia","names":{"uk":"Знесіння"},"coordinate":[24.0569,49.8694]}
+      },
+      "sections": [
+        {"line":"m1","stations":["sofiivka","promyslova"]},
+        {"line":"m1","stations":["sofiivka","stryiska-naukova","stryiska"]},
+        {"line":"m1","stations":["promyslova","mykolaichuka"]},
+        {"line":"m2","stations":["pryvokzalna","horodotska","bohdana-khmelnytskoho","promyslova"]},
+        {"line":"m2","stations":["promyslova","znesinnia","dubliany"]},
+        {"line":"m2","stations":["pryvokzalna","pivdennyi"]},
+        {"line":"m3","stations":["vokzal","politekhnichnyi-instytut","tsytadel","lychakiv"]},
+        {"line":"m3","stations":["lychakiv","hlynianskyi-trakt","lysynychi"]},
+        {"line":"m3","stations":["vokzal","levandivka","riasne"]}
+      ],
+      "transfers": [
+        {"stationA":"pryvokzalna","stationB":"vokzal"}
+      ]
+    },
+    "dubyna-proposal": {
+      "name": "Mid-2000s proposal",
+      "names": {"uk":"Пропозиція середини 2000-х"},
+      "description": "The lines Vitalii Dubyna, head of Mistoproekt's General Plan team, described in the mid-2000s before the plan was adopted: Sykhiv to Riasne under Stusa, Vynnychenka and Varshavska streets, and Pivdennyi to Dubliany under Horodotska and Khmelnytskoho; a third line from Levandivka was too vague to draw.",
+      "lines": {
+        "m4": {"name":"Sykhivsko-Riasnenska","names":{"uk":"Сихівсько-Рясненська лінія"},"network":"metro","mode":"metro","color":"#D2232A"},
+        "m2": {"name":"Pivdenno-Dublianska","names":{"uk":"Південно-Дублянська лінія"},"network":"metro","mode":"metro","color":"#1E5AA8"}
+      },
+      "stations": {
+        "bohdana-khmelnytskoho": {"name":"Bohdana Khmelnytskoho","names":{"uk":"Богдана Хмельницького"},"coordinate":[24.0276,49.8447]},
+        "dubliany": {"name":"Dubliany","names":{"uk":"Дубляни"},"coordinate":[24.08762,49.90268]},
+        "horodotska": {"name":"Horodotska","names":{"uk":"Городоцька"},"coordinate":[24.015,49.8405]},
+        "pivdennyi": {"name":"Pivdennyi","names":{"uk":"Південний"},"coordinate":[23.9739,49.8117]},
+        "promyslova": {"name":"Promyslova","names":{"uk":"Промислова"},"coordinate":[24.0406,49.8543]},
+        "pryvokzalna": {"name":"Pryvokzalna","names":{"uk":"Привокзальна"},"coordinate":[23.9998,49.8363]},
+        "riasne": {"name":"Riasne","names":{"uk":"Рясне"},"coordinate":[23.94858,49.87448]},
+        "sykhiv": {"name":"Sykhiv","names":{"uk":"Сихів"},"coordinate":[24.05758,49.79411]},
+        "varshavska": {"name":"Varshavska","names":{"uk":"Варшавська"},"coordinate":[24.01643,49.86616]},
+        "vulytsia-stusa": {"name":"Vulytsia Stusa","names":{"uk":"Вулиця Стуса"},"coordinate":[24.04284,49.81849]},
+        "vulytsia-vynnychenka": {"name":"Vulytsia Vynnychenka","names":{"uk":"Вулиця Винниченка"},"coordinate":[24.03617,49.84252]},
+        "znesinnia": {"name":"Znesinnia","names":{"uk":"Знесіння"},"coordinate":[24.0569,49.8694]}
+      },
+      "sections": [
+        {"line":"m4","stations":["sykhiv","vulytsia-stusa","vulytsia-vynnychenka"]},
+        {"line":"m4","stations":["vulytsia-vynnychenka","varshavska","riasne"]},
+        {"line":"m2","stations":["pryvokzalna","horodotska","bohdana-khmelnytskoho","promyslova"]},
+        {"line":"m2","stations":["promyslova","znesinnia","dubliany"]},
+        {"line":"m2","stations":["pryvokzalna","pivdennyi"]}
+      ]
+    }
+  }
+}
