@@ -5,6 +5,9 @@ export const CITIES = [
   { label: 'London', value: 'london' },
   { label: 'Manchester', value: 'manchester' },
   { label: 'Tyne and Wear', value: 'tyne-and-wear' },
+  { label: 'Kyiv', value: 'kyiv' },
+  { label: 'Kharkiv', value: 'kharkiv' },
+  { label: 'Dnipro', value: 'dnipro' },
 ];
 
 /** Playback speeds offered. */

@@ -6,6 +6,9 @@ export const DEFAULT_PADDING: Padding = { top: 140, bottom: 120, left: 60, right
 /** Room kept clear at the map's sides when it first opens, pixels. */
 export const OPENING_SIDE_PADDING = 40;
 
+/** The closest the map opens on a whole network: a short line keeps some city around it. */
+export const OPENING_MAX_ZOOM = 12.5;
+
 /** Longest frame step, seconds: after a background tab, playback resumes instead of jumping ahead. */
 export const MAX_FRAME_SECONDS = 0.05;
 

@@ -1,0 +1,24 @@
+{
+  "meta": {"city":"Dnipro","start":"1995-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "networks": {
+    "metro": {"name":"Dnipro Metro"}
+  },
+  "lines": {
+    "tsentralno-zavodska": {"name":"Tsentralno-Zavodska","network":"metro","mode":"metro","color":"#DD2A26"}
+  },
+  "stations": {
+    "metalurhiv": {"name":"Metalurhiv","coordinate":[34.97854,48.4766]},
+    "metrobudivnykiv": {"name":"Metrobudivnykiv","coordinate":[34.99687,48.47488]},
+    "pokrovska": {"name":"Pokrovska","coordinate":[34.92673,48.47929],"formerNames":[{"name":"Komunarivska","until":"2015-11-24"}]},
+    "prospekt-svobody": {"name":"Prospekt Svobody","coordinate":[34.94479,48.48027]},
+    "vokzalna": {"name":"Vokzalna","coordinate":[35.01756,48.47515]},
+    "zavodska": {"name":"Zavodska","coordinate":[34.96058,48.47576]}
+  },
+  "segments": [
+    {"stationA":"metalurhiv","stationB":"metrobudivnykiv","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.97854,48.47651],[34.99042,48.47673],[34.99101,48.47663],[34.99683,48.47483]]},
+    {"stationA":"metalurhiv","stationB":"zavodska","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.97854,48.47651],[34.96979,48.47638],[34.96381,48.47601],[34.96059,48.47573]]},
+    {"stationA":"metrobudivnykiv","stationB":"vokzalna","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.99683,48.47483],[35.00273,48.47296],[35.00396,48.47271],[35.00477,48.47267],[35.00645,48.47293],[35.01536,48.47516],[35.01598,48.47527],[35.01635,48.47528],[35.01753,48.47508]]},
+    {"stationA":"pokrovska","stationB":"prospekt-svobody","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.92675,48.47922],[34.93098,48.47974],[34.93248,48.47982],[34.93574,48.47988],[34.944,48.48013],[34.94481,48.4802]]},
+    {"stationA":"prospekt-svobody","stationB":"zavodska","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.94481,48.4802],[34.94646,48.48033],[34.94744,48.48031],[34.94796,48.48022],[34.94862,48.48],[34.94943,48.47955],[34.9532,48.47708],[34.95551,48.47602],[34.95676,48.47569],[34.95846,48.47559],[34.95937,48.4756],[34.96059,48.47573]]}
+  ]
+}
