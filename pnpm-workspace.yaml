@@ -11,3 +11,8 @@ allowBuilds:
 
 # Supply-chain guard: don't install a version until it's been public for 1h (as in dataroom-ui).
 minimumReleaseAge: 60
+
+overrides:
+  # TypeScript 7 (the native compiler) has no JavaScript API, which vue-tsc and `nuxt typecheck` need:
+  # every package stays on 6 until vue-tsc supports 7. Dependabot skips its major versions too.
+  typescript: ^6.0.3

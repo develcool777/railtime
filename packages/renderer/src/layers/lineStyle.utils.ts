@@ -9,7 +9,7 @@ import type { RenderState, ResolvedLine, SideBySide } from './lineStyle.types';
  * @param fraction - How far, 0..1.
  * @returns The blended `#rrggbb`.
  */
-export const mixColors = (from: string, to: string, fraction: number): string => {
+const mixColors = (from: string, to: string, fraction: number): string => {
   const channels = (hex: string) => [1, 3, 5].map(start => parseInt(hex.slice(start, start + 2), 16));
   const fromChannels = channels(from);
   const toChannels = channels(to);

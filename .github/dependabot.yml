@@ -17,6 +17,10 @@ updates:
     # Supply-chain guard, as pnpm's minimumReleaseAge: only versions public for a few days.
     cooldown:
       default-days: 3
+    ignore:
+      # Pinned to 6 by the override in pnpm-workspace.yaml, until vue-tsc supports TypeScript 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       nuxt:
         patterns: ['nuxt', '@nuxt/*', 'vue', 'vue-*', 'tailwindcss']
