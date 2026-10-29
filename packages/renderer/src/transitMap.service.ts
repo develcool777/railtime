@@ -15,6 +15,7 @@ import { StationLayer } from './layers/stationLayer.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/minimap.service';
 import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.utils';
+import { lineBranches, lineLengthKm, stepChangesLine } from './model/lineDetails.utils';
 import { NetworkIndex } from './model/networkIndex.service';
 import { Timeline } from './model/timeline.service';
 import type { Step } from './model/timeline.types';
@@ -40,10 +41,12 @@ import type {
   CameraMode,
   ChangeInfo,
   Credit,
+  LineDetails,
   LineInfo,
   MapView,
   Padding,
   StationInfo,
+  StationSummary,
   Theme,
   TimeState,
   TransferInfo,
@@ -341,6 +344,64 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
         opened: Number.isFinite(this.index.lineOpens(id)) ? this.index.lineOpens(id) : null,
       };
     });
+  }
+
+  /**
+   * A line on the date shown: its stops in order, by branch, how long it is, and the changes that
+   * made it.
+   *
+   * @param line - The line id.
+   * @returns The line's details.
+   */
+  public getLineDetails(line: string): LineDetails {
+    const info = required(
+      this.getLines().find(candidate => candidate.id === line),
+      `line ${line}`,
+    );
+    const cursor = this.player.cursor;
+    const branches = lineBranches(this.index, this.timeline, line, cursor).map(run =>
+      run.map(station => ({ id: station, name: this.index.stationName(station, this.player.clock) })),
+    );
+    return {
+      ...info,
+      stations: new Set(branches.flatMap((run, position) => (position === 0 ? run : run.slice(1))).map(stop => stop.id)).size,
+      km: lineLengthKm(this.index, this.timeline, line, cursor),
+      branches,
+      changes: this.timeline.steps.filter(step => stepChangesLine(step, line)).map(step => step.index),
+    };
+  }
+
+  /**
+   * The stations on the map on the date shown, for a search: each with its names and its lines' colours.
+   *
+   * @returns The stations, by name.
+   */
+  public getStations(): StationSummary[] {
+    const cursor = this.player.cursor;
+    return (
+      [...this.timeline.stationsOnMap(cursor)]
+        .map(station => {
+          const lines = [
+            ...new Set(
+              this.index
+                .lineSegmentsAt(station)
+                .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(station, lineSegment.line, cursor))
+                .map(lineSegment => lineSegment.line),
+            ),
+          ].sort(this.index.compareLines);
+          return {
+            id: station,
+            name: this.index.stationName(station, this.player.clock),
+            otherNames: this.index.otherNames(this.index.namedAt(station, this.player.clock)),
+            colors: [...new Set(lines.map(line => this.baseColor(line)))],
+            served: lines.length > 0,
+          };
+        })
+        // A station the track passes but no line calls at is not one to look for.
+        .filter(({ served }) => served)
+        .map(({ served: _served, ...station }) => station)
+        .sort((first, second) => first.name.localeCompare(second.name))
+    );
   }
 
   /**

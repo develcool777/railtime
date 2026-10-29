@@ -33,6 +33,15 @@
             @click="showOnly(line.id)">
             {{ isOnly(line.id) ? 'All' : 'Only' }}
           </button>
+          <UTooltip :text="`${line.name}: stations and history`">
+            <button
+              type="button"
+              class="text-muted hover:text-highlighted flex-none rounded-md px-1.5 py-[7px]"
+              :aria-label="`Open ${line.name}`"
+              @click="emit('open', line.id)">
+              <UIcon name="i-lucide-chevron-right" class="block size-4" />
+            </button>
+          </UTooltip>
         </li>
       </ul>
     </section>
@@ -51,7 +60,7 @@
     /** The date shown, as a timestamp; `null` for a plan's future, when every line is open. */
     date: number | null;
   }>();
-  const emit = defineEmits<{ change: [visible: Set<string>] }>();
+  const emit = defineEmits<{ change: [visible: Set<string>]; open: [line: string] }>();
 
   const query = ref('');
 
