@@ -28,7 +28,9 @@
           :backLabel="lineDetails?.name ?? tabLabel"
           :date="shownDate"
           @close="closeStation"
-          @select="openStation" />
+          @select="openStation"
+          @routeFrom="routeFromStation('from')"
+          @routeTo="routeFromStation('to')" />
         <LineView
           v-else-if="lineDetails"
           class="min-h-0 flex-1 overflow-auto"
@@ -40,7 +42,8 @@
           @station="openStation"
           @change="map?.showChange($event)" />
         <template v-else>
-          <div class="px-4 pt-3">
+          <!-- The route tab has searches of its own. -->
+          <div v-if="tab !== 'route'" class="px-4 pt-3">
             <StationSearch :stations @select="openStation" />
           </div>
           <div class="border-muted flex gap-1 border-b px-4 pt-2.5" role="tablist" aria-label="Panel">
@@ -60,6 +63,17 @@
           <div class="min-h-0 flex-1 overflow-auto" role="tabpanel">
             <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="openLine = $event" />
             <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
+            <RouteTab
+              v-else-if="tab === 'route'"
+              :stations
+              :ends="routeEnds"
+              :preference="routePreference"
+              :route="foundRoute"
+              @from="routeEnds.from = $event"
+              @to="routeEnds.to = $event"
+              @swap="routeEnds = { from: routeEnds.to, to: routeEnds.from }"
+              @preference="routePreference = $event"
+              @station="openStation" />
             <PlansTab v-else :network :plan @choose="choosePlan" />
           </div>
         </template>
@@ -152,7 +166,7 @@
 
 <script setup lang="ts">
   import { useRoute, useRouter } from '#imports';
-  import type { CameraMode } from '@railtime/renderer/transitMap.types';
+  import type { CameraMode, RoutePreference, RouteStop } from '@railtime/renderer/transitMap.types';
   import type { Network } from '@railtime/schema/network.types';
   import { isPlanOnly } from '@railtime/schema/plan.utils';
   import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
@@ -172,6 +186,7 @@
   import PlanLegend from './PlanLegend.vue';
   import PlansTab from './PlansTab.vue';
   import PlaybackDock from './PlaybackDock.vue';
+  import RouteTab from './RouteTab.vue';
   import StationSearch from './StationSearch.vue';
   import StationView from './StationView.vue';
   import StepCard from './StepCard.vue';
@@ -211,10 +226,11 @@
   const credits = computed(() => map.value?.credits ?? []);
 
   /** The panel's tabs. A plan opens on Plans, where it was picked; a city without plans has only Lines. */
-  const tab = ref<'lines' | 'changes' | 'plans'>(props.plan ? 'plans' : 'lines');
+  const tab = ref<'lines' | 'changes' | 'route' | 'plans'>(props.plan ? 'plans' : 'lines');
   const tabs = computed(() => [
     { id: 'lines' as const, label: 'Lines', count: `${lines.value.filter(line => visible.value.has(line.id)).length}/${lines.value.length}` },
     { id: 'changes' as const, label: 'Changes', count: String(changes.value.length) },
+    { id: 'route' as const, label: 'Route', count: '' },
     ...(planCount > 0 ? [{ id: 'plans' as const, label: 'Plans', count: String(planCount) }] : []),
   ]);
   const tabLabel = computed(() => tabs.value.find(entry => entry.id === tab.value)?.label ?? 'Lines');
@@ -234,6 +250,24 @@
   });
   /** The stations on the map on the date shown, for the search; none while playing, when it is hidden. */
   const stations = computed(() => (time.value && !time.value.playing && map.value ? map.value.getStations() : []));
+
+  /** A route between two stations, on the date shown: drawn on the map while its tab is open. */
+  const routeEnds = ref<{ from: RouteStop | null; to: RouteStop | null }>({ from: null, to: null });
+  const routePreference = ref<RoutePreference>('fastest');
+  const foundRoute = computed(() => {
+    const { from, to } = routeEnds.value;
+    // Found again for the date shown: lines open and close.
+    const shown = time.value?.cursor;
+    return from && to && map.value && shown !== undefined ? map.value.findRoute(from.id, to.id, routePreference.value) : null;
+  });
+  watch([foundRoute, tab, mode], () => map.value?.showRoute(tab.value === 'route' && mode.value === 'explore' ? foundRoute.value : null));
+  /** Starts or ends a route at the station whose panel is open, and goes to the route. */
+  const routeFromStation = (end: 'from' | 'to') => {
+    if (!station.value) return;
+    routeEnds.value = { ...routeEnds.value, [end]: { id: station.value.id, name: station.value.name } };
+    closeStation();
+    tab.value = 'route';
+  };
 
   /** The date shown, for what had opened by then; `null` in a plan's future. */
   const shownDate = computed(() => (!time.value || time.value.future ? null : time.value.time));

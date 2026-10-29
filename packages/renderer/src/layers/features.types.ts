@@ -18,6 +18,9 @@ type LineProperties = {
 /** A drawn line. */
 export type LineFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, LineProperties>;
 
+/** A stretch of a route: ridden on a line, in its colour, or walked between two stations. */
+export type RouteFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, { color: string; walk: boolean }>;
+
 /** A drawn point. */
 export type PointFeature<Properties> = Feature<{ type: 'Point'; coordinates: LngLat }, Properties>;
 
