@@ -73,7 +73,8 @@ animates `steps[k]`. On one date the order is:
 4. **infill**: a station opening on track already drawn. One that opened after a line had left its
    track for good was never a stop on that line: no step, and the line is not listed there.
 5. **stationClose**: lines stop calling at a station but keep running through it (`closed` in the
-   schema). The dot fades unless another line still calls there.
+   schema). The dot fades unless another line still calls there. A line that reaches a station only
+   after it closed on every line it served passes it by.
 6. **rename**: a station takes a new name (`formerNames`).
    Labels and captions always use the name a station had on the date shown.
 
