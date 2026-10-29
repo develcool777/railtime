@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   // Each city's dataset, data/<city>/<city>.json, served as it is kept: /data/london/london.json.
   // `nuxt generate` (GitHub Pages) prerenders the landing page and every city's page.
   nitro: {
-    publicAssets: [{ dir: fileURLToPath(new URL('../../data', import.meta.url)), baseURL: '/data' }],
+    publicAssets: [{ dir: fileURLToPath(new URL('../data', import.meta.url)), baseURL: '/data' }],
     prerender: { routes: ['/', ...CITIES.map(city => `/${city.value}`)] },
   },
   devtools: { enabled: true },

@@ -1,6 +1,6 @@
 packages:
   - packages/*
-  - apps/*
+  - web
 
 allowBuilds:
   # Nuxt/Vite's bundler: its install script checks its native binary for this platform.

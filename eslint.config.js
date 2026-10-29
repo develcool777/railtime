@@ -37,7 +37,7 @@ const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable)).@(ser
 const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|utils|types)';
 
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */
-const TEST_FILES = ['packages/*/test/**/*.ts', 'apps/*/test/**/*.ts', 'scripts/test/**/*.ts'];
+const TEST_FILES = ['packages/*/test/**/*.ts', 'scripts/test/**/*.ts'];
 
 /**
  * Tests run the real code, as in dataroom-ui: a test that mocks our own module ends up testing the
@@ -61,7 +61,7 @@ export default defineConfig(
   ...vuePlugin.configs['flat/essential'],
   sonarjs.configs.recommended,
 
-  { ignores: ['**/dist/', '**/node_modules/', '**/.nuxt/', '**/.output/', '**/test-reports/', 'apps/web/public/'] },
+  { ignores: ['**/dist/', '**/node_modules/', '**/.nuxt/', '**/.output/', '**/test-reports/', 'web/public/'] },
 
   // ---- Everything -----------------------------------------------------------
   {
@@ -113,7 +113,7 @@ export default defineConfig(
 
   // ---- JSDoc on every class, member and export ---------------------------------
   {
-    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'scripts/**/*.ts', 'data/**/*.ts', 'apps/web/app/**/*.ts'],
+    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'scripts/**/*.ts', 'data/**/*.ts', 'web/app/**/*.ts'],
     ignores: ['**/*.test.ts'],
     plugins: { jsdoc },
     rules: {
@@ -137,7 +137,7 @@ export default defineConfig(
 
   // ---- File names ------------------------------------------------------------
   {
-    files: ['packages/*/src/**/*.ts', 'apps/web/app/**/*.ts', 'scripts/lib/**/*.ts'],
+    files: ['packages/*/src/**/*.ts', 'web/app/**/*.ts', 'scripts/lib/**/*.ts'],
     ignores: TOOL_CONFIGS,
     plugins: { 'check-file': checkFile },
     rules: {
@@ -161,7 +161,7 @@ export default defineConfig(
     rules: { 'check-file/filename-naming-convention': ['error', { '**/*.ts': SCRIPT_FILE }] },
   },
   {
-    files: ['apps/web/app/components/**/*.vue'],
+    files: ['web/app/components/**/*.vue'],
     plugins: { 'check-file': checkFile },
     rules: { 'check-file/filename-naming-convention': ['error', { '**/*.vue': 'PASCAL_CASE' }] },
   },

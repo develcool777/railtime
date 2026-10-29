@@ -13,11 +13,7 @@ assertTestsMirrorSource(ROOT, 'scripts/test/unit', 'scripts');
  */
 export default defineConfig({
   test: {
-    projects: [
-      'packages/*/vitest.config.ts',
-      'apps/*/vitest.config.ts',
-      { test: { ...SHARED_TEST_OPTIONS, name: 'scripts', include: ['scripts/test/unit/**/*.test.ts'] } },
-    ],
+    projects: ['packages/*/vitest.config.ts', { test: { ...SHARED_TEST_OPTIONS, name: 'scripts', include: ['scripts/test/unit/**/*.test.ts'] } }],
     coverage: {
       provider: 'v8',
       // Every test tool writes under `test-reports/`: one folder to look in, and one to ignore.
