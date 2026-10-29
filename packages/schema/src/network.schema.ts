@@ -15,6 +15,14 @@ const lineSchema = z.object({
   pseudo: z.boolean().optional(),
 });
 
+const stationSchema = z.object({
+  name: z.string().min(1),
+  coordinate: lngLat,
+  infill: z.record(z.string(), isoDate).optional(),
+  closed: z.record(z.string(), isoDate).optional(),
+  formerNames: z.array(z.object({ name: z.string().min(1), until: isoDate })).optional(),
+});
+
 const segmentSchema = z.object({
   stationA: z.string(),
   stationB: z.string(),
@@ -28,7 +36,7 @@ const networkSchema = z
     meta: z.object({ city: z.string(), start: isoDate, built: isoDate, attribution: z.string() }),
     networks: z.record(z.string(), z.object({ name: z.string() })),
     lines: z.record(z.string(), lineSchema),
-    stations: z.record(z.string(), z.object({ name: z.string().min(1), coordinate: lngLat, infill: z.record(z.string(), isoDate).optional() })),
+    stations: z.record(z.string(), stationSchema),
     segments: z.array(segmentSchema),
   })
   .superRefine((network, context) => {
@@ -36,6 +44,15 @@ const networkSchema = z
     for (const [lineId, line] of Object.entries(network.lines)) {
       if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
       for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
+    }
+    for (const [stationId, station] of Object.entries(network.stations)) {
+      for (const [lineId, date] of Object.entries(station.closed ?? {})) {
+        if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
+        const opened = station.infill?.[lineId];
+        if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
+      }
+      const until = (station.formerNames ?? []).map(former => former.until);
+      if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
     }
     network.segments.forEach((segment, position) => {
       for (const station of [segment.stationA, segment.stationB]) if (!network.stations[station]) problem(`segment ${position}: unknown station ${station}`);

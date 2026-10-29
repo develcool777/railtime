@@ -4,6 +4,8 @@ import { CloseStepAnimation } from './closeStep.service';
 import { IdentityStepAnimation } from './identityStep.service';
 import { InfillStepAnimation } from './infillStep.service';
 import { OpenStepAnimation } from './openStep.service';
+import { RenameStepAnimation } from './renameStep.service';
+import { StationCloseStepAnimation } from './stationCloseStep.service';
 import type { StepAnimation } from './stepAnimation.service';
 import type { StepContext, StepDrawing } from './stepAnimation.types';
 
@@ -22,6 +24,10 @@ export const createStepAnimation = (step: Step, context: StepContext): StepAnima
       return new CloseStepAnimation(step, context);
     case 'infill':
       return new InfillStepAnimation(step, context);
+    case 'stationClose':
+      return new StationCloseStepAnimation(step, context);
+    case 'rename':
+      return new RenameStepAnimation(step, context);
     case 'identity':
       return new IdentityStepAnimation(step, context);
   }

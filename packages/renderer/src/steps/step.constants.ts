@@ -28,6 +28,18 @@ export const INFILL_DRAW_SECONDS = 0.8;
 /** Time an infill station stays highlighted, seconds at 1×. */
 export const INFILL_HOLD_SECONDS = 1.2;
 
+/** Time a station takes to fade when its lines stop calling, seconds at 1×. */
+export const STATION_CLOSE_DRAW_SECONDS = 0.8;
+
+/** Pause after a station closes, seconds at 1×. */
+export const STATION_CLOSE_HOLD_SECONDS = 0.8;
+
+/** Time before a renamed station pulses, seconds at 1×. */
+export const RENAME_DRAW_SECONDS = 0.4;
+
+/** Time a renamed station stays highlighted, so its new name can be read, seconds at 1×. */
+export const RENAME_HOLD_SECONDS = 1.6;
+
 /** Time an identity change's colour blend takes, seconds at 1×. */
 export const IDENTITY_DRAW_SECONDS = 2.2;
 

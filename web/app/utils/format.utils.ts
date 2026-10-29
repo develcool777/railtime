@@ -1,4 +1,5 @@
 import type { NetworkStats } from '@railtime/renderer/transitMap.types';
+import type { FormerName } from '@railtime/schema/network.types';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -40,6 +41,17 @@ export const formatMonth = (time: number): string => {
  * @returns "since 1906" or "1906–1994".
  */
 export const formatSpan = (opened: string, closed?: string): string => (closed ? `${opened.slice(0, 4)}–${closed.slice(0, 4)}` : `since ${opened.slice(0, 4)}`);
+
+/**
+ * A station's earlier names, in a line.
+ *
+ * @param formerNames - Its earlier names, oldest first.
+ * @returns "Formerly G-Mex (until 2010)", or an empty string for none.
+ */
+export const formatFormerNames = (formerNames: FormerName[]): string => {
+  const names = formerNames.map(former => `${former.name} (until ${former.until.slice(0, 4)})`);
+  return names.length > 0 ? `Formerly ${names.join(', ')}` : '';
+};
 
 /**
  * What is on the map, in a line.

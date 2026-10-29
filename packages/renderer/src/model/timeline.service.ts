@@ -11,7 +11,8 @@ import { connectedStretches, pushTo } from './timeline.utils';
  * mode sits on a cursor; playback moves it one step at a time, animating `steps[cursor]`.
  *
  * On one date the order is: identity changes, then openings (line by line, one connected stretch
- * per step), then closures, then stations opening on existing track.
+ * per step), then closures, then stations opening on existing track, then stations closing on it,
+ * then renames.
  */
 export class Timeline {
   /** Every step, in the order they play. */
@@ -24,6 +25,8 @@ export class Timeline {
   private readonly closeStep = new Map<LineSegment, number>();
   /** The step at which a station opens on a line it sits on: key `station|line`. */
   private readonly infillStep = new Map<string, number>();
+  /** The step at which a line stops calling at a station it still runs through: key `station|line`. */
+  private readonly stationCloseStep = new Map<string, number>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
 
@@ -36,6 +39,8 @@ export class Timeline {
       this.addOpenSteps(time, day.opens);
       this.addCloseSteps(time, day.closes);
       this.addInfillSteps(time, day.infills);
+      this.addStationCloseSteps(time, day.stationCloses);
+      for (const rename of day.renames) this.addStep({ kind: 'rename', time, ...rename });
     }
     this.indexAliasEnds();
   }
@@ -108,16 +113,17 @@ export class Timeline {
   }
 
   /**
-   * Whether a station sits on a line's track but has not opened on that line yet.
+   * Whether a line calls at a station on its track: not before the station opens on it (infill), nor
+   * after it stops calling there. While the closing step plays, the line still calls, so it can fade.
    *
    * @param station - The station id.
    * @param line - The line id.
    * @param cursor - The cursor.
-   * @returns True until its infill step has played.
+   * @returns True if the station is a stop on the line.
    */
-  public isInfillPending(station: string, line: string, cursor: number): boolean {
-    const step = this.infillStep.get(`${station}|${line}`);
-    return step !== undefined && step >= cursor;
+  public servesStation(station: string, line: string, cursor: number): boolean {
+    const key = `${station}|${line}`;
+    return (this.infillStep.get(key) ?? -1) < cursor && (this.stationCloseStep.get(key) ?? Infinity) >= cursor;
   }
 
   /**
@@ -162,15 +168,23 @@ export class Timeline {
   private collectDays(): Map<number, DayChanges> {
     const days = new Map<number, DayChanges>();
     const day = (time: number) => {
-      if (!days.has(time)) days.set(time, { opens: [], closes: [], infills: [], identities: [] });
+      if (!days.has(time)) days.set(time, { opens: [], closes: [], infills: [], stationCloses: [], renames: [], identities: [] });
       return days.get(time)!;
     };
     for (const lineSegment of this.index.lineSegments) {
       day(lineSegment.opens).opens.push(lineSegment);
       if (lineSegment.closes) day(lineSegment.closes).closes.push(lineSegment);
     }
-    for (const [station, info] of Object.entries(this.index.network.stations))
+    for (const [station, info] of Object.entries(this.index.network.stations)) {
       for (const [line, date] of Object.entries(info.infill ?? {})) day(toTimestamp(date)).infills.push({ station, line });
+      for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
+      for (const [position, former] of (info.formerNames ?? []).entries()) {
+        const time = toTimestamp(former.until);
+        // A name changed before the station opened is no event: it opens under the later name.
+        if (!this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.opens < time)) continue;
+        day(time).renames.push({ station, from: former.name, to: info.formerNames?.[position + 1]?.name ?? info.name });
+      }
+    }
     for (const [line, info] of Object.entries(this.index.network.lines))
       for (const alias of info.aliases ?? []) day(toTimestamp(alias.until)).identities.push({ line, text: alias.text });
     return days;
@@ -256,6 +270,21 @@ export class Timeline {
     for (const [station, lines] of byStation) {
       const step = this.addStep({ kind: 'infill', time, station, lines });
       for (const line of lines) this.infillStep.set(`${station}|${line}`, step);
+    }
+  }
+
+  /**
+   * One step per station that lines stop calling at, covering all those lines.
+   *
+   * @param time - The date.
+   * @param closes - That day's station closures.
+   */
+  private addStationCloseSteps(time: number, closes: DayChanges['stationCloses']): void {
+    const byStation = new Map<string, string[]>();
+    for (const { station, line } of closes) pushTo(byStation, station, line);
+    for (const [station, lines] of byStation) {
+      const step = this.addStep({ kind: 'stationClose', time, station, lines });
+      for (const line of lines) this.stationCloseStep.set(`${station}|${line}`, step);
     }
   }
 

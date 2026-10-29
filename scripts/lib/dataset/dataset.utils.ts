@@ -10,6 +10,8 @@ const orderStation = (station: Station): Station => ({
   name: station.name,
   coordinate: station.coordinate,
   ...(station.infill ? { infill: station.infill } : {}),
+  ...(station.closed ? { closed: station.closed } : {}),
+  ...(station.formerNames ? { formerNames: station.formerNames } : {}),
 });
 
 /**

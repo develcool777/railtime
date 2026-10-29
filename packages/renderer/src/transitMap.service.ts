@@ -113,7 +113,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.stationLayer = new StationLayer(
       this.map,
       station => this.index.coordOf(station),
-      station => this.index.stationName(station),
+      station => this.index.stationName(station, this.player.clock),
       this.index.compareLines,
     );
     this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, this.index.bounds, PALETTES[this.theme]) : null;
@@ -251,7 +251,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * A station's lines, with when each opened there and, if it has, closed.
+   * A station's lines, with when each opened there and, if it has, closed: its track, or its calls
+   * there while the track stays.
    *
    * @param station - The station id.
    * @returns The station's details.
@@ -267,14 +268,23 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       dates.allClosed &&= lineSegment.closes !== null;
       byLine.set(lineSegment.line, dates);
     }
-    const lines = [...byLine.entries()].map(([line, dates]) => ({
-      id: line,
-      name: this.index.lineName(line),
-      color: this.baseColor(line),
-      opened: info.infill?.[line] ?? toIsoDate(dates.opened),
-      ...(dates.allClosed ? { closed: toIsoDate(dates.lastClosed) } : {}),
-    }));
-    return { id: station, name: info.name, lines: lines.sort((first, second) => first.opened.localeCompare(second.opened)) };
+    const lines = [...byLine.entries()].map(([line, dates]) => {
+      // The line stopped calling here, or its track here closed.
+      const closed = info.closed?.[line] ?? (dates.allClosed ? toIsoDate(dates.lastClosed) : undefined);
+      return {
+        id: line,
+        name: this.index.lineName(line),
+        color: this.baseColor(line),
+        opened: info.infill?.[line] ?? toIsoDate(dates.opened),
+        ...(closed ? { closed } : {}),
+      };
+    });
+    return {
+      id: station,
+      name: this.index.stationName(station, this.player.clock),
+      lines: lines.sort((first, second) => first.opened.localeCompare(second.opened)),
+      formerNames: info.formerNames ?? [],
+    };
   }
 
   /** Stops rendering and removes the map, the minimap and every listener. */

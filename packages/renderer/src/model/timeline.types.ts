@@ -17,6 +17,12 @@ export type CloseStep = StepBase & { kind: 'close'; line: string; lineSegments: 
 /** A station opens on track its lines already run over. */
 export type InfillStep = StepBase & { kind: 'infill'; station: string; lines: string[] };
 
+/** Lines stop calling at a station while still running through it. */
+export type StationCloseStep = StepBase & { kind: 'stationClose'; station: string; lines: string[] };
+
+/** A station takes a new name. */
+export type RenameStep = StepBase & { kind: 'rename'; station: string; from: string; to: string };
+
 /** Lines stop being drawn as another line (Hammersmith & City leaving the Metropolitan, the Overground splitting). */
 export type IdentityStep = StepBase & { kind: 'identity'; lines: string[]; text: string };
 
@@ -24,10 +30,16 @@ export type IdentityStep = StepBase & { kind: 'identity'; lines: string[]; text:
  * One thing that happens, played on its own. Several steps can share a date: they play one after
  * another while the clock waits on that date.
  */
-export type Step = OpenStep | CloseStep | InfillStep | IdentityStep;
+export type Step = OpenStep | CloseStep | InfillStep | StationCloseStep | RenameStep | IdentityStep;
 
 /** A step before the timeline numbers it. */
-export type StepDraft = Omit<OpenStep, 'index'> | Omit<CloseStep, 'index'> | Omit<InfillStep, 'index'> | Omit<IdentityStep, 'index'>;
+export type StepDraft =
+  | Omit<OpenStep, 'index'>
+  | Omit<CloseStep, 'index'>
+  | Omit<InfillStep, 'index'>
+  | Omit<StationCloseStep, 'index'>
+  | Omit<RenameStep, 'index'>
+  | Omit<IdentityStep, 'index'>;
 
 /** What a line is drawn as at a cursor: its own id or an alias's. `previousId` is set mid-way through an identity change. */
 export type LineIdentity = { id: string; previousId?: string };
@@ -37,6 +49,8 @@ export type DayChanges = {
   opens: LineSegment[];
   closes: LineSegment[];
   infills: { station: string; line: string }[];
+  stationCloses: { station: string; line: string }[];
+  renames: { station: string; from: string; to: string }[];
   identities: { line: string; text: string }[];
 };
 
