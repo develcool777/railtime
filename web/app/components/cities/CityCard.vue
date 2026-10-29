@@ -1,7 +1,7 @@
 <template>
   <NuxtLink :to="`/${city}`" class="city-card group" :class="{ 'lg:col-span-2': large }">
-    <div class="border-default bg-muted flex items-center justify-center overflow-hidden border-b p-3" :class="large ? 'h-[150px] lg:h-[260px]' : 'h-[150px]'">
-      <CityPreview v-if="network" :network :name class="h-full" />
+    <div class="border-default bg-muted overflow-hidden border-b" :class="large ? 'h-[150px] lg:h-[260px]' : 'h-[150px]'">
+      <CityPreview v-if="network" :network :name />
       <USkeleton v-else class="h-full w-full" />
     </div>
     <div class="flex flex-col gap-1.5 px-[18px] pt-4 pb-[18px]">

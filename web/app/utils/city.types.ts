@@ -1,3 +1,5 @@
+import type { MapView } from '@railtime/renderer/transitMap.types';
+
 /** A line as a city card shows it: a swatch in each theme. */
 type SummaryLine = {
   id: string;
@@ -21,8 +23,14 @@ export type CitySummary = {
 };
 
 /** One segment of a network sketch, as an SVG path in each theme's colour. */
-export type PreviewPath = {
+type PreviewPath = {
   path: string;
   color: string;
   darkColor: string;
 };
+
+/** A preview's size, in CSS pixels. */
+export type PreviewSize = { width: number; height: number };
+
+/** A network drawn small: where its picture of the basemap looks, and its track over it. */
+export type Preview = { view: MapView; paths: PreviewPath[] };
