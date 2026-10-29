@@ -3,7 +3,7 @@
 An interactive map of a city's rail network that you can explore as it is today, or as it was in
 any year, and a history player that grows it from the first line to today, one change at a time.
 London (every Underground and Overground line and the Elizabeth line, 1863 to today), Manchester Metrolink (1992 to today) and the
-Tyne and Wear Metro (1980 to today).
+Tyne and Wear Metro (1980 to today), and the Kyiv (1960), Kharkiv (1975) and Dnipro (1995) metros.
 
 ```
 data/london/london.json   the dataset: lines, stations, track and when each line opened where
@@ -82,6 +82,12 @@ services, which share track and were reshuffled in 2018. Its one closed section 
 over the old railway via Werneth to the temporary Oldham Mumps stop. Stops that closed while their
 track stayed (Mosley Street, High Street, Woodlands Road) and renamed ones (G-Mex, Barton Dock Road)
 are in the dataset.
+
+Kyiv, Kharkiv and Dnipro are in English: each station's Ukrainian name in OpenStreetMap maps to one
+English name, romanised as English Wikipedia writes it, and its earlier names (Soviet, the 2016
+decommunisation, Kharkiv's 2022–24 renamings) are former names. Ukrainian names themselves are not
+in the format yet. Sviatoshyn's earlier name (Sviatoshyno, until 1991) is left out: no source gives
+the day. Dnipro's extension to the centre is still unopened.
 
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from

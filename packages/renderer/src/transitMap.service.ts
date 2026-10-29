@@ -30,6 +30,7 @@ import {
   FIT_NETWORK_MS,
   MAX_FRAME_SECONDS,
   NEW_LABEL_FADE_FRACTION,
+  OPENING_MAX_ZOOM,
   OPENING_SIDE_PADDING,
   SELECTED_STATION_ZOOM,
   SELECT_FLY_MS,
@@ -104,7 +105,10 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       : {
           bounds: this.index.bounds as LngLatBoundsLike,
           // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
-          fitBoundsOptions: { padding: { top: padding.top, bottom: padding.bottom, left: OPENING_SIDE_PADDING, right: OPENING_SIDE_PADDING } },
+          fitBoundsOptions: {
+            padding: { top: padding.top, bottom: padding.bottom, left: OPENING_SIDE_PADDING, right: OPENING_SIDE_PADDING },
+            maxZoom: OPENING_MAX_ZOOM,
+          },
         };
     this.map = new MapLibreMap({
       container: options.container,

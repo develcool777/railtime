@@ -9,7 +9,9 @@
     </template>
     <template #footer>
       <div v-if="summary" class="flex w-full flex-wrap items-center justify-between gap-2">
-        <span class="text-muted text-sm tabular-nums">{{ summary.lines.length }} lines · {{ summary.stations }} stations</span>
+        <span class="text-muted text-sm tabular-nums"
+          >{{ summary.lines.length }} line{{ summary.lines.length === 1 ? '' : 's' }} · {{ summary.stations }} stations</span
+        >
         <span class="flex flex-wrap gap-1" aria-hidden="true">
           <span v-for="line in summary.lines" :key="line.id" class="h-1.5 w-4 rounded-full" :style="{ background: dark ? line.darkColor : line.color }" />
         </span>
