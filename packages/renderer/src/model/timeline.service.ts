@@ -27,7 +27,7 @@ export class Timeline {
   private readonly infillStep = new Map<string, number>();
   /** The step at which a line stops calling at a station it still runs through: key `station|line`. */
   private readonly stationCloseStep = new Map<string, number>();
-  /** Stations that opened on a line's track after the line had left it for good: key `station|line`. */
+  /** Lines that never called at a station on their track: it opened after they left, or closed before they came. Key `station|line`. */
   private readonly neverServed = new Set<string>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
@@ -45,6 +45,7 @@ export class Timeline {
       for (const rename of day.renames) this.addStep({ kind: 'rename', time, ...rename });
     }
     this.indexAliasEnds();
+    this.markLinesAfterClosure();
   }
 
   /** Where the timeline starts, as a timestamp. */
@@ -306,6 +307,21 @@ export class Timeline {
     for (const [station, lines] of byStation) {
       const step = this.addStep({ kind: 'stationClose', time, station, lines });
       for (const line of lines) this.stationCloseStep.set(`${station}|${line}`, step);
+    }
+  }
+
+  /** Marks the lines that first reached a station after it had closed on every line it served: they pass it by. */
+  private markLinesAfterClosure(): void {
+    for (const [station, info] of Object.entries(this.index.network.stations)) {
+      const closed = info.closed ?? {};
+      const closes = Object.values(closed).map(toTimestamp);
+      if (closes.length === 0) continue;
+      const lastClose = Math.max(...closes);
+      const atStation = this.index.lineSegmentsAt(station);
+      const before = new Set(atStation.filter(lineSegment => lineSegment.opens < lastClose).map(lineSegment => lineSegment.line));
+      // A line that came earlier still calls there: the station never closed for good.
+      if ([...before].some(line => !(line in closed))) continue;
+      for (const { line } of atStation) if (!before.has(line)) this.neverServed.add(`${station}|${line}`);
     }
   }
 

@@ -23,6 +23,7 @@ describe('Timeline', () => {
       [1945, 'open'],
       [1950, 'close'],
       [1960, 'stationClose'],
+      [1970, 'open'],
       [1990, 'identity'],
     ]);
   });
@@ -64,6 +65,12 @@ describe('Timeline', () => {
     expect(timeline.everServes('c', 'blue')).toBe(false);
     expect(timeline.servesStation('c', 'blue', timeline.cursorAt(toTimestamp('1935-01-01')))).toBe(false);
     expect(timeline.steps.filter(step => step.kind === 'infill')).toEqual([expect.objectContaining({ station: 'c', lines: ['red'] })]);
+  });
+
+  test('never stops a line at a station that closed before the line came', () => {
+    const { timeline } = timelineOf();
+    expect(timeline.everServes('d', 'green')).toBe(false);
+    expect(timeline.everServes('c', 'green')).toBe(true);
   });
 
   test('stops a line calling at a closed station, still while its closing step plays', () => {
