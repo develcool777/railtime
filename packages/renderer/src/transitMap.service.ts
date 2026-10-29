@@ -276,6 +276,15 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
+   * Names the stations on the map, or shows only their dots.
+   *
+   * @param shown - Whether to name them.
+   */
+  public setStationLabels(shown: boolean): void {
+    this.stationLayer.showLabels(shown);
+  }
+
+  /**
    * Rings a station and flies to it, or clears the selection.
    *
    * @param station - The station id, or `null`.

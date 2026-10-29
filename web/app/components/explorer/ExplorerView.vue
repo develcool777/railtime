@@ -59,16 +59,29 @@
         <div ref="mapElement" class="h-full w-full" />
       </div>
       <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" class="absolute top-4 left-4" />
-      <UTooltip :text="mapOnly ? 'Show panels (Esc)' : 'Map only'">
-        <UButton
-          :icon="mapOnly ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
-          color="neutral"
-          variant="outline"
-          class="bg-default shadow-soft absolute top-4 right-4"
-          :aria-label="mapOnly ? 'Show panels' : 'Map only'"
-          :aria-pressed="mapOnly"
-          @click="toggleMapOnly" />
-      </UTooltip>
+      <div class="absolute top-4 right-4 flex flex-col gap-2">
+        <UTooltip :text="mapOnly ? 'Show panels (Esc)' : 'Map only'">
+          <UButton
+            :icon="mapOnly ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+            color="neutral"
+            variant="outline"
+            class="bg-default shadow-soft"
+            :aria-label="mapOnly ? 'Show panels' : 'Map only'"
+            :aria-pressed="mapOnly"
+            @click="toggleMapOnly" />
+        </UTooltip>
+        <UTooltip :text="stationNames ? 'Hide station names' : 'Show station names'">
+          <UButton
+            icon="i-lucide-type"
+            :color="stationNames ? 'neutral' : 'primary'"
+            :variant="stationNames ? 'outline' : 'soft'"
+            class="shadow-soft"
+            :class="{ 'bg-default': stationNames }"
+            :aria-label="stationNames ? 'Hide station names' : 'Show station names'"
+            :aria-pressed="!stationNames"
+            @click="setStationNames(!stationNames)" />
+        </UTooltip>
+      </div>
       <!-- The map's credits stay on it with the panels gone: its licence asks for them. -->
       <MapCredits v-if="mapOnly" :credits class="bg-default/80 absolute right-0 bottom-0 rounded-tl-md px-2 py-1" />
       <!-- The same wrapper as the map's: MapLibre makes the minimap's container relative too. -->
@@ -290,6 +303,27 @@
     camera.value = value;
     map.value?.setCameraMode(value);
   };
+
+  /** Whether the map names its stations; the choice is remembered in this browser. */
+  const STATION_NAMES_KEY = 'railtime:station-names';
+  const stationNames = ref(true);
+  const setStationNames = (shown: boolean) => {
+    stationNames.value = shown;
+    map.value?.setStationLabels(shown);
+    try {
+      localStorage.setItem(STATION_NAMES_KEY, shown ? 'on' : 'off');
+    } catch {
+      // Storage blocked (a private window): the choice lasts the visit.
+    }
+  };
+  watch(map, transitMap => {
+    try {
+      if (localStorage.getItem(STATION_NAMES_KEY) === 'off') stationNames.value = false;
+    } catch {
+      // Storage blocked: names shown.
+    }
+    transitMap?.setStationLabels(stationNames.value);
+  });
 
   /** Only the map: the panel and the dock hidden, the page full screen where the browser lets it. */
   const mapOnly = ref(false);

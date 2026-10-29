@@ -28,6 +28,8 @@ export class StationLayer extends MapLayer {
   private readonly appearedAt = new Map<string, number>();
   /** When each new station's pulse started. */
   private readonly pulsedAt = new Map<string, number>();
+  /** Whether stations are named on the map: kept, so a layer installed later starts the same. */
+  private labelsShown = true;
 
   public constructor(
     map: MapLibreMap,
@@ -82,7 +84,12 @@ export class StationLayer extends MapLayer {
         'circle-stroke-opacity': ['get', 'opacity'],
       },
     });
-    const label: SymbolLayerSpecification['layout'] = { 'text-field': ['get', 'name'], 'text-font': font, 'text-anchor': 'left' };
+    const label: SymbolLayerSpecification['layout'] = {
+      'text-field': ['get', 'name'],
+      'text-font': font,
+      'text-anchor': 'left',
+      visibility: this.labelsShown ? 'visible' : 'none',
+    };
     this.map.addLayer({
       id: LAYERS.labels,
       type: 'symbol',
@@ -100,6 +107,18 @@ export class StationLayer extends MapLayer {
       layout: { ...label, 'text-size': byZoom(13, 16), 'text-offset': [1, 0], 'text-allow-overlap': true, 'text-ignore-placement': true },
       paint: { 'text-opacity': ['get', 'labelOpacity'], 'text-halo-width': 2 },
     });
+  }
+
+  /**
+   * Names the stations on the map, or leaves only their dots; new stations' names too.
+   *
+   * @param shown - Whether to name them.
+   */
+  public showLabels(shown: boolean): void {
+    this.labelsShown = shown;
+    for (const layer of [LAYERS.labels, LAYERS.newLabels]) {
+      if (this.map.getLayer(layer)) this.map.setLayoutProperty(layer, 'visibility', shown ? 'visible' : 'none');
+    }
   }
 
   /**
