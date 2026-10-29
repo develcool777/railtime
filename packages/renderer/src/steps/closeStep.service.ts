@@ -30,17 +30,19 @@ export class CloseStepAnimation extends StepAnimation<CloseStep> {
   }
 
   /**
-   * "Jubilee line: section closes", with the stations it ran between.
+   * "<line>: section closes", or "… suspended" when the line will return, with the stations it
+   * ran between.
    *
    * @param state - The render state when the step starts.
    * @returns The caption.
    */
   public describe(state: RenderState): StepInfo {
     const ends = this.step.lineSegments.flatMap(({ segment }) => [this.nameOf(segment.stationA), this.nameOf(segment.stationB)]);
+    const returns = this.step.lineSegments.every(lineSegment => lineSegment.next !== null);
     return {
       kind: 'close',
       time: this.step.time,
-      title: `${this.context.index.lineName(this.step.line)}: section closes`,
+      title: `${this.context.index.lineName(this.step.line)}: section ${returns ? 'suspended' : 'closes'}`,
       subtitle: [...new Set(ends)].join(' – '),
       color: state.baseColor(this.step.line),
       stations: [],

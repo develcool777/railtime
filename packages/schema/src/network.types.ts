@@ -14,12 +14,12 @@ export type LngLat = [number, number];
 /** What kind of railway a line is: decides how it is classified and counted, not how it is drawn. */
 export type Mode = 'metro' | 'light-metro' | 'tram' | 'suburban-rail' | 'rail' | 'cable';
 
-/** A family of lines run as one brand (the Underground, the Overground). */
+/** A family of lines run as one brand. */
 export type NetworkInfo = {
   name: string;
 };
 
-/** Until `until`, the line is drawn and named as line `as` (Hammersmith & City as Metropolitan before 1990). */
+/** Until `until`, the line is drawn and named as line `as`: a branch shown as its parent line until it became its own. */
 export type LineAlias = {
   until: IsoDate;
   as: string;
@@ -33,14 +33,14 @@ export type Line = {
   network: string;
   mode: Mode;
   color: string;
-  /** Used on dark backgrounds where `color` would disappear (the black Northern line). */
+  /** Used on dark backgrounds where `color` would disappear (a black line). */
   darkColor?: string;
   aliases?: LineAlias[];
   /** Exists only as an alias target: never toggled or listed on its own. */
   pseudo?: boolean;
 };
 
-/** A name a station had until a date (G-Mex, until Deansgate-Castlefield in 2010). */
+/** A name a station had until a date. */
 export type FormerName = {
   name: string;
   until: IsoDate;
@@ -53,16 +53,26 @@ export type Station = {
   coordinate: LngLat;
   /** Lines this station opened on after the line was already running through it: line id to date. */
   infill?: Record<string, IsoDate>;
-  /** Lines that stopped calling here while still running through: line id to date (Mosley Street, 2013). */
+  /** Lines that stopped calling here while still running through: line id to date. */
   closed?: Record<string, IsoDate>;
   /** Its earlier names, oldest first. */
   formerNames?: FormerName[];
+};
+
+/** A spell a line did not run over a segment it later returned to. */
+export type Suspension = {
+  /** The first day without trains. */
+  from: IsoDate;
+  /** The day they returned. */
+  until: IsoDate;
 };
 
 /** When a line opened, and if it did, closed, on a segment. */
 export type SegmentLine = {
   open: IsoDate;
   close?: IsoDate;
+  /** Spells between `open` and `close` without trains, oldest first. */
+  suspended?: Suspension[];
 };
 
 /** Track between two adjacent stations, shared by every line that runs over it. */

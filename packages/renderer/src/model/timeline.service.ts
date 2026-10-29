@@ -215,7 +215,7 @@ export class Timeline {
   }
 
   /**
-   * One step per identity text: the six Overground lines splitting is one step, not six.
+   * One step per identity text: several lines splitting from one together is one step, not several.
    *
    * @param time - The date.
    * @param identities - That day's identity changes.

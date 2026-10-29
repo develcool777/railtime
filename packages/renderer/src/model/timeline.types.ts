@@ -23,7 +23,7 @@ export type StationCloseStep = StepBase & { kind: 'stationClose'; station: strin
 /** A station takes a new name. */
 export type RenameStep = StepBase & { kind: 'rename'; station: string; from: string; to: string };
 
-/** Lines stop being drawn as another line (Hammersmith & City leaving the Metropolitan, the Overground splitting). */
+/** Lines stop being drawn as another line (a branch becoming its own line, one line splitting into several). */
 export type IdentityStep = StepBase & { kind: 'identity'; lines: string[]; text: string };
 
 /**

@@ -8,7 +8,7 @@ import { StepAnimation } from './stepAnimation.service';
 import type { StepContext, StepDrawing, StepFrame } from './stepAnimation.types';
 
 /**
- * Lines taking their own identity (the Overground splitting into six): their track, already on the
+ * Lines taking their own identity (one line splitting into several): their track, already on the
  * map, changes colour and separates. The colour blend is drawn by the network layer, which redraws
  * every frame while `changesIdentity` is true; this step adds nothing of its own.
  */
@@ -39,7 +39,7 @@ export class IdentityStepAnimation extends StepAnimation<IdentityStep> {
   }
 
   /**
-   * The change, in words from the data ("London Overground splits into six named lines").
+   * The change, in words from the data (the alias's `text`).
    *
    * @param state - The render state when the step starts.
    * @returns The caption.

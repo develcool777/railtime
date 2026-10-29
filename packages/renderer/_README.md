@@ -18,7 +18,7 @@ map.setDate(Date.UTC(1950, 0, 1)); // explore: the network as of a date
 map.play(); // history: from the current date onwards
 map.pause();
 map.skip(); // finish this change, or jump to the next
-map.setVisibleLines(['victoria', 'jubilee']);
+map.setVisibleLines(['line-a', 'line-b']);
 map.setTheme('light');
 ```
 
@@ -29,7 +29,7 @@ src/
 ├── transitMap.service.ts        TransitMap extends EventEmitter: the one public entry, composes the rest
 ├── core/                        EventEmitter base class, `required` lookup helper
 ├── model/                       pure: no map
-│   ├── networkIndex.service.ts  NetworkIndex: segments prepared for drawing, a LineSegment per (segment, line)
+│   ├── networkIndex.service.ts  NetworkIndex: segments prepared for drawing, a LineSegment per (segment, line, period)
 │   ├── timeline.service.ts      Timeline: the history as ordered steps; the state at any cursor
 │   └── orientation.utils.ts     a consistent direction of travel per segment
 ├── steps/                       one class per kind of step
@@ -63,15 +63,17 @@ The `Timeline` turns the network into an ordered list of steps. A **cursor** `k`
 `0..k-1` have happened; explore mode sits on a cursor, playback moves it one step at a time and
 animates `steps[k]`. On one date the order is:
 
-1. **identity**: lines stop being drawn as another line (`aliases` in the schema): Circle and
-   Hammersmith & City leaving the Metropolitan, the Overground splitting into six lines.
+1. **identity**: lines stop being drawn as another line (`aliases` in the schema): a branch becoming
+   its own line, one line splitting into several.
 2. **open**: one step per line and per connected stretch, nearest the centre first. Three lines
    opening on the same day play one after another, not at once.
-3. **close**: track retracts towards the end that stays on the map, leaving a dashed ghost.
-4. **infill**: a station opening on track already drawn (Pimlico, 1972).
+3. **close**: track retracts towards the end that stays on the map, leaving a dashed ghost. A line
+   `suspended` on a segment closes there and opens again: each period is its
+   own `LineSegment`, the reopening's caption says "reopens" and the ghost goes once the line is back.
+4. **infill**: a station opening on track already drawn.
 5. **stationClose**: lines stop calling at a station but keep running through it (`closed` in the
-   schema: Mosley Street, 2013). The dot fades unless another line still calls there.
-6. **rename**: a station takes a new name (`formerNames`: G-Mex becomes Deansgate-Castlefield, 2010).
+   schema). The dot fades unless another line still calls there.
+6. **rename**: a station takes a new name (`formerNames`).
    Labels and captions always use the name a station had on the date shown.
 
 ### A step, frame by frame

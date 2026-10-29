@@ -6,7 +6,7 @@ import { RENAME_DRAW_SECONDS, RENAME_HOLD_SECONDS } from './step.constants';
 import { StepAnimation } from './stepAnimation.service';
 import type { StepContext, StepDrawing, StepFrame } from './stepAnimation.types';
 
-/** A station takes a new name (G-Mex becomes Deansgate-Castlefield, 2010): it pulses, labelled with it. */
+/** A station takes a new name: it pulses, labelled with it. */
 export class RenameStepAnimation extends StepAnimation<RenameStep> {
   /** Seconds at 1× before the station pulses. */
   public readonly drawSeconds = RENAME_DRAW_SECONDS;
@@ -27,7 +27,7 @@ export class RenameStepAnimation extends StepAnimation<RenameStep> {
   }
 
   /**
-   * "G-Mex renamed", to what.
+   * "<former name> renamed", to what.
    *
    * @param state - The render state when the step starts.
    * @returns The caption.

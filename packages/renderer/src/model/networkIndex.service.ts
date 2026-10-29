@@ -8,14 +8,15 @@ import { orientSegments } from './orientation.utils';
 
 /**
  * The network, indexed for drawing: segments with their distances and direction of travel
- * precomputed, and one `LineSegment` per (segment, line) with its dates as timestamps.
+ * precomputed, and one `LineSegment` per (segment, line, period) with its dates as timestamps: a line
+ * suspended on a segment and back is two periods there.
  */
 export class NetworkIndex {
   /** The normalized network this index was built from. */
   public readonly network: Network;
   /** Every track segment, in the network's order. */
   public readonly segments: TrackSegment[];
-  /** Every line on every segment. */
+  /** Every line on every segment, one entry per period. */
   public readonly lineSegments: LineSegment[] = [];
   /** Lines a user can see and toggle: every line but pseudo lines (alias targets). */
   public readonly lineIds: string[];
@@ -98,7 +99,7 @@ export class NetworkIndex {
    * A line's name as people say it.
    *
    * @param line - A line id.
-   * @returns "Victoria line", or a pseudo line's own name ("London Overground").
+   * @returns "<name> line", or a pseudo line's own name as it is.
    */
   public lineName(line: string): string {
     const info = this.lineOf(line);
@@ -137,14 +138,39 @@ export class NetworkIndex {
       travel: 1,
     };
     for (const [line, dates] of Object.entries(segment.lines)) {
-      const lineSegment: LineSegment = { segment: trackSegment, line, opens: toTimestamp(dates.open), closes: dates.close ? toTimestamp(dates.close) : null };
-      this.lineSegments.push(lineSegment);
-      for (const station of [segment.stationA, segment.stationB]) {
-        const atStation = this.lineSegmentsByStation.get(station) ?? [];
-        atStation.push(lineSegment);
-        this.lineSegmentsByStation.set(station, atStation);
+      // Each spell without trains ends one period and starts the next.
+      const starts = [dates.open, ...(dates.suspended ?? []).map(spell => spell.until)];
+      const ends = [...(dates.suspended ?? []).map(spell => spell.from), dates.close];
+      let previous: LineSegment | null = null;
+      for (const [period, start] of starts.entries()) {
+        const end = ends[period];
+        const lineSegment: LineSegment = {
+          segment: trackSegment,
+          line,
+          opens: toTimestamp(start),
+          closes: end ? toTimestamp(end) : null,
+          previous,
+          next: null,
+        };
+        if (previous) previous.next = lineSegment;
+        previous = lineSegment;
+        this.addLineSegment(lineSegment);
       }
     }
     return trackSegment;
+  }
+
+  /**
+   * Indexes one line's period on a segment, and at the stations it ends at.
+   *
+   * @param lineSegment - The line segment.
+   */
+  private addLineSegment(lineSegment: LineSegment): void {
+    this.lineSegments.push(lineSegment);
+    for (const station of [lineSegment.segment.stationA, lineSegment.segment.stationB]) {
+      const atStation = this.lineSegmentsByStation.get(station) ?? [];
+      atStation.push(lineSegment);
+      this.lineSegmentsByStation.set(station, atStation);
+    }
   }
 }

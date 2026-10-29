@@ -40,7 +40,7 @@ const segmentAt = (stationA: string, stationB: string, position: number, lines: 
  * A tiny line A–B–C–D, 1 km per segment, with one of each kind of step:
  * - `red` opens A–B in 1900 and B–C–D in 1910; C opens on it as an infill station in 1920
  * - D, called Old D until 1925, closes on `red` in 1960 while the track stays; A was renamed before it opened
- * - `blue` runs B–C from 1930 and closes it in 1950
+ * - `blue` runs B–C from 1930, is suspended there 1940–1945 and closes it in 1950
  * - `pink` shares A–B, drawn as `red` until 1990
  *
  * @returns The network.
@@ -61,7 +61,10 @@ export const tinyNetwork = (): Network => ({
   },
   segments: [
     segmentAt('a', 'b', 0, { red: { open: '1900-01-01' }, pink: { open: '1900-01-01' } }),
-    segmentAt('b', 'c', 1, { red: { open: '1910-01-01' }, blue: { open: '1930-01-01', close: '1950-01-01' } }),
+    segmentAt('b', 'c', 1, {
+      red: { open: '1910-01-01' },
+      blue: { open: '1930-01-01', close: '1950-01-01', suspended: [{ from: '1940-01-01', until: '1945-01-01' }] },
+    }),
     segmentAt('c', 'd', 2, { red: { open: '1910-01-01' } }),
   ],
 });

@@ -53,7 +53,10 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
 
   for (const lineSegment of visible) {
     const { segment } = lineSegment;
-    if (timeline.hasClosed(lineSegment, cursor) || closingNow(lineSegment)) ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0));
+    // Closed track is a ghost until its line returns there.
+    const returned = lineSegment.next !== null && (timeline.isOpen(lineSegment.next, cursor) || timeline.hasClosed(lineSegment.next, cursor));
+    if ((timeline.hasClosed(lineSegment, cursor) || closingNow(lineSegment)) && !returned)
+      ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0));
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
     const key = `${segment.index}|${line.id}`;

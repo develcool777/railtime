@@ -27,7 +27,10 @@ const segmentSchema = z.object({
   stationA: z.string(),
   stationB: z.string(),
   coordinates: z.array(lngLat).min(2),
-  lines: z.record(z.string(), z.object({ open: isoDate, close: isoDate.optional() })),
+  lines: z.record(
+    z.string(),
+    z.object({ open: isoDate, close: isoDate.optional(), suspended: z.array(z.object({ from: isoDate, until: isoDate })).optional() }),
+  ),
 });
 
 /** The network's shape, plus the references between its parts. */
@@ -59,6 +62,9 @@ const networkSchema = z
       for (const [lineId, dates] of Object.entries(segment.lines)) {
         if (!network.lines[lineId]) problem(`segment ${position}: unknown line ${lineId}`);
         if (dates.close && dates.close <= dates.open) problem(`segment ${position}: ${lineId} closes before it opens`);
+        // Open, then each spell's start and end, then close: each after the one before.
+        const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
+        if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`segment ${position}: ${lineId} suspended out of order`);
       }
     });
   });
