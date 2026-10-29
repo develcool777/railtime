@@ -12,8 +12,6 @@ export type TransitMapMount = {
   network: Network;
   /** Where the map opens; the whole network without one. */
   view?: MapView;
-  /** The language to name things in; English without one. */
-  language?: string;
 };
 
 /** The mounted map, and its events as reactive state. */

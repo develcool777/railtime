@@ -24,10 +24,6 @@ export class NetworkIndex {
   public readonly bounds: Bounds;
   /** The middle of `bounds`: where a network with nothing on the map yet grows from. */
   public readonly centre: LngLat;
-  /** Every language the network has names in besides English, by code. */
-  public readonly languages: string[];
-  /** The language names are given in: a code from `languages`, or `null` for English. */
-  public language: string | null = null;
   /** Each line's position in the network: also the order lines sit side by side on shared track. */
   private readonly lineOrder: Map<string, number>;
   /** The stations each station has a transfer to. */
@@ -48,26 +44,23 @@ export class NetworkIndex {
       [0, 0],
     ];
     this.centre = [(this.bounds[0][0] + this.bounds[1][0]) / 2, (this.bounds[0][1] + this.bounds[1][1]) / 2];
-    const named = [
-      ...Object.values(network.networks),
-      ...Object.values(network.lines),
-      ...Object.values(network.stations).flatMap(station => [station, ...(station.formerNames ?? [])]),
-    ];
     for (const { stationA, stationB } of network.transfers ?? []) {
       this.transfersByStation.set(stationA, [...(this.transfersByStation.get(stationA) ?? []), stationB]);
       this.transfersByStation.set(stationB, [...(this.transfersByStation.get(stationB) ?? []), stationA]);
     }
-    this.languages = [...new Set(named.flatMap(item => Object.keys(item.names ?? {})))].sort();
   }
 
   /**
-   * Something's name in the current language, or its English name without one there.
+   * Something's names in other languages, by language code, but those the same as its English name.
    *
-   * @param named - A station, line, network or former name.
-   * @returns The name to show.
+   * @param named - A station or former name.
+   * @returns Its other names.
    */
-  public nameIn(named: Pick<Station, 'name' | 'names'>): string {
-    return (this.language === null ? undefined : named.names?.[this.language]) ?? named.name;
+  public otherNames(named: Pick<Station, 'name' | 'names'>): string[] {
+    return Object.entries(named.names ?? {})
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([, name]) => name)
+      .filter(name => name !== named.name);
   }
 
   /**
@@ -117,20 +110,29 @@ export class NetworkIndex {
    * @returns Its display name then.
    */
   public stationName(station: string, time = Infinity): string {
-    const info = this.stationOf(station);
-    return this.nameIn(info.formerNames?.find(former => time < toTimestamp(former.until)) ?? info);
+    return this.namedAt(station, time).name;
+  }
+
+  /**
+   * A station's label on the map on a date: its name, then its names in other languages beneath.
+   *
+   * @param station - A station id.
+   * @param time - The date's timestamp; today's name without one.
+   * @returns One name per line.
+   */
+  public stationLabel(station: string, time = Infinity): string {
+    const named = this.namedAt(station, time);
+    return [named.name, ...this.otherNames(named)].join('\n');
   }
 
   /**
    * A line's name as people say it.
    *
    * @param line - A line id.
-   * @returns The line's full name in the current language, or "<name> line", or a pseudo line's own name as it is.
+   * @returns "<name> line", or a pseudo line's own name as it is.
    */
   public lineName(line: string): string {
     const info = this.lineOf(line);
-    const local = this.language === null ? undefined : info.names?.[this.language];
-    if (local) return local;
     return info.pseudo ? info.name : `${info.name} line`;
   }
 
@@ -210,5 +212,17 @@ export class NetworkIndex {
       atStation.push(lineSegment);
       this.lineSegmentsByStation.set(station, atStation);
     }
+  }
+
+  /**
+   * A station, or the former name it had on a date.
+   *
+   * @param station - A station id.
+   * @param time - The date's timestamp.
+   * @returns What it was called then, with that name's other languages.
+   */
+  public namedAt(station: string, time: number): Pick<Station, 'name' | 'names'> {
+    const info = this.stationOf(station);
+    return info.formerNames?.find(former => time < toTimestamp(former.until)) ?? info;
   }
 }

@@ -1,18 +1,6 @@
-import type { NetworkStats } from '@railtime/renderer/transitMap.types';
-import type { FormerName } from '@railtime/schema/network.types';
+import type { FormerNameInfo, NetworkStats } from '@railtime/renderer/transitMap.types';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-/**
- * A language's name, in that language: `uk` is "українська".
- *
- * @param code - A BCP 47 language code.
- * @returns Its own name, capitalised, or the code if the browser does not know it.
- */
-export const languageName = (code: string): string => {
-  const name = new Intl.DisplayNames([code], { type: 'language' }).of(code) ?? code;
-  return name.charAt(0).toLocaleUpperCase(code) + name.slice(1);
-};
 
 /**
  * The year of a timestamp, in UTC.
@@ -57,10 +45,10 @@ export const formatSpan = (opened: string, closed?: string): string => (closed ?
  * A station's earlier names, in a line.
  *
  * @param formerNames - Its earlier names, oldest first.
- * @returns "Formerly G-Mex (until 2010)", or an empty string for none.
+ * @returns "Formerly G-Mex (until 2010)", each with its names in other languages after a slash, or an empty string for none.
  */
-export const formatFormerNames = (formerNames: FormerName[]): string => {
-  const names = formerNames.map(former => `${former.name} (until ${former.until.slice(0, 4)})`);
+export const formatFormerNames = (formerNames: FormerNameInfo[]): string => {
+  const names = formerNames.map(former => `${[former.name, ...former.otherNames].join(' / ')} (until ${former.until.slice(0, 4)})`);
   return names.length > 0 ? `Formerly ${names.join(', ')}` : '';
 };
 

@@ -8,8 +8,6 @@ export type ExplorerUrlState = {
   view?: MapView;
   /** The station whose panel is open. */
   station?: string;
-  /** The language names are shown in; English without one. */
-  language?: string;
 };
 
 /** An address's query, as the router gives it and takes it. */

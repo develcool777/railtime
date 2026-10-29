@@ -1,4 +1,4 @@
-import type { FormerName, IsoDate, LngLat, Network } from '@railtime/schema/network.types';
+import type { IsoDate, LngLat, Network } from '@railtime/schema/network.types';
 import type { Step } from './model/timeline.types';
 
 /** The map's colour theme. */
@@ -26,8 +26,6 @@ export type TransitMapOptions = {
   padding?: Padding;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
-  /** The language to name things in, one of the network's; English without one. */
-  language?: string;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.
@@ -69,12 +67,17 @@ export type StationInfo = {
   id: string;
   /** Its name on the date shown. */
   name: string;
+  /** That name in the network's other languages. */
+  otherNames: string[];
   lines: StationLineInfo[];
   /** The names it had before the date shown, oldest first. */
-  formerNames: FormerName[];
+  formerNames: FormerNameInfo[];
   /** Stations to change to from here, on the date shown. */
   transfers: TransferInfo[];
 };
+
+/** A name a station had, with its names in other languages, and the day it changed. */
+export type FormerNameInfo = { name: string; otherNames: string[]; until: IsoDate };
 
 /** A station to change to, and the lines it has on the date shown. */
 export type TransferInfo = { id: string; name: string; lines: { id: string; name: string; color: string }[] };

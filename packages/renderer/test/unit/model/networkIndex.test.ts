@@ -26,18 +26,17 @@ describe('NetworkIndex', () => {
     expect(index.transfersAt('b')).toEqual([]);
   });
 
-  test('names things in its language, falling back to English where it has no name there', () => {
+  test('labels a station with its name, then its names in other languages, as of a date', () => {
     const index = new NetworkIndex(tinyNetwork());
-    expect(index.languages).toEqual(['uk']);
-    index.language = 'uk';
-    expect(index.stationName('d')).toBe('Д');
-    expect(index.stationName('d', toTimestamp('1924-12-31'))).toBe('Старий Д');
-    expect(index.stationName('c')).toBe('C');
-    expect(index.lineName('red')).toBe('Червона лінія');
-    expect(index.lineName('blue')).toBe('Blue line');
-    expect(index.nameIn(index.network.networks.metro!)).toBe('Метро');
-    index.language = null;
+    expect(index.stationLabel('d')).toBe('D\nД');
+    expect(index.stationLabel('d', toTimestamp('1924-12-31'))).toBe('Old D\nСтарий Д');
+    expect(index.stationLabel('c')).toBe('C');
     expect(index.stationName('d')).toBe('D');
     expect(index.lineName('red')).toBe('Red line');
+  });
+
+  test('leaves out another name that is the same as the English one', () => {
+    const index = new NetworkIndex(tinyNetwork());
+    expect(index.otherNames({ name: 'Arena', names: { uk: 'Арена', pl: 'Arena' } })).toEqual(['Арена']);
   });
 });

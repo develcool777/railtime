@@ -4,6 +4,7 @@
       <div class="flex items-start justify-between gap-2">
         <div>
           <h2 class="text-highlighted text-lg leading-tight font-semibold">{{ station.name }}</h2>
+          <p v-for="name in station.otherNames" :key="name" class="text-toned text-sm leading-tight">{{ name }}</p>
           <p v-if="station.formerNames.length > 0" class="text-muted mt-0.5 text-xs">{{ formatFormerNames(station.formerNames) }}</p>
         </div>
         <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" aria-label="Close" @click="emit('close')" />
