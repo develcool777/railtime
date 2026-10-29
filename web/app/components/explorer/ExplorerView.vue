@@ -11,6 +11,14 @@
           <UButton to="/" icon="i-lucide-layout-grid" color="neutral" variant="soft" aria-label="All cities" />
         </UTooltip>
         <USelect :modelValue="city" :items="CITIES" icon="i-lucide-map-pin" class="w-52" aria-label="City" @update:modelValue="emit('city', String($event))" />
+        <USelect
+          v-if="languageItems.length > 1"
+          :modelValue="language"
+          :items="languageItems"
+          icon="i-lucide-languages"
+          class="w-40"
+          aria-label="Language of names"
+          @update:modelValue="setLanguage(String($event))" />
       </div>
       <ExplorerHud :mode :time :stepActive="mode === 'history' && step !== null" />
       <StepCard v-if="mode === 'history'" :step :revealed />
@@ -68,6 +76,7 @@
   import { useTransitMap } from '~/composables/transitMap.composable';
   import { CITIES, DEFAULT_SPEED } from '~/utils/explorer.constants';
   import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
+  import { languageName } from '~/utils/format.utils';
 
   import ExploreBar from './ExploreBar.vue';
   import ExplorerHud from './ExplorerHud.vue';
@@ -90,7 +99,22 @@
     minimapContainer: minimapElement,
     network: props.network,
     ...(opening.view ? { view: opening.view } : {}),
+    ...(opening.language ? { language: opening.language } : {}),
   });
+
+  /** English is the dataset's own `name`; any other language is one the city has names in. */
+  const ENGLISH = 'en';
+  const language = ref(opening.language ?? ENGLISH);
+  const languageItems = computed(() => [ENGLISH, ...(map.value?.languages ?? [])].map(code => ({ label: languageName(code), value: code })));
+
+  const setLanguage = (code: string) => {
+    const transitMap = map.value;
+    if (!transitMap) return;
+    language.value = code;
+    transitMap.setLanguage(code === ENGLISH ? null : code);
+    lines.value = transitMap.getLines();
+    if (station.value) station.value = transitMap.getStationInfo(station.value.id);
+  };
 
   /** `explore`: the map as it is, or was via the year slider. `history`: the playback. */
   const mode = ref<'explore' | 'history'>('explore');
@@ -101,6 +125,8 @@
 
   watch(map, transitMap => {
     if (!transitMap) return;
+    // A language the city has no names in is English.
+    if (!transitMap.languages.includes(language.value)) language.value = ENGLISH;
     const { start, end } = transitMap.range;
     if (opening.date !== undefined) transitMap.setDate(Math.min(Math.max(opening.date, start), end));
     // A station the network does not have is a stale link: open without it.
@@ -117,6 +143,7 @@
       ...(time.value && !isToday ? { date: time.value.time } : {}),
       ...(view.value ? { view: view.value } : {}),
       ...(station.value ? { station: station.value.id } : {}),
+      ...(language.value === ENGLISH ? {} : { language: language.value }),
     });
   });
   watch(query, next => {

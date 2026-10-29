@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import type { RenderState } from '../layers/lineStyle.types';
+import { DAY_MS } from '../model/date.utils';
 import type { RenameStep } from '../model/timeline.types';
 import type { StepInfo } from '../transitMap.types';
 import { RENAME_DRAW_SECONDS, RENAME_HOLD_SECONDS } from './step.constants';
@@ -37,10 +38,10 @@ export class RenameStepAnimation extends StepAnimation<RenameStep> {
     return {
       kind: 'rename',
       time: this.step.time,
-      title: `${this.step.from} renamed`,
-      subtitle: `now ${this.step.to}`,
+      title: `${this.nameOf(this.step.station, this.step.time - DAY_MS)} renamed`,
+      subtitle: `now ${this.nameOf(this.step.station)}`,
       color: first ? state.baseColor(first.line) : '#ffffff',
-      stations: [this.step.to],
+      stations: [this.nameOf(this.step.station)],
     };
   }
 

@@ -1,18 +1,18 @@
 {
   "meta": {"city":"Dnipro","start":"1995-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
   "networks": {
-    "metro": {"name":"Dnipro Metro"}
+    "metro": {"name":"Dnipro Metro","names":{"uk":"Дніпровський метрополітен"}}
   },
   "lines": {
-    "tsentralno-zavodska": {"name":"Tsentralno-Zavodska","network":"metro","mode":"metro","color":"#DD2A26"}
+    "tsentralno-zavodska": {"name":"Tsentralno-Zavodska","names":{"uk":"Центрально-Заводська лінія"},"network":"metro","mode":"metro","color":"#DD2A26"}
   },
   "stations": {
-    "metalurhiv": {"name":"Metalurhiv","coordinate":[34.97854,48.4766]},
-    "metrobudivnykiv": {"name":"Metrobudivnykiv","coordinate":[34.99687,48.47488]},
-    "pokrovska": {"name":"Pokrovska","coordinate":[34.92673,48.47929],"formerNames":[{"name":"Komunarivska","until":"2015-11-24"}]},
-    "prospekt-svobody": {"name":"Prospekt Svobody","coordinate":[34.94479,48.48027]},
-    "vokzalna": {"name":"Vokzalna","coordinate":[35.01756,48.47515]},
-    "zavodska": {"name":"Zavodska","coordinate":[34.96058,48.47576]}
+    "metalurhiv": {"name":"Metalurhiv","names":{"uk":"Металургів"},"coordinate":[34.97854,48.4766]},
+    "metrobudivnykiv": {"name":"Metrobudivnykiv","names":{"uk":"Метробудівників"},"coordinate":[34.99687,48.47488]},
+    "pokrovska": {"name":"Pokrovska","names":{"uk":"Покровська"},"coordinate":[34.92673,48.47929],"formerNames":[{"name":"Komunarivska","names":{"uk":"Комунарівська"},"until":"2015-11-24"}]},
+    "prospekt-svobody": {"name":"Prospekt Svobody","names":{"uk":"Проспект Свободи"},"coordinate":[34.94479,48.48027]},
+    "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[35.01756,48.47515]},
+    "zavodska": {"name":"Zavodska","names":{"uk":"Заводська"},"coordinate":[34.96058,48.47576]}
   },
   "segments": [
     {"stationA":"metalurhiv","stationB":"metrobudivnykiv","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.97854,48.47651],[34.99042,48.47673],[34.99101,48.47663],[34.99683,48.47483]]},

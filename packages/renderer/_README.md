@@ -21,6 +21,8 @@ map.pause();
 map.skip(); // finish this change, or jump to the next
 map.setVisibleLines(['line-a', 'line-b']);
 map.setTheme('light');
+map.languages; // languages the network has names in besides English: ['uk']
+map.setLanguage('uk'); // names on the map, in captions and panels in that language; null for English
 map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
 ```
 

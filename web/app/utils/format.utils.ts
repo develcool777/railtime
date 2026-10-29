@@ -4,6 +4,17 @@ import type { FormerName } from '@railtime/schema/network.types';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 /**
+ * A language's name, in that language: `uk` is "українська".
+ *
+ * @param code - A BCP 47 language code.
+ * @returns Its own name, capitalised, or the code if the browser does not know it.
+ */
+export const languageName = (code: string): string => {
+  const name = new Intl.DisplayNames([code], { type: 'language' }).of(code) ?? code;
+  return name.charAt(0).toLocaleUpperCase(code) + name.slice(1);
+};
+
+/**
  * The year of a timestamp, in UTC.
  *
  * @param time - A timestamp.

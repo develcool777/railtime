@@ -20,6 +20,12 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ date: 'soon', map: '12/51', station: '' })).toEqual({});
     });
 
+    test('reads a language code, and ignores what is not one', () => {
+      expect(parseExplorerQuery({ lang: 'uk' })).toEqual({ language: 'uk' });
+      expect(parseExplorerQuery({ lang: 'pt-BR' })).toEqual({ language: 'pt-BR' });
+      expect(parseExplorerQuery({ lang: 'Ukrainian' })).toEqual({});
+    });
+
     test('takes the first of a repeated parameter', () => {
       expect(parseExplorerQuery({ station: ['bank', 'oval'] })).toEqual({ station: 'bank' });
     });
@@ -36,7 +42,7 @@ describe('ExplorerUrlUtils', () => {
     });
 
     test('round-trips through parseExplorerQuery', () => {
-      const state = { date: Date.UTC(1968, 11, 1), view: { center: [-0.12, 51.5] as [number, number], zoom: 11.5 }, station: 'victoria' };
+      const state = { date: Date.UTC(1968, 11, 1), view: { center: [-0.12, 51.5] as [number, number], zoom: 11.5 }, station: 'victoria', language: 'uk' };
       expect(parseExplorerQuery(formatExplorerQuery(state))).toEqual(state);
     });
   });

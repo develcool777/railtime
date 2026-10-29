@@ -8,6 +8,7 @@ import type { Network, Segment, Station } from '@railtime/schema/network.types';
  */
 const orderStation = (station: Station): Station => ({
   name: station.name,
+  ...(station.names ? { names: station.names } : {}),
   coordinate: station.coordinate,
   ...(station.infill ? { infill: station.infill } : {}),
   ...(station.closed ? { closed: station.closed } : {}),

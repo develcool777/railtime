@@ -26,6 +26,8 @@ export type TransitMapOptions = {
   padding?: Padding;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
+  /** The language to name things in, one of the network's; English without one. */
+  language?: string;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.

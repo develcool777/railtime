@@ -24,6 +24,10 @@ export class NetworkIndex {
   public readonly bounds: Bounds;
   /** The middle of `bounds`: where a network with nothing on the map yet grows from. */
   public readonly centre: LngLat;
+  /** Every language the network has names in besides English, by code. */
+  public readonly languages: string[];
+  /** The language names are given in: a code from `languages`, or `null` for English. */
+  public language: string | null = null;
   /** Each line's position in the network: also the order lines sit side by side on shared track. */
   private readonly lineOrder: Map<string, number>;
   /** Line segments touching each station. */
@@ -42,6 +46,22 @@ export class NetworkIndex {
       [0, 0],
     ];
     this.centre = [(this.bounds[0][0] + this.bounds[1][0]) / 2, (this.bounds[0][1] + this.bounds[1][1]) / 2];
+    const named = [
+      ...Object.values(network.networks),
+      ...Object.values(network.lines),
+      ...Object.values(network.stations).flatMap(station => [station, ...(station.formerNames ?? [])]),
+    ];
+    this.languages = [...new Set(named.flatMap(item => Object.keys(item.names ?? {})))].sort();
+  }
+
+  /**
+   * Something's name in the current language, or its English name without one there.
+   *
+   * @param named - A station, line, network or former name.
+   * @returns The name to show.
+   */
+  public nameIn(named: Pick<Station, 'name' | 'names'>): string {
+    return (this.language === null ? undefined : named.names?.[this.language]) ?? named.name;
   }
 
   /**
@@ -92,17 +112,19 @@ export class NetworkIndex {
    */
   public stationName(station: string, time = Infinity): string {
     const info = this.stationOf(station);
-    return info.formerNames?.find(former => time < toTimestamp(former.until))?.name ?? info.name;
+    return this.nameIn(info.formerNames?.find(former => time < toTimestamp(former.until)) ?? info);
   }
 
   /**
    * A line's name as people say it.
    *
    * @param line - A line id.
-   * @returns "<name> line", or a pseudo line's own name as it is.
+   * @returns The line's full name in the current language, or "<name> line", or a pseudo line's own name as it is.
    */
   public lineName(line: string): string {
     const info = this.lineOf(line);
+    const local = this.language === null ? undefined : info.names?.[this.language];
+    if (local) return local;
     return info.pseudo ? info.name : `${info.name} line`;
   }
 
