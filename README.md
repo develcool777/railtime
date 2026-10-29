@@ -61,8 +61,15 @@ A new city is a new dataset in the same format, `data/<city>/<city>.json`, check
 plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the
 landing page and its own page at `/<city>`.
 
-Known gaps: only two closed sections (Jubilee to Charing Cross, Aldwych); today's station names
-throughout; Overground routes appear when they became Overground, not as the older railways they are.
+London's closed sections are in: the Metropolitan to Aylesbury, Verney Junction and Brill, the Central
+to Ongar, the District to Windsor, Hounslow Town, South Acton, Uxbridge and Hounslow West, the
+Bakerloo to Watford, the H&C to Richmond and Kensington, King William Street, the old East London and
+Northern City lines, and ghost stations. A line that left a section and came back (Aldwych in the
+war, the Bakerloo at Harrow 1982–84, the East London line 1995–98) is `suspended` there.
+
+Known gaps: the District's steam trains to Southend (1910–39) and Upminster (1902–05) are left out;
+the Northern City line is drawn as the Metropolitan from 1904, though it was independent until 1913;
+Overground routes appear when they became Overground, not as the older railways they are.
 
 Manchester's lines are the lines as built (Bury, Altrincham, the city centre, …), not today's coloured
 services, which share track and were reshuffled in 2018. Its one closed section is the 2012–2014 route
