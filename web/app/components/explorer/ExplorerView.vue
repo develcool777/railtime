@@ -25,11 +25,24 @@
           v-else-if="station"
           class="min-h-0 flex-1 overflow-auto"
           :station
-          :backLabel="tabLabel"
+          :backLabel="lineDetails?.name ?? tabLabel"
           :date="shownDate"
           @close="closeStation"
           @select="openStation" />
+        <LineView
+          v-else-if="lineDetails"
+          class="min-h-0 flex-1 overflow-auto"
+          :line="lineDetails"
+          :changes="lineChanges"
+          :time
+          :backLabel="tabLabel"
+          @close="openLine = null"
+          @station="openStation"
+          @change="map?.showChange($event)" />
         <template v-else>
+          <div class="px-4 pt-3">
+            <StationSearch :stations @select="openStation" />
+          </div>
           <div class="border-muted flex gap-1 border-b px-4 pt-2.5" role="tablist" aria-label="Panel">
             <button
               v-for="entry in tabs"
@@ -45,7 +58,7 @@
             </button>
           </div>
           <div class="min-h-0 flex-1 overflow-auto" role="tabpanel">
-            <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" />
+            <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="openLine = $event" />
             <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
             <PlansTab v-else :network :plan @choose="choosePlan" />
           </div>
@@ -153,11 +166,13 @@
   import DateBlock from './DateBlock.vue';
   import ExploreDock from './ExploreDock.vue';
   import LinesTab from './LinesTab.vue';
+  import LineView from './LineView.vue';
   import MapCredits from './MapCredits.vue';
   import PanelHeader from './PanelHeader.vue';
   import PlanLegend from './PlanLegend.vue';
   import PlansTab from './PlansTab.vue';
   import PlaybackDock from './PlaybackDock.vue';
+  import StationSearch from './StationSearch.vue';
   import StationView from './StationView.vue';
   import StepCard from './StepCard.vue';
   import UpNext from './UpNext.vue';
@@ -205,6 +220,20 @@
   const tabLabel = computed(() => tabs.value.find(entry => entry.id === tab.value)?.label ?? 'Lines');
   /** On a phone, whether the sheet shows the tabs. */
   const sheetOpen = ref(false);
+
+  /** The line whose panel is open, if any: its stops and history, on the date shown. */
+  const openLine = ref<string | null>(null);
+  const lineDetails = computed(() => {
+    // Read for the date shown: a line's stops change with it.
+    const shown = time.value?.cursor;
+    return openLine.value && map.value && shown !== undefined ? map.value.getLineDetails(openLine.value) : null;
+  });
+  const lineChanges = computed(() => {
+    const wanted = new Set(lineDetails.value?.changes ?? []);
+    return changes.value.filter(change => wanted.has(change.index));
+  });
+  /** The stations on the map on the date shown, for the search; none while playing, when it is hidden. */
+  const stations = computed(() => (time.value && !time.value.playing && map.value ? map.value.getStations() : []));
 
   /** The date shown, for what had opened by then; `null` in a plan's future. */
   const shownDate = computed(() => (!time.value || time.value.future ? null : time.value.time));

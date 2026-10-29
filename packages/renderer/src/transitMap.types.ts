@@ -118,6 +118,35 @@ export type LineInfo = {
   opened: number | null;
 };
 
+/** A station as a search lists it: on the map on the date shown. */
+export type StationSummary = {
+  id: string;
+  /** Its name on the date shown. */
+  name: string;
+  /** That name in the network's other languages. */
+  otherNames: string[];
+  /** The colours of the lines that call there, in line order. */
+  colors: string[];
+};
+
+/** A stop on a line, for a line's panel. */
+export type LineStop = { id: string; name: string };
+
+/** A line on the date shown, for a line's panel. */
+export type LineDetails = LineInfo & {
+  /** Its stops on the date shown. */
+  stations: number;
+  /** Its open track on the date shown, km. */
+  km: number;
+  /**
+   * Its stops in the order it runs, as runs of track: the longest first, then each branch, whose
+   * first stop is the station it leaves from. Empty when it is not open.
+   */
+  branches: LineStop[][];
+  /** The changes that are part of its story, by their position in the timeline (`ChangeInfo.index`). */
+  changes: number[];
+};
+
 /** Events a `TransitMap` emits, by name. */
 export type TransitMapEvents = {
   /** The basemap and overlay are ready. */
