@@ -54,7 +54,7 @@ describe.each(['london', 'tyne-and-wear', 'manchester'])('Player on %s', city =>
     expect(started).toBe(timeline.steps.length);
     expect(player.cursor).toBe(timeline.steps.length);
     expect(mostHighlighted).toBeGreaterThan(5);
-    // London takes about 11 minutes at 1×.
-    expect(elapsed).toBeLessThan(20 * 60);
+    // London takes about 24 minutes at 1×.
+    expect(elapsed).toBeLessThan(30 * 60);
   });
 });

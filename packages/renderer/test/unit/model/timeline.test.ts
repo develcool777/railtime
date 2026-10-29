@@ -59,6 +59,13 @@ describe('Timeline', () => {
     expect(timeline.servesStation('c', 'red', timeline.cursorAt(toTimestamp('1920-06-01')))).toBe(true);
   });
 
+  test('never stops a line at a station that opened after the line had left', () => {
+    const { timeline } = timelineOf();
+    expect(timeline.everServes('c', 'blue')).toBe(false);
+    expect(timeline.servesStation('c', 'blue', timeline.cursorAt(toTimestamp('1935-01-01')))).toBe(false);
+    expect(timeline.steps.filter(step => step.kind === 'infill')).toEqual([expect.objectContaining({ station: 'c', lines: ['red'] })]);
+  });
+
   test('stops a line calling at a closed station, still while its closing step plays', () => {
     const { timeline } = timelineOf();
     const closing = timeline.steps.find(step => step.kind === 'stationClose')!;
@@ -124,8 +131,22 @@ describe('Timeline on London', () => {
     expect(stations).toContain('uxbridge');
   });
 
-  test('ends with every line open', () => {
+  test('ends with every line open but the two that closed for good', () => {
     const open = new Set(index.lineSegments.filter(lineSegment => timeline.isOpen(lineSegment, timeline.steps.length)).map(lineSegment => lineSegment.line));
-    expect([...open].sort()).toEqual([...index.lineIds].sort());
+    const closed = ['east-london', 'northern-city'];
+    expect([...open].sort()).toEqual(index.lineIds.filter(line => !closed.includes(line)).sort());
+  });
+
+  test('suspends the Aldwych branch through the war', () => {
+    const aldwych = index.lineSegments.filter(lineSegment => lineSegment.segment.stationB === 'aldwych' || lineSegment.segment.stationA === 'aldwych');
+    expect(aldwych.map(lineSegment => [lineSegment.opens, lineSegment.closes])).toEqual([
+      [toTimestamp('1907-11-30'), toTimestamp('1940-09-22')],
+      [toTimestamp('1946-07-01'), toTimestamp('1994-10-01')],
+    ]);
+  });
+
+  test('never stops the District at Canada Water, opened long after it left the East London line', () => {
+    expect(timeline.everServes('canada-water', 'district')).toBe(false);
+    expect(timeline.everServes('canada-water', 'east-london')).toBe(true);
   });
 });
