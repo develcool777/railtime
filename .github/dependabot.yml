@@ -1,0 +1,28 @@
+# Weekly update PRs: one for the workflow's actions, one per group of packages.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  # The pnpm workspace, from its root lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Supply-chain guard, as pnpm's minimumReleaseAge: only versions public for a few days.
+    cooldown:
+      default-days: 3
+    groups:
+      nuxt:
+        patterns: ['nuxt', '@nuxt/*', 'vue', 'vue-*', 'tailwindcss']
+      renderer:
+        patterns: ['maplibre-gl', 'zod']
+      lint-and-test:
+        patterns: ['eslint', 'eslint-*', '@eslint/*', 'typescript-eslint', 'vitest', '@vitest/*', 'prettier', 'knip', 'globals']
+      types:
+        patterns: ['typescript', '@types/*']
