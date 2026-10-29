@@ -1,19 +1,25 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { SHARED_TEST_OPTIONS, assertTestsMirrorSource } from './vitest.shared.ts';
+import { SHARED_TEST_OPTIONS, assertTestsMirrorDatasets, assertTestsMirrorSource } from './vitest.shared.ts';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 
 assertTestsMirrorSource(ROOT, 'scripts/test/unit', 'scripts');
+assertTestsMirrorDatasets(ROOT);
 
 /**
  * Every project's tests in one run. Each package keeps its tests beside its code, in `test/`, with a
- * `vitest.config.ts` of its own (`pnpm --filter @railtime/renderer test-unit` runs one); the importer
- * (`scripts/`, the root workspace's own code) is the one project defined here.
+ * `vitest.config.ts` of its own (`pnpm --filter @railtime/renderer test-unit` runs one). Two are defined
+ * here: `scripts/`, the root workspace's own code, and `data/`, each city's history played through the
+ * renderer.
  */
 export default defineConfig({
   test: {
-    projects: ['packages/*/vitest.config.ts', { test: { ...SHARED_TEST_OPTIONS, name: 'scripts', include: ['scripts/test/unit/**/*.test.ts'] } }],
+    projects: [
+      'packages/*/vitest.config.ts',
+      { test: { ...SHARED_TEST_OPTIONS, name: 'scripts', include: ['scripts/test/unit/**/*.test.ts'] } },
+      { test: { ...SHARED_TEST_OPTIONS, name: 'data', include: ['data/test/unit/**/*.test.ts'] } },
+    ],
     coverage: {
       provider: 'v8',
       // Every test tool writes under `test-reports/`: one folder to look in, and one to ignore.

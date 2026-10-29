@@ -1,6 +1,6 @@
 import type { LngLat, Network, Segment, Station } from '@railtime/schema/network.types';
 
-/** About 1 km of longitude at London's latitude. */
+/** About 1 km of longitude at 51.5° north, the test line's latitude. */
 const ONE_KM = 0.0144;
 
 /**

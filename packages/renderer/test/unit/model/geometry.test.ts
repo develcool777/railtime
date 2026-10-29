@@ -9,7 +9,7 @@ describe('GeometryUtils', () => {
     });
 
     test('shrinks a degree of longitude with the latitude it is measured at', () => {
-      // London, Newcastle: cos(51.5°) and cos(55°) of the 111.32 km at the equator.
+      // At 51.5° and 55° north: cos(51.5°) and cos(55°) of the 111.32 km at the equator.
       expect(distanceKm([-0.5, 51.5], [0.5, 51.5])).toBeCloseTo(69.3, 1);
       expect(distanceKm([-2, 55], [-1, 55])).toBeCloseTo(63.85, 1);
     });
