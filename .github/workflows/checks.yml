@@ -30,3 +30,4 @@ jobs:
       - run: pnpm test-unit-ci
       - run: pnpm eslint-check
       - run: pnpm format-check
+      - run: pnpm code-quality:dead-code

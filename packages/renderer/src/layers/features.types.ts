@@ -1,13 +1,13 @@
 import type { LngLat } from '@railtime/schema/network.types';
 
 /** Minimal GeoJSON, so the renderer needs no @types/geojson. */
-export type Feature<Geometry, Properties> = { type: 'Feature'; properties: Properties; geometry: Geometry };
+type Feature<Geometry, Properties> = { type: 'Feature'; properties: Properties; geometry: Geometry };
 
 /** A GeoJSON feature collection. */
 export type FeatureCollection<Item> = { type: 'FeatureCollection'; features: Item[] };
 
 /** Properties of a drawn line. */
-export type LineProperties = {
+type LineProperties = {
   color: string;
   /** Side-by-side slot on shared track: …-1, -0.5, 0, 0.5, 1… (see `lineStyle.utils.ts`). */
   offset: number;

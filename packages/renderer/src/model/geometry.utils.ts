@@ -27,10 +27,7 @@ export const distanceKm = (from: LngLat, to: LngLat): number => {
  * @param fraction - How far along, 0..1.
  * @returns The point.
  */
-export const interpolate = (from: LngLat, to: LngLat, fraction: number): LngLat => [
-  from[0] + (to[0] - from[0]) * fraction,
-  from[1] + (to[1] - from[1]) * fraction,
-];
+const interpolate = (from: LngLat, to: LngLat, fraction: number): LngLat => [from[0] + (to[0] - from[0]) * fraction, from[1] + (to[1] - from[1]) * fraction];
 
 /**
  * How far along a polyline each of its points lies.

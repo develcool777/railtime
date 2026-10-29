@@ -11,7 +11,8 @@ A pnpm monorepo: `packages/schema` (the network format), `packages/renderer` (th
 
 ## Checks
 
-`pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check` and `pnpm format-check` must all pass.
+`pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
+`pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
 After editing `data/<city>/<city>.json`, run `pnpm data:format <city>`.
 
 ## Conventions (enforced)
