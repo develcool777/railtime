@@ -35,7 +35,18 @@ import {
   SELECTED_STATION_ZOOM,
   SELECT_FLY_MS,
 } from './transitMap.constants';
-import type { CameraMode, LineInfo, MapView, Padding, StationInfo, Theme, TimeState, TransitMapEvents, TransitMapOptions } from './transitMap.types';
+import type {
+  CameraMode,
+  LineInfo,
+  MapView,
+  Padding,
+  StationInfo,
+  Theme,
+  TimeState,
+  TransferInfo,
+  TransitMapEvents,
+  TransitMapOptions,
+} from './transitMap.types';
 
 /**
  * An interactive transit map with a history player: the renderer's one public entry.
@@ -331,6 +342,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       name: this.index.stationName(station, this.player.clock),
       lines: lines.sort((first, second) => first.opened.localeCompare(second.opened)),
       formerNames: (info.formerNames ?? []).map(former => ({ name: this.index.nameIn(former), until: former.until })),
+      transfers: this.transfersFrom(station),
     };
   }
 
@@ -340,6 +352,32 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.minimap?.destroy();
     this.map.remove();
     this.removeAllListeners();
+  }
+
+  /**
+   * The stations a station changes to on the date shown, with their lines then.
+   *
+   * @param station - The station id.
+   * @returns Each one on the map now.
+   */
+  private transfersFrom(station: string): TransferInfo[] {
+    const cursor = this.player.cursor;
+    return this.index.transfersAt(station).flatMap(other => {
+      // The lines calling there now, each as it is drawn then (a branch still shown as its parent).
+      const calling = this.index
+        .lineSegmentsAt(other)
+        .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(other, lineSegment.line, cursor))
+        .map(lineSegment => this.timeline.identityOf(lineSegment.line, cursor).id);
+      if (calling.length === 0) return [];
+      const ordered = [...new Set(calling)].sort(this.index.compareLines);
+      return [
+        {
+          id: other,
+          name: this.index.stationName(other, this.player.clock),
+          lines: ordered.map(line => ({ id: line, name: this.index.lineName(line), color: this.baseColor(line) })),
+        },
+      ];
+    });
   }
 
   /** The overlay's layer groups, bottom to top. */
@@ -499,6 +537,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.stationLayer.update({
       now,
       stations,
+      linked: snapshot.linked,
       highlighted: drawing.highlighted,
       fading: drawing.fading,
       newLabelOpacity: clamp((1 - this.player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),

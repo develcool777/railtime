@@ -5,6 +5,7 @@ export const OVERLAY_PREFIX = 'rt-';
 export const SOURCES = {
   lines: 'rt-lines',
   ghosts: 'rt-ghosts',
+  transfers: 'rt-transfers',
   active: 'rt-active',
   heads: 'rt-heads',
   stations: 'rt-stations',
@@ -17,6 +18,8 @@ export const LAYERS = {
   ghosts: 'rt-ghosts',
   glow: 'rt-glow',
   lines: 'rt-lines',
+  transferCasing: 'rt-transfer-casing',
+  transferCore: 'rt-transfer-core',
   activeGlow: 'rt-active-glow',
   activeLines: 'rt-active-lines',
   headGlow: 'rt-head-glow',

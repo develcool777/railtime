@@ -72,7 +72,12 @@ export type StationInfo = {
   lines: StationLineInfo[];
   /** Its earlier names, oldest first. */
   formerNames: FormerName[];
+  /** Stations to change to from here, on the date shown. */
+  transfers: TransferInfo[];
 };
+
+/** A station to change to, and the lines it has on the date shown. */
+export type TransferInfo = { id: string; name: string; lines: { id: string; name: string; color: string }[] };
 
 /** A line, for a legend or toggles. */
 export type LineInfo = { id: string; name: string; network: string; networkName: string; color: string };

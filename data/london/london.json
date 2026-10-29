@@ -954,5 +954,18 @@
     {"stationA":"white-city-hammersmith","stationB":"wood-lane","lines":{"circle":{"open":"2009-12-13"},"hammersmith-city":{"open":"1864-06-13"}},"coordinates":[[-0.22509,51.50901],[-0.22475,51.50939],[-0.22401,51.50995]]},
     {"stationA":"wimbledon","stationB":"wimbledon-park","lines":{"district":{"open":"1889-06-03"}},"coordinates":[[-0.20593,51.42165],[-0.2026,51.42386],[-0.20167,51.42461],[-0.20075,51.42564],[-0.19834,51.4289],[-0.19786,51.43015],[-0.19776,51.43119],[-0.19791,51.4322],[-0.19838,51.43331],[-0.19879,51.4337]]},
     {"stationA":"wood-siding","stationB":"wotton","lines":{"metropolitan":{"open":"1899-12-01","close":"1935-12-01"}},"coordinates":[[-1.0244,51.833],[-1.02458,51.833],[-1.0234,51.83315],[-1.02211,51.83327],[-1.01978,51.83351],[-1.01855,51.83364],[-1.01824,51.83364],[-1.01783,51.8336],[-1.01617,51.83334],[-1.0147,51.83279],[-1.01404,51.83248],[-1.01363,51.83231],[-1.0131,51.83213],[-1.01279,51.83207],[-1.01216,51.83194],[-1.01203,51.83194],[-1.01152,51.83191],[-1.01087,51.83193],[-1.01,51.8321],[-1.00926,51.83228],[-1.00695,51.83287],[-1.00454,51.83348],[-1.00329,51.83383],[-1.00271,51.83409],[-1.00198,51.83454],[-1.00121,51.83504],[-1.00041,51.83533],[-0.99956,51.83552],[-0.99877,51.83563],[-0.99823,51.83559],[-0.9972,51.83549],[-0.99695,51.83542],[-0.99655,51.83531],[-0.99624,51.83519],[-0.99596,51.83509],[-0.99487,51.83453],[-0.99371,51.83381],[-0.99283,51.83336],[-0.99244,51.83325],[-0.9926,51.8333]]}
+  ],
+  "transfers": [
+    {"stationA":"bank","stationB":"monument"},
+    {"stationA":"canary-wharf","stationB":"canary-wharf-2"},
+    {"stationA":"clapham-high-street","stationB":"clapham-north"},
+    {"stationA":"dalston-junction","stationB":"dalston-kingsland"},
+    {"stationA":"euston","stationB":"euston-square"},
+    {"stationA":"forest-gate","stationB":"wanstead-park"},
+    {"stationA":"hackney-central","stationB":"hackney-downs"},
+    {"stationA":"paddington","stationB":"paddington-2"},
+    {"stationA":"seven-sisters","stationB":"south-tottenham"},
+    {"stationA":"walthamstow-central","stationB":"walthamstow-queens-road"},
+    {"stationA":"white-city","stationB":"wood-lane"}
   ]
 }

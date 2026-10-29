@@ -19,6 +19,13 @@ describe('NetworkIndex', () => {
     expect(after).toMatchObject({ opens: toTimestamp('1945-01-01'), closes: toTimestamp('1950-01-01'), previous: before, next: null });
   });
 
+  test("knows each station's transfers, both ways", () => {
+    const index = new NetworkIndex(tinyNetwork());
+    expect(index.transfersAt('a')).toEqual(['d']);
+    expect(index.transfersAt('d')).toEqual(['a']);
+    expect(index.transfersAt('b')).toEqual([]);
+  });
+
   test('names things in its language, falling back to English where it has no name there', () => {
     const index = new NetworkIndex(tinyNetwork());
     expect(index.languages).toEqual(['uk']);

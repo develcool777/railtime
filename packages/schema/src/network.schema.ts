@@ -37,41 +37,57 @@ const segmentSchema = z.object({
   ),
 });
 
+/** The network's shape, its references between parts unchecked. */
+const networkShape = z.object({
+  meta: z.object({ city: z.string(), start: isoDate, built: isoDate, attribution: z.string() }),
+  networks: z.record(z.string(), z.object({ name: z.string(), names: names.optional() })),
+  lines: z.record(z.string(), lineSchema),
+  stations: z.record(z.string(), stationSchema),
+  segments: z.array(segmentSchema),
+  transfers: z.array(z.object({ stationA: z.string(), stationB: z.string() })).optional(),
+});
+
+/**
+ * Checks the stations' references and dates, and the transfers between them.
+ *
+ * @param network - The network, its shape already valid.
+ * @param problem - Reports one problem.
+ */
+const checkStations = (network: z.infer<typeof networkShape>, problem: (message: string) => void): void => {
+  for (const [stationId, station] of Object.entries(network.stations)) {
+    for (const [lineId, date] of Object.entries(station.closed ?? {})) {
+      if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
+      const opened = station.infill?.[lineId];
+      if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
+    }
+    const until = (station.formerNames ?? []).map(former => former.until);
+    if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
+  }
+  for (const { stationA, stationB } of network.transfers ?? []) {
+    for (const station of [stationA, stationB]) if (!network.stations[station]) problem(`transfer ${stationA} – ${stationB}: unknown station ${station}`);
+    if (stationA === stationB) problem(`transfer ${stationA}: to itself`);
+  }
+};
+
 /** The network's shape, plus the references between its parts. */
-const networkSchema = z
-  .object({
-    meta: z.object({ city: z.string(), start: isoDate, built: isoDate, attribution: z.string() }),
-    networks: z.record(z.string(), z.object({ name: z.string(), names: names.optional() })),
-    lines: z.record(z.string(), lineSchema),
-    stations: z.record(z.string(), stationSchema),
-    segments: z.array(segmentSchema),
-  })
-  .superRefine((network, context) => {
-    const problem = (message: string) => context.addIssue({ code: 'custom', message });
-    for (const [lineId, line] of Object.entries(network.lines)) {
-      if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
-      for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
+const networkSchema = networkShape.superRefine((network, context) => {
+  const problem = (message: string) => context.addIssue({ code: 'custom', message });
+  for (const [lineId, line] of Object.entries(network.lines)) {
+    if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
+    for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
+  }
+  checkStations(network, problem);
+  network.segments.forEach((segment, position) => {
+    for (const station of [segment.stationA, segment.stationB]) if (!network.stations[station]) problem(`segment ${position}: unknown station ${station}`);
+    for (const [lineId, dates] of Object.entries(segment.lines)) {
+      if (!network.lines[lineId]) problem(`segment ${position}: unknown line ${lineId}`);
+      if (dates.close && dates.close <= dates.open) problem(`segment ${position}: ${lineId} closes before it opens`);
+      // Open, then each spell's start and end, then close: each after the one before.
+      const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
+      if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`segment ${position}: ${lineId} suspended out of order`);
     }
-    for (const [stationId, station] of Object.entries(network.stations)) {
-      for (const [lineId, date] of Object.entries(station.closed ?? {})) {
-        if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
-        const opened = station.infill?.[lineId];
-        if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
-      }
-      const until = (station.formerNames ?? []).map(former => former.until);
-      if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
-    }
-    network.segments.forEach((segment, position) => {
-      for (const station of [segment.stationA, segment.stationB]) if (!network.stations[station]) problem(`segment ${position}: unknown station ${station}`);
-      for (const [lineId, dates] of Object.entries(segment.lines)) {
-        if (!network.lines[lineId]) problem(`segment ${position}: unknown line ${lineId}`);
-        if (dates.close && dates.close <= dates.open) problem(`segment ${position}: ${lineId} closes before it opens`);
-        // Open, then each spell's start and end, then close: each after the one before.
-        const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
-        if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`segment ${position}: ${lineId} suspended out of order`);
-      }
-    });
   });
+});
 
 /**
  * Validates importer output before it is written.

@@ -97,6 +97,12 @@ export type Segment = {
   lines: Record<string, SegmentLine>;
 };
 
+/** Two stations, each its own stop with its own name, that passengers change between (Bank and Monument). */
+export type Transfer = {
+  stationA: string;
+  stationB: string;
+};
+
 /** A city's rail network and its history. */
 export type Network = {
   meta: {
@@ -110,4 +116,6 @@ export type Network = {
   lines: Record<string, Line>;
   stations: Record<string, Station>;
   segments: Segment[];
+  /** Changes between stations that are not one station: drawn linked, wherever both are open. */
+  transfers?: Transfer[];
 };

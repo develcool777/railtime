@@ -30,6 +30,8 @@ export class NetworkIndex {
   public language: string | null = null;
   /** Each line's position in the network: also the order lines sit side by side on shared track. */
   private readonly lineOrder: Map<string, number>;
+  /** The stations each station has a transfer to. */
+  private readonly transfersByStation = new Map<string, string[]>();
   /** Line segments touching each station. */
   private readonly lineSegmentsByStation = new Map<string, LineSegment[]>();
 
@@ -51,6 +53,10 @@ export class NetworkIndex {
       ...Object.values(network.lines),
       ...Object.values(network.stations).flatMap(station => [station, ...(station.formerNames ?? [])]),
     ];
+    for (const { stationA, stationB } of network.transfers ?? []) {
+      this.transfersByStation.set(stationA, [...(this.transfersByStation.get(stationA) ?? []), stationB]);
+      this.transfersByStation.set(stationB, [...(this.transfersByStation.get(stationB) ?? []), stationA]);
+    }
     this.languages = [...new Set(named.flatMap(item => Object.keys(item.names ?? {})))].sort();
   }
 
@@ -126,6 +132,16 @@ export class NetworkIndex {
     const local = this.language === null ? undefined : info.names?.[this.language];
     if (local) return local;
     return info.pseudo ? info.name : `${info.name} line`;
+  }
+
+  /**
+   * The stations a station has a transfer to.
+   *
+   * @param station - A station id.
+   * @returns Their ids.
+   */
+  public transfersAt(station: string): string[] {
+    return this.transfersByStation.get(station) ?? [];
   }
 
   /**

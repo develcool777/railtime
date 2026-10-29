@@ -22,7 +22,7 @@
       </div>
       <ExplorerHud :mode :time :stepActive="mode === 'history' && step !== null" />
       <StepCard v-if="mode === 'history'" :step :revealed />
-      <StationPanel v-if="station" :station @close="closeStation" />
+      <StationPanel v-if="station" :station @close="closeStation" @select="openStation" />
     </div>
 
     <div class="absolute top-4 right-4 flex flex-col items-end gap-3 sm:top-5 sm:right-5">
@@ -159,6 +159,13 @@
   const closeStation = () => {
     station.value = null;
     map.value?.selectStation(null);
+  };
+
+  /** Opens a station's panel and rings it, as a click on it would. */
+  const openStation = (id: string) => {
+    if (!map.value) return;
+    station.value = map.value.getStationInfo(id);
+    map.value.selectStation(id);
   };
 
   const showDate = (date: number) => map.value?.setDate(date);
