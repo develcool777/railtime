@@ -66,5 +66,6 @@ throughout; Overground routes appear when they became Overground, not as the old
 
 Manchester's lines are the lines as built (Bury, Altrincham, the city centre, …), not today's coloured
 services, which share track and were reshuffled in 2018. Its one closed section is the 2012–2014 route
-to Oldham Mumps over the old railway via Werneth. Stops that have since closed (Mosley Street, High
-Street, Woodlands Road) are not drawn.
+over the old railway via Werneth to the temporary Oldham Mumps stop. Stops that closed while their
+track stayed (Mosley Street, High Street, Woodlands Road) and renamed ones (G-Mex, Barton Dock Road)
+are in the dataset.
