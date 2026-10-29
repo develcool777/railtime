@@ -1,0 +1,99 @@
+{
+  "meta": {"city":"Bristol","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "networks": {
+    "metro": {"name":"Bristol Mass Transit"}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "supertram": {
+      "name": "Bristol Supertram",
+      "status": "abandoned",
+      "description": "Line One of a light rail scheme backed by the government in 2001: 16 stops over about 17 km from Union Street in the centre via Temple Meads, reopened stations on the Filton Bank line and Bristol Parkway to Aztec West, with an extension proposed to MoD Abbey Wood and UWE. South Gloucestershire withdrew over a Cribbs Causeway extension, and Bristol City Council cancelled the scheme in March 2004.",
+      "lines": {
+        "line-one": {"name":"Line One","network":"metro","mode":"light-metro","color":"#0072CE"}
+      },
+      "stations": {
+        "ashley-down": {"name":"Ashley Down","coordinate":[-2.5768,51.4783]},
+        "aztec-west": {"name":"Aztec West","coordinate":[-2.5666,51.5432]},
+        "bonnington-walk": {"name":"Bonnington Walk","coordinate":[-2.5691,51.4944]},
+        "bristol-parkway": {"name":"Bristol Parkway","coordinate":[-2.5427,51.5136]},
+        "filton-abbey-wood": {"name":"Filton Abbey Wood","coordinate":[-2.5638,51.5034]},
+        "great-meadow": {"name":"Great Meadow","coordinate":[-2.5335,51.5253]},
+        "lawrence-hill": {"name":"Lawrence Hill","coordinate":[-2.5644,51.4582]},
+        "mod-abbey-wood": {"name":"MoD Abbey Wood","coordinate":[-2.558,51.5023]},
+        "parkway-north": {"name":"Parkway North","coordinate":[-2.5395,51.5185]},
+        "patchway-brook": {"name":"Patchway Brook","coordinate":[-2.556,51.5405]},
+        "prince-street": {"name":"Prince Street","coordinate":[-2.5966,51.4505]},
+        "quay-street": {"name":"Quay Street","coordinate":[-2.5953,51.4557]},
+        "savages-wood": {"name":"Savages Wood","coordinate":[-2.548,51.534]},
+        "st-mary-redcliffe": {"name":"St Mary Redcliffe","coordinate":[-2.5893,51.4485]},
+        "stapleton-road": {"name":"Stapleton Road","coordinate":[-2.5661,51.4675]},
+        "temple-meads": {"name":"Temple Meads","coordinate":[-2.5806,51.4491]},
+        "union-street": {"name":"Union Street","coordinate":[-2.5916,51.4573]},
+        "uwe": {"name":"University of the West of England","coordinate":[-2.5503,51.5008]}
+      },
+      "sections": [
+        {"line":"line-one","stations":["union-street","quay-street","prince-street","st-mary-redcliffe","temple-meads"]},
+        {"line":"line-one","stations":["temple-meads","lawrence-hill","stapleton-road","ashley-down","bonnington-walk"]},
+        {"line":"line-one","stations":["bonnington-walk","filton-abbey-wood","bristol-parkway"]},
+        {"line":"line-one","stations":["bristol-parkway","parkway-north","great-meadow","savages-wood","patchway-brook","aztec-west"]},
+        {"line":"line-one","stations":["filton-abbey-wood","mod-abbey-wood","uwe"]}
+      ]
+    },
+    "mass-transit": {
+      "name": "Bristol underground mass transit",
+      "status": "proposed",
+      "description": "Four radial routes from Temple Meads studied for the West of England Combined Authority in the 2019 Jacobs Steer early options report, made public in November 2022: south to the airport, north to Aztec West and Almondsbury, north-east to the Science Park and south-east to Keynsham, each with an underground option (about £4.5 billion in all). Shown here as the underground options; the scheme remains at feasibility stage.",
+      "lines": {
+        "route-1": {"name":"Route 1 (Airport)","network":"metro","mode":"light-metro","color":"#E4312B"},
+        "route-2": {"name":"Route 2 (North Fringe)","network":"metro","mode":"light-metro","color":"#0072CE"},
+        "route-3": {"name":"Route 3 (East Fringe)","network":"metro","mode":"light-metro","color":"#009A44"},
+        "route-4": {"name":"Route 4 (Keynsham)","network":"metro","mode":"light-metro","color":"#F2A900"}
+      },
+      "stations": {
+        "a38-south-park-and-ride": {"name":"A38 South Park & Ride","coordinate":[-2.638,51.411]},
+        "almondsbury-park-and-ride": {"name":"Almondsbury Park & Ride","coordinate":[-2.568,51.55]},
+        "arnos-vale": {"name":"Arnos Vale","coordinate":[-2.566,51.441]},
+        "aztec-west": {"name":"Aztec West","coordinate":[-2.5666,51.5432]},
+        "brabazon": {"name":"Brabazon","coordinate":[-2.588,51.515]},
+        "brislington": {"name":"Brislington","coordinate":[-2.548,51.434]},
+        "brislington-park-and-ride": {"name":"Brislington Park & Ride","coordinate":[-2.5372,51.4278]},
+        "bristol-airport": {"name":"Bristol Airport","coordinate":[-2.714,51.384]},
+        "bristol-and-bath-science-park": {"name":"Bristol and Bath Science Park","coordinate":[-2.4777,51.5009]},
+        "bristol-bus-station": {"name":"Bus Station","coordinate":[-2.5927,51.4591]},
+        "callowhill-court": {"name":"Callowhill Court","coordinate":[-2.5878,51.4584]},
+        "cribbs-causeway": {"name":"Cribbs Causeway","coordinate":[-2.5953,51.525]},
+        "daventry-road": {"name":"Daventry Road","coordinate":[-2.5786,51.4319]},
+        "filton": {"name":"Filton","coordinate":[-2.58,51.5055]},
+        "hengrove-park": {"name":"Hengrove Park","coordinate":[-2.5809,51.4157]},
+        "hicks-gate": {"name":"Hicks Gate Park & Ride","coordinate":[-2.5258,51.4266]},
+        "highridge-road": {"name":"Highridge Road","coordinate":[-2.6232,51.4121]},
+        "horfield-common": {"name":"Horfield Common","coordinate":[-2.5915,51.487]},
+        "keynsham": {"name":"Keynsham","coordinate":[-2.495,51.4179]},
+        "kings-chase": {"name":"Kings Chase","coordinate":[-2.5085,51.4633]},
+        "lawrence-hill": {"name":"Lawrence Hill","coordinate":[-2.5644,51.4582]},
+        "longmead-avenue": {"name":"Longmead Avenue","coordinate":[-2.5932,51.4822]},
+        "southmead-hospital": {"name":"Southmead Hospital","coordinate":[-2.5914,51.4969]},
+        "st-george-park": {"name":"St George's Park","coordinate":[-2.5469,51.4615]},
+        "st-philips-marsh": {"name":"St Philip's Marsh","coordinate":[-2.564,51.447]},
+        "staple-hill-park": {"name":"Staple Hill Park","coordinate":[-2.4983,51.4826]},
+        "symes-avenue": {"name":"Symes Avenue","coordinate":[-2.5998,51.4069]},
+        "temple-meads": {"name":"Temple Meads","coordinate":[-2.5806,51.4491]},
+        "the-arches": {"name":"The Arches","coordinate":[-2.5925,51.4685]}
+      },
+      "sections": [
+        {"line":"route-1","stations":["temple-meads","daventry-road","hengrove-park","symes-avenue","highridge-road"]},
+        {"line":"route-1","stations":["highridge-road","a38-south-park-and-ride","bristol-airport"]},
+        {"line":"route-2","stations":["temple-meads","callowhill-court","bristol-bus-station","the-arches","longmead-avenue"]},
+        {"line":"route-2","stations":["longmead-avenue","horfield-common","southmead-hospital","filton"]},
+        {"line":"route-2","stations":["filton","brabazon","cribbs-causeway","aztec-west","almondsbury-park-and-ride"]},
+        {"line":"route-3","stations":["temple-meads","lawrence-hill","st-george-park","kings-chase"]},
+        {"line":"route-3","stations":["kings-chase","staple-hill-park","bristol-and-bath-science-park"]},
+        {"line":"route-4","stations":["temple-meads","st-philips-marsh","arnos-vale","brislington"]},
+        {"line":"route-4","stations":["brislington","brislington-park-and-ride","hicks-gate","keynsham"]}
+      ]
+    }
+  }
+}

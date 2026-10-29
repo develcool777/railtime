@@ -132,5 +132,57 @@
     {"stationA":"st-peters","stationB":"stadium-of-light","lines":{"yellow":{"open":"2002-03-31","close":"2005-12-12"},"green":{"open":"2005-12-12"}},"coordinates":[[-1.38375,54.91104],[-1.38366,54.91075],[-1.38399,54.91311],[-1.3841,54.91508],[-1.38382,54.91614],[-1.38296,54.91793],[-1.38293,54.91815]]},
     {"stationA":"st-peters","stationB":"sunderland","lines":{"yellow":{"open":"2002-03-31","close":"2005-12-12"},"green":{"open":"2005-12-12"}},"coordinates":[[-1.38375,54.91104],[-1.38366,54.91075],[-1.3833,54.90899],[-1.38265,54.90736],[-1.38243,54.90646],[-1.38238,54.9059]]},
     {"stationA":"walkergate","stationB":"wallsend","lines":{"yellow":{"open":"1982-11-14"}},"coordinates":[[-1.55953,54.98534],[-1.5599,54.9853],[-1.53232,54.98968],[-1.53275,54.9896]]}
-  ]
+  ],
+  "plans": {
+    "washington": {
+      "name": "Metro to Washington",
+      "status": "planned",
+      "description": "Nexus's 13 km loop along the northern Leamside line from Pelaw to South Hylton, over the Victoria Viaduct, with three new stations; its route and stations were published in September 2026, £900m of the region's 2025 transport settlement is set aside for it, and the first trains are hoped for in 2033.",
+      "stations": {
+        "follingsby": {"name":"Follingsby","coordinate":[-1.51134,54.93405]},
+        "washington-north": {"name":"Washington North","coordinate":[-1.50211,54.91312]},
+        "washington-south": {"name":"Washington South","coordinate":[-1.50482,54.89358]}
+      },
+      "sections": [
+        {"line":"green","stations":["pelaw","follingsby","washington-north"]},
+        {"line":"green","stations":["washington-north","washington-south","south-hylton"]}
+      ]
+    },
+    "extension-corridors": {
+      "name": "Metro extension corridors",
+      "status": "proposed",
+      "description": "The corridors Nexus named in 2013 and carried into the 2016 Metro and Local Rail Strategy, studied for feasibility from 2020: Metro on the Durham Coast line to Seaham, the Cobalt link across the coast loop (perhaps on to Blyth and Ashington), and street running from Gateshead to the Metrocentre and Team Valley and through Sunderland from South Shields to Doxford. None has gone beyond study.",
+      "lines": {
+        "cobalt": {"name":"Cobalt Link","network":"metro","mode":"light-metro","color":"#7B3F98"},
+        "metrocentre": {"name":"Metrocentre","network":"metro","mode":"light-metro","color":"#E2001A"},
+        "team-valley": {"name":"Team Valley","network":"metro","mode":"light-metro","color":"#0072BC"},
+        "wearside": {"name":"South Shields–Doxford","network":"metro","mode":"light-metro","color":"#00A19A"}
+      },
+      "stations": {
+        "ashington": {"name":"Ashington","coordinate":[-1.573,55.182]},
+        "blyth-bebside": {"name":"Blyth Bebside","coordinate":[-1.5571,55.125]},
+        "cleadon": {"name":"Cleadon","coordinate":[-1.4008,54.9554]},
+        "cobalt": {"name":"Cobalt","coordinate":[-1.5113,55.02126]},
+        "doxford-international": {"name":"Doxford International","coordinate":[-1.435,54.864]},
+        "doxford-park": {"name":"Doxford Park","coordinate":[-1.4227,54.8618]},
+        "metrocentre": {"name":"Metrocentre","coordinate":[-1.6689,54.9569]},
+        "monkwearmouth": {"name":"Monkwearmouth","coordinate":[-1.3825,54.9146]},
+        "newsham": {"name":"Newsham","coordinate":[-1.52394,55.10282]},
+        "seaham": {"name":"Seaham","coordinate":[-1.34637,54.83909]},
+        "seaton-delaval": {"name":"Seaton Delaval","coordinate":[-1.5372,55.0755]},
+        "silverlink": {"name":"Silverlink","coordinate":[-1.4949,55.012]},
+        "team-valley": {"name":"Team Valley","coordinate":[-1.61899,54.93392]},
+        "tyne-tunnel-trading-estate": {"name":"Tyne Tunnel Trading Estate","coordinate":[-1.48763,55.00565]}
+      },
+      "sections": [
+        {"line":"green","stations":["sunderland","seaham"]},
+        {"line":"cobalt","stations":["howdon","tyne-tunnel-trading-estate","silverlink","cobalt","northumberland-park"]},
+        {"line":"cobalt","stations":["northumberland-park","seaton-delaval","newsham","blyth-bebside","ashington"]},
+        {"line":"metrocentre","stations":["gateshead","metrocentre"]},
+        {"line":"team-valley","stations":["gateshead","team-valley"]},
+        {"line":"wearside","stations":["sunderland","doxford-park","doxford-international"]},
+        {"line":"wearside","stations":["sunderland","monkwearmouth","cleadon","south-shields"]}
+      ]
+    }
+  }
 }

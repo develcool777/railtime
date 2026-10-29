@@ -9,7 +9,11 @@ import type { ChipTone } from './plan.types';
 export const CITIES = [
   { label: 'London', value: 'london', country: 'United Kingdom' },
   { label: 'Manchester', value: 'manchester', country: 'United Kingdom' },
+  { label: 'Glasgow', value: 'glasgow', country: 'United Kingdom' },
   { label: 'Tyne and Wear', value: 'tyne-and-wear', country: 'United Kingdom' },
+  { label: 'Leeds', value: 'leeds', country: 'United Kingdom' },
+  { label: 'Bristol', value: 'bristol', country: 'United Kingdom' },
+  { label: 'Liverpool', value: 'liverpool', country: 'United Kingdom' },
   { label: 'Kyiv', value: 'kyiv', country: 'Ukraine' },
   { label: 'Kharkiv', value: 'kharkiv', country: 'Ukraine' },
   { label: 'Dnipro', value: 'dnipro', country: 'Ukraine' },

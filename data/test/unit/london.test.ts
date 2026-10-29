@@ -5,7 +5,7 @@ import { NetworkIndex } from '../../../packages/renderer/src/model/networkIndex.
 import type { TrackSegment } from '../../../packages/renderer/src/model/networkIndex.types';
 import { Timeline } from '../../../packages/renderer/src/model/timeline.service';
 import { playbackOf, renderStateOf } from '../../../packages/renderer/test/support/playback.utils';
-import { cityNetwork, playWholeHistory } from '../support/history.utils';
+import { cityNetwork, playPlan, playWholeHistory } from '../support/history.utils';
 
 const london = cityNetwork('london');
 const index = new NetworkIndex(london);
@@ -110,4 +110,14 @@ describe('London', () => {
     // About 24 minutes at 1×: the bound catches a history that never ends.
     expect(played.seconds).toBeLessThan(60 * 60);
   });
+
+  test.each(['under-construction', 'surrey-canal', 'bakerloo-extension', 'crossrail-2', 'dlr-thamesmead', 'west-london-orbital', 'croxley-rail-link'])(
+    'plays on through its %s plan, section by section',
+    plan => {
+      const played = playPlan(london, plan);
+      expect(played.steps).toBeGreaterThan(0);
+      expect(played.started).toBe(played.steps);
+      expect(played.cursor).toBe(played.steps);
+    },
+  );
 });

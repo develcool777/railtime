@@ -1,0 +1,80 @@
+{
+  "meta": {"city":"Liverpool","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "networks": {
+    "metro": {"name":"Merseytram"}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "merseytram": {
+      "name": "Merseytram",
+      "status": "abandoned",
+      "description": "Merseytravel's three-line tram network: Line 1 from the waterfront and city centre to Kirkby, a City Centre Loop by the Pier Head, and Line 2 to Prescot and Whiston Hospital (Line 3 to the airport was never detailed). Line 1 won its Transport and Works Act order in December 2004, but the government withdrew funding in November 2005 and the powers lapsed in 2013; Line 2 got no further than public consultation in 2004.",
+      "lines": {
+        "line-1": {"name":"Line 1","network":"metro","mode":"tram","color":"#F28C28"},
+        "loop": {"name":"City Centre Loop","network":"metro","mode":"tram","color":"#7A5C99"},
+        "line-2": {"name":"Line 2","network":"metro","mode":"tram","color":"#00A88F"}
+      },
+      "stations": {
+        "abercromby-square": {"name":"Abercromby Square","coordinate":[-2.964,53.4028]},
+        "albert-dock": {"name":"Albert Dock","coordinate":[-2.99,53.3998]},
+        "bewley-drive": {"name":"Bewley Drive","coordinate":[-2.88,53.4675]},
+        "boundary-lane": {"name":"Boundary Lane","coordinate":[-2.953,53.416]},
+        "broad-lane": {"name":"Broad Lane","coordinate":[-2.879,53.4725]},
+        "broadway": {"name":"Broadway","coordinate":[-2.928,53.4425]},
+        "caird-street": {"name":"Caird Street","coordinate":[-2.96,53.4135]},
+        "canning-place": {"name":"Canning Place","coordinate":[-2.9885,53.4019]},
+        "chatham-place": {"name":"Chatham Place","coordinate":[-2.9551,53.4036]},
+        "clubmoor": {"name":"Clubmoor","coordinate":[-2.931,53.4381]},
+        "county-road": {"name":"County Road","coordinate":[-2.874,53.477]},
+        "croxteth": {"name":"Croxteth","coordinate":[-2.901,53.46]},
+        "dinas-lane": {"name":"Dinas Lane","coordinate":[-2.866,53.419]},
+        "dovecot": {"name":"Dovecot","coordinate":[-2.884,53.421]},
+        "edge-hill": {"name":"Edge Hill","coordinate":[-2.9466,53.4025]},
+        "kings-waterfront": {"name":"King's Waterfront","coordinate":[-2.9905,53.3965]},
+        "kirkby-town-centre": {"name":"Kirkby Town Centre","coordinate":[-2.888,53.4815]},
+        "knotty-ash": {"name":"Knotty Ash","coordinate":[-2.8962,53.4155]},
+        "larkhill": {"name":"Larkhill","coordinate":[-2.929,53.4335]},
+        "lewisham-road": {"name":"Lewisham Road","coordinate":[-2.9215,53.4443]},
+        "lime-street": {"name":"Lime Street","coordinate":[-2.9776,53.4074]},
+        "london-road": {"name":"London Road","coordinate":[-2.9725,53.4095]},
+        "longview": {"name":"Longview","coordinate":[-2.8385,53.4235]},
+        "lowerhouse-lane": {"name":"Lowerhouse Lane","coordinate":[-2.9115,53.448]},
+        "lyme-grove": {"name":"Lyme Grove","coordinate":[-2.8345,53.425]},
+        "m57-park-and-ride": {"name":"M57 Junction","coordinate":[-2.8262,53.428]},
+        "moorfields": {"name":"Moorfields","coordinate":[-2.9893,53.4086]},
+        "mount-pleasant": {"name":"Mount Pleasant","coordinate":[-2.97,53.404]},
+        "muirhead-avenue": {"name":"Muirhead Avenue","coordinate":[-2.9263,53.4287]},
+        "newsham-park": {"name":"Newsham Park","coordinate":[-2.944,53.4195]},
+        "old-swan": {"name":"Old Swan","coordinate":[-2.9125,53.4132]},
+        "page-moss": {"name":"Page Moss","coordinate":[-2.858,53.4205]},
+        "parkstile-lane": {"name":"Parkstile Lane","coordinate":[-2.904,53.453]},
+        "pier-head": {"name":"Pier Head","coordinate":[-2.9955,53.4045]},
+        "prescot": {"name":"Prescot","coordinate":[-2.8015,53.429]},
+        "queen-square": {"name":"Queen Square","coordinate":[-2.9818,53.4076]},
+        "royal-liverpool-university-hospital": {"name":"Royal Liverpool University Hospital","coordinate":[-2.964,53.4093]},
+        "stonebridge-lane": {"name":"Stonebridge Lane","coordinate":[-2.906,53.457]},
+        "tuebrook": {"name":"Tuebrook","coordinate":[-2.9365,53.4232]},
+        "walton-hall-farm": {"name":"Walton Hall Farm","coordinate":[-2.892,53.4625]},
+        "water-street": {"name":"Water Street","coordinate":[-2.9918,53.4062]},
+        "whiston-hospital": {"name":"Whiston Hospital","coordinate":[-2.7855,53.4215]},
+        "whitechapel": {"name":"Whitechapel","coordinate":[-2.985,53.4065]},
+        "william-brown-street": {"name":"William Brown Street","coordinate":[-2.981,53.4096]},
+        "woolfall-heath": {"name":"Woolfall Heath","coordinate":[-2.8505,53.4215]}
+      },
+      "sections": [
+        {"line":"line-1","stations":["kings-waterfront","albert-dock","canning-place","whitechapel","queen-square","lime-street"]},
+        {"line":"line-1","stations":["lime-street","london-road","royal-liverpool-university-hospital","caird-street","boundary-lane","newsham-park"]},
+        {"line":"line-1","stations":["newsham-park","tuebrook","muirhead-avenue","larkhill","clubmoor","broadway"]},
+        {"line":"line-1","stations":["broadway","lewisham-road","lowerhouse-lane","parkstile-lane","stonebridge-lane","croxteth"]},
+        {"line":"line-1","stations":["croxteth","walton-hall-farm","bewley-drive","broad-lane","county-road","kirkby-town-centre"]},
+        {"line":"loop","stations":["albert-dock","pier-head","water-street","moorfields","william-brown-street","lime-street"]},
+        {"line":"line-2","stations":["lime-street","mount-pleasant","abercromby-square","chatham-place","edge-hill"]},
+        {"line":"line-2","stations":["edge-hill","old-swan","knotty-ash","dovecot"]},
+        {"line":"line-2","stations":["dovecot","dinas-lane","page-moss","woolfall-heath","longview"]},
+        {"line":"line-2","stations":["longview","lyme-grove","m57-park-and-ride","prescot","whiston-hospital"]}
+      ]
+    }
+  }
+}

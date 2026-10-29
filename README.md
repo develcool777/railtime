@@ -65,7 +65,8 @@ then `pnpm data:format london`; a test fails while the file is invalid or untidy
 - `names`: a station's, line's, network's or former name in other languages, by language code
   (`{ "uk": "Хрещатик" }`). `name` is English; a line's other names are in full ("… лінія").
   A station's other names are shown beneath its English one, on the map and in its panel.
-- `plans`: futures a city may have, by id, undated: each a name, the lines, stations and transfers it
+- `plans`: futures a city may have, by id, undated: each a name, a `status` (under construction,
+  planned, proposed, concept or abandoned), the lines, stations and transfers it
   would add, and its `sections` (a line through stations) in the order they would be built. A new
   station between two neighbours on a line stands on their track. The explorer offers a plan picker
   (`plan=<id>` in a link): the map shows the plan built, drawn dashed, and "Play future" builds it
@@ -119,6 +120,20 @@ is a fan scheme found online, its stations placed on the places they are named a
 the 2000s light-metro project, one line of 14 stations along Sobornyi Avenue. Odesa has two: the 1985
 design's first line, and the two lines of the 2007 draft General Plan. Donetsk's metro was begun in
 1992 and frozen: its plan is the Soviet three-line scheme, its first stage first.
+
+London's plans are Old Oak Common, being built for HS2; the proposed Surrey Canal station, Bakerloo
+line extension to Lewisham and Hayes, DLR to Thamesmead and West London Orbital; and two dropped
+schemes, Crossrail 2 (safeguarded in 2015, shelved in 2020) and the Croxley Rail Link. Manchester's
+are the 1970s Picc-Vic tunnel and the Bee Network's 2040 Metrolink and tram-train extensions; Tyne
+and Wear's, the Metro to Washington and the 2013 extension corridors.
+
+Glasgow's Subway is one loop of two lines, the Outer and Inner Circles, from 1896. Its closures are
+suspensions: after the opening-night collision, for roof repairs in 1977, and for the 1977–80
+modernisation, which moved Merkland Street's platforms to the new Partick. Its plans are the 2007–10
+strategy (an East End circle, Cathcart and Maryhill) and four earlier schemes, from 1937 to 1988.
+
+Leeds, Bristol and Liverpool never built theirs: Leeds Supertram (cancelled 2005), Bristol's
+Supertram (2001–04) and the 2022 underground options, and Merseytram (funding withdrawn 2005).
 
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from
