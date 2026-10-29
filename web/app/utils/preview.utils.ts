@@ -1,5 +1,5 @@
-import type { LngLat, Network } from '@railtime/schema/network.types';
-import { buildPlan } from '@railtime/schema/plan.utils';
+import type { IndexedTrack } from '@railtime/schema/cityIndex.types';
+import type { LngLat } from '@railtime/schema/network.types';
 import type { MapView } from '@railtime/renderer/transitMap.types';
 import type { Preview, PreviewSize } from './city.types';
 
@@ -59,53 +59,23 @@ export const projectPoint = (view: MapView, size: PreviewSize, point: LngLat): [
 };
 
 /**
- * The track a city card draws, each with its lines: what is open today, or for a network never built,
- * its first plan's.
+ * A network drawn small, for a city card: the view that fits its track, and each line's track as a
+ * path, projected as the basemap is, so the picture of the basemap lies under it.
  *
- * @param network - The city's network.
- * @returns Each segment's coordinates and line ids.
- */
-const shownTrack = (network: Network): { coordinates: LngLat[]; lines: string[] }[] => {
-  const openToday = network.segments.filter(segment => Object.values(segment.lines).some(dates => !dates.close));
-  if (openToday.length > 0 || !network.plans) return openToday.map(segment => ({ coordinates: segment.coordinates, lines: Object.keys(segment.lines) }));
-  const built = buildPlan(network, Object.keys(network.plans)[0] ?? '');
-  return built.sections.flatMap(section =>
-    // Within bounds: a built section's segments are the built network's.
-    section.segments.map(position => ({ coordinates: built.network.segments[position]!.coordinates, lines: [section.line] })),
-  );
-};
-
-/**
- * A network drawn small, for a city card: the view that fits it, and every segment as a path in its
- * first line's colour, projected as the basemap is, so the picture of the basemap lies under it.
- *
- * @param network - The city's network.
+ * @param track - The city's track, by line, in drawing order, as the index keeps it.
  * @param size - The preview's size, in CSS pixels.
- * @returns The view, and one path per segment open today (or planned, for a network never built), in the network's line order; no view without track.
+ * @returns The view, and one path per line; no view without track.
  */
-export const previewOf = (network: Network, size: PreviewSize): Preview | null => {
-  const lines = { ...network.lines, ...Object.values(network.plans ?? {})[0]?.lines };
-  const lineOrder = Object.keys(lines);
-  const openToday = shownTrack(network);
-  const points = openToday.flatMap(segment => segment.coordinates);
+export const previewOf = (track: IndexedTrack[], size: PreviewSize): Preview | null => {
+  const points = track.flatMap(line => line.paths.flat());
   if (points.length === 0) return null;
   const view = fitView(points, size);
   const project = (point: LngLat) =>
     projectPoint(view, size, point)
       .map(value => value.toFixed(1))
       .join(',');
-  const paths = openToday
-    .map(segment => {
-      const ordered = [...segment.lines].sort((first, second) => lineOrder.indexOf(first) - lineOrder.indexOf(second));
-      const line = lines[ordered[0] ?? ''];
-      return {
-        order: lineOrder.indexOf(ordered[0] ?? ''),
-        path: `M${segment.coordinates.map(project).join('L')}`,
-        color: line?.color ?? 'currentColor',
-        darkColor: line?.darkColor ?? line?.color ?? 'currentColor',
-      };
-    })
-    .sort((first, second) => second.order - first.order)
-    .map(({ path, color, darkColor }) => ({ path, color, darkColor }));
-  return { view, paths };
+  return {
+    view,
+    paths: track.map(line => ({ path: line.paths.map(path => `M${path.map(project).join('L')}`).join(''), color: line.color, darkColor: line.darkColor })),
+  };
 };

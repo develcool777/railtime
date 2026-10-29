@@ -1,6 +1,6 @@
 <template>
   <div ref="box" class="relative h-full w-full overflow-hidden">
-    <!-- The basemap, once its picture is taken; the track is drawn over it from the start. -->
+    <!-- The basemap, once its picture is taken; the track is drawn over it from the start, dashed for a network never built, as its plan is on the map. -->
     <img v-if="image" :src="image" alt="" class="absolute inset-0 h-full w-full object-cover" @load="shown = true" />
     <div class="cover bg-muted absolute inset-0" :class="{ faded: shown }" />
     <svg
@@ -19,27 +19,24 @@
         :d="segment.path"
         :stroke="dark ? segment.darkColor : segment.color"
         stroke-width="2.5"
-        :stroke-dasharray="planOnly ? '5 4' : undefined" />
+        :stroke-dasharray="summary.planOnly ? '5 4' : undefined" />
     </svg>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { Network } from '@railtime/schema/network.types';
+  import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 
   import { useBasemapStill } from '~/composables/basemapStill.composable';
   import type { PreviewSize } from '~/utils/city.types';
-  import { isPlanOnly } from '~/utils/city.utils';
   import { previewOf } from '~/utils/preview.utils';
 
-  const props = defineProps<{ network: Network; name: string }>();
+  const props = defineProps<{ summary: CityIndexEntry; name: string }>();
 
   const box = useTemplateRef<HTMLElement>('box');
   const { take, theme } = useBasemapStill();
   const dark = computed(() => theme() === 'dark');
-  // A network never built is drawn as its plan is on the map: dashed.
-  const planOnly = computed(() => isPlanOnly(props.network));
 
   /** The preview's size when first laid out: its picture is taken at it, and scales with the card after. */
   const size = ref<PreviewSize | null>(null);
@@ -47,7 +44,7 @@
   const image = ref<string | null>(null);
   /** The picture has loaded: the cover over it fades out. */
   const shown = ref(false);
-  const preview = computed(() => (size.value ? previewOf(props.network, size.value) : null));
+  const preview = computed(() => (size.value ? previewOf(props.summary.track, size.value) : null));
 
   let observer: IntersectionObserver | null = null;
   onMounted(() => {

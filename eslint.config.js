@@ -37,7 +37,7 @@ const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable)).@(ser
 const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|utils|types)';
 
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */
-const TEST_FILES = ['packages/*/test/**/*.ts', 'scripts/test/**/*.ts', 'data/test/**/*.ts', 'web/test/**/*.ts'];
+const TEST_FILES = ['packages/*/test/**/*.ts', 'web/test/**/*.ts'];
 
 /**
  * Tests run the real code, as in dataroom-ui: a test that mocks our own module ends up testing the
@@ -51,6 +51,8 @@ const TEST_SYNTAX = [
   { selector: "CallExpression[callee.name='it']", message: 'Write `test(…)`, not `it(…)`.' },
 ];
 const SCRIPT_FILE = 'cli.+([a-zA-Z0-9])';
+/** Commands run with node (`pnpm data:format`), named for what they do. */
+const CLI_FILES = 'packages/*/src/cli.*.ts';
 
 /** Config files at a package root follow their tool's naming, not ours. */
 const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**/app.config.ts'];
@@ -113,7 +115,7 @@ export default defineConfig(
 
   // ---- JSDoc on every class, member and export ---------------------------------
   {
-    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'scripts/**/*.ts', 'data/**/*.ts', 'web/app/**/*.ts'],
+    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'web/app/**/*.ts'],
     ignores: ['**/*.test.ts'],
     plugins: { jsdoc },
     rules: {
@@ -137,8 +139,8 @@ export default defineConfig(
 
   // ---- File names ------------------------------------------------------------
   {
-    files: ['packages/*/src/**/*.ts', 'web/app/**/*.ts', 'scripts/lib/**/*.ts'],
-    ignores: TOOL_CONFIGS,
+    files: ['packages/*/src/**/*.ts', 'web/app/**/*.ts'],
+    ignores: [...TOOL_CONFIGS, CLI_FILES],
     plugins: { 'check-file': checkFile },
     rules: {
       'check-file/filename-naming-convention': ['error', { '**/*.ts': SOURCE_FILE }],
@@ -156,7 +158,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['scripts/*.ts'],
+    files: [CLI_FILES],
     plugins: { 'check-file': checkFile },
     rules: { 'check-file/filename-naming-convention': ['error', { '**/*.ts': SCRIPT_FILE }] },
   },

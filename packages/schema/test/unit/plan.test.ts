@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildPlan } from '../../src/plan.utils';
+import { buildPlan, isPlanOnly } from '../../src/plan.utils';
 import { plannedNetwork } from '../support/factories/plannedNetwork.utils';
 
 describe('PlanUtils', () => {
@@ -69,6 +69,14 @@ describe('PlanUtils', () => {
       expect(buildPlan(network, 'nowhere')).toEqual({ network: { ...network, plans: undefined }, sections: [] });
       buildPlan(network, 'extension');
       expect(network.segments).toHaveLength(1);
+    });
+  });
+
+  describe('isPlanOnly', () => {
+    test('is a network with plans and no track', () => {
+      expect(isPlanOnly(plannedNetwork())).toBe(false);
+      expect(isPlanOnly({ ...plannedNetwork(), segments: [] })).toBe(true);
+      expect(isPlanOnly({ ...plannedNetwork(), segments: [], plans: {} })).toBe(false);
     });
   });
 });

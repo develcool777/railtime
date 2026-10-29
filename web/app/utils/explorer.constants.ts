@@ -3,8 +3,9 @@ import type { PlanStatus } from '@railtime/schema/network.types';
 import type { ChipTone } from './plan.types';
 
 /**
- * The cities with a dataset (`data/<id>/<id>.json`, served at `/data/<id>/<id>.json`), in menu order:
- * grouped by country, in the order the countries come.
+ * The cities with a dataset (`data/<country>/<id>/<id>.json`, served at the same path under `/data/`),
+ * in menu order: grouped by country, in the order the countries come. A country's folder is its name
+ * in lower case, hyphenated (`united-kingdom`).
  */
 export const CITIES = [
   { label: 'London', value: 'london', country: 'United Kingdom' },
@@ -31,6 +32,9 @@ export const CITIES = [
   { label: 'Lisbon', value: 'lisbon', country: 'Portugal' },
   { label: 'Bratislava', value: 'bratislava', country: 'Slovakia' },
 ];
+
+/** Where the index of every city is served (`data/cities.json`): what the landing page shows. */
+export const CITY_INDEX_URL = 'data/cities.json';
 
 /** Playback speeds offered. */
 export const SPEED_OPTIONS = [1, 2, 4, 8].map(speed => ({ label: `${speed}×`, value: speed }));

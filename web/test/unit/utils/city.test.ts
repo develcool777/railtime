@@ -1,6 +1,13 @@
+import type { CityIndex } from '@railtime/schema/cityIndex.types';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import { citiesByCountry, cityMenu, isPlanOnly, matchesFilter, planToOpen, summaryOf } from '../../../app/utils/city.utils';
+import { citiesByCountry, cityMenu, matchesFilter, networkUrlOf, planToOpen } from '../../../app/utils/city.utils';
+import { CITIES, CITY_INDEX_URL } from '../../../app/utils/explorer.constants';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
+
+/** What the site serves at `/data/`. */
+const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));
 
 describe('CityUtils', () => {
   describe('citiesByCountry', () => {
@@ -17,10 +24,15 @@ describe('CityUtils', () => {
     });
   });
 
-  describe('isPlanOnly', () => {
-    test('is a network with plans and no track', () => {
-      expect(isPlanOnly(planOnlyNetwork())).toBe(true);
-      expect(isPlanOnly({ ...planOnlyNetwork(), plans: {} })).toBe(false);
+  describe('networkUrlOf', () => {
+    test("finds every city's dataset in its country's folder", () => {
+      expect(networkUrlOf('tyne-and-wear')).toBe('data/united-kingdom/tyne-and-wear/tyne-and-wear.json');
+      for (const city of CITIES) expect(existsSync(`${SERVED}${networkUrlOf(city.value).replace(/^data\//, '')}`), city.value).toBe(true);
+    });
+
+    test('lists in the index every city the menu has, and no other', () => {
+      const index: CityIndex = JSON.parse(readFileSync(`${SERVED}${CITY_INDEX_URL.replace(/^data\//, '')}`, 'utf8'));
+      expect(Object.keys(index).sort()).toEqual(CITIES.map(city => city.value).sort());
     });
   });
 
@@ -32,17 +44,19 @@ describe('CityUtils', () => {
     });
   });
 
-  describe('summaryOf', () => {
-    test('sums up a network never built by its first plan', () => {
-      const summary = summaryOf(planOnlyNetwork());
-      expect(summary).toMatchObject({ planOnly: true, stations: 3, openedYear: null, networks: ['Metro'], plans: 2 });
-      expect(summary.lines.map(line => line.id)).toEqual(['red']);
-    });
-  });
-
   describe('matchesFilter', () => {
     const kyiv = { label: 'Kyiv', value: 'kyiv', country: 'Ukraine' };
-    const summary = { ...summaryOf(planOnlyNetwork()), planOnly: false, networks: ['Kyiv Metro'] };
+    const summary = {
+      name: 'Kyiv',
+      country: 'ukraine',
+      networks: ['Kyiv Metro'],
+      openedYear: 1960,
+      planOnly: false,
+      plans: 2,
+      lines: [],
+      stations: 52,
+      track: [],
+    };
     const all = { query: '', country: '', kind: 'all' as const, withPlans: false };
 
     test('matches the name, country or a network, in any case', () => {
@@ -59,7 +73,7 @@ describe('CityUtils', () => {
       expect(matchesFilter(kyiv, { ...summary, plans: 0 }, { ...all, withPlans: true })).toBe(false);
     });
 
-    test('shows a city still loading only when no filter needs its dataset', () => {
+    test('shows a city while the index loads only when no filter needs it', () => {
       expect(matchesFilter(kyiv, null, all)).toBe(true);
       expect(matchesFilter(kyiv, null, { ...all, kind: 'history' })).toBe(false);
     });

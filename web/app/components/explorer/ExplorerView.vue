@@ -116,11 +116,11 @@
   import { useRoute, useRouter } from '#imports';
   import type { CameraMode } from '@railtime/renderer/transitMap.types';
   import type { Network } from '@railtime/schema/network.types';
+  import { isPlanOnly } from '@railtime/schema/plan.utils';
   import { computed, ref, useTemplateRef, watch } from 'vue';
 
   import { useTransitMap } from '~/composables/transitMap.composable';
   import { DEFAULT_SPEED } from '~/utils/explorer.constants';
-  import { isPlanOnly } from '~/utils/city.utils';
   import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
   import type { TimelineTarget } from '~/utils/timeline.types';
 
