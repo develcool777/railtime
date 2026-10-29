@@ -23,6 +23,7 @@ map.getChanges(); // every change, described as its caption: for a list or a tim
 map.showChange(12); // explore: the network just after change 12, on its date
 map.playFrom(12); // history: play on from change 12
 map.setVisibleLines(['line-a', 'line-b']);
+map.setStationLabels(false); // dots only, no names
 map.setTheme('light');
 map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
 map.range; // { start, end, today }: end is past today when a plan is shown
