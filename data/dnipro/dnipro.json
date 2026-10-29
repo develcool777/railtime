@@ -25,6 +25,7 @@
     "under-construction": {
       "name": "Under construction",
       "names": {"uk":"Будується"},
+      "status": "under-construction",
       "description": "The Tsentralno-Zavodska line's 4 km extension from Vokzalna under Yavornytskoho Avenue to Teatralna, Tsentralna and Muzeina, under construction since the 1990s (Limak contract 2016, stations by Zaha Hadid Architects); work stopped in February 2022 when the contractor left.",
       "stations": {
         "muzeina": {"name":"Muzeina","names":{"uk":"Музейна"},"coordinate":[35.0646,48.4548]},
@@ -38,6 +39,7 @@
     "long-term": {
       "name": "Long-term plan",
       "names": {"uk":"Перспективний план"},
+      "status": "planned",
       "description": "The metro of Dnipro's General Plan to 2026 and the city's 2008 scheme: the Tsentralno-Zavodska line west to Parus and south-east past the Southern Station to Peremoha and Topolia, and a second line from Shynna in the south through the centre and across the Central Bridge to Kharkivska on the left bank.",
       "lines": {
         "druha": {"name":"Line 2","names":{"uk":"Друга лінія"},"network":"metro","mode":"metro","color":"#003399","darkColor":"#5B8DEF"}

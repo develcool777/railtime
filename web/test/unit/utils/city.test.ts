@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { citiesByCountry, cityMenu, isPlanOnly, planToOpen, summaryOf } from '../../../app/utils/city.utils';
+import { citiesByCountry, cityMenu, isLargeCity, isPlanOnly, planToOpen, summaryOf } from '../../../app/utils/city.utils';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 
 describe('CityUtils', () => {
@@ -35,8 +35,17 @@ describe('CityUtils', () => {
   describe('summaryOf', () => {
     test('sums up a network never built by its first plan', () => {
       const summary = summaryOf(planOnlyNetwork());
-      expect(summary).toMatchObject({ planOnly: true, stations: 3, openedYear: null, networks: ['Metro'] });
+      expect(summary).toMatchObject({ planOnly: true, stations: 3, openedYear: null, networks: ['Metro'], plans: 2 });
       expect(summary.lines.map(line => line.id)).toEqual(['red']);
+    });
+  });
+
+  describe('isLargeCity', () => {
+    test('is a big network, or a mid-sized one with futures to show', () => {
+      const summary = summaryOf(planOnlyNetwork());
+      expect(isLargeCity(summary)).toBe(false);
+      expect(isLargeCity({ ...summary, stations: 51, plans: 0 })).toBe(true);
+      expect(isLargeCity({ ...summary, lines: [...summary.lines, ...summary.lines, ...summary.lines] })).toBe(true);
     });
   });
 });

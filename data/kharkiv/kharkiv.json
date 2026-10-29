@@ -78,6 +78,7 @@
     "under-construction": {
       "name": "Under construction",
       "names": {"uk":"Будується"},
+      "status": "under-construction",
       "description": "The Oleksiivska line's extension from Metrobudivnykiv along Aerokosmichnyi Avenue to Derzhavinska and Odeska (3.47 km), funded by EBRD and EIB loans; site work began in 2021–22, stopped with the full-scale invasion, and the new contractor's tender was set for 2026.",
       "stations": {
         "derzhavinska": {"name":"Derzhavinska","names":{"uk":"Державінська"},"coordinate":[36.25889,49.97028]},
@@ -90,6 +91,7 @@
     "long-term": {
       "name": "Long-term plan",
       "names": {"uk":"Перспективний план"},
+      "status": "planned",
       "description": "The metro network of Kharkiv's General Plan to 2031 and the metro's development schemes: the Saltivska line to Ploshcha Urytskoho, Druzhby Narodiv and Novozhanove, the Kholodnohirsko-Zavodska line to Zaliutyne and Rohan, the Oleksiivska line to the airport, and the fourth, Saltivsko-Zavodska line from Saltivka to KhTZ.",
       "lines": {
         "m4": {"name":"Saltivsko-Zavodska","names":{"uk":"Салтівсько-Заводська лінія"},"network":"metro","mode":"metro","color":"#800080","darkColor":"#B266D6"}
@@ -138,6 +140,7 @@
     "gost-kotik-2025": {
       "name": "Gost Kotik 2025",
       "names": {"uk":"Gost Kotik 2025"},
+      "status": "concept",
       "description": "A concept map of Kharkiv's metro from the YouTube channel Gost Kotik (2025), not a city plan: the three lines extended to Zaliutyne, Pivdenna, the airport, Novozhanove, Natalii Uzhvii and Saltivske Shose, an orange line from Zhukovskoho to Lysa Hora, and a ring line.",
       "lines": {
         "orange": {"name":"Zhukovsko-Lysohirska","names":{"uk":"Жуковсько-Лисогірська лінія"},"network":"metro","mode":"metro","color":"#D6935A"},

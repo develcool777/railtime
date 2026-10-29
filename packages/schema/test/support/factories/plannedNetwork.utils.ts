@@ -25,6 +25,7 @@ export const plannedNetwork = (): Network => ({
   plans: {
     extension: {
       name: 'Extension',
+      status: 'planned',
       stations: { b: { name: 'B', coordinate: [0.01, 51.501] }, d: { name: 'D', coordinate: [0.03, 51.5] } },
       sections: [
         { line: 'red', stations: ['a', 'b', 'c'] },

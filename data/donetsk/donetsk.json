@@ -10,6 +10,7 @@
     "soviet-project": {
       "name": "Soviet-era project",
       "names": {"uk":"Радянський проєкт"},
+      "status": "abandoned",
       "description": "The three-line network of the 1980s design (feasibility study 1984, Proletarsko-Kyivska line designed 1988–92): about 70 km and 46 stations. Only the first line's first stage, Proletarska to Politekhnichnyi Instytut, was begun in 1992–93; shafts, station pits and about 2.5 km of tunnel were built before work stopped in 2009–2011.",
       "lines": {
         "m1": {"name":"Proletarsko-Kyivska","names":{"uk":"Пролетарсько-Київська лінія"},"network":"metro","mode":"metro","color":"#E42B2B"},

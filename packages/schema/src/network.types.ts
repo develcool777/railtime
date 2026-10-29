@@ -114,12 +114,19 @@ export type PlanSection = {
 };
 
 /**
+ * How far a plan got: being built; adopted by the city; proposed by an official body but not
+ * adopted; an unofficial concept; or dropped, never to be built.
+ */
+export type PlanStatus = 'under-construction' | 'planned' | 'proposed' | 'concept' | 'abandoned';
+
+/**
  * A future the network may have: lines and stations it would add, and the sections it would build,
  * in the order they are built. Undated: its order is all the time it has (see `buildPlan`).
  */
 export type Plan = {
   name: string;
   names?: Names;
+  status: PlanStatus;
   /** What it is, who drew it up and how far it got: shown on its card. */
   description?: string;
   lines?: Record<string, Line>;

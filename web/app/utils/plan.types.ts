@@ -7,3 +7,6 @@ export type PlanFacts = {
   /** The lines its sections build on, in the order they first come, with their colours in each theme. */
   lines: { id: string; name: string; color: string; darkColor: string }[];
 };
+
+/** A chip's colours: the design's tag green, indigo, amber badge, or plain. */
+export type ChipTone = 'green' | 'blue' | 'amber' | 'neutral';

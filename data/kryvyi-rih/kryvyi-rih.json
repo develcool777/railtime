@@ -36,6 +36,7 @@
     "vovnopriadylna": {
       "name": "Unfinished station",
       "names": {"uk":"Недобудована станція"},
+      "status": "abandoned",
       "description": "Vovnopriadylna (project name Komvolna), built to about 80% in the 1990s between Industrialna and Elektrozavodska for a wool-spinning mill and a planned housing estate; mothballed in 2001 when the mill closed and the estate was cancelled.",
       "lines": {},
       "stations": {
@@ -48,6 +49,7 @@
     "rokuvata-2021": {
       "name": "Rokuvata extension (2021)",
       "names": {"uk":"Продовження до Рокуватої (2021)"},
+      "status": "proposed",
       "description": "A northern extension from Zarichna to Rokuvata railway station, put out to tender in December 2021 by the Dnipropetrovsk regional administration (3.8 bn UAH, three stages, due December 2023); the tender was cancelled in February 2022 and nothing was built. Only its two ends are published; the stop between them is the 1972 route's.",
       "lines": {},
       "stations": {
@@ -62,6 +64,7 @@
     "project-1972": {
       "name": "1972 project",
       "names": {"uk":"Проєкт 1972 року"},
+      "status": "abandoned",
       "description": "The full design by UkrkomunNDIproekt and Kharkivmetroproekt: a north–south line from the Northern GZK through Rokuvata, Rybasove, Zarichnyi, Sotsmisto and a tunnel under the steelworks to the Novokryvorizkyi and Southern GZKs, and an east–west line from Kryvyi Rih-Holovnyi station to Karachuny crossing it at Budynok Rad. Only the middle of the north–south line was built.",
       "lines": {
         "ew": {"name":"East–West line","names":{"uk":"Широтна лінія"},"network":"metro","mode":"light-metro","color":"#009246"}

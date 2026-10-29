@@ -36,6 +36,7 @@
 
   /* The page behind the cards, and the chips' colours. */
   --rt-page: #fafbfa;
+  --rt-hero-bg: #e9f1f7;
   --rt-tag-bg: #eef7f3;
   --rt-tag-text: #2a6a4a;
   --rt-tag-border: #c5ddd5;
@@ -66,6 +67,7 @@
   --ui-text-dimmed: #6b8595;
 
   --rt-page: #0c1520;
+  --rt-hero-bg: #141a25;
   --rt-tag-bg: #14302a;
   --rt-tag-text: #7adcb0;
   --rt-tag-border: #1f4438;

@@ -47,6 +47,7 @@ describe('NetworkIndex', () => {
       ...network.plans,
       newLine: {
         name: 'New line',
+        status: 'planned',
         lines: { purple: { name: 'Purple', network: 'metro', mode: 'metro', color: '#800080' } },
         sections: [{ line: 'purple', stations: ['a', 'b'] }],
       },
