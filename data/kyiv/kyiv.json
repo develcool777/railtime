@@ -122,6 +122,7 @@
     "under-construction": {
       "name": "Under construction",
       "names": {"uk":"Будується"},
+      "status": "under-construction",
       "description": "The Syretsko-Pecherska line's extension from Syrets to Mostytska and Varshavska, the only metro section being built in Kyiv; work resumed in November 2024 and the city expects both stations in 2027.",
       "stations": {
         "mostytska": {"name":"Mostytska","names":{"uk":"Мостицька"},"coordinate":[30.42333,50.49028]},
@@ -134,6 +135,7 @@
     "long-term": {
       "name": "Long-term plan",
       "names": {"uk":"Перспективний план"},
+      "status": "planned",
       "description": "The network of Kyiv's draft General Plan and the Kyiv Metro's development plans: the Podilsko-Vyhurivska line from Troieshchyna and Voskresenka across the Dnipro to Podil, the railway station and Zhuliany, the Vyshhorodsko-Darnytska line from the Minskyi masyv to Darnytsia, and extensions of the three existing lines. Where no official name exists, a station is named after its street or area.",
       "lines": {
         "m4": {"name":"Podilsko-Vyhurivska","names":{"uk":"Подільсько-Вигурівська лінія"},"network":"metro","mode":"metro","color":"#F0AB00"},

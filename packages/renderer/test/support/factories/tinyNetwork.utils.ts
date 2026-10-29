@@ -82,6 +82,7 @@ export const tinyNetwork = (): Network => ({
   plans: {
     extension: {
       name: 'Extension',
+      status: 'planned',
       stations: { e: stationAt('E', 4), f: stationAt('F', 1.5) },
       sections: [
         { line: 'red', stations: ['d', 'e'] },

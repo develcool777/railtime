@@ -1,4 +1,6 @@
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
+import type { PlanStatus } from '@railtime/schema/network.types';
+import type { ChipTone } from './plan.types';
 
 /**
  * The cities with a dataset (`data/<id>/<id>.json`, served at `/data/<id>/<id>.json`), in menu order:
@@ -46,3 +48,18 @@ export const TIMELINE_LABEL_YEARS = 25;
 
 /** Changes listed under "Up next" during playback. */
 export const UP_NEXT_COUNT = 6;
+
+/** How a plan's card names its status, and the chip's colours. */
+export const PLAN_STATUSES: Record<PlanStatus, { label: string; tone: ChipTone }> = {
+  'under-construction': { label: 'Under construction', tone: 'amber' },
+  planned: { label: 'Planned', tone: 'green' },
+  proposed: { label: 'Proposed', tone: 'blue' },
+  concept: { label: 'Concept', tone: 'neutral' },
+  abandoned: { label: 'Abandoned', tone: 'neutral' },
+};
+
+/** More stations than this, and a city's card is drawn large. */
+export const LARGE_CITY_STATIONS = 50;
+
+/** This many lines or more, with plans, and a city's card is drawn large. */
+export const LARGE_CITY_LINES = 3;

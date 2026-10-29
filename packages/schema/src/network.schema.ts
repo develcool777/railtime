@@ -43,6 +43,7 @@ const transferSchema = z.object({ stationA: z.string(), stationB: z.string() });
 const planSchema = z.object({
   name: z.string().min(1),
   names: names.optional(),
+  status: z.enum(['under-construction', 'planned', 'proposed', 'concept', 'abandoned']),
   description: z.string().min(1).optional(),
   lines: z.record(z.string(), lineSchema).optional(),
   stations: z.record(z.string(), stationSchema).optional(),

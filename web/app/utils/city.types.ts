@@ -16,6 +16,8 @@ export type CitySummary = {
   openedYear: number | null;
   /** Nothing built: its lines and stations are its first plan's. */
   planOnly: boolean;
+  /** How many futures it has. */
+  plans: number;
 };
 
 /** One segment of a network sketch, as an SVG path in each theme's colour. */

@@ -112,6 +112,7 @@ const planLines = (plan: Plan, indent: string): Written => ({
     [
       ['name', plan.name],
       ...(plan.names ? [['names', plan.names] as [string, unknown]] : []),
+      ['status', plan.status],
       ...(plan.description ? [['description', plan.description] as [string, unknown]] : []),
       ...partFields({ stations: plan.stations ?? {}, segments: [], ...(plan.lines ? { lines: plan.lines } : {}) }, indent),
       ['sections', arrayLines(plan.sections, `${indent}  `)],

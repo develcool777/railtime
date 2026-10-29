@@ -1,7 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import type { CitySummary } from './city.types';
-import { CITIES } from './explorer.constants';
+import { CITIES, LARGE_CITY_LINES, LARGE_CITY_STATIONS } from './explorer.constants';
 
 /**
  * Whether a city has a dataset: what a city page's address must name.
@@ -89,5 +89,16 @@ export const summaryOf = (network: Network): CitySummary => {
     networks: Object.values(network.networks).map(brand => brand.name),
     openedYear: opened ? Number(opened.slice(0, 4)) : null,
     planOnly,
+    plans: Object.keys(network.plans ?? {}).length,
   };
 };
+
+/**
+ * Whether a city's card is drawn large, two columns wide: a big network, or one of three lines or
+ * more with futures to show.
+ *
+ * @param summary - The city's summary.
+ * @returns True for a large card.
+ */
+export const isLargeCity = (summary: CitySummary): boolean =>
+  summary.stations > LARGE_CITY_STATIONS || (summary.lines.length >= LARGE_CITY_LINES && summary.plans > 0);

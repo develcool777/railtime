@@ -10,6 +10,7 @@
     "fan-scheme": {
       "name": "Fan scheme",
       "names": {"uk":"Фанатська схема"},
+      "status": "concept",
       "description": "An unofficial fan-made concept found online, \"Схема ліній чернівецького метрополітену\": two lines through the centre and a ring, drawn as a diagram. Chernivtsi has never planned a metro; this is not a city plan, and the stations are placed on the places they are named after.",
       "lines": {
         "prutska": {"name":"Prutska","names":{"uk":"Прутська лінія"},"network":"metro","mode":"metro","color":"#D52B1E"},

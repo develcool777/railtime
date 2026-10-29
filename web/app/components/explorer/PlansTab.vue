@@ -11,7 +11,10 @@
       :class="{ selected: card.id === plan }"
       :aria-pressed="card.id === plan"
       @click="emit('choose', card.id)">
-      <span class="text-highlighted text-[15px] leading-snug font-bold">{{ card.name }}</span>
+      <span class="flex items-start justify-between gap-2">
+        <span class="text-highlighted text-[15px] leading-snug font-bold">{{ card.name }}</span>
+        <StatusChip v-if="card.status" :tone="PLAN_STATUSES[card.status].tone">{{ PLAN_STATUSES[card.status].label }}</StatusChip>
+      </span>
       <!-- Three lines each; the plan shown in full. -->
       <span v-if="card.description" class="text-default text-[13px] leading-normal" :class="{ 'line-clamp-3': card.id !== plan }">{{ card.description }}</span>
       <span v-if="card.lines.length > 0 || card.facts" class="mt-0.5 flex items-center gap-2">
@@ -26,10 +29,12 @@
 
 <script setup lang="ts">
   import { useColorMode } from '#imports';
-  import type { Network } from '@railtime/schema/network.types';
+  import type { Network, PlanStatus } from '@railtime/schema/network.types';
   import { computed } from 'vue';
 
+  import StatusChip from '~/components/common/StatusChip.vue';
   import { isPlanOnly } from '~/utils/city.utils';
+  import { PLAN_STATUSES } from '~/utils/explorer.constants';
   import { formatPlanFacts } from '~/utils/format.utils';
   import { planFacts } from '~/utils/plan.utils';
 
@@ -55,6 +60,7 @@
       return {
         id: id as string | undefined,
         name: plan.name,
+        status: plan.status as PlanStatus | undefined,
         description: plan.description,
         lines: lines.map(line => ({ id: line.id, name: line.name, color: dark ? line.darkColor : line.color })),
         facts: formatPlanFacts(stations, km),
@@ -62,7 +68,10 @@
     });
     // A network never built has nothing to show without a plan.
     if (isPlanOnly(props.network)) return plans;
-    return [{ id: undefined, name: 'Current network', description: 'The network as it is today, and its history.', lines: [], facts: '' }, ...plans];
+    return [
+      { id: undefined, name: 'Current network', status: undefined, description: 'The network as it is today, and its history.', lines: [], facts: '' },
+      ...plans,
+    ];
   });
 </script>
 
