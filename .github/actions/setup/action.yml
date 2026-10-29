@@ -1,0 +1,22 @@
+name: Setup project
+description: Install pnpm + Node, restore the dependency cache and install dependencies.
+
+runs:
+  using: composite
+  steps:
+    # Install pnpm first so setup-node can query the store path.
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        version: 11.9.0
+        run_install: false
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

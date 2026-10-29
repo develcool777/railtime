@@ -1,0 +1,8 @@
+# Ownership for npm dependencies
+/package.json @develcool777
+/pnpm-lock.yaml @develcool777
+/pnpm-workspace.yaml @develcool777
+/**/package.json @develcool777
+
+# Ownership for GitHub Actions updates
+/.github/ @develcool777

@@ -1,47 +1,55 @@
-# Runs the checks on main, then builds the explorer as a static site and publishes it on GitHub
-# Pages, at /railtime/. Nothing deploys while a check fails.
+# Builds the explorer as a static site and publishes it on GitHub Pages, at /railtime/.
 name: Pages
 
 on:
+  workflow_dispatch:
+  # Merging to main deploys.
   push:
     branches: [main]
-  workflow_dispatch:
+
+concurrency:
+  # Two merges in quick succession must not deploy in parallel and land out of order. This does NOT
+  # cancel in progress: killing a live deploy mid-flight is worse than letting it finish. A queued
+  # run supersedes any other queued run, so the newest commit still wins.
+  group: pages
+  cancel-in-progress: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
-  checks:
-    uses: ./.github/workflows/checks.yml
-
-  build:
-    needs: checks
+  # Post-merge gate. Every PR is fully checked before it can merge, so this repeats only what can fail
+  # on the merged tree while passing on each PR in isolation: one PR renames a symbol, another adds a
+  # call site, and neither branch alone is red. Type-check and the build catch that; unit tests, eslint
+  # and formatting are per-file and effectively never do.
+  verify:
+    name: Verify merged tree
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11.9.0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @railtime/web generate
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      - name: Run type checks
+        run: pnpm type-check
+
+      # The build itself: what the deploy job publishes.
+      - name: Build the static site
         env:
           NUXT_APP_BASE_URL: /railtime/
-      - uses: actions/upload-pages-artifact@v5
+        run: pnpm --filter @railtime/web generate
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
         with:
           path: apps/web/.output/public
 
   deploy:
-    needs: build
+    needs: [verify]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

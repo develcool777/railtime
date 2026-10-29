@@ -1,0 +1,88 @@
+name: Test
+
+# Runs per pull request, not per push: a push to main re-checks a commit that already passed on its
+# branch. The pre-merge gate is the `CI` job below (the required status check), and `pages.yml` owns
+# the post-merge check.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # Cancel the previous run. head_ref is the PR branch; ref covers a manual dispatch, where it is empty.
+  group: test-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# The checks are independent of each other, so each group owns a runner and they all start at once.
+# Shared setup (pnpm + Node + install) lives in .github/actions/setup.
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      - name: Run unit tests
+        run: pnpm test-unit-ci
+
+  lint:
+    name: eslint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      - name: Run eslint checks
+        run: pnpm eslint-check
+
+  # The cheap checks share one runner: a runner is billed per whole minute started. A failing step
+  # skips the rest.
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      - name: Run code formatting checks
+        run: pnpm format-check
+
+      - name: Run type checks
+        run: pnpm type-check
+
+      # Reachability over the real module graph: a file nothing imports, an export nothing reads.
+      - name: Run dead-code checks
+        run: pnpm code-quality:dead-code
+
+      # The static site, as pages.yml builds it for GitHub Pages.
+      - name: Test Build
+        env:
+          NUXT_APP_BASE_URL: /railtime/
+        run: pnpm --filter @railtime/web generate
+
+  # The single required status check on `main`, and the only one that should ever be named in the
+  # branch ruleset. Requiring the individual jobs instead would pin their names: renaming one deletes
+  # its required check, which never reports again and blocks every open PR indefinitely.
+  ci-ok:
+    name: CI
+    needs: [test, lint, checks]
+    # Without always(), a failed dependency skips this job, and a skipped required check reads as
+    # pending rather than failing — the PR would sit unmergeable instead of showing a red X.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check dependency results
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
