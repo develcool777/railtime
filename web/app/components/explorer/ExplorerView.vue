@@ -12,7 +12,7 @@
         </UTooltip>
         <USelect :modelValue="city" :items="CITIES" icon="i-lucide-map-pin" class="w-52" aria-label="City" @update:modelValue="emit('city', String($event))" />
         <USelect
-          v-if="planItems.length > 1"
+          v-if="planItems.length > (planOnly ? 0 : 1)"
           :modelValue="plan ?? NO_PLAN"
           :items="planItems"
           icon="i-lucide-route"
@@ -49,6 +49,7 @@
         :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
         :isFuture="time?.future === true"
         :hasPlan="!!plan"
+        :hasHistory="!planOnly"
         @playHistory="playHistory"
         @seek="showDate"
         @future="showFuture" />
@@ -78,6 +79,7 @@
 
   import { useTransitMap } from '~/composables/transitMap.composable';
   import { CITIES, DEFAULT_SPEED } from '~/utils/explorer.constants';
+  import { isPlanOnly } from '~/utils/city.utils';
   import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
 
   import ExploreBar from './ExploreBar.vue';
@@ -106,8 +108,10 @@
 
   /** The select's value for the network as it is. */
   const NO_PLAN = 'none';
+  const planOnly = isPlanOnly(props.network);
   const planItems = computed(() => [
-    { label: 'No plans', value: NO_PLAN },
+    // A network never built has nothing to show without a plan.
+    ...(planOnly ? [] : [{ label: 'No plans', value: NO_PLAN }]),
     ...Object.entries(props.network.plans ?? {}).map(([id, plan]) => ({ label: plan.name, value: id })),
   ]);
   const chosenPlan = computed(() => (props.plan ? props.network.plans?.[props.plan] : undefined));

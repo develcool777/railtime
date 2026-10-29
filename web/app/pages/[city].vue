@@ -18,7 +18,7 @@
   import { computed } from 'vue';
 
   import ExplorerView from '~/components/explorer/ExplorerView.vue';
-  import { cityNameOf, isCity, networkUrlOf } from '~/utils/city.utils';
+  import { cityNameOf, isCity, networkUrlOf, planToOpen } from '~/utils/city.utils';
 
   // Only cities with a dataset have a page: any other address is a 404.
   definePageMeta({ validate: route => isCity(route.params.city) });
@@ -32,10 +32,8 @@
   const { data: network, error } = useFetch<Network>(() => networkUrlOf(city.value), { server: false, baseURL: useRuntimeConfig().app.baseURL });
 
   // A plan rebuilds the map: the page keys the explorer on it, so a new one mounts where the old one looked.
-  const plan = computed(() => {
-    const id = route.query.plan;
-    return typeof id === 'string' && network.value?.plans?.[id] ? id : undefined;
-  });
+  // A network never built always shows a plan: its first, unless the address names another.
+  const plan = computed(() => (network.value ? planToOpen(network.value, route.query.plan) : undefined));
 
   const selectCity = (next: string) => navigateTo(`/${next}`);
   const selectPlan = (next: string | undefined) => {
