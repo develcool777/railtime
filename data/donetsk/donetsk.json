@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Donetsk","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "meta": {"city":"Donetsk","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Donetsk Metro","names":{"uk":"Донецький метрополітен"}}
   },

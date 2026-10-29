@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Kryvyi Rih","start":"1986-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "meta": {"city":"Kryvyi Rih","start":"1986-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Kryvyi Rih Metrotram","names":{"uk":"Криворізький метротрам"}}
   },
@@ -65,7 +65,7 @@
       "name": "1972 project",
       "names": {"uk":"Проєкт 1972 року"},
       "status": "abandoned",
-      "description": "The full design by UkrkomunNDIproekt and Kharkivmetroproekt: a north–south line from the Northern GZK through Rokuvata, Rybasove, Zarichnyi, Sotsmisto and a tunnel under the steelworks to the Novokryvorizkyi and Southern GZKs, and an east–west line from Kryvyi Rih-Holovnyi station to Karachuny crossing it at Budynok Rad. Only the middle of the north–south line was built.",
+      "description": "The full 1972 design: a north–south line from the Northern GZK through Rokuvata, Rybasove, Zarichnyi, Sotsmisto and a tunnel under the steelworks to the Novokryvorizkyi and Southern GZKs, and an east–west line from Kryvyi Rih-Holovnyi station to Karachuny crossing it at Budynok Rad. Only the middle of the north–south line was built.",
       "lines": {
         "ew": {"name":"East–West line","names":{"uk":"Широтна лінія"},"network":"metro","mode":"light-metro","color":"#009246"}
       },

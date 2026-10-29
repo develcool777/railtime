@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Lviv","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "meta": {"city":"Lviv","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Lviv Metro","names":{"uk":"Львівський метрополітен"}}
   },
@@ -11,7 +11,7 @@
       "name": "1980s underground tram",
       "names": {"uk":"Підземний трамвай 1980-х"},
       "status": "abandoned",
-      "description": "Kharkivmetroproekt's 1978–79 technical project for UkrkomunNDIproekt: metro-sized tunnels under the centre, entered by surface tram lines, in two radii crossing at Vozziednannia (Soborna) Square, then a third radius to the station. Its surface feeder on Sakharova and Kniahyni Olhy streets opened in 1987 and the first shaft was sunk behind the Potocki Palace in 1989, then the work was frozen.",
+      "description": "The 1978–79 technical project: metro-sized tunnels under the centre, entered by surface tram lines, in two radii crossing at Vozziednannia (Soborna) Square, then a third radius to the station. Its surface feeder on Sakharova and Kniahyni Olhy streets opened in 1987 and the first shaft was sunk behind the Potocki Palace in 1989, then the work was frozen.",
       "lines": {
         "m1": {"name":"Radius 1","names":{"uk":"Перший радіус, Північно-Південна лінія"},"network":"metro","mode":"metro","color":"#1E5AA8"},
         "m2": {"name":"Radius 2","names":{"uk":"Другий радіус, Західно-Східна лінія"},"network":"metro","mode":"metro","color":"#D2232A"},
@@ -42,7 +42,7 @@
       "name": "General Plan light metro",
       "names": {"uk":"Легке метро Генплану"},
       "status": "planned",
-      "description": "The light metro (the Radan system) that Lviv's General Plan 2010–2025 sets aside for after 2025, drawn by Mistoproekt as three directions without stations: Stryiska–Mykolaichuka under the High Castle, Pivdennyi–Dubliany under Horodotska and Khmelnytskoho, and Riasne–Lysynychi through the station, the Citadel and Lychakiv. Nothing was designed or built.",
+      "description": "The light metro (the Radan system) that Lviv's General Plan 2010–2025 sets aside for after 2025, drawn as three directions without stations: Stryiska–Mykolaichuka under the High Castle, Pivdennyi–Dubliany under Horodotska and Khmelnytskoho, and Riasne–Lysynychi through the station, the Citadel and Lychakiv. Nothing was designed or built.",
       "lines": {
         "m1": {"name":"Stryisko-Mykolaichukivska","names":{"uk":"Стрийсько-Миколайчуківська лінія"},"network":"metro","mode":"metro","color":"#D2232A"},
         "m2": {"name":"Pivdenno-Dublianska","names":{"uk":"Південно-Дублянська лінія"},"network":"metro","mode":"metro","color":"#1E5AA8"},
@@ -84,11 +84,11 @@
         {"stationA":"pryvokzalna","stationB":"vokzal"}
       ]
     },
-    "dubyna-proposal": {
+    "mid-2000s-proposal": {
       "name": "Mid-2000s proposal",
       "names": {"uk":"Пропозиція середини 2000-х"},
       "status": "proposed",
-      "description": "The lines Vitalii Dubyna, head of Mistoproekt's General Plan team, described in the mid-2000s before the plan was adopted: Sykhiv to Riasne under Stusa, Vynnychenka and Varshavska streets, and Pivdennyi to Dubliany under Horodotska and Khmelnytskoho; a third line from Levandivka was too vague to draw.",
+      "description": "The lines the General Plan's team described in the mid-2000s, before the plan was adopted: Sykhiv to Riasne under Stusa, Vynnychenka and Varshavska streets, and Pivdennyi to Dubliany under Horodotska and Khmelnytskoho; a third line from Levandivka was too vague to draw.",
       "lines": {
         "m4": {"name":"Sykhivsko-Riasnenska","names":{"uk":"Сихівсько-Рясненська лінія"},"network":"metro","mode":"metro","color":"#D2232A"},
         "m2": {"name":"Pivdenno-Dublianska","names":{"uk":"Південно-Дублянська лінія"},"network":"metro","mode":"metro","color":"#1E5AA8"}

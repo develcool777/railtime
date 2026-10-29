@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Dnipro","start":"1995-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "meta": {"city":"Dnipro","start":"1995-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Dnipro Metro","names":{"uk":"Дніпровський метрополітен"}}
   },
@@ -26,7 +26,7 @@
       "name": "Under construction",
       "names": {"uk":"Будується"},
       "status": "under-construction",
-      "description": "The Tsentralno-Zavodska line's 4 km extension from Vokzalna under Yavornytskoho Avenue to Teatralna, Tsentralna and Muzeina, under construction since the 1990s (Limak contract 2016, stations by Zaha Hadid Architects); work stopped in February 2022 when the contractor left.",
+      "description": "The Tsentralno-Zavodska line's 4 km extension from Vokzalna under Yavornytskoho Avenue to Teatralna, Tsentralna and Muzeina, under construction since the 1990s; work stopped in February 2022 when the contractor left.",
       "stations": {
         "muzeina": {"name":"Muzeina","names":{"uk":"Музейна"},"coordinate":[35.0646,48.4548]},
         "teatralna": {"name":"Teatralna","names":{"uk":"Театральна"},"coordinate":[35.03186,48.47216]},

@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Leeds","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "meta": {"city":"Leeds","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Leeds Supertram"}
   },

@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Chernivtsi","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plan: a fan scheme found online, placed by railtime"},
+  "meta": {"city":"Chernivtsi","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Chernivtsi Metro","names":{"uk":"Чернівецький метрополітен"}}
   },
@@ -7,11 +7,11 @@
   "stations": {},
   "segments": [],
   "plans": {
-    "fan-scheme": {
-      "name": "Fan scheme",
+    "concept": {
+      "name": "Concept",
       "names": {"uk":"Фанатська схема"},
       "status": "concept",
-      "description": "An unofficial fan-made concept found online, \"Схема ліній чернівецького метрополітену\": two lines through the centre and a ring, drawn as a diagram. Chernivtsi has never planned a metro; this is not a city plan, and the stations are placed on the places they are named after.",
+      "description": "An unofficial concept, not a city plan: two lines through the centre and a ring. Chernivtsi has never planned a metro; the stations stand on the places they are named after.",
       "lines": {
         "prutska": {"name":"Prutska","names":{"uk":"Прутська лінія"},"network":"metro","mode":"metro","color":"#D52B1E"},
         "sadhirsko-pivdenna": {"name":"Sadhirsko-Pivdenna","names":{"uk":"Садгірсько-південна лінія"},"network":"metro","mode":"metro","color":"#2F80ED"},
