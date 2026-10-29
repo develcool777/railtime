@@ -1,6 +1,6 @@
 <template>
-  <div class="explorer bg-page h-full w-full">
-    <aside class="explorer-panel border-default bg-default flex min-h-0 flex-col sm:border-r max-sm:border-t">
+  <div ref="explorer" class="explorer bg-page h-full w-full" :class="{ 'map-only': mapOnly }">
+    <aside v-show="!mapOnly" class="explorer-panel border-default bg-default flex min-h-0 flex-col sm:border-r max-sm:border-t">
       <PanelHeader :city @city="emit('city', $event)" />
       <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
 
@@ -59,6 +59,18 @@
         <div ref="mapElement" class="h-full w-full" />
       </div>
       <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" class="absolute top-4 left-4" />
+      <UTooltip :text="mapOnly ? 'Show panels (Esc)' : 'Map only'">
+        <UButton
+          :icon="mapOnly ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+          color="neutral"
+          variant="outline"
+          class="bg-default shadow-soft absolute top-4 right-4"
+          :aria-label="mapOnly ? 'Show panels' : 'Map only'"
+          :aria-pressed="mapOnly"
+          @click="toggleMapOnly" />
+      </UTooltip>
+      <!-- The map's credits stay on it with the panels gone: its licence asks for them. -->
+      <MapCredits v-if="mapOnly" :credits class="bg-default/80 absolute right-0 bottom-0 rounded-tl-md px-2 py-1" />
       <!-- The same wrapper as the map's: MapLibre makes the minimap's container relative too. -->
       <div
         v-show="mode === 'history' && camera !== 'overview'"
@@ -67,7 +79,7 @@
       </div>
     </div>
 
-    <div class="explorer-dock border-default bg-default flex flex-col gap-1.5 border-t px-5 pt-3 pb-2 max-sm:px-3 max-sm:pb-4">
+    <div v-show="!mapOnly" class="explorer-dock border-default bg-default flex flex-col gap-1.5 border-t px-5 pt-3 pb-2 max-sm:px-3 max-sm:pb-4">
       <div class="flex items-center gap-2">
         <ExploreDock
           v-if="mode === 'explore'"
@@ -117,7 +129,7 @@
   import type { CameraMode } from '@railtime/renderer/transitMap.types';
   import type { Network } from '@railtime/schema/network.types';
   import { isPlanOnly } from '@railtime/schema/plan.utils';
-  import { computed, ref, useTemplateRef, watch } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 
   import { useTransitMap } from '~/composables/transitMap.composable';
   import { DEFAULT_SPEED } from '~/utils/explorer.constants';
@@ -140,6 +152,7 @@
   const props = defineProps<{ network: Network; city: string; plan?: string }>();
   const emit = defineEmits<{ city: [city: string]; plan: [plan: string | undefined] }>();
 
+  const explorer = useTemplateRef<HTMLElement>('explorer');
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
   const route = useRoute();
@@ -277,6 +290,30 @@
     camera.value = value;
     map.value?.setCameraMode(value);
   };
+
+  /** Only the map: the panel and the dock hidden, the page full screen where the browser lets it. */
+  const mapOnly = ref(false);
+  const toggleMapOnly = async () => {
+    mapOnly.value = !mapOnly.value;
+    // Not every browser has full screen (an iPhone's Safari): there the panels still hide.
+    if (mapOnly.value) await explorer.value?.requestFullscreen?.().catch(() => undefined);
+    else if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+  };
+  // Leaving full screen (Esc, or the browser's own control) brings the panels back.
+  const onFullscreenChange = () => {
+    if (!document.fullscreenElement) mapOnly.value = false;
+  };
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && mapOnly.value) void toggleMapOnly();
+  };
+  onMounted(() => {
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('keydown', onKeydown);
+  });
+  onBeforeUnmount(() => {
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
+    document.removeEventListener('keydown', onKeydown);
+  });
 </script>
 
 <style scoped>
@@ -297,6 +334,13 @@
   }
   .explorer-dock {
     grid-area: dock;
+  }
+
+  /* Only the map. */
+  .explorer.map-only {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: 'map';
   }
 
   /* A phone: the map, the panel as a sheet under it, then the dock. */

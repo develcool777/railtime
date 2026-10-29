@@ -1,6 +1,21 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/* Tailwind 4 leaves buttons with the default cursor, as browsers do: anything clickable shows the hand. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  [role='tab']:not(:disabled),
+  [role='option']:not([aria-disabled='true']),
+  [role='menuitem']:not([aria-disabled='true']),
+  [role='checkbox']:not(:disabled),
+  [role='switch']:not(:disabled),
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+}
+
 /* The brand green, as a palette: Nuxt UI's `primary` (app.config.ts). */
 @theme static {
   --font-sans: 'Inter', system-ui, sans-serif;
