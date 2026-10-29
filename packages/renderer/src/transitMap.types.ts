@@ -26,6 +26,8 @@ export type TransitMapOptions = {
   padding?: Padding;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
+  /** One of the network's plans, built on top of it: its changes play after today, drawn as planned. */
+  plan?: string;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.
@@ -40,9 +42,11 @@ export type NetworkStats = { stations: number; km: number; lines: number };
 export type TimeState = {
   /** The clock, as a UTC timestamp. */
   time: number;
-  /** Steps that have happened. Equal to `stepCount` on today's map. */
+  /** Steps that have happened. Equal to `todayCursor` on today's map, and above it in a planned future. */
   cursor: number;
   stepCount: number;
+  /** Steps that have happened by today: those after are planned. */
+  todayCursor: number;
   playing: boolean;
   stats: NetworkStats;
 };
@@ -57,6 +61,8 @@ export type StepInfo = {
   color: string;
   /** Stations this step opens, in the order they appear. */
   stations: string[];
+  /** It is planned, not yet happened. */
+  planned?: boolean;
 };
 
 /** One line at a station, for a station panel. */

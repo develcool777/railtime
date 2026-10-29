@@ -77,7 +77,8 @@ export class StationLayer extends MapLayer {
         ),
         'circle-color': '#ffffff',
         'circle-stroke-width': byZoom(1.2, 2.5),
-        'circle-opacity': ['get', 'opacity'],
+        // A planned station is a ring: its fill all but gone.
+        'circle-opacity': ['*', ['get', 'opacity'], ['case', ['get', 'planned'], 0.2, 1]],
         'circle-stroke-opacity': ['get', 'opacity'],
       },
     });
@@ -176,6 +177,7 @@ export class StationLayer extends MapLayer {
           interchange: lines.size > 1 || frame.linked.has(station),
           color: lines.get(firstLine) ?? '#ffffff',
           highlighted,
+          planned: frame.planned.has(station),
         }),
       );
     }

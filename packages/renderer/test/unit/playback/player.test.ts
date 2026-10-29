@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { applyPlan } from '@railtime/schema/plan.utils';
 import { toTimestamp } from '../../../src/model/date.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { playbackOf } from '../../support/playback.utils';
@@ -13,6 +14,13 @@ describe('Player', () => {
     expect(events.filter(type => type === 'stepStart')).toHaveLength(timeline.steps.length);
     expect(events.at(-1)).toBe('end');
     expect(player.cursor).toBe(timeline.steps.length);
+  });
+
+  test('opens at today, and runs on to the last planned change after it', () => {
+    const { timeline, player } = playbackOf(applyPlan(tinyNetwork(), 'extension'));
+    expect(player.clock).toBe(player.today);
+    expect(player.cursor).toBe(timeline.steps.length - 1);
+    expect(player.end).toBe(toTimestamp('2030-01-01'));
   });
 
   test('skips to the next step, then finishes it', () => {

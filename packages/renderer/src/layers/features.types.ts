@@ -35,6 +35,8 @@ export type StationProperties = {
   color: string;
   /** Opened in the step playing now: pulses, and is labelled at any zoom. */
   highlighted: boolean;
+  /** Only planned track reaches it: drawn hollow. */
+  planned: boolean;
 };
 
 /** Properties of a pulse ring around a new station. */

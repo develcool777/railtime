@@ -11,6 +11,20 @@
           <UButton to="/" icon="i-lucide-layout-grid" color="neutral" variant="soft" aria-label="All cities" />
         </UTooltip>
         <USelect :modelValue="city" :items="CITIES" icon="i-lucide-map-pin" class="w-52" aria-label="City" @update:modelValue="emit('city', String($event))" />
+        <USelect
+          v-if="planItems.length > 1"
+          :modelValue="plan ?? NO_PLAN"
+          :items="planItems"
+          icon="i-lucide-route"
+          class="w-48"
+          aria-label="Future plan"
+          @update:modelValue="choosePlan(String($event))" />
+        <UPopover v-if="chosenPlan">
+          <UButton icon="i-lucide-info" color="neutral" variant="soft" aria-label="About this plan" />
+          <template #content>
+            <PlanNote :plan="chosenPlan" />
+          </template>
+        </UPopover>
       </div>
       <ExplorerHud :mode :time :stepActive="mode === 'history' && step !== null" />
       <StepCard v-if="mode === 'history'" :step :revealed />
@@ -38,7 +52,7 @@
         v-if="mode === 'explore'"
         :time="time?.time ?? range.end"
         :range
-        :isToday="!time || time.cursor === time.stepCount"
+        :isToday="!time || time.cursor === time.todayCursor"
         @playHistory="playHistory"
         @seek="showDate" />
       <PlaybackBar
@@ -72,12 +86,13 @@
   import ExploreBar from './ExploreBar.vue';
   import ExplorerHud from './ExplorerHud.vue';
   import LinePanel from './LinePanel.vue';
+  import PlanNote from './PlanNote.vue';
   import PlaybackBar from './PlaybackBar.vue';
   import StationPanel from './StationPanel.vue';
   import StepCard from './StepCard.vue';
 
-  const props = defineProps<{ network: Network; city: string }>();
-  const emit = defineEmits<{ city: [city: string] }>();
+  const props = defineProps<{ network: Network; city: string; plan?: string }>();
+  const emit = defineEmits<{ city: [city: string]; plan: [plan: string | undefined] }>();
 
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
@@ -90,14 +105,24 @@
     minimapContainer: minimapElement,
     network: props.network,
     ...(opening.view ? { view: opening.view } : {}),
+    ...(props.plan ? { plan: props.plan } : {}),
   });
+
+  /** The select's value for the network as it is. */
+  const NO_PLAN = 'none';
+  const planItems = computed(() => [
+    { label: 'No plans', value: NO_PLAN },
+    ...Object.entries(props.network.plans ?? {}).map(([id, plan]) => ({ label: plan.name, value: id })),
+  ]);
+  const chosenPlan = computed(() => (props.plan ? props.network.plans?.[props.plan] : undefined));
+  const choosePlan = (id: string) => emit('plan', id === NO_PLAN ? undefined : id);
 
   /** `explore`: the map as it is, or was via the year slider. `history`: the playback. */
   const mode = ref<'explore' | 'history'>('explore');
   const speed = ref(DEFAULT_SPEED);
   const camera = ref<CameraMode>('follow');
-  const visible = ref(new Set(Object.keys(props.network.lines)));
-  const range = computed(() => map.value?.range ?? { start: 0, end: Date.now() });
+  const visible = ref(new Set([...Object.keys(props.network.lines), ...Object.keys(chosenPlan.value?.lines ?? {})]));
+  const range = computed(() => map.value?.range ?? { start: 0, end: Date.now(), today: Date.now() });
 
   watch(map, transitMap => {
     if (!transitMap) return;
@@ -112,11 +137,12 @@
 
   // While exploring, the address follows the map, so it can be shared; playback leaves it alone.
   const query = computed(() => {
-    const isToday = !time.value || time.value.cursor === time.value.stepCount;
+    const isToday = !time.value || time.value.cursor === time.value.todayCursor;
     return formatExplorerQuery({
       ...(time.value && !isToday ? { date: time.value.time } : {}),
       ...(view.value ? { view: view.value } : {}),
       ...(station.value ? { station: station.value.id } : {}),
+      ...(props.plan ? { plan: props.plan } : {}),
     });
   });
   watch(query, next => {

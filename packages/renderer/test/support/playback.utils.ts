@@ -7,7 +7,7 @@ import { createStepAnimation } from '../../src/steps/stepAnimation.utils';
 import type { Playback } from './playback.types';
 
 /**
- * A network with its index, timeline and a player ending in 2026, wired as `TransitMap` wires them.
+ * A network with its index, timeline and a player at today, 1 January 2026, wired as `TransitMap` wires them.
  *
  * @param network - The network.
  * @returns The pieces.
@@ -34,4 +34,5 @@ export const renderStateOf = (playback: Playback): RenderState => ({
   identityProgress: null,
   visibleLines: new Set(playback.index.lineIds),
   baseColor: line => playback.index.lineOf(line).color,
+  today: playback.player.today,
 });

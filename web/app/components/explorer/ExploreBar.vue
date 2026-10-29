@@ -10,7 +10,7 @@
       :modelValue="time"
       aria-label="Show the network in a year"
       @update:modelValue="onSlide" />
-    <UButton v-if="!isToday" label="Today" color="neutral" variant="outline" class="flex-none" @click="emit('seek', range.end)" />
+    <UButton v-if="!isToday" label="Today" color="neutral" variant="outline" class="flex-none" @click="emit('seek', range.today)" />
     <UColorModeButton class="flex-none" />
   </div>
 </template>
@@ -21,7 +21,7 @@
 
   defineProps<{
     time: number;
-    range: { start: number; end: number };
+    range: { start: number; end: number; today: number };
     isToday: boolean;
   }>();
   const emit = defineEmits<{ playHistory: []; seek: [time: number] }>();

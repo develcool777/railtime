@@ -3,11 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test-unit": "vitest",
+    "test-unit-ci": "vitest run"
+  },
   "exports": {
     "./network.types": "./src/network.types.ts",
-    "./network.schema": "./src/network.schema.ts"
+    "./network.schema": "./src/network.schema.ts",
+    "./plan.utils": "./src/plan.utils.ts"
   },
   "dependencies": {
     "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
   }
 }

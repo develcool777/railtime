@@ -30,7 +30,25 @@ const buildSideBySide = (state: RenderState, lineSegments: LineSegment[], resolv
 };
 
 /**
- * Everything already on the map at the cursor: lines, closed track, stations and their lines, stats.
+ * The transfers with both stations on the map: a link between their dots, and the stations so linked.
+ *
+ * @param state - The frame's render state.
+ * @param stations - The stations on the map.
+ * @returns The links, and the stations at either end.
+ */
+const linkTransfers = (state: RenderState, stations: Map<string, StationLines>): { transfers: LineFeature[]; linked: Set<string> } => {
+  const transfers: LineFeature[] = [];
+  const linked = new Set<string>();
+  for (const { stationA, stationB } of state.index.network.transfers ?? []) {
+    if (!stations.has(stationA) || !stations.has(stationB)) continue;
+    transfers.push(lineFeature([state.index.coordOf(stationA), state.index.coordOf(stationB)], '', 0));
+    linked.add(stationA).add(stationB);
+  }
+  return { transfers, linked };
+};
+
+/**
+ * Everything already on the map at the cursor: lines, planned and closed track, stations and their lines, stats.
  *
  * @param state - The frame's render state.
  * @param stepPlaying - A step is playing at the cursor (its openings make room, its closures fade).
@@ -44,10 +62,12 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   const sideBySide = buildSideBySide(state, visible, resolved, stepPlaying);
 
   const lines: LineFeature[] = [];
+  const planned: LineFeature[] = [];
   const ghosts: LineFeature[] = [];
   const drawn = new Set<string>();
   const stations = new Map<string, StationLines>();
   const stayingStations = new Set<string>();
+  const builtStations = new Set<string>();
   const segmentsOnMap = new Set<number>();
   const linesOnMap = new Set<string>();
 
@@ -60,9 +80,10 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
     const key = `${segment.index}|${line.id}`;
+    const isPlanned = lineSegment.opens > state.today;
     if (!closingNow(lineSegment) && !drawn.has(key)) {
       drawn.add(key);
-      lines.push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id)));
+      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id)));
     }
     segmentsOnMap.add(segment.index);
     linesOnMap.add(line.id);
@@ -72,24 +93,21 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
       served.set(line.id, line.color);
       stations.set(station, served);
       if (!closingNow(lineSegment)) stayingStations.add(station);
+      if (!isPlanned) builtStations.add(station);
     }
   }
 
-  const transfers: LineFeature[] = [];
-  const linked = new Set<string>();
-  for (const { stationA, stationB } of index.network.transfers ?? []) {
-    if (!stations.has(stationA) || !stations.has(stationB)) continue;
-    transfers.push(lineFeature([index.coordOf(stationA), index.coordOf(stationB)], '', 0));
-    linked.add(stationA).add(stationB);
-  }
+  const { transfers, linked } = linkTransfers(state, stations);
 
   return {
     sideBySide,
     lines: { type: 'FeatureCollection', features: lines },
+    planned: { type: 'FeatureCollection', features: planned },
     ghosts: { type: 'FeatureCollection', features: ghosts },
     transfers: { type: 'FeatureCollection', features: transfers },
     linked,
     stations,
+    plannedStations: new Set([...stations.keys()].filter(station => !builtStations.has(station))),
     closingOnly: new Set([...stations.keys()].filter(station => !stayingStations.has(station))),
     stats: {
       stations: stations.size,

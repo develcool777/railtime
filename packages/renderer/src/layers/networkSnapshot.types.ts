@@ -6,6 +6,8 @@ import type { SideBySide } from './lineStyle.types';
 export type NetworkSnapshot = {
   sideBySide: SideBySide;
   lines: FeatureCollection<LineFeature>;
+  /** Track opening after today, drawn dashed in its line's colour. */
+  planned: FeatureCollection<LineFeature>;
   /** Closed track, drawn dashed. */
   ghosts: FeatureCollection<LineFeature>;
   /** Stations on the map and the lines serving them. */
@@ -14,6 +16,8 @@ export type NetworkSnapshot = {
   transfers: FeatureCollection<LineFeature>;
   /** Stations on the map with a transfer to another on the map: drawn as interchanges. */
   linked: Set<string>;
+  /** Stations on the map that only planned track reaches: drawn faint. */
+  plannedStations: Set<string>;
   /** Stations all of whose lines are closing in the step playing now: they fade out with it. */
   closingOnly: Set<string>;
   stats: NetworkStats;

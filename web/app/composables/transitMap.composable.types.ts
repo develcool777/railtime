@@ -12,6 +12,8 @@ export type TransitMapMount = {
   network: Network;
   /** Where the map opens; the whole network without one. */
   view?: MapView;
+  /** One of the network's plans, built on top of it. */
+  plan?: string;
 };
 
 /** The mounted map, and its events as reactive state. */

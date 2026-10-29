@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Network } from './network.types';
+import { applyPlan } from './plan.utils.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 const lngLat = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
@@ -37,6 +38,19 @@ const segmentSchema = z.object({
   ),
 });
 
+const transferSchema = z.object({ stationA: z.string(), stationB: z.string() });
+
+const planSchema = z.object({
+  name: z.string().min(1),
+  names: names.optional(),
+  description: z.string().min(1),
+  sources: z.array(z.url()).optional(),
+  lines: z.record(z.string(), lineSchema).optional(),
+  stations: z.record(z.string(), stationSchema).optional(),
+  segments: z.array(segmentSchema).optional(),
+  transfers: z.array(transferSchema).optional(),
+});
+
 /** The network's shape, its references between parts unchecked. */
 const networkShape = z.object({
   meta: z.object({ city: z.string(), start: isoDate, built: isoDate, attribution: z.string() }),
@@ -44,7 +58,8 @@ const networkShape = z.object({
   lines: z.record(z.string(), lineSchema),
   stations: z.record(z.string(), stationSchema),
   segments: z.array(segmentSchema),
-  transfers: z.array(z.object({ stationA: z.string(), stationB: z.string() })).optional(),
+  transfers: z.array(transferSchema).optional(),
+  plans: z.record(z.string(), planSchema).optional(),
 });
 
 /**
@@ -53,7 +68,7 @@ const networkShape = z.object({
  * @param network - The network, its shape already valid.
  * @param problem - Reports one problem.
  */
-const checkStations = (network: z.infer<typeof networkShape>, problem: (message: string) => void): void => {
+const checkStations = (network: Network, problem: (message: string) => void): void => {
   for (const [stationId, station] of Object.entries(network.stations)) {
     for (const [lineId, date] of Object.entries(station.closed ?? {})) {
       if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
@@ -69,9 +84,13 @@ const checkStations = (network: z.infer<typeof networkShape>, problem: (message:
   }
 };
 
-/** The network's shape, plus the references between its parts. */
-const networkSchema = networkShape.superRefine((network, context) => {
-  const problem = (message: string) => context.addIssue({ code: 'custom', message });
+/**
+ * Checks the references between a network's parts, and its dates.
+ *
+ * @param network - The network, its shape already valid.
+ * @param problem - Reports one problem.
+ */
+const checkNetwork = (network: Network, problem: (message: string) => void): void => {
   for (const [lineId, line] of Object.entries(network.lines)) {
     if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
     for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
@@ -87,6 +106,33 @@ const networkSchema = networkShape.superRefine((network, context) => {
       if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`segment ${position}: ${lineId} suspended out of order`);
     }
   });
+};
+
+/**
+ * Checks each plan as the network it would build: its own ids new, its references and dates sound.
+ * A problem the network already has is reported once, not again for every plan.
+ *
+ * @param network - The network, its shape already valid.
+ * @param problem - Reports one problem.
+ */
+const checkPlans = (network: Network, problem: (message: string) => void): void => {
+  const known = new Set<string>();
+  checkNetwork(network, message => known.add(message));
+  for (const [planId, plan] of Object.entries(network.plans ?? {})) {
+    for (const lineId of Object.keys(plan.lines ?? {})) if (network.lines[lineId]) problem(`plan ${planId}: line ${lineId} is already in the network`);
+    for (const stationId of Object.keys(plan.stations ?? {}))
+      if (network.stations[stationId]) problem(`plan ${planId}: station ${stationId} is already in the network`);
+    checkNetwork(applyPlan(network, planId), message => {
+      if (!known.has(message)) problem(`plan ${planId}: ${message}`);
+    });
+  }
+};
+
+/** The network's shape, plus the references between its parts and its plans'. */
+const networkSchema = networkShape.superRefine((network, context) => {
+  const problem = (message: string) => context.addIssue({ code: 'custom', message });
+  checkNetwork(network, problem);
+  checkPlans(network, problem);
 });
 
 /**

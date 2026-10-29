@@ -117,5 +117,86 @@
     {"stationA":"khreshchatyk","stationB":"maidan-nezalezhnosti"},
     {"stationA":"palats-sportu","stationB":"ploshcha-ukrainskykh-heroiv"},
     {"stationA":"teatralna","stationB":"zoloti-vorota"}
-  ]
+  ],
+  "plans": {
+    "under-construction": {
+      "name": "Under construction",
+      "names": {"uk":"Будується"},
+      "description": "The Syretsko-Pecherska line's extension from Syrets to Mostytska and Varshavska (formerly Prospekt Pravdy), the only metro section being built in Kyiv; work resumed in November 2024 under the contractor Avtostrada, and the city expects both stations in 2027. The opening year comes from the city's draft 2027–2029 programme; the month is assumed.",
+      "sources": ["https://uk.wikipedia.org/wiki/Сирецько-Печерська_лінія","https://uk.wikipedia.org/wiki/Варшавська_(станція_метро,_Київ)","https://uk.wikipedia.org/wiki/Мостицька_(станція_метро)","https://en.wikipedia.org/wiki/Syretsko-Pecherska_line","https://minfin.com.ua/ua/2026/08/04/179049406/","https://www.openstreetmap.org/way/646882762"],
+      "stations": {
+        "mostytska": {"name":"Mostytska","names":{"uk":"Мостицька"},"coordinate":[30.42333,50.49028]},
+        "varshavska": {"name":"Varshavska","names":{"uk":"Варшавська"},"coordinate":[30.42917,50.50403]}
+      },
+      "segments": [
+        {"stationA":"mostytska","stationB":"varshavska","lines":{"m3":{"open":"2027-12-31"}},"coordinates":[[30.42333,50.49028],[30.42917,50.50403]]},
+        {"stationA":"syrets","stationB":"mostytska","lines":{"m3":{"open":"2027-12-31"}},"coordinates":[[30.43327,50.47686],[30.42333,50.49028]]}
+      ]
+    },
+    "long-term": {
+      "name": "Long-term plan",
+      "names": {"uk":"Перспективний план"},
+      "description": "The metro network of Kyiv's draft General Plan (Kyivgenplan, presented 2020, horizon to 2040; never approved, the 2002 plan remains in force) together with the Kyiv Metro's development plans: the Podilsko-Vyhurivska line, whose first stage Hlybochytska–Raiduzhna has an approved project (KMDA orders of 2008 and 2012) and three stations already in the Podilskyi bridge, and short extensions of all three lines. Only the Vynohradar section is being built; the 2027, 2029 and 2033 dates are announced targets and every other date is assumed within the plan's phases.",
+      "sources": ["https://uk.wikipedia.org/wiki/Київський_метрополітен","https://uk.wikipedia.org/wiki/Подільсько-Вигурівська_лінія","https://uk.wikipedia.org/wiki/Сирецько-Печерська_лінія","https://uk.wikipedia.org/wiki/Виноградар_(станція_метро)","https://uk.wikipedia.org/wiki/Маршала_Гречка_(станція_метро)","https://uk.wikipedia.org/wiki/Новобіличі_(станція_метро)","https://uk.wikipedia.org/wiki/Одеська_(станція_метро,_Київ)","https://en.wikipedia.org/wiki/Podilsko-Vyhurivska_line","https://glavcom.ua/kyiv/news/grandiozni-plani-u-kijevi-hochut-pobuduvati-27-stanciy-metro-za-20-rokiv-722281.html","https://fakty.com.ua/ua/ukraine/20201103-metro-na-troyeshhynu-do-2040-roku-nalichuvatyme-17-stantsij/","https://minfin.com.ua/ua/2026/08/04/179049406/","https://transport.novyny.live/koli-chekati-metro-na-troieshchini-ziavilasia-data-319867.html","https://www.openstreetmap.org/way/729121734","https://www.openstreetmap.org/way/729121728","https://www.openstreetmap.org/way/836500772"],
+      "lines": {
+        "m4": {"name":"Podilsko-Vyhurivska","names":{"uk":"Подільсько-Вигурівська лінія"},"network":"metro","mode":"metro","color":"#F0AB00"}
+      },
+      "stations": {
+        "bratyslavska": {"name":"Bratyslavska","names":{"uk":"Братиславська"},"coordinate":[30.6119,50.4868]},
+        "bulvar-perova": {"name":"Bulvar Perova","names":{"uk":"Бульвар Перова"},"coordinate":[30.5935,50.4836]},
+        "hlybochytska": {"name":"Hlybochytska","names":{"uk":"Глибочицька"},"coordinate":[30.48514,50.46291]},
+        "marshala-hrechka": {"name":"Marshala Hrechka","names":{"uk":"Маршала Гречка"},"coordinate":[30.4087,50.5069]},
+        "mostytska": {"name":"Mostytska","names":{"uk":"Мостицька"},"coordinate":[30.42333,50.49028]},
+        "novobilychi": {"name":"Novobilychi","names":{"uk":"Новобіличі"},"coordinate":[30.358,50.4765]},
+        "odeska": {"name":"Odeska","names":{"uk":"Одеська"},"coordinate":[30.445,50.3615]},
+        "pivdennyi-vokzal": {"name":"Pivdennyi Vokzal","names":{"uk":"Південний вокзал"},"coordinate":[30.487,50.44]},
+        "ploshcha-peremohy": {"name":"Ploshcha Peremohy","names":{"uk":"Площа Перемоги"},"coordinate":[30.488,50.45]},
+        "podilska": {"name":"Podilska","names":{"uk":"Подільська"},"coordinate":[30.50449,50.47528]},
+        "prospekt-maiakovskoho": {"name":"Prospekt Maiakovskoho","names":{"uk":"Проспект Маяковського"},"coordinate":[30.5895,50.4975]},
+        "raiduzhna": {"name":"Raiduzhna","names":{"uk":"Райдужна"},"coordinate":[30.57411,50.47978]},
+        "solomianska-ploshcha": {"name":"Solomianska Ploshcha","names":{"uk":"Солом'янська площа"},"coordinate":[30.4666,50.428]},
+        "staroboryspilska": {"name":"Staroboryspilska","names":{"uk":"Старобориспільська"},"coordinate":[30.7065,50.416]},
+        "sudnobudivna": {"name":"Sudnobudivna","names":{"uk":"Суднобудівна"},"coordinate":[30.52764,50.47424]},
+        "trukhaniv-ostriv": {"name":"Trukhaniv Ostriv","names":{"uk":"Труханів острів"},"coordinate":[30.5445,50.47115]},
+        "varshavska": {"name":"Varshavska","names":{"uk":"Варшавська"},"coordinate":[30.42917,50.50403]},
+        "vulytsia-draizera": {"name":"Vulytsia Teodora Draizera","names":{"uk":"Вулиця Теодора Драйзера"},"coordinate":[30.6006,50.5053]},
+        "vulytsia-lyfaria": {"name":"Vulytsia Serzha Lyfaria","names":{"uk":"Вулиця Сержа Лифаря"},"coordinate":[30.6145,50.5127]},
+        "vulytsia-stalskoho": {"name":"Vulytsia Suleimana Stalskoho","names":{"uk":"Вулиця Сулеймана Стальського"},"coordinate":[30.603,50.4851]},
+        "vulytsia-tsvietaievoi": {"name":"Vulytsia Maryny Tsvietaievoi","names":{"uk":"Вулиця Марини Цвєтаєвої"},"coordinate":[30.6192,50.5228]},
+        "vulytsia-zakrevskoho": {"name":"Vulytsia Mykoly Zakrevskoho","names":{"uk":"Вулиця Миколи Закревського"},"coordinate":[30.6195,50.5177]},
+        "vynohradar": {"name":"Vynohradar","names":{"uk":"Виноградар"},"coordinate":[30.421,50.501]},
+        "zatoka-desenka": {"name":"Zatoka Desenka","names":{"uk":"Затока Десенка"},"coordinate":[30.55964,50.475],"infill":{"m4":"2036-12-31"}}
+      },
+      "segments": [
+        {"stationA":"akademmistechko","stationB":"novobilychi","lines":{"m1":{"open":"2031-12-31"}},"coordinates":[[30.35508,50.4647],[30.358,50.4765]]},
+        {"stationA":"bulvar-perova","stationB":"prospekt-maiakovskoho","lines":{"m4":{"open":"2037-12-31"}},"coordinates":[[30.5935,50.4836],[30.5895,50.4975]]},
+        {"stationA":"bulvar-perova","stationB":"vulytsia-stalskoho","lines":{"m4":{"open":"2038-12-31"}},"coordinates":[[30.5935,50.4836],[30.603,50.4851]]},
+        {"stationA":"chervonyi-khutir","stationB":"staroboryspilska","lines":{"m3":{"open":"2040-12-31"}},"coordinates":[[30.69602,50.40941],[30.7065,50.416]]},
+        {"stationA":"hlybochytska","stationB":"ploshcha-peremohy","lines":{"m4":{"open":"2039-12-31"}},"coordinates":[[30.48514,50.46291],[30.488,50.45]]},
+        {"stationA":"hlybochytska","stationB":"podilska","lines":{"m4":{"open":"2033-12-31"}},"coordinates":[[30.48514,50.46291],[30.50449,50.47528]]},
+        {"stationA":"mostytska","stationB":"varshavska","lines":{"m3":{"open":"2027-12-31"}},"coordinates":[[30.42333,50.49028],[30.42917,50.50403]]},
+        {"stationA":"mostytska","stationB":"vynohradar","lines":{"m3":{"open":"2029-12-31"}},"coordinates":[[30.42333,50.49028],[30.421,50.501]]},
+        {"stationA":"pivdennyi-vokzal","stationB":"solomianska-ploshcha","lines":{"m4":{"open":"2039-12-31"}},"coordinates":[[30.487,50.44],[30.4666,50.428]]},
+        {"stationA":"ploshcha-peremohy","stationB":"pivdennyi-vokzal","lines":{"m4":{"open":"2039-12-31"}},"coordinates":[[30.488,50.45],[30.487,50.44]]},
+        {"stationA":"podilska","stationB":"sudnobudivna","lines":{"m4":{"open":"2033-12-31"}},"coordinates":[[30.50449,50.47528],[30.52764,50.47424]]},
+        {"stationA":"prospekt-maiakovskoho","stationB":"vulytsia-draizera","lines":{"m4":{"open":"2037-12-31"}},"coordinates":[[30.5895,50.4975],[30.6006,50.5053]]},
+        {"stationA":"raiduzhna","stationB":"bulvar-perova","lines":{"m4":{"open":"2037-12-31"}},"coordinates":[[30.57411,50.47978],[30.5935,50.4836]]},
+        {"stationA":"sudnobudivna","stationB":"trukhaniv-ostriv","lines":{"m4":{"open":"2033-12-31"}},"coordinates":[[30.52764,50.47424],[30.5445,50.47115]]},
+        {"stationA":"syrets","stationB":"mostytska","lines":{"m3":{"open":"2027-12-31"}},"coordinates":[[30.43327,50.47686],[30.42333,50.49028]]},
+        {"stationA":"teremky","stationB":"odeska","lines":{"m2":{"open":"2032-12-31"}},"coordinates":[[30.45407,50.36707],[30.445,50.3615]]},
+        {"stationA":"trukhaniv-ostriv","stationB":"zatoka-desenka","lines":{"m4":{"open":"2033-12-31"}},"coordinates":[[30.5445,50.47115],[30.55964,50.475]]},
+        {"stationA":"vulytsia-draizera","stationB":"vulytsia-lyfaria","lines":{"m4":{"open":"2037-12-31"}},"coordinates":[[30.6006,50.5053],[30.6145,50.5127]]},
+        {"stationA":"vulytsia-lyfaria","stationB":"vulytsia-zakrevskoho","lines":{"m4":{"open":"2037-12-31"}},"coordinates":[[30.6145,50.5127],[30.6195,50.5177]]},
+        {"stationA":"vulytsia-stalskoho","stationB":"bratyslavska","lines":{"m4":{"open":"2038-12-31"}},"coordinates":[[30.603,50.4851],[30.6119,50.4868]]},
+        {"stationA":"vulytsia-zakrevskoho","stationB":"vulytsia-tsvietaievoi","lines":{"m4":{"open":"2037-12-31"}},"coordinates":[[30.6195,50.5177],[30.6192,50.5228]]},
+        {"stationA":"vynohradar","stationB":"marshala-hrechka","lines":{"m3":{"open":"2031-12-31"}},"coordinates":[[30.421,50.501],[30.4087,50.5069]]},
+        {"stationA":"zatoka-desenka","stationB":"raiduzhna","lines":{"m4":{"open":"2033-12-31"}},"coordinates":[[30.55964,50.475],[30.57411,50.47978]]}
+      ],
+      "transfers": [
+        {"stationA":"hlybochytska","stationB":"lukianivska"},
+        {"stationA":"pivdennyi-vokzal","stationB":"vokzalna"},
+        {"stationA":"podilska","stationB":"tarasa-shevchenka"}
+      ]
+    }
+  }
 }

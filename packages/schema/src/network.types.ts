@@ -103,6 +103,24 @@ export type Transfer = {
   stationB: string;
 };
 
+/**
+ * A future the network may have: the lines, stations, track and transfers it would add, each dated
+ * when it is expected to open. Shown only when chosen; ids are its own, but its track and transfers
+ * may join the network's stations, and its track may carry the network's lines.
+ */
+export type Plan = {
+  name: string;
+  names?: Names;
+  /** What it is, how far along it is, and where its dates come from. */
+  description: string;
+  /** Where it is documented. */
+  sources?: string[];
+  lines?: Record<string, Line>;
+  stations?: Record<string, Station>;
+  segments?: Segment[];
+  transfers?: Transfer[];
+};
+
 /** A city's rail network and its history. */
 export type Network = {
   meta: {
@@ -118,4 +136,6 @@ export type Network = {
   segments: Segment[];
   /** Changes between stations that are not one station: drawn linked, wherever both are open. */
   transfers?: Transfer[];
+  /** Futures it may have, by id: none is part of the network until chosen (see `applyPlan`). */
+  plans?: Record<string, Plan>;
 };

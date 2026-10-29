@@ -1,5 +1,6 @@
 import { type LngLatBoundsLike, Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
 import { EventEmitter } from './core/eventEmitter.service';
+import { applyPlan } from '@railtime/schema/plan.utils';
 import { required } from './core/required.utils';
 import { ActiveStepLayer } from './layers/activeStepLayer.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
@@ -103,7 +104,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     super();
     // Before the first map: MapLibre starts its workers with it.
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
-    this.index = new NetworkIndex(options.network);
+    this.index = new NetworkIndex(options.plan ? applyPlan(options.network, options.plan) : options.network);
     this.timeline = new Timeline(this.index);
     this.player = new Player(this.timeline, todayTimestamp(), step => this.createAnimation(step));
     this.theme = options.theme ?? 'dark';
@@ -147,9 +148,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.frameRequest = requestAnimationFrame(this.renderFrame);
   }
 
-  /** The first and last dates the timeline covers, as timestamps. */
-  public get range(): { start: number; end: number } {
-    return { start: this.timeline.start, end: this.player.end };
+  /** The first and last dates the timeline covers, and today between them, as timestamps. */
+  public get range(): { start: number; end: number; today: number } {
+    return { start: this.timeline.start, end: this.player.end, today: this.player.today };
   }
 
   /**
@@ -439,6 +440,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       identityProgress: identityPlaying ? this.player.progress : null,
       visibleLines: this.visibleLines,
       baseColor: line => this.baseColor(line),
+      today: this.player.today,
     };
   }
 
@@ -465,7 +467,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.revealedCount = 0;
     const durationMs = (playback.preSeconds * 1000) / this.player.speed;
     this.camera.focusStep(playback.animation, this.timeline.stationsOnMap(this.player.cursor), station => this.index.coordOf(station), durationMs);
-    this.emit('step', playback.animation.describe(this.renderState()));
+    const info = playback.animation.describe(this.renderState());
+    // The clock stands on the step's day.
+    this.emit('step', this.player.clock > this.player.today ? { ...info, planned: true } : info);
   }
 
   /**
@@ -525,6 +529,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       now,
       stations,
       linked: snapshot.linked,
+      planned: snapshot.plannedStations,
       highlighted: drawing.highlighted,
       fading: drawing.fading,
       newLabelOpacity: clamp((1 - this.player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
@@ -589,6 +594,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       time: clock,
       cursor,
       stepCount: this.timeline.steps.length,
+      todayCursor: this.timeline.cursorAt(this.player.today),
       playing,
       stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },
     };

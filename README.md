@@ -65,6 +65,10 @@ then `pnpm data:format london`; a test fails while the file is invalid or untidy
 - `names`: a station's, line's, network's or former name in other languages, by language code
   (`{ "uk": "Хрещатик" }`). `name` is English; a line's other names are in full ("… лінія").
   A station's other names are shown beneath its English one, on the map and in its panel.
+- `plans`: futures a city may have, by id: each a name, a description, its sources, and the lines,
+  stations, track and transfers it would add, dated when they are expected to open. The explorer
+  offers a plan picker (`plan=<id>` in a link); the timeline then runs past today, and what is not
+  built yet is drawn dashed.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
 
@@ -94,7 +98,11 @@ English name, romanised as English Wikipedia writes it, and its earlier names (S
 decommunisation, Kharkiv's 2022–24 renamings) are former names. Every station, line, network and
 former name also has its Ukrainian name (`names: { "uk": … }`), which the map labels and station
 panel show beneath the English one. Sviatoshyn's earlier name (Sviatoshyno, until 1991) is left out: no source gives
-the day. Dnipro's extension to the centre is still unopened.
+the day. Dnipro's extension to the centre is still unopened. Kyiv has two plans: the Varshavska extension under construction, and
+the long-term plan (the unapproved 2020 draft General Plan with the Kyiv Metro's own plans) with the
+Podilsko-Vyhurivska line; most of its dates are assumed, as its description says. Two of its stations,
+Lvivska Brama and Telychka, would stand on today's track between two stations, which a plan cannot
+yet split, and are left out.
 
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from

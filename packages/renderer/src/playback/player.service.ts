@@ -22,19 +22,22 @@ export class Player {
   public preSeconds = CAMERA_PRE_SECONDS;
   /** The step playing now, if any. */
   public active: ActivePlayback | null = null;
-  /** Where playback ends: today. */
+  /** Today: where the map opens, and past which every change is planned. */
+  public readonly today: number;
+  /** Where playback ends: today, or the last planned change after it. */
   public readonly end: number;
   /** The steps to play. */
   private readonly timeline: Timeline;
   /** Builds each step's animation as it starts. */
   private readonly createAnimation: AnimationFactory;
 
-  public constructor(timeline: Timeline, end: number, createAnimation: AnimationFactory) {
+  public constructor(timeline: Timeline, today: number, createAnimation: AnimationFactory) {
     this.timeline = timeline;
-    this.end = end;
+    this.today = today;
+    this.end = Math.max(today, timeline.steps.at(-1)?.time ?? today);
     this.createAnimation = createAnimation;
-    this.clock = end;
-    this.cursor = timeline.steps.length;
+    this.clock = today;
+    this.cursor = timeline.cursorAt(today);
   }
 
   /** The active step's phase, or `null` between steps. */

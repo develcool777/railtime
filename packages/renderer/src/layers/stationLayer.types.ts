@@ -8,6 +8,8 @@ export type StationFrame = {
   stations: Map<string, StationLines>;
   /** Stations with a transfer to another on the map: drawn as interchanges. */
   linked: Set<string>;
+  /** Stations only planned track reaches: drawn hollow. */
+  planned: Set<string>;
   /** Stations opening in the playing step. */
   highlighted: Set<string>;
   /** Station → opacity while it closes. */

@@ -21,10 +21,18 @@ map.pause();
 map.skip(); // finish this change, or jump to the next
 map.setVisibleLines(['line-a', 'line-b']);
 map.setTheme('light');
-map.languages; // languages the network has names in besides English: ['uk']
-map.setLanguage('uk'); // names on the map, in captions and panels in that language; null for English
 map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
+map.range; // { start, end, today }: end is past today when a plan is shown
 ```
+
+A station's names in other languages (`names`) are on its label, beneath its English name, and in
+`getStationInfo().otherNames`.
+
+**Plans.** `new TransitMap({ …, plan: '<plan id>' })` builds one of the network's `plans` on top of
+it (`applyPlan` in `@railtime/schema`). The map opens at today; anything dated after today is
+planned: its track is drawn dashed in its line's colour, a station only it reaches is a ring, the
+timeline runs on to its last date, and its steps' `StepInfo` has `planned: true`. `TimeState.todayCursor`
+is the cursor at today. A different plan is a new `TransitMap`.
 
 ## Structure
 
