@@ -25,4 +25,11 @@ describe('OpenStepAnimation', () => {
     // D opened in 1910 under its name then, Old D.
     expect(animation.describe(renderStateOf(playback))).toMatchObject({ title: 'Red line extended', stations: ['C', 'Old D'] });
   });
+
+  test('says a line back on track it left reopens', () => {
+    const playback = playbackOf(tinyNetwork());
+    playback.player.seek(toTimestamp('1944-01-01'));
+    playback.player.skip();
+    expect(playback.player.active!.animation.describe(renderStateOf(playback))).toMatchObject({ title: 'Blue line reopens', subtitle: 'B – C' });
+  });
 });

@@ -52,7 +52,7 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
   }
 
   /**
-   * "Victoria line opens" or "… extended", from the first station to the last reached.
+   * "<line> opens", "… extended" or "… reopens", from the first station to the last reached.
    *
    * @param state - The render state when the step starts.
    * @returns The caption.
@@ -66,7 +66,7 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
     return {
       kind: 'open',
       time: this.step.time,
-      title: `${index.lineName(this.step.line)} ${existed ? 'extended' : 'opens'}`,
+      title: `${index.lineName(this.step.line)} ${this.verb(existed)}`,
       subtitle: `${this.nameOf(required(reach[0], 'first station reached').station)} – ${this.nameOf(required(reach.at(-1), 'last station reached').station)}`,
       color: state.baseColor(this.step.line),
       stations: reach.filter(reached => reached.isNew).map(reached => this.nameOf(reached.station)),
@@ -88,6 +88,17 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
       for (const line of this.linesByStation.get(reached.station) ?? []) this.reach(frame, drawing, reached.station, line);
       if (reached.isNew && drawing.reached.has(reached.station)) drawing.highlighted.add(reached.station);
     }
+  }
+
+  /**
+   * What the caption says the line does: back on track it left, it reopens.
+   *
+   * @param existed - The line was already on the map.
+   * @returns "reopens", "extended" or "opens".
+   */
+  private verb(existed: boolean): string {
+    if (this.step.lineSegments.every(lineSegment => lineSegment.previous !== null)) return 'reopens';
+    return existed ? 'extended' : 'opens';
   }
 
   /**

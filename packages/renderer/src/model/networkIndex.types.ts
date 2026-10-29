@@ -22,10 +22,14 @@ export type TrackSegment = {
   travel: Travel;
 };
 
-/** One line running over one segment, with its dates as timestamps. */
+/** One line running over one segment for one period, with its dates as timestamps. */
 export type LineSegment = {
   segment: TrackSegment;
   line: string;
   opens: number;
   closes: number | null;
+  /** The line's period here before this one, when it was suspended in between. */
+  previous: LineSegment | null;
+  /** The line's period here after this one, when it returned. */
+  next: LineSegment | null;
 };

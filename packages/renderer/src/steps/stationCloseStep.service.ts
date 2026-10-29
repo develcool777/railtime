@@ -9,7 +9,7 @@ import { StepAnimation } from './stepAnimation.service';
 import type { StepContext, StepDrawing, StepFrame } from './stepAnimation.types';
 
 /**
- * Lines stop calling at a station they still run through (Mosley Street, 2013): the track stays, and
+ * Lines stop calling at a station they still run through: the track stays, and
  * the dot fades out unless another line still calls there.
  */
 export class StationCloseStepAnimation extends StepAnimation<StationCloseStep> {
@@ -32,7 +32,7 @@ export class StationCloseStepAnimation extends StepAnimation<StationCloseStep> {
   }
 
   /**
-   * "Mosley Street closes", on which lines.
+   * "<station> closes", on which lines.
    *
    * @param state - The render state when the step starts.
    * @returns The caption.

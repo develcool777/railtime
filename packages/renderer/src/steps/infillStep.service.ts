@@ -8,7 +8,7 @@ import { INFILL_DRAW_SECONDS, INFILL_HOLD_SECONDS } from './step.constants';
 import { StepAnimation } from './stepAnimation.service';
 import type { StepContext, StepDrawing, StepFrame } from './stepAnimation.types';
 
-/** A station opening on track its lines already run over (Pimlico, 1972): it pops in on the line. */
+/** A station opening on track its lines already run over: it pops in on the line. */
 export class InfillStepAnimation extends StepAnimation<InfillStep> {
   /** Seconds at 1× for the station to appear. */
   public readonly drawSeconds = INFILL_DRAW_SECONDS;
@@ -29,7 +29,7 @@ export class InfillStepAnimation extends StepAnimation<InfillStep> {
   }
 
   /**
-   * "Pimlico opens", on which lines.
+   * "<station> opens", on which lines.
    *
    * @param state - The render state when the step starts.
    * @returns The caption.

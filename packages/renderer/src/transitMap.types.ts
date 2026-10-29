@@ -47,7 +47,7 @@ export type StepInfo = {
   kind: Step['kind'];
   time: number;
   title: string;
-  /** e.g. "Walthamstow Central – Highbury & Islington". */
+  /** The first and last station it reaches: "<station> – <station>". */
   subtitle?: string;
   color: string;
   /** Stations this step opens, in the order they appear. */

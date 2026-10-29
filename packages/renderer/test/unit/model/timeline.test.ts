@@ -19,6 +19,8 @@ describe('Timeline', () => {
       [1920, 'infill'],
       [1925, 'rename'],
       [1930, 'open'],
+      [1940, 'close'],
+      [1945, 'open'],
       [1950, 'close'],
       [1960, 'stationClose'],
       [1990, 'identity'],
@@ -40,13 +42,15 @@ describe('Timeline', () => {
     expect(timeline.cursorAt(toTimestamp('2026-01-01'))).toBe(timeline.steps.length);
   });
 
-  test('opens and closes line segments by cursor', () => {
+  test('opens and closes line segments by cursor, each period of a suspended line on its own', () => {
     const { index, timeline } = timelineOf();
-    const blue = index.lineSegments.find(lineSegment => lineSegment.line === 'blue')!;
-    expect(timeline.isOpen(blue, timeline.cursorAt(toTimestamp('1929-12-31')))).toBe(false);
-    expect(timeline.isOpen(blue, timeline.cursorAt(toTimestamp('1940-01-01')))).toBe(true);
-    expect(timeline.isOpen(blue, timeline.cursorAt(toTimestamp('1950-01-01')))).toBe(false);
-    expect(timeline.hasClosed(blue, timeline.cursorAt(toTimestamp('1950-01-01')))).toBe(true);
+    const [before, after] = index.lineSegments.filter(lineSegment => lineSegment.line === 'blue');
+    expect(timeline.isOpen(before!, timeline.cursorAt(toTimestamp('1929-12-31')))).toBe(false);
+    expect(timeline.isOpen(before!, timeline.cursorAt(toTimestamp('1935-01-01')))).toBe(true);
+    expect(timeline.hasClosed(before!, timeline.cursorAt(toTimestamp('1940-01-01')))).toBe(true);
+    expect(timeline.isOpen(after!, timeline.cursorAt(toTimestamp('1940-01-01')))).toBe(false);
+    expect(timeline.isOpen(after!, timeline.cursorAt(toTimestamp('1945-01-01')))).toBe(true);
+    expect(timeline.hasClosed(after!, timeline.cursorAt(toTimestamp('1950-01-01')))).toBe(true);
   });
 
   test('keeps an infill station off its line until it opens', () => {
