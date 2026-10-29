@@ -64,7 +64,7 @@ export abstract class StepAnimation<Kind extends Step = Step> {
    */
   protected reach(frame: StepFrame, drawing: StepDrawing, station: string, line: string): void {
     const { state } = frame;
-    if (!state.visibleLines.has(line) || state.timeline.isInfillPending(station, line, state.cursor)) return;
+    if (!state.visibleLines.has(line) || !state.timeline.servesStation(station, line, state.cursor)) return;
     const resolved = resolveLine(state, line);
     const served = drawing.reached.get(station) ?? new Map();
     served.set(resolved.id, resolved.color);
@@ -72,12 +72,13 @@ export abstract class StepAnimation<Kind extends Step = Step> {
   }
 
   /**
-   * A station's name.
+   * A station's name on the step's date.
    *
    * @param station - The station id.
-   * @returns Its display name.
+   * @param time - When; the step's own date by default.
+   * @returns Its display name then.
    */
-  protected nameOf(station: string): string {
-    return this.context.index.stationName(station);
+  protected nameOf(station: string, time = this.step.time): string {
+    return this.context.index.stationName(station, time);
   }
 }

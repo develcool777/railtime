@@ -64,7 +64,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     segmentsOnMap.add(segment.index);
     linesOnMap.add(line.id);
     for (const station of [segment.stationA, segment.stationB]) {
-      if (timeline.isInfillPending(station, lineSegment.line, cursor)) continue;
+      if (!timeline.servesStation(station, lineSegment.line, cursor)) continue;
       const served = stations.get(station) ?? new Map();
       served.set(line.id, line.color);
       stations.set(station, served);

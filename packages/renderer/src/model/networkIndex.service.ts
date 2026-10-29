@@ -83,13 +83,15 @@ export class NetworkIndex {
   }
 
   /**
-   * A station's name.
+   * A station's name on a date: a former name until the day it changed.
    *
    * @param station - A station id.
-   * @returns Its display name.
+   * @param time - The date's timestamp; today's name without one.
+   * @returns Its display name then.
    */
-  public stationName(station: string): string {
-    return this.stationOf(station).name;
+  public stationName(station: string, time = Infinity): string {
+    const info = this.stationOf(station);
+    return info.formerNames?.find(former => time < toTimestamp(former.until))?.name ?? info.name;
   }
 
   /**

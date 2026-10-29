@@ -37,6 +37,8 @@ src/
 │   ├── openStep.service.ts      OpenStepAnimation: a stretch grows out of the network
 │   ├── closeStep.service.ts     CloseStepAnimation: track retracts, leaving a ghost
 │   ├── infillStep.service.ts    InfillStepAnimation: a station opens on existing track
+│   ├── stationCloseStep.service.ts StationCloseStepAnimation: lines stop calling at a station, the track stays
+│   ├── renameStep.service.ts    RenameStepAnimation: a station takes a new name
 │   └── identityStep.service.ts  IdentityStepAnimation: lines take their own colour
 ├── playback/
 │   ├── player.service.ts        Player: the clock and each step's phases; pure
@@ -67,6 +69,10 @@ animates `steps[k]`. On one date the order is:
    opening on the same day play one after another, not at once.
 3. **close**: track retracts towards the end that stays on the map, leaving a dashed ghost.
 4. **infill**: a station opening on track already drawn (Pimlico, 1972).
+5. **stationClose**: lines stop calling at a station but keep running through it (`closed` in the
+   schema: Mosley Street, 2013). The dot fades unless another line still calls there.
+6. **rename**: a station takes a new name (`formerNames`: G-Mex becomes Deansgate-Castlefield, 2010).
+   Labels and captions always use the name a station had on the date shown.
 
 ### A step, frame by frame
 

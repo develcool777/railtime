@@ -17,8 +17,10 @@ describe('Timeline', () => {
       [1900, 'open'],
       [1910, 'open'],
       [1920, 'infill'],
+      [1925, 'rename'],
       [1930, 'open'],
       [1950, 'close'],
+      [1960, 'stationClose'],
       [1990, 'identity'],
     ]);
   });
@@ -49,8 +51,21 @@ describe('Timeline', () => {
 
   test('keeps an infill station off its line until it opens', () => {
     const { timeline } = timelineOf();
-    expect(timeline.isInfillPending('c', 'red', timeline.cursorAt(toTimestamp('1915-01-01')))).toBe(true);
-    expect(timeline.isInfillPending('c', 'red', timeline.cursorAt(toTimestamp('1920-06-01')))).toBe(false);
+    expect(timeline.servesStation('c', 'red', timeline.cursorAt(toTimestamp('1915-01-01')))).toBe(false);
+    expect(timeline.servesStation('c', 'red', timeline.cursorAt(toTimestamp('1920-06-01')))).toBe(true);
+  });
+
+  test('stops a line calling at a closed station, still while its closing step plays', () => {
+    const { timeline } = timelineOf();
+    const closing = timeline.steps.find(step => step.kind === 'stationClose')!;
+    expect(closing).toMatchObject({ station: 'd', lines: ['red'] });
+    expect(timeline.servesStation('d', 'red', closing.index)).toBe(true);
+    expect(timeline.servesStation('d', 'red', closing.index + 1)).toBe(false);
+  });
+
+  test('renames a station on the map, but not one renamed before it opened', () => {
+    const { timeline } = timelineOf();
+    expect(timeline.steps.filter(step => step.kind === 'rename')).toEqual([expect.objectContaining({ station: 'd', from: 'Old D', to: 'D' })]);
   });
 
   test('resolves aliases, switching to the line itself while its identity step plays', () => {

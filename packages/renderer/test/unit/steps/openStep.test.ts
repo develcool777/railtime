@@ -22,6 +22,7 @@ describe('OpenStepAnimation', () => {
     // Half-way the front has passed C, but C is an infill station: it does not open on red until 1920.
     expect([...frameAt(0.5).highlighted]).toEqual([]);
     expect([...frameAt(1).highlighted]).toEqual(['d']);
-    expect(animation.describe(renderStateOf(playback))).toMatchObject({ title: 'Red line extended', stations: ['C', 'D'] });
+    // D opened in 1910 under its name then, Old D.
+    expect(animation.describe(renderStateOf(playback))).toMatchObject({ title: 'Red line extended', stations: ['C', 'Old D'] });
   });
 });

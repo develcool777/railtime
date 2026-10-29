@@ -1,4 +1,5 @@
-import type { IsoDate, Network } from '@railtime/schema/network.types';
+import type { FormerName, IsoDate, Network } from '@railtime/schema/network.types';
+import type { Step } from './model/timeline.types';
 
 /** The map's colour theme. */
 export type Theme = 'dark' | 'light';
@@ -43,7 +44,7 @@ export type TimeState = {
 
 /** The change playing now, for a caption. */
 export type StepInfo = {
-  kind: 'open' | 'close' | 'infill' | 'identity';
+  kind: Step['kind'];
   time: number;
   title: string;
   /** e.g. "Walthamstow Central – Highbury & Islington". */
@@ -57,7 +58,14 @@ export type StepInfo = {
 export type StationLineInfo = { id: string; name: string; color: string; opened: IsoDate; closed?: IsoDate };
 
 /** A station, for a station panel. */
-export type StationInfo = { id: string; name: string; lines: StationLineInfo[] };
+export type StationInfo = {
+  id: string;
+  /** Its name on the date shown. */
+  name: string;
+  lines: StationLineInfo[];
+  /** Its earlier names, oldest first. */
+  formerNames: FormerName[];
+};
 
 /** A line, for a legend or toggles. */
 export type LineInfo = { id: string; name: string; network: string; networkName: string; color: string };

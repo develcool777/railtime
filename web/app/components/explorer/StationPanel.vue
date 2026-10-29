@@ -2,7 +2,10 @@
   <UCard class="w-[min(320px,calc(100vw-32px))] bg-default/85 backdrop-blur" :ui="{ header: 'px-4 py-3 sm:px-4', body: 'px-4 py-3 sm:px-4 sm:py-3' }">
     <template #header>
       <div class="flex items-start justify-between gap-2">
-        <h2 class="text-highlighted text-lg leading-tight font-semibold">{{ station.name }}</h2>
+        <div>
+          <h2 class="text-highlighted text-lg leading-tight font-semibold">{{ station.name }}</h2>
+          <p v-if="station.formerNames.length > 0" class="text-muted mt-0.5 text-xs">{{ formatFormerNames(station.formerNames) }}</p>
+        </div>
         <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" aria-label="Close" @click="emit('close')" />
       </div>
     </template>
@@ -19,7 +22,7 @@
 <script setup lang="ts">
   import type { StationInfo } from '@railtime/renderer/transitMap.types';
 
-  import { formatSpan } from '~/utils/format.utils';
+  import { formatFormerNames, formatSpan } from '~/utils/format.utils';
 
   defineProps<{ station: StationInfo }>();
   const emit = defineEmits<{ close: [] }>();

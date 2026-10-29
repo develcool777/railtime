@@ -40,12 +40,23 @@ export type Line = {
   pseudo?: boolean;
 };
 
+/** A name a station had until a date (G-Mex, until Deansgate-Castlefield in 2010). */
+export type FormerName = {
+  name: string;
+  until: IsoDate;
+};
+
 /** A station. */
 export type Station = {
+  /** Its name today, or when it closed. */
   name: string;
   coordinate: LngLat;
   /** Lines this station opened on after the line was already running through it: line id to date. */
   infill?: Record<string, IsoDate>;
+  /** Lines that stopped calling here while still running through: line id to date (Mosley Street, 2013). */
+  closed?: Record<string, IsoDate>;
+  /** Its earlier names, oldest first. */
+  formerNames?: FormerName[];
 };
 
 /** When a line opened, and if it did, closed, on a segment. */
