@@ -10,7 +10,9 @@
   "exports": {
     "./transitMap.service": "./src/transitMap.service.ts",
     "./transitMap.types": "./src/transitMap.types.ts",
-    "./transitMap.css": "./src/transitMap.css"
+    "./transitMap.css": "./src/transitMap.css",
+    "./basemapStill.service": "./src/still/basemapStill.service.ts",
+    "./basemapStill.types": "./src/still/basemapStill.types.ts"
   },
   "dependencies": {
     "@railtime/schema": "workspace:*",

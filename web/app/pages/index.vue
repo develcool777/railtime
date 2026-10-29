@@ -34,13 +34,20 @@
         </div>
       </section>
     </main>
+
+    <footer class="border-default border-t">
+      <MapCredits :credits="BasemapStill.credits" class="mx-auto max-w-7xl px-8 py-4 max-sm:px-4" />
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
   import { navigateTo, useHead, useRoute } from '#imports';
 
+  import { BasemapStill } from '@railtime/renderer/basemapStill.service';
+
   import CityCard from '~/components/cities/CityCard.vue';
+  import MapCredits from '~/components/explorer/MapCredits.vue';
   import { citiesByCountry, isCity } from '~/utils/city.utils';
 
   useHead({ title: 'Railtime' });

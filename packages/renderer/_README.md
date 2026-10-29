@@ -68,7 +68,8 @@ src/
 │   ├── stationLayer.service.ts  StationLayer: dots, labels, pop-in, pulses, selection
 │   ├── networkSnapshot.utils.ts what is on the map at a cursor; pure
 │   └── basemap.utils.ts         recolouring an OpenMapTiles basemap per theme
-└── minimap/minimap.service.ts   Minimap: the overview inset
+├── minimap/minimap.service.ts   Minimap: the overview inset
+└── still/basemapStill.service.ts BasemapStill: pictures of the basemap for previews, from one hidden map
 ```
 
 The player and the map only ever talk to the abstract `StepAnimation`; `createStepAnimation` is the
