@@ -1,0 +1,85 @@
+{
+  "meta": {"city":"Odesa","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "networks": {
+    "metro": {"name":"Odesa Metro","names":{"uk":"Одеський метрополітен"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "soviet-project": {
+      "name": "1985 Lenmetrogiprotrans project",
+      "names": {"uk":"Проєкт Ленметрогіпротрансу 1985 року"},
+      "description": "The Malynivsko-Suvorovska line, about 29 km with 19 stations from Kotovskoho village through Luzanivka, Peresyp, the centre and the station to Tairova and Chornomorka, designed by Leningrad's Lenmetrogiprotrans from 1985 and put in the 1989 General Plan; Moscow dropped Odesa from the metro list and nothing was built. Only the 8-station launch section is named; the later stations are placed by district.",
+      "lines": {
+        "m1": {"name":"Malynivsko-Suvorovska","names":{"uk":"Малинівсько-Суворівська лінія"},"network":"metro","mode":"metro","color":"#E4312B"}
+      },
+      "stations": {
+        "chornomorka": {"name":"Chornomorka","names":{"uk":"Чорноморка"},"coordinate":[30.70379,46.35566]},
+        "derybasivska": {"name":"Derybasivska","names":{"uk":"Дерибасівська"},"coordinate":[30.7352,46.4828]},
+        "luzanivka": {"name":"Luzanivka","names":{"uk":"Лузанівка"},"coordinate":[30.76557,46.55464]},
+        "peresyp": {"name":"Peresyp","names":{"uk":"Пересип"},"coordinate":[30.7272,46.5243]},
+        "pionerska": {"name":"Pionerska","names":{"uk":"Піонерська"},"coordinate":[30.77108,46.55699]},
+        "pivdenno-zakhidnyi-masyv": {"name":"Pivdenno-Zakhidnyi Masyv","names":{"uk":"Південно-Західний масив"},"coordinate":[30.71243,46.43322]},
+        "rairada": {"name":"Rairada","names":{"uk":"Райрада"},"coordinate":[30.72423,46.51268]},
+        "selyshche-kotovskoho": {"name":"Selyshche Kotovskoho","names":{"uk":"Селище Котовського"},"coordinate":[30.79317,46.58184]},
+        "tairova": {"name":"Tairova","names":{"uk":"Таїрова"},"coordinate":[30.71948,46.40941]},
+        "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[30.73961,46.46842]},
+        "vulytsia-lenina": {"name":"Vulytsia Lenina","names":{"uk":"Вулиця Леніна"},"coordinate":[30.7397,46.4755]},
+        "vulytsia-suvorova": {"name":"Vulytsia Suvorova","names":{"uk":"Вулиця Суворова"},"coordinate":[30.72074,46.4963]}
+      },
+      "sections": [
+        {"line":"m1","stations":["peresyp","rairada","vulytsia-suvorova","derybasivska","vulytsia-lenina","vokzalna"]},
+        {"line":"m1","stations":["peresyp","luzanivka","pionerska"]},
+        {"line":"m1","stations":["pionerska","selyshche-kotovskoho"]},
+        {"line":"m1","stations":["vokzalna","pivdenno-zakhidnyi-masyv","tairova","chornomorka"]}
+      ]
+    },
+    "general-plan-2007": {
+      "name": "2007 General Plan scheme",
+      "names": {"uk":"Схема Генплану 2007 року"},
+      "description": "Two lines of \"high-speed off-street transport\", about 38 km, laid into the draft General Plan (2007-2010, transport author Dmytro Zhukov) and restated in the 2012 \"Odesa 2022\" plans: North-South from Kotovskoho village to Akademika Hlushka, and a cross line from Fontan to Tyraspilske shose; the mode (metro or light rail) was never fixed and design stopped in 2017.",
+      "lines": {
+        "m1": {"name":"North-South","names":{"uk":"Лінія Північ — Південь"},"network":"metro","mode":"metro","color":"#E4312B"},
+        "m2": {"name":"Fontan-Tyraspilske Shose","names":{"uk":"Лінія Фонтан — Тираспольське шосе"},"network":"metro","mode":"metro","color":"#7F8FD1"}
+      },
+      "stations": {
+        "admiralskyi-prospekt": {"name":"Admiralskyi Prospekt","names":{"uk":"Адміральський проспект"},"coordinate":[30.73059,46.4374]},
+        "chornomorskoho-kozatstva": {"name":"Chornomorskoho Kozatstva","names":{"uk":"Чорноморського Козацтва"},"coordinate":[30.72423,46.51268]},
+        "dendropark": {"name":"Dendropark","names":{"uk":"Дендропарк"},"coordinate":[30.75374,46.44593]},
+        "derybasivska": {"name":"Derybasivska","names":{"uk":"Дерибасівська"},"coordinate":[30.7352,46.4828]},
+        "fontanna": {"name":"Fontanna","names":{"uk":"Фонтанна"},"coordinate":[30.75011,46.42936]},
+        "imeni-kotovskoho": {"name":"Imeni Kotovskoho","names":{"uk":"Імені Котовського"},"coordinate":[30.78819,46.58438]},
+        "luzanivka": {"name":"Luzanivka","names":{"uk":"Лузанівка"},"coordinate":[30.76557,46.55464]},
+        "mykhailivska-ploshcha": {"name":"Mykhailivska Ploshcha","names":{"uk":"Михайлівська площа"},"coordinate":[30.70973,46.46819]},
+        "mykolaivska-doroha": {"name":"Mykolaivska Doroha","names":{"uk":"Миколаївська дорога"},"coordinate":[30.74891,46.54563]},
+        "prospekt-akademika-hlushka": {"name":"Prospekt Akademika Hlushka","names":{"uk":"Проспект Академіка Глушка"},"coordinate":[30.7105,46.4046]},
+        "prospekt-dobrovolskoho": {"name":"Prospekt Dobrovolskoho","names":{"uk":"Проспект Добровольського"},"coordinate":[30.79731,46.5915]},
+        "prospekt-haharina": {"name":"Prospekt Haharina","names":{"uk":"Проспект Гагаріна"},"coordinate":[30.739,46.4527]},
+        "prospekt-shevchenka": {"name":"Prospekt Shevchenka","names":{"uk":"Проспект Шевченка"},"coordinate":[30.74995,46.46028]},
+        "pryvoz": {"name":"Pryvoz","names":{"uk":"Привоз"},"coordinate":[30.7325,46.4712]},
+        "tyraspilske-shose": {"name":"Tyraspilske Shose","names":{"uk":"Тираспольське шосе"},"coordinate":[30.6567,46.4673]},
+        "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[30.73961,46.46842]},
+        "vokzalna-2": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[30.742,46.468]},
+        "vulytsia-akademika-korolova": {"name":"Vulytsia Akademika Korolova","names":{"uk":"Вулиця Академіка Корольова"},"coordinate":[30.72124,46.41526]},
+        "vulytsia-kosmonavta-komarova": {"name":"Vulytsia Kosmonavta Komarova","names":{"uk":"Вулиця Космонавта Комарова"},"coordinate":[30.72383,46.426]},
+        "vulytsia-suvorova": {"name":"Vulytsia Suvorova","names":{"uk":"Вулиця Суворова"},"coordinate":[30.72074,46.4963]},
+        "yarmarkova-ploshcha": {"name":"Yarmarkova Ploshcha","names":{"uk":"Ярмаркова площа"},"coordinate":[30.73224,46.52895]},
+        "zastava": {"name":"Zastava","names":{"uk":"Застава"},"coordinate":[30.6845,46.466]}
+      },
+      "sections": [
+        {"line":"m1","stations":["yarmarkova-ploshcha","chornomorskoho-kozatstva","vulytsia-suvorova","derybasivska","vokzalna"]},
+        {"line":"m1","stations":["vokzalna","prospekt-haharina","admiralskyi-prospekt","vulytsia-kosmonavta-komarova"]},
+        {"line":"m1","stations":["vulytsia-kosmonavta-komarova","vulytsia-akademika-korolova","prospekt-akademika-hlushka"]},
+        {"line":"m1","stations":["yarmarkova-ploshcha","mykolaivska-doroha","luzanivka"]},
+        {"line":"m1","stations":["luzanivka","imeni-kotovskoho","prospekt-dobrovolskoho"]},
+        {"line":"m2","stations":["mykhailivska-ploshcha","pryvoz","vokzalna-2","prospekt-shevchenka"]},
+        {"line":"m2","stations":["prospekt-shevchenka","dendropark","fontanna"]},
+        {"line":"m2","stations":["mykhailivska-ploshcha","zastava","tyraspilske-shose"]}
+      ],
+      "transfers": [
+        {"stationA":"vokzalna","stationB":"vokzalna-2"}
+      ]
+    }
+  }
+}
