@@ -1,4 +1,5 @@
-# Builds the explorer as a static site and publishes it on GitHub Pages, at /railtime/.
+# Runs the checks on main, then builds the explorer as a static site and publishes it on GitHub
+# Pages, at /railtime/. Nothing deploys while a check fails.
 name: Pages
 
 on:
@@ -16,7 +17,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
