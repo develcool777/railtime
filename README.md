@@ -64,6 +64,7 @@ then `pnpm data:format london`; a test fails while the file is invalid or untidy
   wherever both are open, and a station's panel lists where you can change.
 - `names`: a station's, line's, network's or former name in other languages, by language code
   (`{ "uk": "Хрещатик" }`). `name` is English; a line's other names are in full ("… лінія").
+  A station's other names are shown beneath its English one, on the map and in its panel.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
 
@@ -91,8 +92,8 @@ are in the dataset.
 Kyiv, Kharkiv and Dnipro are in English: each station's Ukrainian name in OpenStreetMap maps to one
 English name, romanised as English Wikipedia writes it, and its earlier names (Soviet, the 2016
 decommunisation, Kharkiv's 2022–24 renamings) are former names. Every station, line, network and
-former name also has its Ukrainian name (`names: { "uk": … }`), and the explorer offers a language
-switch (`lang=uk` in a link) wherever a city has names in another language. Sviatoshyn's earlier name (Sviatoshyno, until 1991) is left out: no source gives
+former name also has its Ukrainian name (`names: { "uk": … }`), which the map labels and station
+panel show beneath the English one. Sviatoshyn's earlier name (Sviatoshyno, until 1991) is left out: no source gives
 the day. Dnipro's extension to the centre is still unopened.
 
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
