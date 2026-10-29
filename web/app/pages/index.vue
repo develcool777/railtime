@@ -54,7 +54,7 @@
           <span class="text-muted text-[13px] font-normal">{{ cities.length }} {{ cities.length === 1 ? 'city' : 'cities' }}</span>
         </h2>
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :network="networkOf(city.value)" :failed="failedToLoad(city.value)" />
+          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="summaryOf(city.value)" :failed="!!index.error.value" />
         </div>
       </section>
       <div v-if="sections.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
@@ -72,15 +72,15 @@
 <script setup lang="ts">
   import { navigateTo, useFetch, useHead, useRoute, useRuntimeConfig } from '#imports';
   import { BasemapStill } from '@railtime/renderer/basemapStill.service';
-  import type { Network } from '@railtime/schema/network.types';
+  import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed, reactive } from 'vue';
 
   import CityCard from '~/components/cities/CityCard.vue';
   import MapCredits from '~/components/explorer/MapCredits.vue';
   import SegmentedControl from '~/components/explorer/SegmentedControl.vue';
   import type { CityFilter } from '~/utils/city.types';
-  import { citiesByCountry, isCity, matchesFilter, networkUrlOf, summaryOf } from '~/utils/city.utils';
-  import { CITIES } from '~/utils/explorer.constants';
+  import { citiesByCountry, isCity, matchesFilter } from '~/utils/city.utils';
+  import { CITIES, CITY_INDEX_URL } from '~/utils/explorer.constants';
 
   useHead({ title: 'Railtime' });
 
@@ -97,11 +97,9 @@
     { label: 'Never built', value: 'never-built' },
   ];
 
-  // Each city's dataset, fetched in the browser as the map's is: a city page opened next reuses it.
-  const baseURL = useRuntimeConfig().app.baseURL;
-  const datasets = new Map(CITIES.map(city => [city.value, useFetch<Network>(networkUrlOf(city.value), { server: false, lazy: true, baseURL })]));
-  const networkOf = (city: string): Network | null => datasets.get(city)?.data.value ?? null;
-  const failedToLoad = (city: string): boolean => !!datasets.get(city)?.error.value;
+  // What every card shows, from one small file: each city's whole dataset waits for its own page.
+  const index = useFetch<CityIndex>(CITY_INDEX_URL, { server: false, lazy: true, baseURL: useRuntimeConfig().app.baseURL });
+  const summaryOf = (city: string): CityIndexEntry | null => index.data.value?.[city] ?? null;
 
   const filter = reactive<CityFilter>({ query: '', country: '', kind: 'all', withPlans: false });
   const countryChoice = computed({
@@ -114,10 +112,7 @@
     citiesByCountry()
       .map(({ country, cities }) => ({
         country,
-        cities: cities.filter(city => {
-          const network = networkOf(city.value);
-          return matchesFilter(city, network ? summaryOf(network) : null, filter);
-        }),
+        cities: cities.filter(city => matchesFilter(city, summaryOf(city.value), filter)),
       }))
       .filter(section => section.cities.length > 0),
   );

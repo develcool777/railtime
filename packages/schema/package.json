@@ -2,12 +2,14 @@
   "name": "@railtime/schema",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test-unit": "vitest",
     "test-unit-ci": "vitest run"
   },
   "exports": {
+    "./cityIndex.types": "./src/cityIndex.types.ts",
     "./network.types": "./src/network.types.ts",
     "./network.schema": "./src/network.schema.ts",
     "./plan.types": "./src/plan.types.ts",

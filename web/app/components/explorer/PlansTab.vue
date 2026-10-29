@@ -30,10 +30,10 @@
 <script setup lang="ts">
   import { useColorMode } from '#imports';
   import type { Network, PlanStatus } from '@railtime/schema/network.types';
+  import { isPlanOnly } from '@railtime/schema/plan.utils';
   import { computed } from 'vue';
 
   import StatusChip from '~/components/common/StatusChip.vue';
-  import { isPlanOnly } from '~/utils/city.utils';
   import { PLAN_STATUSES } from '~/utils/explorer.constants';
   import { formatPlanFacts } from '~/utils/format.utils';
   import { planFacts } from '~/utils/plan.utils';

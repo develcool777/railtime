@@ -6,14 +6,16 @@ enforces them: `pnpm eslint-check` must pass.
 ## What this is
 
 A pnpm monorepo: `packages/schema` (the network format), `packages/renderer` (the MapLibre engine,
-`TransitMap`), `web` (the Nuxt 4 + Nuxt UI explorer) and `scripts/` (`pnpm data:format`, which validates and tidies a city's dataset).
+`TransitMap`), `packages/data` (every city's dataset in `cities/<country>/<city>/`, the index of them,
+`cities/cities.json`, and `pnpm data:format`, which validates and tidies a dataset and rewrites the
+index) and `web` (the Nuxt 4 + Nuxt UI explorer).
 `README.md` has the commands; `packages/renderer/_README.md` explains steps, cursors and the frame model.
 
 ## Checks
 
 `pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
 `pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
-After editing `data/<city>/<city>.json`, run `pnpm data:format <city>`.
+After editing a city's dataset, run `pnpm data:format <city>`.
 
 ## Conventions (enforced)
 
@@ -51,14 +53,16 @@ packages/renderer/
   vitest.config.ts          the package's project (`pnpm --filter @railtime/renderer test-unit`)
   test/unit/                mirrors src/: test/unit/model/timeline.test.ts tests src/model/timeline.*.ts
   test/support/             what tests share: factories/ (tinyNetwork), playback.utils.ts
-scripts/test/unit/          mirrors scripts/; its project is in the root vitest.config.ts
+packages/data/
+  test/unit/dataset/        mirrors src/dataset/
+  test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
+                            cities/united-kingdom/london/london.json, played through the renderer
 web/test/unit/              mirrors web/app/ for its plain helpers (utils/); components are checked in the browser
-data/test/unit/             one test per city: london.test.ts checks data/london/london.json, played
-                            through the renderer; its project is in the root vitest.config.ts
 ```
 
 - The renderer knows no city: its tests use made-up networks (`tinyNetwork`). A check of a city's
-  history (the Victoria line's three stages, London's size today) goes in `data/test/unit/<city>.test.ts`.
+  history (the Victoria line's three stages, London's size today) goes in
+  `packages/data/test/unit/cities/<country>/<city>.test.ts`.
 
 - `pnpm test-unit` at the root runs every project (`vitest.config.ts`); options shared by all are in
   `vitest.shared.ts`: mocks reset between tests, random order, node.
@@ -72,9 +76,10 @@ data/test/unit/             one test per city: london.test.ts checks data/london
 
 ## Data
 
-`data/<city>/<city>.json` is the city's dataset and its source of truth: edit it directly (a date,
-a station name), never regenerate it. `pnpm data:format <city>` validates it against the schema and
-keeps its layout (one station or segment per line); a test fails otherwise.
+`packages/data/cities/<country>/<city>/<city>.json` is the city's dataset and its source of truth: edit
+it directly (a date, a station name), never regenerate it. `pnpm data:format <city>` validates it
+against the schema, keeps its layout (one station or segment per line) and rewrites
+`cities/cities.json`, the index the landing page reads; a test fails otherwise.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction

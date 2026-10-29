@@ -1,7 +1,7 @@
 <template>
   <NuxtLink :to="`/${city}`" class="city-card group">
     <div class="border-default bg-muted h-[170px] overflow-hidden border-b">
-      <CityPreview v-if="network" :network :name />
+      <CityPreview v-if="summary" :summary :name />
       <USkeleton v-else class="h-full w-full" />
     </div>
     <div class="flex flex-1 flex-col gap-1.5 px-[18px] pt-4 pb-[18px]">
@@ -27,24 +27,23 @@
 </template>
 
 <script setup lang="ts">
-  import type { Network } from '@railtime/schema/network.types';
+  import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed } from 'vue';
 
   import StatusChip from '~/components/common/StatusChip.vue';
-  import { cityNameOf, summaryOf } from '~/utils/city.utils';
+  import { cityNameOf } from '~/utils/city.utils';
 
   import CityPreview from './CityPreview.vue';
 
   const props = defineProps<{
     city: string;
-    /** Its dataset, once loaded. */
-    network: Network | null;
-    /** Its dataset could not be loaded. */
+    /** Its entry in the index of cities, once loaded. */
+    summary: CityIndexEntry | null;
+    /** The index could not be loaded. */
     failed: boolean;
   }>();
 
   const name = computed(() => cityNameOf(props.city));
-  const summary = computed(() => (props.network ? summaryOf(props.network) : null));
 </script>
 
 <style scoped>

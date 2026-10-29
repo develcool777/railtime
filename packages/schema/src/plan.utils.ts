@@ -32,3 +32,11 @@ export const buildPlan = (network: Network, planId: string): BuiltPlan => {
     })),
   };
 };
+
+/**
+ * Whether a network was never built: no track of its own, only plans.
+ *
+ * @param network - The network.
+ * @returns True if it has plans and nothing else.
+ */
+export const isPlanOnly = (network: Network): boolean => network.segments.length === 0 && Object.keys(network.plans ?? {}).length > 0;

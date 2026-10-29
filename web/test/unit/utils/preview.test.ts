@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
 import { fitView, previewOf, projectPoint } from '../../../app/utils/preview.utils';
-import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 
 const SIZE = { width: 400, height: 200 };
 
@@ -36,14 +35,43 @@ describe('PreviewUtils', () => {
   });
 
   describe('previewOf', () => {
-    test("draws a network never built as its first plan, in the plan's colours", () => {
-      const preview = previewOf(planOnlyNetwork(), SIZE);
-      expect(preview?.paths).toHaveLength(2);
-      expect(preview?.paths.every(path => path.color === '#ff0000')).toBe(true);
+    test("draws each line's track as one path, in its colours and order", () => {
+      const preview = previewOf(
+        [
+          {
+            color: '#0000ff',
+            darkColor: '#8888ff',
+            paths: [
+              [
+                [30, 50],
+                [30, 50.01],
+              ],
+            ],
+          },
+          {
+            color: '#ff0000',
+            darkColor: '#ff0000',
+            paths: [
+              [
+                [30, 50],
+                [30.01, 50],
+              ],
+              [
+                [30.01, 50],
+                [30.02, 50.01],
+              ],
+            ],
+          },
+        ],
+        SIZE,
+      );
+      expect(preview?.paths.map(path => path.color)).toEqual(['#0000ff', '#ff0000']);
+      expect(preview?.paths[0]?.darkColor).toBe('#8888ff');
+      expect(preview?.paths[1]?.path.match(/M/g)).toHaveLength(2);
     });
 
     test('has nothing to draw for a network with no track', () => {
-      expect(previewOf({ ...planOnlyNetwork(), plans: {} }, SIZE)).toBeNull();
+      expect(previewOf([], SIZE)).toBeNull();
     });
   });
 });
