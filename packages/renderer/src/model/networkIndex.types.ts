@@ -26,8 +26,11 @@ export type TrackSegment = {
 export type LineSegment = {
   segment: TrackSegment;
   line: string;
+  /** When it opens; `Infinity` for a plan's, which has no date. */
   opens: number;
   closes: number | null;
+  /** The plan section that opens it, or `null` for a dated one. */
+  section: number | null;
   /** The line's period here before this one, when it was suspended in between. */
   previous: LineSegment | null;
   /** The line's period here after this one, when it returned. */

@@ -48,6 +48,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       padding: panelPadding(),
       workerUrl,
       ...(mount.view ? { view: mount.view } : {}),
+      ...(mount.plan ? { plan: mount.plan } : {}),
     });
     transitMap.on('time', state => (time.value = state));
     transitMap.on('step', info => {

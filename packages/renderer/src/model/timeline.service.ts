@@ -13,10 +13,15 @@ import { connectedStretches, pushTo } from './timeline.utils';
  * On one date the order is: identity changes, then openings (line by line, one connected stretch
  * per step), then closures, then stations opening on existing track, then stations closing on it,
  * then renames.
+ *
+ * A plan built on the network follows every dated step, undated: each section's openings, then its
+ * stations opening on existing track. Its steps are `planned`, at time `Infinity`.
  */
 export class Timeline {
   /** Every step, in the order they play. */
   public readonly steps: Step[] = [];
+  /** How many steps are dated: the planned ones follow them. */
+  public readonly datedCount: number;
   /** The network this timeline describes. */
   private readonly index: NetworkIndex;
   /** The step at which each line segment opens. */
@@ -44,6 +49,8 @@ export class Timeline {
       this.addStationCloseSteps(time, day.stationCloses);
       for (const rename of day.renames) this.addStep({ kind: 'rename', time, ...rename });
     }
+    this.datedCount = this.steps.length;
+    this.addPlannedSteps();
     this.indexAliasEnds();
     this.markLinesAfterClosure();
   }
@@ -53,18 +60,23 @@ export class Timeline {
     return toTimestamp(this.index.network.meta.start);
   }
 
+  /** The last dated step's date, or the start without one. */
+  public get lastDate(): number {
+    return this.steps[this.datedCount - 1]?.time ?? this.start;
+  }
+
   /**
-   * How many steps have happened by the end of a day.
+   * How many steps have happened by the end of a day: dated steps only, as planned ones have no day.
    *
    * @param time - A timestamp on that day.
    * @returns The cursor.
    */
   public cursorAt(time: number): number {
     let low = 0;
-    let high = this.steps.length;
+    let high = this.datedCount;
     while (low < high) {
       const middle = (low + high) >> 1;
-      // Within bounds: low <= middle < high <= steps.length.
+      // Within bounds: low <= middle < high <= datedCount <= steps.length.
       if (this.steps[middle]!.time <= time) low = middle + 1;
       else high = middle;
     }
@@ -188,6 +200,8 @@ export class Timeline {
       return days.get(time)!;
     };
     for (const lineSegment of this.index.lineSegments) {
+      // A plan's are undated: `addPlannedSteps` takes them, section by section.
+      if (lineSegment.section !== null) continue;
       day(lineSegment.opens).opens.push(lineSegment);
       if (lineSegment.closes) day(lineSegment.closes).closes.push(lineSegment);
     }
@@ -232,8 +246,21 @@ export class Timeline {
    */
   private addStep(draft: StepDraft): number {
     const index = this.steps.length;
-    this.steps.push({ ...draft, index } as Step);
+    this.steps.push({ ...draft, index, planned: draft.time === Infinity } as Step);
     return index;
+  }
+
+  /** Each plan section's steps, in the plan's order: its openings, then its stations on existing track. */
+  private addPlannedSteps(): void {
+    const bySection = new Map<number, LineSegment[]>();
+    for (const lineSegment of this.index.lineSegments) if (lineSegment.section !== null) pushTo(bySection, lineSegment.section, lineSegment);
+    for (const [position, section] of this.index.sections.entries()) {
+      this.addOpenSteps(Infinity, bySection.get(position) ?? []);
+      this.addInfillSteps(
+        Infinity,
+        section.infills.map(station => ({ station, line: section.line })),
+      );
+    }
   }
 
   /**

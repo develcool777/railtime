@@ -6,7 +6,8 @@
       "project": ["scripts/**/*.ts", "data/test/**/*.ts", "vitest.*.ts"]
     },
     "packages/schema": {
-      "project": ["src/**/*.ts"]
+      "entry": ["test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/renderer": {
       "entry": ["test/**/*.test.ts"],

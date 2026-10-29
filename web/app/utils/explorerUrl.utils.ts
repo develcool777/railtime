@@ -2,8 +2,8 @@ import type { ExplorerQuery, ExplorerUrlState } from './explorerUrl.types';
 
 /** A day, `1935-06-01`, or a year, `1935`, read as the last day of that year. */
 const DATE = /^(\d{4})(?:-(\d{2})-(\d{2}))?$/;
-/** A station id. */
-const STATION = /^[a-z0-9-]+$/;
+/** A station or plan id. */
+const SLUG = /^[a-z0-9-]+$/;
 
 /**
  * One value of a query parameter: the first, when it is given more than once.
@@ -45,17 +45,19 @@ const parseView = (text: string): ExplorerUrlState['view'] => {
 /**
  * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
  *
- * @param query - The address's query: `date`, `map`, `station`.
+ * @param query - The address's query: `date`, `map`, `station`, `plan`.
  * @returns What it asks for.
  */
 export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
   const date = parseDate(single(query.date) ?? '');
   const view = parseView(single(query.map) ?? '');
   const station = single(query.station);
+  const plan = single(query.plan);
   return {
     ...(date === undefined ? {} : { date }),
     ...(view ? { view } : {}),
-    ...(station && STATION.test(station) ? { station } : {}),
+    ...(station && SLUG.test(station) ? { station } : {}),
+    ...(plan && SLUG.test(plan) ? { plan } : {}),
   };
 };
 
@@ -66,10 +68,11 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
  * @returns The query.
  */
 export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
-  const { date, view, station } = state;
+  const { date, view, station, plan } = state;
   return {
     ...(date === undefined ? {} : { date: new Date(date).toISOString().slice(0, 10) }),
     ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
     ...(station ? { station } : {}),
+    ...(plan ? { plan } : {}),
   };
 };

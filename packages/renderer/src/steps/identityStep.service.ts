@@ -47,7 +47,7 @@ export class IdentityStepAnimation extends StepAnimation<IdentityStep> {
   public describe(state: RenderState): StepInfo {
     return {
       kind: 'identity',
-      time: this.step.time,
+      time: this.date,
       title: this.step.text,
       color: state.baseColor(required(this.step.lines[0], 'line of an identity step')),
       stations: [],

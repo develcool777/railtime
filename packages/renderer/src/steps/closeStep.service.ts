@@ -41,7 +41,7 @@ export class CloseStepAnimation extends StepAnimation<CloseStep> {
     const returns = this.step.lineSegments.every(lineSegment => lineSegment.next !== null);
     return {
       kind: 'close',
-      time: this.step.time,
+      time: this.date,
       title: `${this.context.index.lineName(this.step.line)}: section ${returns ? 'suspended' : 'closes'}`,
       subtitle: [...new Set(ends)].join(' – '),
       color: state.baseColor(this.step.line),

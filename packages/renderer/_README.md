@@ -21,10 +21,20 @@ map.pause();
 map.skip(); // finish this change, or jump to the next
 map.setVisibleLines(['line-a', 'line-b']);
 map.setTheme('light');
-map.languages; // languages the network has names in besides English: ['uk']
-map.setLanguage('uk'); // names on the map, in captions and panels in that language; null for English
 map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
+map.range; // { start, end, today }: end is past today when a plan is shown
 ```
+
+A station's names in other languages (`names`) are on its label, beneath its English name, and in
+`getStationInfo().otherNames`.
+
+**Plans.** `new TransitMap({ …, plan: '<plan id>' })` builds one of the network's `plans` on it
+(`buildPlan` in `@railtime/schema`). A plan is undated: the timeline puts its sections after every
+dated step, as `planned` steps at time `Infinity`, and the player plays them one by one once the
+clock reaches its end, the clock standing there. Their track is drawn dashed in its line's colour, a
+station only they reach is a ring, their `StepInfo.time` is `null`, and `TimeState.future` is true
+while one plays or once one has. `map.showFuture()` shows the plan built; `setDate` goes back into
+the dates. A different plan is a new `TransitMap`.
 
 ## Structure
 

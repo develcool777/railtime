@@ -26,6 +26,8 @@ export type TransitMapOptions = {
   padding?: Padding;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
+  /** One of the network's plans, built on top of it: its sections play after every dated change, one by one, drawn as planned (`showFuture`). */
+  plan?: string;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.
@@ -40,9 +42,13 @@ export type NetworkStats = { stations: number; km: number; lines: number };
 export type TimeState = {
   /** The clock, as a UTC timestamp. */
   time: number;
-  /** Steps that have happened. Equal to `stepCount` on today's map. */
+  /** Steps that have happened. Equal to `todayCursor` on today's map. */
   cursor: number;
   stepCount: number;
+  /** Steps that have happened by today. */
+  todayCursor: number;
+  /** The map shows a plan's future: a planned step is playing or has played. `time` is then the end of the dates. */
+  future: boolean;
   playing: boolean;
   stats: NetworkStats;
 };
@@ -50,7 +56,8 @@ export type TimeState = {
 /** The change playing now, for a caption. */
 export type StepInfo = {
   kind: Step['kind'];
-  time: number;
+  /** Its date; `null` for a planned step, which has none. */
+  time: number | null;
   title: string;
   /** The first and last station it reaches: "<station> – <station>". */
   subtitle?: string;
@@ -60,7 +67,14 @@ export type StepInfo = {
 };
 
 /** One line at a station, for a station panel. */
-export type StationLineInfo = { id: string; name: string; color: string; opened: IsoDate; closed?: IsoDate };
+export type StationLineInfo = {
+  id: string;
+  name: string;
+  color: string;
+  /** When it opened here; `null` for a plan's line, which has no date. */
+  opened: IsoDate | null;
+  closed?: IsoDate;
+};
 
 /** A station, for a station panel. */
 export type StationInfo = {

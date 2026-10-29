@@ -71,6 +71,11 @@ export abstract class StepAnimation<Kind extends Step = Step> {
     drawing.reached.set(station, served);
   }
 
+  /** The step's date for a caption: `null` for a planned step, which has none. */
+  protected get date(): number | null {
+    return this.step.planned ? null : this.step.time;
+  }
+
   /**
    * A station's name on the step's date.
    *

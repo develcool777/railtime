@@ -1,4 +1,5 @@
 import type { Line, LngLat, Network, Segment, Station } from '@railtime/schema/network.types';
+import type { BuiltSection } from '@railtime/schema/plan.types';
 import { required } from '../core/required.utils';
 import { toTimestamp } from './date.utils';
 import type { Bounds } from './geometry.types';
@@ -9,7 +10,8 @@ import { orientSegments } from './orientation.utils';
 /**
  * The network, indexed for drawing: segments with their distances and direction of travel
  * precomputed, and one `LineSegment` per (segment, line, period) with its dates as timestamps: a line
- * suspended on a segment and back is two periods there.
+ * suspended on a segment and back is two periods there. A plan built on the network adds one
+ * undated `LineSegment` per line its sections put on a segment.
  */
 export class NetworkIndex {
   /** The normalized network this index was built from. */
@@ -24,6 +26,8 @@ export class NetworkIndex {
   public readonly bounds: Bounds;
   /** The middle of `bounds`: where a network with nothing on the map yet grows from. */
   public readonly centre: LngLat;
+  /** The plan built on the network, section by section; none without one. */
+  public readonly sections: BuiltSection[];
   /** Each line's position in the network: also the order lines sit side by side on shared track. */
   private readonly lineOrder: Map<string, number>;
   /** The stations each station has a transfer to. */
@@ -31,13 +35,24 @@ export class NetworkIndex {
   /** Line segments touching each station. */
   private readonly lineSegmentsByStation = new Map<string, LineSegment[]>();
 
-  public constructor(network: Network) {
+  /**
+   * @param network - The network: with a plan's track, if one is built on it (`buildPlan`).
+   * @param sections - That plan's sections, in order.
+   */
+  public constructor(network: Network, sections: BuiltSection[] = []) {
     this.network = network;
+    this.sections = sections;
     this.lineOrder = new Map(Object.keys(network.lines).map((line, position) => [line, position]));
     this.lineIds = Object.entries(network.lines)
       .filter(([, line]) => !line.pseudo)
       .map(([id]) => id);
     this.segments = network.segments.map((segment, index) => this.indexSegment(segment, index));
+    for (const [position, section] of sections.entries()) {
+      for (const segmentIndex of section.segments) {
+        const segment = required(this.segments[segmentIndex], `segment ${segmentIndex}`);
+        this.addLineSegment({ segment, line: section.line, opens: Infinity, closes: null, section: position, previous: null, next: null });
+      }
+    }
     for (const [segment, travel] of orientSegments(this.segments)) segment.travel = travel;
     this.bounds = boundsOf(Object.values(network.stations).map(station => station.coordinate)) ?? [
       [0, 0],
@@ -189,6 +204,7 @@ export class NetworkIndex {
           line,
           opens: toTimestamp(start),
           closes: end ? toTimestamp(end) : null,
+          section: null,
           previous,
           next: null,
         };

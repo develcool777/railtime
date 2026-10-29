@@ -41,7 +41,7 @@ export class StationCloseStepAnimation extends StepAnimation<StationCloseStep> {
     const lines = this.step.lines.map(line => resolveLine(state, line));
     return {
       kind: 'stationClose',
-      time: this.step.time,
+      time: this.date,
       title: `${this.nameOf(this.step.station, this.step.time)} closes`,
       subtitle: `on the ${lines.map(line => this.context.index.lineName(line.id)).join(' and ')}`,
       color: required(lines[0], 'line of a station-close step').color,
