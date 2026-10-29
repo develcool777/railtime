@@ -94,6 +94,11 @@ over the old railway via Werneth to the temporary Oldham Mumps stop. Stops that 
 track stayed (Mosley Street, High Street, Woodlands Road) and renamed ones (G-Mex, Barton Dock Road)
 are in the dataset.
 
+Kryvyi Rih's Metrotram, a light metro partly underground, is drawn as its two metro routes, 1M
+(1986) and 2M (1999), on track from OpenStreetMap; its later hybrid routes, which run on as street
+tram, are left out. Its plans are the unfinished Vovnopriadylna station, the 2021 Rokuvata extension
+tender, and the 1972 project with an east–west line.
+
 Kyiv, Kharkiv and Dnipro are in English: each station's Ukrainian name in OpenStreetMap maps to one
 English name, romanised as English Wikipedia writes it, and its earlier names (Soviet, the 2016
 decommunisation, Kharkiv's 2022–24 renamings) are former names. Every station, line, network and
