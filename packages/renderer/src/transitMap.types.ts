@@ -20,6 +20,11 @@ export type TransitMapOptions = {
   minimapContainer?: HTMLElement;
   /** Room the app's own panels take up, kept clear when the camera frames something. */
   padding?: Padding;
+  /**
+   * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
+   * path it works out itself, so the app passes the URL its bundler gives the file.
+   */
+  workerUrl?: string;
 };
 
 /** What is on the map. */

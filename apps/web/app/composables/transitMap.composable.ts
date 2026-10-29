@@ -1,6 +1,7 @@
 import { useColorMode } from '#imports';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { LineInfo, Padding, StationInfo, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { TransitMapBinding, TransitMapMount } from './transitMap.composable.types';
 
@@ -43,6 +44,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       network: mount.network,
       theme: theme(),
       padding: panelPadding(),
+      workerUrl,
     });
     transitMap.on('time', state => (time.value = state));
     transitMap.on('step', info => {

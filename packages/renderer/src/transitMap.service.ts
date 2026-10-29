@@ -1,4 +1,4 @@
-import maplibregl, { type LngLatBoundsLike, type Map as MapLibreMap, type MapMouseEvent } from 'maplibre-gl';
+import { type LngLatBoundsLike, Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
 import { EventEmitter } from './core/eventEmitter.service';
 import { required } from './core/required.utils';
 import { ActiveStepLayer } from './layers/activeStepLayer.service';
@@ -89,6 +89,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   public constructor(options: TransitMapOptions) {
     super();
+    // Before the first map: MapLibre starts its workers with it.
+    if (options.workerUrl) setWorkerUrl(options.workerUrl);
     this.index = new NetworkIndex(options.network);
     this.timeline = new Timeline(this.index);
     this.player = new Player(this.timeline, todayTimestamp(), step => this.createAnimation(step));
@@ -97,7 +99,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
     const padding = options.padding ?? DEFAULT_PADDING;
-    this.map = new maplibregl.Map({
+    this.map = new MapLibreMap({
       container: options.container,
       style: basemap,
       bounds: this.index.bounds as LngLatBoundsLike,

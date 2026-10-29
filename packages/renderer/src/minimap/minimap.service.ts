@@ -1,4 +1,4 @@
-import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type Map as MapLibreMap } from 'maplibre-gl';
+import { type GeoJSONSource, type LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
 import { recolorBasemap } from '../layers/basemap.utils';
 import type { FeatureCollection, LineFeature } from '../layers/features.types';
 import { emptyCollection } from '../layers/features.utils';
@@ -25,7 +25,7 @@ export class Minimap {
 
   public constructor(container: HTMLElement, style: string, bounds: Bounds, palette: Palette) {
     this.palette = palette;
-    this.map = new maplibregl.Map({
+    this.map = new MapLibreMap({
       container,
       style,
       bounds: bounds as LngLatBoundsLike,
