@@ -261,6 +261,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     const info = this.index.stationOf(station);
     const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
     for (const lineSegment of this.index.lineSegmentsAt(station)) {
+      if (!this.timeline.everServes(station, lineSegment.line)) continue;
       const dates = byLine.get(lineSegment.line) ?? { opened: Infinity, lastClosed: 0, allClosed: true };
       dates.opened = Math.min(dates.opened, lineSegment.opens);
       dates.lastClosed = Math.max(dates.lastClosed, lineSegment.closes ?? 0);

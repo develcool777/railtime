@@ -27,6 +27,8 @@ export class Timeline {
   private readonly infillStep = new Map<string, number>();
   /** The step at which a line stops calling at a station it still runs through: key `station|line`. */
   private readonly stationCloseStep = new Map<string, number>();
+  /** Stations that opened on a line's track after the line had left it for good: key `station|line`. */
+  private readonly neverServed = new Set<string>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
 
@@ -123,7 +125,20 @@ export class Timeline {
    */
   public servesStation(station: string, line: string, cursor: number): boolean {
     const key = `${station}|${line}`;
+    if (this.neverServed.has(key)) return false;
     return (this.infillStep.get(key) ?? -1) < cursor && (this.stationCloseStep.get(key) ?? Infinity) >= cursor;
+  }
+
+  /**
+   * Whether a line ever called at a station on its track: not if the station opened after the line
+   * had left (`infill` later than the line's last day there).
+   *
+   * @param station - The station id.
+   * @param line - The line id.
+   * @returns True if the station was a stop on the line at some point.
+   */
+  public everServes(station: string, line: string): boolean {
+    return !this.neverServed.has(`${station}|${line}`);
   }
 
   /**
@@ -176,7 +191,13 @@ export class Timeline {
       if (lineSegment.closes) day(lineSegment.closes).closes.push(lineSegment);
     }
     for (const [station, info] of Object.entries(this.index.network.stations)) {
-      for (const [line, date] of Object.entries(info.infill ?? {})) day(toTimestamp(date)).infills.push({ station, line });
+      for (const [line, date] of Object.entries(info.infill ?? {})) {
+        const time = toTimestamp(date);
+        // A station opening where its line had already gone for good is no event: the line passed by before it.
+        const lineLater = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line && (lineSegment.closes ?? Infinity) > time);
+        if (lineLater) day(time).infills.push({ station, line });
+        else this.neverServed.add(`${station}|${line}`);
+      }
       for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
       for (const [position, former] of (info.formerNames ?? []).entries()) {
         const time = toTimestamp(former.until);

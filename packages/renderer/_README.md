@@ -70,7 +70,8 @@ animates `steps[k]`. On one date the order is:
 3. **close**: track retracts towards the end that stays on the map, leaving a dashed ghost. A line
    `suspended` on a segment closes there and opens again: each period is its
    own `LineSegment`, the reopening's caption says "reopens" and the ghost goes once the line is back.
-4. **infill**: a station opening on track already drawn.
+4. **infill**: a station opening on track already drawn. One that opened after a line had left its
+   track for good was never a stop on that line: no step, and the line is not listed there.
 5. **stationClose**: lines stop calling at a station but keep running through it (`closed` in the
    schema). The dot fades unless another line still calls there.
 6. **rename**: a station takes a new name (`formerNames`).
