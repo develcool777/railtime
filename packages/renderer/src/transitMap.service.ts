@@ -4,11 +4,12 @@ import { buildPlan } from '@railtime/schema/plan.utils';
 import { required } from './core/required.utils';
 import { ActiveStepLayer } from './layers/activeStepLayer.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
-import type { StationLines } from './layers/features.types';
+import type { RouteFeature, StationLines } from './layers/features.types';
 import type { RenderState } from './layers/lineStyle.types';
 import { LAYERS } from './layers/layers.constants';
 import type { MapLayer } from './layers/mapLayer.service';
 import { NetworkLayer } from './layers/networkLayer.service';
+import { RouteLayer } from './layers/routeLayer.service';
 import type { NetworkSnapshot } from './layers/networkSnapshot.types';
 import { buildNetworkSnapshot } from './layers/networkSnapshot.utils';
 import { StationLayer } from './layers/stationLayer.service';
@@ -16,7 +17,9 @@ import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/the
 import { Minimap } from './minimap/minimap.service';
 import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.utils';
 import { lineBranches, lineLengthKm, stepChangesLine } from './model/lineDetails.utils';
+import { boundsOf } from './model/geometry.utils';
 import { NetworkIndex } from './model/networkIndex.service';
+import { RouteFinder } from './model/routeFinder.service';
 import { Timeline } from './model/timeline.service';
 import type { Step } from './model/timeline.types';
 import { CameraDirector } from './playback/camera.service';
@@ -45,6 +48,8 @@ import type {
   LineInfo,
   MapView,
   Padding,
+  RouteInfo,
+  RoutePreference,
   StationInfo,
   StationSummary,
   Theme,
@@ -80,6 +85,12 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private readonly activeStepLayer: ActiveStepLayer;
   /** Stations, labels, pulses and the selection ring. */
   private readonly stationLayer: StationLayer;
+  /** A route over the network, when one is shown. */
+  private readonly routeLayer: RouteLayer;
+  /** Finds routes between stations. */
+  private readonly routeFinder: RouteFinder;
+  /** The route drawn, kept so the overlay can draw it again once installed. */
+  private route: RouteFeature[] = [];
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
   /** The map's colour theme. */
@@ -141,6 +152,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.camera = new CameraDirector(this.map, padding);
     this.networkLayer = new NetworkLayer(this.map);
     this.activeStepLayer = new ActiveStepLayer(this.map);
+    this.routeLayer = new RouteLayer(this.map);
+    this.routeFinder = new RouteFinder(this.index, this.timeline);
     this.stationLayer = new StationLayer(
       this.map,
       station => this.index.coordOf(station),
@@ -372,6 +385,69 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
+   * The best route between two stations on the date shown: the lines to ride, where to change, and
+   * about how long it takes.
+   *
+   * @param from - The station to start at.
+   * @param to - The station to get to.
+   * @param preference - Fastest (the default), or fewer changes.
+   * @returns The route, or `null` if the network of the date has none.
+   */
+  public findRoute(from: string, to: string, preference: RoutePreference = 'fastest'): RouteInfo | null {
+    const route = this.routeFinder.find(from, to, this.player.cursor, preference);
+    if (!route) return null;
+    const stop = (station: string) => ({ id: station, name: this.index.stationName(station, this.player.clock) });
+    return {
+      from: stop(from),
+      to: stop(to),
+      legs: route.legs.map(leg =>
+        leg.kind === 'walk'
+          ? { kind: 'walk', from: stop(leg.from), to: stop(leg.to), minutes: leg.minutes }
+          : {
+              kind: 'ride',
+              line: leg.line,
+              lineName: this.index.lineName(leg.line),
+              color: this.baseColor(leg.line),
+              stops: leg.stops.map(stop),
+              minutes: leg.minutes,
+              km: leg.km,
+            },
+      ),
+      minutes: route.minutes,
+      km: route.km,
+      changes: route.changes,
+      segments: route.legs.map(leg => (leg.kind === 'ride' ? leg.segments : [])),
+    };
+  }
+
+  /**
+   * Draws a route over the network and frames it, or clears it.
+   *
+   * @param route - A route `findRoute` gave, or `null`.
+   */
+  public showRoute(route: RouteInfo | null): void {
+    this.route = (route?.legs ?? []).flatMap((leg, position): RouteFeature[] => {
+      if (leg.kind === 'walk') {
+        return [
+          {
+            type: 'Feature',
+            properties: { color: '', walk: true },
+            geometry: { type: 'LineString', coordinates: [this.index.coordOf(leg.from.id), this.index.coordOf(leg.to.id)] },
+          },
+        ];
+      }
+      return (route?.segments[position] ?? []).map(segment => ({
+        type: 'Feature',
+        properties: { color: leg.color, walk: false },
+        geometry: { type: 'LineString', coordinates: required(this.index.segments[segment], `segment ${segment}`).coordinates },
+      }));
+    });
+    if (this.ready) this.routeLayer.update(this.route);
+    const bounds = boundsOf(this.route.flatMap(feature => feature.geometry.coordinates));
+    if (bounds) this.camera.fit(bounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+  }
+
+  /**
    * The stations on the map on the date shown, for a search: each with its names and its lines' colours.
    *
    * @returns The stations, by name.
@@ -487,7 +563,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** The overlay's layer groups, bottom to top. */
   private get layers(): MapLayer[] {
-    return [this.networkLayer, this.activeStepLayer, this.stationLayer];
+    return [this.networkLayer, this.activeStepLayer, this.routeLayer, this.stationLayer];
   }
 
   /** Recolours the basemap and installs the overlay once the style has loaded. */
@@ -495,8 +571,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     const font = basemapFont(this.map);
     for (const layer of this.layers) layer.install(font);
     this.applyPalette();
-    // A station selected before the style loaded (from a link) gets its ring now.
+    // A station selected before the style loaded (from a link) gets its ring now, a route its track.
     this.stationLayer.select(this.selectedStation);
+    this.routeLayer.update(this.route);
     this.ready = true;
     this.snapshotStale = true;
     this.instant = true;

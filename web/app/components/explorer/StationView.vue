@@ -9,6 +9,11 @@
       <p v-for="name in station.otherNames" :key="name" class="text-default text-[15px]">{{ name }}</p>
       <p v-if="station.formerNames.length > 0" class="text-muted mt-1 text-[13px]">{{ formatFormerNames(station.formerNames) }}</p>
     </div>
+    <div class="flex gap-2">
+      <UButton icon="i-lucide-navigation" label="Route from here" color="neutral" variant="outline" size="sm" @click="emit('routeFrom')" />
+      <UButton icon="i-lucide-flag" label="Route to here" color="neutral" variant="outline" size="sm" @click="emit('routeTo')" />
+    </div>
+
     <section>
       <h3 class="eyebrow text-muted mb-2">Lines</h3>
       <ul class="flex flex-col gap-2" role="list">
@@ -51,7 +56,7 @@
     /** The date shown, as a timestamp; `null` for a plan's future, when every line is open. */
     date: number | null;
   }>();
-  const emit = defineEmits<{ close: []; select: [station: string] }>();
+  const emit = defineEmits<{ close: []; select: [station: string]; routeFrom: []; routeTo: [] }>();
 
   /** Whether a line served the station on the date shown. */
   const isOpen = (line: StationLineInfo): boolean => {

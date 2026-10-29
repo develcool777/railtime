@@ -1,4 +1,5 @@
 import type { IsoDate, LngLat, Network } from '@railtime/schema/network.types';
+import type { RoutePreference as ModelRoutePreference } from './model/routeFinder.types';
 import type { Step } from './model/timeline.types';
 
 /** The map's colour theme. */
@@ -145,6 +146,41 @@ export type LineDetails = LineInfo & {
   branches: LineStop[][];
   /** The changes that are part of its story, by their position in the timeline (`ChangeInfo.index`). */
   changes: number[];
+};
+
+/** What a route is best at: arriving soonest, or changing least, if it takes a little longer. */
+export type RoutePreference = ModelRoutePreference;
+
+/** A station on a route. */
+export type RouteStop = { id: string; name: string };
+
+/** One part of a route: a ride on a line from where it is boarded to where it is left, or a walk between two stations. */
+export type RouteLegInfo =
+  | {
+      kind: 'ride';
+      line: string;
+      lineName: string;
+      color: string;
+      /** Its stops, from the one boarded at to the one left at. */
+      stops: RouteStop[];
+      minutes: number;
+      km: number;
+    }
+  | { kind: 'walk'; from: RouteStop; to: RouteStop; minutes: number };
+
+/** How to get from one station to another on the date shown. */
+export type RouteInfo = {
+  from: RouteStop;
+  to: RouteStop;
+  legs: RouteLegInfo[];
+  /** About how long it takes, changes and walks included. */
+  minutes: number;
+  /** How far it rides. */
+  km: number;
+  /** How many times it changes line. */
+  changes: number;
+  /** The track it rides, by segment: what `showRoute` draws. */
+  segments: number[][];
 };
 
 /** Events a `TransitMap` emits, by name. */
