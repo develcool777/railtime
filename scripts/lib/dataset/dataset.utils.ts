@@ -55,13 +55,18 @@ export const formatNetwork = (network: Network): string => {
     .map(orderSegment)
     .sort((first, second) => first.stationA.localeCompare(second.stationA) || first.stationB.localeCompare(second.stationB));
   const segmentLines = segments.map(segment => `    ${JSON.stringify(segment)}`).join(',\n');
+  const transfers = (network.transfers ?? [])
+    .map(({ stationA, stationB }) => (stationB < stationA ? { stationA: stationB, stationB: stationA } : { stationA, stationB }))
+    .sort((first, second) => first.stationA.localeCompare(second.stationA) || first.stationB.localeCompare(second.stationB));
+  const transferLines = transfers.map(transfer => `    ${JSON.stringify(transfer)}`).join(',\n');
   return [
     '{',
     `  "meta": ${JSON.stringify(network.meta)},`,
     `  "networks": ${recordLines(Object.entries(network.networks))},`,
     `  "lines": ${recordLines(Object.entries(network.lines))},`,
     `  "stations": ${recordLines(stations)},`,
-    `  "segments": [\n${segmentLines}\n  ]`,
+    `  "segments": [\n${segmentLines}\n  ]${transfers.length > 0 ? ',' : ''}`,
+    ...(transfers.length > 0 ? [`  "transfers": [\n${transferLines}\n  ]`] : []),
     '}',
     '',
   ].join('\n');

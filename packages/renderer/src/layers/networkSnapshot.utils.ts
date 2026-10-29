@@ -75,10 +75,20 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     }
   }
 
+  const transfers: LineFeature[] = [];
+  const linked = new Set<string>();
+  for (const { stationA, stationB } of index.network.transfers ?? []) {
+    if (!stations.has(stationA) || !stations.has(stationB)) continue;
+    transfers.push(lineFeature([index.coordOf(stationA), index.coordOf(stationB)], '', 0));
+    linked.add(stationA).add(stationB);
+  }
+
   return {
     sideBySide,
     lines: { type: 'FeatureCollection', features: lines },
     ghosts: { type: 'FeatureCollection', features: ghosts },
+    transfers: { type: 'FeatureCollection', features: transfers },
+    linked,
     stations,
     closingOnly: new Set([...stations.keys()].filter(station => !stayingStations.has(station))),
     stats: {

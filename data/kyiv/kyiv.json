@@ -112,5 +112,10 @@
     {"stationA":"universytet","stationB":"vokzalna","lines":{"m1":{"open":"1960-11-06"}},"coordinates":[[30.50393,50.44279],[30.50352,50.44258],[30.50275,50.4424],[30.49418,50.44083],[30.49302,50.44073],[30.49204,50.44075],[30.49014,50.44102],[30.48959,50.44116]]},
     {"stationA":"vasylkivska","stationB":"vystavkovyi-tsentr","lines":{"m2":{"open":"2011-12-27"}},"coordinates":[[30.48822,50.39326],[30.48631,50.39293],[30.48519,50.39265],[30.48456,50.39233],[30.48402,50.3919],[30.4837,50.39152],[30.47765,50.38243]]},
     {"stationA":"vydubychi","stationB":"zvirynetska","lines":{"m3":{"open":"1991-12-30"}},"coordinates":[[30.56039,50.40192],[30.55964,50.40249],[30.55897,50.40317],[30.55103,50.41264],[30.54812,50.41598],[30.5473,50.41672]]}
+  ],
+  "transfers": [
+    {"stationA":"khreshchatyk","stationB":"maidan-nezalezhnosti"},
+    {"stationA":"palats-sportu","stationB":"ploshcha-ukrainskykh-heroiv"},
+    {"stationA":"teatralna","stationB":"zoloti-vorota"}
   ]
 }

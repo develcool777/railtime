@@ -68,5 +68,10 @@
     {"stationA":"tsentralnyi-rynok","stationB":"vokzalna","lines":{"kholodnohirsko-zavodska":{"open":"1975-08-23"}},"coordinates":[[36.2196,49.99281],[36.21386,49.99172],[36.21236,49.99131],[36.20939,49.99013],[36.20867,49.99001],[36.20638,49.9898]]},
     {"stationA":"turboatom","stationB":"zavodska","lines":{"kholodnohirsko-zavodska":{"open":"1975-08-23"}},"coordinates":[[36.30181,49.9723],[36.299,49.97314],[36.2964,49.97378],[36.29445,49.97415],[36.29326,49.97431],[36.29069,49.97443],[36.28543,49.97521],[36.2809,49.97605]]},
     {"stationA":"universytet","stationB":"yaroslava-mudroho","lines":{"saltivska":{"open":"1984-08-11"}},"coordinates":[[36.23437,50.00435],[36.23975,50.00534],[36.24091,50.00537],[36.24251,50.0053],[36.24378,50.00516],[36.24517,50.00487],[36.24829,50.00383]]}
+  ],
+  "transfers": [
+    {"stationA":"derzhprom","stationB":"universytet"},
+    {"stationA":"istorychnyi-muzei","stationB":"maidan-konstytutsii"},
+    {"stationA":"metrobudivnykiv","stationB":"sportyvna"}
   ]
 }

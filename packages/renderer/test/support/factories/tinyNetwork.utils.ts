@@ -44,6 +44,7 @@ const segmentAt = (stationA: string, stationB: string, position: number, lines: 
  * - `blue` runs B–C from 1930, is suspended there 1940–1945 and closes it in 1950
  * - `pink` shares A–B, drawn as `red` until 1990
  * - `green` runs C–D from 1970, after D had closed: it passes D by
+ * - a transfer between A and D, which opens in 1910
  * - Ukrainian names for the network, `red`, and D now and as Old D; none for the rest
  *
  * @returns The network.
@@ -76,4 +77,5 @@ export const tinyNetwork = (): Network => ({
     }),
     segmentAt('c', 'd', 2, { red: { open: '1910-01-01' }, green: { open: '1970-01-01' } }),
   ],
+  transfers: [{ stationA: 'a', stationB: 'd' }],
 });

@@ -173,7 +173,7 @@ export class StationLayer extends MapLayer {
           scale: age >= 1 ? 1 : Math.max(0, easeOutBack(clamp(age, 0, 1))),
           opacity,
           labelOpacity: highlighted ? opacity * frame.newLabelOpacity : opacity,
-          interchange: lines.size > 1,
+          interchange: lines.size > 1 || frame.linked.has(station),
           color: lines.get(firstLine) ?? '#ffffff',
           highlighted,
         }),

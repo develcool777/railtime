@@ -6,6 +6,8 @@ export type StationFrame = {
   now: number;
   /** Stations on the map this frame and the lines serving them. */
   stations: Map<string, StationLines>;
+  /** Stations with a transfer to another on the map: drawn as interchanges. */
+  linked: Set<string>;
   /** Stations opening in the playing step. */
   highlighted: Set<string>;
   /** Station → opacity while it closes. */

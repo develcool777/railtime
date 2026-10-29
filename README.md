@@ -59,6 +59,9 @@ then `pnpm data:format london`; a test fails while the file is invalid or untidy
 
 - Track and stations: **OpenStreetMap** (ODbL, credited on the map), imported once.
 - Dates: checked line by line against Wikipedia's line, station and railway-company articles.
+- `transfers`: pairs of stations, each its own stop with its own name, that passengers change
+  between (Bank and Monument, Khreshchatyk and Maidan Nezalezhnosti). The map links their dots
+  wherever both are open, and a station's panel lists where you can change.
 - `names`: a station's, line's, network's or former name in other languages, by language code
   (`{ "uk": "Хрещатик" }`). `name` is English; a line's other names are in full ("… лінія").
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,

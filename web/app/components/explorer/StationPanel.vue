@@ -16,6 +16,23 @@
         <span class="text-muted text-xs tabular-nums">{{ formatSpan(line.opened, line.closed) }}</span>
       </li>
     </ul>
+    <div v-if="station.transfers.length > 0" class="border-default mt-3 border-t pt-3">
+      <p class="text-muted mb-1.5 text-xs">Change for</p>
+      <ul class="space-y-1" role="list">
+        <li v-for="transfer in station.transfers" :key="transfer.id">
+          <button
+            type="button"
+            class="hover:bg-elevated -mx-1 flex w-full items-center gap-2 rounded px-1 py-0.5 text-left text-sm"
+            @click="emit('select', transfer.id)">
+            <span class="flex flex-none gap-0.5">
+              <span v-for="line in transfer.lines" :key="line.id" class="h-1.5 w-3 rounded-full" :style="{ background: line.color }" :title="line.name" />
+            </span>
+            <span class="text-default flex-1">{{ transfer.name }}</span>
+            <UIcon name="i-lucide-arrow-right" class="text-muted size-3.5" />
+          </button>
+        </li>
+      </ul>
+    </div>
   </UCard>
 </template>
 
@@ -25,5 +42,5 @@
   import { formatFormerNames, formatSpan } from '~/utils/format.utils';
 
   defineProps<{ station: StationInfo }>();
-  const emit = defineEmits<{ close: [] }>();
+  const emit = defineEmits<{ close: []; select: [station: string] }>();
 </script>
