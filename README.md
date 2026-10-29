@@ -102,7 +102,10 @@ panel show beneath the English one. Sviatoshyn's earlier name (Sviatoshyno, unti
 the day. Dnipro's extension to the centre is still unopened. Kyiv has two plans: the Varshavska extension under construction, and
 the long-term plan (the unapproved 2020 draft General Plan with the Kyiv Metro's own plans), with the
 Podilsko-Vyhurivska line. Dnipro has its centre extension (under construction since 2008, stopped
-in 2022) and its General Plan's long-term network, with a second line.
+in 2022) and its General Plan's long-term network, with a second line. Kharkiv has the Oleksiivska line's
+extension to Odeska (funded, its contract not yet signed) and its General Plan's long-term network:
+every line extended, the Oleksiivska to the airport, and a fourth, Saltivsko-Zavodska line, whose
+station order is laid out by geography, as no source gives it.
 
 Some cities were never built: their dataset has no lines, stations or track, only plans, and the
 explorer opens on the first. Lviv has three: the 1980s underground tram, begun around 1990; the

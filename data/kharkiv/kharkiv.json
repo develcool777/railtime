@@ -73,5 +73,67 @@
     {"stationA":"derzhprom","stationB":"universytet"},
     {"stationA":"istorychnyi-muzei","stationB":"maidan-konstytutsii"},
     {"stationA":"metrobudivnykiv","stationB":"sportyvna"}
-  ]
+  ],
+  "plans": {
+    "under-construction": {
+      "name": "Under construction",
+      "names": {"uk":"Будується"},
+      "description": "The Oleksiivska line's extension from Metrobudivnykiv along Aerokosmichnyi Avenue to Derzhavinska and Odeska (3.47 km), funded by EBRD and EIB loans; site work began in 2021–22, stopped with the full-scale invasion, and the new contractor's tender was set for 2026.",
+      "stations": {
+        "derzhavinska": {"name":"Derzhavinska","names":{"uk":"Державінська"},"coordinate":[36.25889,49.97028]},
+        "odeska": {"name":"Odeska","names":{"uk":"Одеська"},"coordinate":[36.26028,49.94639]}
+      },
+      "sections": [
+        {"line":"oleksiivska","stations":["metrobudivnykiv","derzhavinska","odeska"]}
+      ]
+    },
+    "long-term": {
+      "name": "Long-term plan",
+      "names": {"uk":"Перспективний план"},
+      "description": "The metro network of Kharkiv's General Plan to 2031 and the metro's development schemes: the Saltivska line to Ploshcha Urytskoho, Druzhby Narodiv and Novozhanove, the Kholodnohirsko-Zavodska line to Zaliutyne and Rohan, the Oleksiivska line to the airport, and the fourth, Saltivsko-Zavodska line from Saltivka to KhTZ.",
+      "lines": {
+        "m4": {"name":"Saltivsko-Zavodska","names":{"uk":"Салтівсько-Заводська лінія"},"network":"metro","mode":"metro","color":"#800080","darkColor":"#B266D6"}
+      },
+      "stations": {
+        "aeroport": {"name":"Aeroport","names":{"uk":"Аеропорт"},"coordinate":[36.286,49.9235]},
+        "derzhavinska": {"name":"Derzhavinska","names":{"uk":"Державінська"},"coordinate":[36.25889,49.97028]},
+        "druzhby-narodiv": {"name":"Druzhby Narodiv","names":{"uk":"Дружби Народів"},"coordinate":[36.3461,50.0367]},
+        "heroiv-pratsi-2": {"name":"Heroiv Pratsi-2","names":{"uk":"Героїв Праці-2"},"coordinate":[36.3392,50.0262]},
+        "imeni-o-s-maselskoho-2": {"name":"Imeni O. S. Maselskoho-2","names":{"uk":"Імені О. С. Масельського-2"},"coordinate":[36.36,49.9605]},
+        "kashtanova": {"name":"Kashtanova","names":{"uk":"Каштанова"},"coordinate":[36.25972,49.95667]},
+        "krasnodarska": {"name":"Krasnodarska","names":{"uk":"Краснодарська"},"coordinate":[36.354,49.98]},
+        "mikroraion-602": {"name":"602 Mikroraion","names":{"uk":"602 мікрорайон"},"coordinate":[36.359,49.991]},
+        "motel-druzhba": {"name":"Motel Druzhba","names":{"uk":"Мотель «Дружба»"},"coordinate":[36.2625,49.9363]},
+        "nemyshlianska": {"name":"Nemyshlianska","names":{"uk":"Немишлянська"},"coordinate":[36.356,49.971]},
+        "novobavarska": {"name":"Novobavarska","names":{"uk":"Новобаварська"},"coordinate":[36.2221,49.9688]},
+        "novozhanove": {"name":"Novozhanove","names":{"uk":"Новожанове"},"coordinate":[36.2139,49.96]},
+        "odeska": {"name":"Odeska","names":{"uk":"Одеська"},"coordinate":[36.26028,49.94639]},
+        "pivdenna": {"name":"Pivdenna","names":{"uk":"Південна"},"coordinate":[36.4025,49.915]},
+        "ploshcha-urytskoho": {"name":"Ploshcha Urytskoho","names":{"uk":"Площа Урицького"},"coordinate":[36.2303,49.9822]},
+        "prospekt-traktorobudivnykiv": {"name":"Prospekt Traktorobudivnykiv","names":{"uk":"Проспект Тракторобудівників"},"coordinate":[36.357,50.016]},
+        "rohanska": {"name":"Rohanska","names":{"uk":"Роганська"},"coordinate":[36.43861,49.92611]},
+        "saltivske-shose": {"name":"Saltivske Shose","names":{"uk":"Салтівське шосе"},"coordinate":[36.358,50.003]},
+        "skhidna": {"name":"Skhidna","names":{"uk":"Східна"},"coordinate":[36.4227,49.9426]},
+        "valentynivska": {"name":"Valentynivska","names":{"uk":"Валентинівська"},"coordinate":[36.342,50.013]},
+        "zaliutyne": {"name":"Zaliutyne","names":{"uk":"Залютине"},"coordinate":[36.16167,49.97417]}
+      },
+      "sections": [
+        {"line":"oleksiivska","stations":["metrobudivnykiv","derzhavinska","odeska"]},
+        {"line":"saltivska","stations":["istorychnyi-muzei","ploshcha-urytskoho"]},
+        {"line":"saltivska","stations":["saltivska","druzhby-narodiv"]},
+        {"line":"kholodnohirsko-zavodska","stations":["kholodna-hora","zaliutyne"]},
+        {"line":"kholodnohirsko-zavodska","stations":["industrialna","skhidna","rohanska"]},
+        {"line":"oleksiivska","stations":["derzhavinska","kashtanova","odeska"]},
+        {"line":"oleksiivska","stations":["odeska","motel-druzhba","aeroport"]},
+        {"line":"saltivska","stations":["ploshcha-urytskoho","novobavarska","novozhanove"]},
+        {"line":"kholodnohirsko-zavodska","stations":["rohanska","pivdenna"]},
+        {"line":"m4","stations":["heroiv-pratsi-2","valentynivska","prospekt-traktorobudivnykiv","saltivske-shose","mikroraion-602"]},
+        {"line":"m4","stations":["mikroraion-602","krasnodarska","nemyshlianska","imeni-o-s-maselskoho-2"]}
+      ],
+      "transfers": [
+        {"stationA":"heroiv-pratsi-2","stationB":"saltivska"},
+        {"stationA":"imeni-o-s-maselskoho","stationB":"imeni-o-s-maselskoho-2"}
+      ]
+    }
+  }
 }
