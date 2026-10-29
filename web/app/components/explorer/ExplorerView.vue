@@ -18,6 +18,8 @@
       <div class="explorer-sheet flex min-h-0 flex-1 flex-col" :class="{ open: sheetOpen || station || mode === 'history' }">
         <div v-if="mode === 'history'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
           <StepCard :step :revealed />
+          <!-- On a phone the map needs the room: the step card alone. -->
+          <UpNext class="max-sm:hidden" :changes :from="(time?.cursor ?? 0) + (step ? 1 : 0)" @select="jumpTo" />
         </div>
         <StationView
           v-else-if="station"
@@ -44,6 +46,7 @@
           </div>
           <div class="min-h-0 flex-1 overflow-auto" role="tabpanel">
             <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" />
+            <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
             <PlansTab v-else :network :plan @choose="choosePlan" />
           </div>
         </template>
@@ -69,19 +72,22 @@
         <ExploreDock
           v-if="mode === 'explore'"
           class="min-w-0 flex-1"
-          :time="time?.time ?? range.end"
+          :time
+          :changes
           :range
           :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
           :isFuture="time?.future === true"
           :hasPlan="!!plan"
           :hasHistory="!planOnly"
           @play="playHistory"
+          @pick="pick"
           @seek="showDate"
           @future="showFuture" />
         <PlaybackDock
           v-else
           class="min-w-0 flex-1"
-          :time="time?.time ?? range.start"
+          :time
+          :changes
           :range
           :playing="time?.playing ?? false"
           :speed
@@ -89,7 +95,7 @@
           @play="map?.play()"
           @pause="map?.pause()"
           @skip="map?.skip()"
-          @seek="seek"
+          @pick="pick"
           @speed="setSpeed"
           @camera="setCamera"
           @exit="exitHistory" />
@@ -116,7 +122,9 @@
   import { DEFAULT_SPEED } from '~/utils/explorer.constants';
   import { isPlanOnly } from '~/utils/city.utils';
   import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
+  import type { TimelineTarget } from '~/utils/timeline.types';
 
+  import ChangesTab from './ChangesTab.vue';
   import DateBlock from './DateBlock.vue';
   import ExploreDock from './ExploreDock.vue';
   import LinesTab from './LinesTab.vue';
@@ -127,6 +135,7 @@
   import PlaybackDock from './PlaybackDock.vue';
   import StationView from './StationView.vue';
   import StepCard from './StepCard.vue';
+  import UpNext from './UpNext.vue';
 
   const props = defineProps<{ network: Network; city: string; plan?: string }>();
   const emit = defineEmits<{ city: [city: string]; plan: [plan: string | undefined] }>();
@@ -137,7 +146,7 @@
   const router = useRouter();
   // The address says what to open on: a day, a view, a station's panel.
   const opening = parseExplorerQuery(route.query);
-  const { map, time, step, revealed, station, lines, view } = useTransitMap({
+  const { map, time, step, revealed, station, lines, changes, view } = useTransitMap({
     container: mapElement,
     minimapContainer: minimapElement,
     network: props.network,
@@ -161,9 +170,10 @@
   const credits = computed(() => map.value?.credits ?? []);
 
   /** The panel's tabs. A plan opens on Plans, where it was picked; a city without plans has only Lines. */
-  const tab = ref<'lines' | 'plans'>(props.plan ? 'plans' : 'lines');
+  const tab = ref<'lines' | 'changes' | 'plans'>(props.plan ? 'plans' : 'lines');
   const tabs = computed(() => [
     { id: 'lines' as const, label: 'Lines', count: `${lines.value.filter(line => visible.value.has(line.id)).length}/${lines.value.length}` },
+    { id: 'changes' as const, label: 'Changes', count: String(changes.value.length) },
     ...(planCount > 0 ? [{ id: 'plans' as const, label: 'Plans', count: String(planCount) }] : []),
   ]);
   const tabLabel = computed(() => tabs.value.find(entry => entry.id === tab.value)?.label ?? 'Lines');
@@ -244,11 +254,19 @@
     else map.value?.setDate(range.value.end);
   };
 
-  const seek = (date: number) => {
-    const wasPlaying = time.value?.playing;
-    map.value?.setDate(date);
-    if (wasPlaying) map.value?.play();
+  /** Shows what the timeline was picked at; in playback, plays on from there if it was playing. */
+  const pick = (target: TimelineTarget) => {
+    const transitMap = map.value;
+    if (!transitMap) return;
+    const wasPlaying = mode.value === 'history' && time.value?.playing === true;
+    if (target.kind === 'future') showFuture();
+    else if (target.kind === 'change') transitMap.showChange(target.index);
+    else transitMap.setDate(target.time);
+    if (wasPlaying && target.kind !== 'future') transitMap.play();
   };
+
+  /** Jumps playback to a change and plays it now. */
+  const jumpTo = (index: number) => map.value?.playFrom(index);
 
   const setSpeed = (value: number) => {
     speed.value = value;

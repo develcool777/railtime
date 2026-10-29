@@ -11,31 +11,36 @@
         <UButton icon="i-lucide-skip-forward" color="neutral" variant="outline" size="lg" square aria-label="Next change" @click="emit('skip')" />
       </UTooltip>
     </div>
-    <USlider
-      class="min-w-[200px] flex-[1_1_300px]"
-      :min="range.start"
-      :max="range.end"
-      :step="DAY_MS"
-      :modelValue="time"
-      aria-label="Timeline"
-      @update:modelValue="onSlide" />
+    <TimelineBar
+      class="min-w-[220px] flex-[1_1_300px] max-sm:order-last max-sm:basis-full"
+      :changes
+      :range
+      :time
+      label="Timeline"
+      @pick="emit('pick', $event)" />
     <div class="flex flex-none flex-wrap items-center gap-2">
       <SegmentedControl :modelValue="speed" :items="SPEED_OPTIONS" label="Speed" @update:modelValue="emit('speed', $event)" />
       <SegmentedControl :modelValue="camera" :items="CAMERA_OPTIONS" label="Camera" class="max-sm:hidden" @update:modelValue="emit('camera', $event)" />
-      <UButton icon="i-lucide-x" label="Exit" color="neutral" variant="outline" size="lg" class="font-semibold" @click="emit('exit')" />
+      <!-- On a phone the icon alone, so the controls keep to one row. -->
+      <UButton icon="i-lucide-x" color="neutral" variant="outline" size="lg" class="font-semibold" aria-label="Exit" @click="emit('exit')">
+        <span class="max-sm:hidden">Exit</span>
+      </UButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { CameraMode } from '@railtime/renderer/transitMap.types';
+  import type { CameraMode, ChangeInfo, TimeState } from '@railtime/renderer/transitMap.types';
 
-  import { CAMERA_OPTIONS, DAY_MS, SPEED_OPTIONS } from '~/utils/explorer.constants';
+  import { CAMERA_OPTIONS, SPEED_OPTIONS } from '~/utils/explorer.constants';
+  import type { TimelineTarget } from '~/utils/timeline.types';
 
   import SegmentedControl from './SegmentedControl.vue';
+  import TimelineBar from './TimelineBar.vue';
 
   defineProps<{
-    time: number;
+    time: TimeState | null;
+    changes: ChangeInfo[];
     range: { start: number; end: number };
     playing: boolean;
     speed: number;
@@ -45,13 +50,9 @@
     play: [];
     pause: [];
     skip: [];
-    seek: [time: number];
+    pick: [target: TimelineTarget];
     speed: [speed: number];
     camera: [mode: CameraMode];
     exit: [];
   }>();
-
-  const onSlide = (value: number | number[] | undefined) => {
-    if (typeof value === 'number') emit('seek', value);
-  };
 </script>

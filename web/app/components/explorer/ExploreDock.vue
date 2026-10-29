@@ -6,15 +6,14 @@
       size="lg"
       class="flex-none font-semibold active:scale-[0.98]"
       @click="emit('play')" />
-    <USlider
+    <TimelineBar
       v-if="hasHistory"
-      class="min-w-[200px] flex-[1_1_300px]"
-      :min="range.start"
-      :max="range.end"
-      :step="DAY_MS"
-      :modelValue="time"
-      aria-label="Show the network in a year"
-      @update:modelValue="onSlide" />
+      class="min-w-[220px] flex-[1_1_300px] max-sm:order-last max-sm:basis-full"
+      :changes
+      :range
+      :time
+      label="Show the network on a date"
+      @pick="emit('pick', $event)" />
     <span v-else class="flex-1" />
     <div class="flex flex-none gap-2">
       <UButton
@@ -31,10 +30,15 @@
 </template>
 
 <script setup lang="ts">
-  import { DAY_MS } from '~/utils/explorer.constants';
+  import type { ChangeInfo, TimeState } from '@railtime/renderer/transitMap.types';
+
+  import type { TimelineTarget } from '~/utils/timeline.types';
+
+  import TimelineBar from './TimelineBar.vue';
 
   defineProps<{
-    time: number;
+    time: TimeState | null;
+    changes: ChangeInfo[];
     range: { start: number; end: number; today: number };
     isToday: boolean;
     /** Past today: a plan's future. */
@@ -44,9 +48,5 @@
     /** Something was built: a network never built has no years to slide through. */
     hasHistory: boolean;
   }>();
-  const emit = defineEmits<{ play: []; seek: [time: number]; future: [] }>();
-
-  const onSlide = (value: number | number[] | undefined) => {
-    if (typeof value === 'number') emit('seek', value);
-  };
+  const emit = defineEmits<{ play: []; pick: [target: TimelineTarget]; seek: [time: number]; future: [] }>();
 </script>

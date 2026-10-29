@@ -19,6 +19,9 @@ map.setDate(Date.UTC(1950, 0, 1)); // explore: the network as of a date
 map.play(); // history: from the current date onwards
 map.pause();
 map.skip(); // finish this change, or jump to the next
+map.getChanges(); // every change, described as its caption: for a list or a timeline's marks
+map.showChange(12); // explore: the network just after change 12, on its date
+map.playFrom(12); // history: play on from change 12
 map.setVisibleLines(['line-a', 'line-b']);
 map.setTheme('light');
 map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
