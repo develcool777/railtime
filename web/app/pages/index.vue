@@ -23,16 +23,44 @@
       </div>
     </section>
 
+    <!-- Search and filters, kept in reach while scrolling; on a phone they would cover half the screen, so they scroll away. -->
+    <div class="border-default bg-page/95 z-[9] border-b backdrop-blur-sm sm:sticky sm:top-[63px]">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5 px-8 py-3 max-sm:px-4">
+        <UInput
+          v-model="filter.query"
+          icon="i-lucide-search"
+          placeholder="Search cities or networks"
+          size="lg"
+          class="min-w-[220px] flex-1"
+          aria-label="Search cities" />
+        <USelect v-model="countryChoice" :items="COUNTRY_ITEMS" size="lg" class="w-48 max-sm:flex-1" aria-label="Country" />
+        <SegmentedControl v-model="filter.kind" :items="KIND_ITEMS" label="Kind of city" />
+        <UButton
+          :icon="filter.withPlans ? 'i-lucide-check' : 'i-lucide-route'"
+          label="With plans"
+          :color="filter.withPlans ? 'primary' : 'neutral'"
+          :variant="filter.withPlans ? 'soft' : 'outline'"
+          size="lg"
+          :aria-pressed="filter.withPlans"
+          @click="filter.withPlans = !filter.withPlans" />
+        <span class="text-muted ml-auto text-[13px] tabular-nums">{{ shownCount }} of {{ CITIES.length }} cities</span>
+      </div>
+    </div>
+
     <main class="mx-auto flex max-w-7xl flex-col gap-12 px-8 pt-10 pb-20 max-sm:px-4">
-      <section v-for="{ country, cities } in COUNTRIES" :key="country">
+      <section v-for="{ country, cities } in sections" :key="country">
         <h2 class="text-highlighted flex items-baseline gap-2 text-lg font-bold">
           {{ country }}
           <span class="text-muted text-[13px] font-normal">{{ cities.length }} {{ cities.length === 1 ? 'city' : 'cities' }}</span>
         </h2>
-        <div class="mt-4 grid grid-flow-row-dense grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <CityCard v-for="city in cities" :key="city.value" :city="city.value" />
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :network="networkOf(city.value)" :failed="failedToLoad(city.value)" />
         </div>
       </section>
+      <div v-if="sections.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
+        <p class="text-muted text-sm">No city matches.</p>
+        <UButton label="Clear filters" color="neutral" variant="outline" @click="clearFilters" />
+      </div>
     </main>
 
     <footer class="border-default border-t">
@@ -42,21 +70,60 @@
 </template>
 
 <script setup lang="ts">
-  import { navigateTo, useHead, useRoute } from '#imports';
-
+  import { navigateTo, useFetch, useHead, useRoute, useRuntimeConfig } from '#imports';
   import { BasemapStill } from '@railtime/renderer/basemapStill.service';
+  import type { Network } from '@railtime/schema/network.types';
+  import { computed, reactive } from 'vue';
 
   import CityCard from '~/components/cities/CityCard.vue';
   import MapCredits from '~/components/explorer/MapCredits.vue';
-  import { citiesByCountry, isCity } from '~/utils/city.utils';
+  import SegmentedControl from '~/components/explorer/SegmentedControl.vue';
+  import type { CityFilter } from '~/utils/city.types';
+  import { citiesByCountry, isCity, matchesFilter, networkUrlOf, summaryOf } from '~/utils/city.utils';
+  import { CITIES } from '~/utils/explorer.constants';
 
   useHead({ title: 'Railtime' });
-
-  const COUNTRIES = citiesByCountry();
 
   // Links from before city pages (`/?city=tyne-and-wear`) still land on the city.
   const route = useRoute();
   if (isCity(route.query.city)) await navigateTo(`/${route.query.city}`, { replace: true });
+
+  /** Every country, as the select offers it, before the countries themselves. */
+  const ALL_COUNTRIES = 'all';
+  const COUNTRY_ITEMS = [{ label: 'All countries', value: ALL_COUNTRIES }, ...citiesByCountry().map(({ country }) => ({ label: country, value: country }))];
+  const KIND_ITEMS: { label: string; value: CityFilter['kind'] }[] = [
+    { label: 'All', value: 'all' },
+    { label: 'History', value: 'history' },
+    { label: 'Never built', value: 'never-built' },
+  ];
+
+  // Each city's dataset, fetched in the browser as the map's is: a city page opened next reuses it.
+  const baseURL = useRuntimeConfig().app.baseURL;
+  const datasets = new Map(CITIES.map(city => [city.value, useFetch<Network>(networkUrlOf(city.value), { server: false, lazy: true, baseURL })]));
+  const networkOf = (city: string): Network | null => datasets.get(city)?.data.value ?? null;
+  const failedToLoad = (city: string): boolean => !!datasets.get(city)?.error.value;
+
+  const filter = reactive<CityFilter>({ query: '', country: '', kind: 'all', withPlans: false });
+  const countryChoice = computed({
+    get: () => filter.country || ALL_COUNTRIES,
+    set: (value: string) => (filter.country = value === ALL_COUNTRIES ? '' : value),
+  });
+
+  /** Each country's cities that pass the filters; countries left with none are dropped. */
+  const sections = computed(() =>
+    citiesByCountry()
+      .map(({ country, cities }) => ({
+        country,
+        cities: cities.filter(city => {
+          const network = networkOf(city.value);
+          return matchesFilter(city, network ? summaryOf(network) : null, filter);
+        }),
+      }))
+      .filter(section => section.cities.length > 0),
+  );
+  const shownCount = computed(() => sections.value.reduce((total, section) => total + section.cities.length, 0));
+
+  const clearFilters = () => Object.assign(filter, { query: '', country: '', kind: 'all', withPlans: false });
 </script>
 
 <style scoped>
