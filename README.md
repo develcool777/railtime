@@ -69,3 +69,8 @@ services, which share track and were reshuffled in 2018. Its one closed section 
 over the old railway via Werneth to the temporary Oldham Mumps stop. Stops that closed while their
 track stayed (Mosley Street, High Street, Woodlands Road) and renamed ones (G-Mex, Barton Dock Road)
 are in the dataset.
+
+Tyne and Wear's lines are today's Green and Yellow, drawn back to 1980. The routes were different
+before December 2005: Green ran to South Shields and Yellow to Sunderland, and in the 1980s and 1990s a
+Red (Pelaw–Benton) and a Blue (St James–North Shields) route ran as well. South Shields' move in 2019
+and Meadow Well's former name (Smith's Park) are in the dataset.
