@@ -14,3 +14,11 @@ body,
 .dark .text-over-map {
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
 }
+
+/* On a phone the map's credits would cover the bottom bar: they sit above it instead, still in view. */
+@media (width < 40rem) {
+  .explorer-map .maplibregl-ctrl-bottom-right,
+  .explorer-map .maplibregl-ctrl-bottom-left {
+    bottom: 5.25rem;
+  }
+}

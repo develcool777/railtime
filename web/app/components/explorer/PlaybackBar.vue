@@ -16,7 +16,10 @@
       class="hidden w-28 flex-none sm:flex"
       aria-label="Camera"
       @update:modelValue="emit('camera', $event as CameraMode)" />
-    <UButton icon="i-lucide-x" label="Exit" color="neutral" variant="outline" class="flex-none" @click="emit('exit')" />
+    <!-- On a phone the slider needs the room: the icon alone. -->
+    <UButton icon="i-lucide-x" color="neutral" variant="outline" aria-label="Exit" class="flex-none" @click="emit('exit')">
+      <span class="hidden sm:inline">Exit</span>
+    </UButton>
   </div>
 </template>
 
