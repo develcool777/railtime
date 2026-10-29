@@ -59,7 +59,8 @@ then `pnpm data:format london`; a test fails while the file is invalid or untidy
 
 A new city is a new dataset in the same format, `data/<city>/<city>.json`, checked by the same test,
 plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the
-landing page and its own page at `/<city>`.
+landing page and its own page at `/<city>`. Its history gets a test of its own,
+`data/test/unit/<city>.test.ts` (camelCase), which plays it through the renderer.
 
 London's closed sections are in: the Metropolitan to Aylesbury, Verney Junction and Brill, the Central
 to Ongar, the District to Windsor, Hounslow Town, South Acton, Uxbridge and Hounslow West, the

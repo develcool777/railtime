@@ -34,3 +34,17 @@ export const assertTestsMirrorSource = (root: string, testDir: string, sourceDir
     throw new Error(`A test mirrors the source file it tests; these have none in ${join(root, sourceDir)}:\n${orphans.join('\n')}`);
   }
 };
+
+/**
+ * Refuses to start while a dataset test has no dataset: `data/test/unit/tyneAndWear.test.ts` checks
+ * `data/tyne-and-wear/tyne-and-wear.json`.
+ *
+ * @param root - The repo's folder.
+ */
+export const assertTestsMirrorDatasets = (root: string): void => {
+  const orphans = globSync('*.test.ts', { cwd: join(root, 'data/test/unit') }).filter(testPath => {
+    const city = testPath.replace(/\.test\.ts$/, '').replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+    return globSync(`${city}/${city}.json`, { cwd: join(root, 'data') }).length === 0;
+  });
+  if (orphans.length > 0) throw new Error(`A dataset test checks data/<city>/<city>.json; these have none:\n${orphans.join('\n')}`);
+};

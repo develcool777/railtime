@@ -50,9 +50,14 @@ Each package keeps its tests beside its code, as dataroom-ui does inside its one
 packages/renderer/
   vitest.config.ts          the package's project (`pnpm --filter @railtime/renderer test-unit`)
   test/unit/                mirrors src/: test/unit/model/timeline.test.ts tests src/model/timeline.*.ts
-  test/support/             what tests share: factories/ (tinyNetwork), fixtures/ (london), playback.utils.ts
+  test/support/             what tests share: factories/ (tinyNetwork), playback.utils.ts
 scripts/test/unit/          mirrors scripts/; its project is in the root vitest.config.ts
+data/test/unit/             one test per city: london.test.ts checks data/london/london.json, played
+                            through the renderer; its project is in the root vitest.config.ts
 ```
+
+- The renderer knows no city: its tests use made-up networks (`tinyNetwork`). A check of a city's
+  history (the Victoria line's three stages, London's size today) goes in `data/test/unit/<city>.test.ts`.
 
 - `pnpm test-unit` at the root runs every project (`vitest.config.ts`); options shared by all are in
   `vitest.shared.ts`: mocks reset between tests, random order, node.
