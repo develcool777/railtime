@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+}
+
+/* Text over the map stays readable on any basemap colour. */
+.text-over-map {
+  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.9);
+}
+.dark .text-over-map {
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
+}

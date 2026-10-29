@@ -1,0 +1,13 @@
+{
+  "name": "@railtime/schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./network.types": "./src/network.types.ts",
+    "./network.schema": "./src/network.schema.ts"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  }
+}

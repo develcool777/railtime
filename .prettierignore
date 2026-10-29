@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+# City datasets keep their own one-entry-per-line layout (pnpm data:format <city>).
+data/*/*.json
+data/*/raw/
+dist/
+.nuxt/
+.output/
+test-reports/

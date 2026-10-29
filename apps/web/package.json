@@ -1,0 +1,26 @@
+{
+  "name": "@railtime/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 5180",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "type-check": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.0",
+    "@nuxt/ui": "^4.12.0",
+    "@railtime/renderer": "workspace:*",
+    "@railtime/schema": "workspace:*",
+    "nuxt": "^4.6.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vue-tsc": "^3.3.13"
+  }
+}

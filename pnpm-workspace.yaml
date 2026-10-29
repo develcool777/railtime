@@ -1,0 +1,13 @@
+packages:
+  - packages/*
+  - apps/*
+
+allowBuilds:
+  # Nuxt/Vite's bundler: its install script checks its native binary for this platform.
+  esbuild: true
+  # Declined, as in dataroom-ui: its postinstall only picks the Vue 2/3 build of its shim, and the
+  # Vue 3 build is already the default it ships.
+  vue-demi: false
+
+# Supply-chain guard: don't install a version until it's been public for 1h (as in dataroom-ui).
+minimumReleaseAge: 60

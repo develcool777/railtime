@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/cli.*.ts", "scripts/test/**/*.test.ts", "vitest.shared.ts"],
+      "project": ["scripts/**/*.ts", "vitest.*.ts"]
+    },
+    "packages/schema": {
+      "entry": ["src/network.types.ts", "src/network.schema.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/renderer": {
+      "entry": ["src/transitMap.service.ts", "test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "apps/web": {
+      "entry": ["app/pages/**/*.vue", "app/app.vue", "app/app.config.ts", "nuxt.config.ts"],
+      "project": ["app/**/*.{ts,vue,css}"]
+    }
+  }
+}

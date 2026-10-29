@@ -1,0 +1,67 @@
+# Railtime
+
+An interactive map of a city's rail network that you can explore as it is today, or as it was in
+any year, and a history player that grows it from the first line to today, one change at a time.
+London (every Underground and Overground line, 1863 to today), Manchester Metrolink (1992 to today) and the
+Tyne and Wear Metro (1980 to today).
+
+```
+data/london/london.json   the dataset: lines, stations, track and when each line opened where
+        │  (served as it is, at /data/london/london.json)
+        ▼
+renderer (packages/renderer, MapLibre)  →  explorer (apps/web, Nuxt + Nuxt UI)
+```
+
+## Getting started
+
+```bash
+pnpm install
+pnpm dev                 # http://localhost:5180
+```
+
+## Commands
+
+```bash
+pnpm dev                 # the web app
+pnpm build               # production build of the Nuxt app
+pnpm type-check          # every package
+pnpm test-unit           # Vitest, every package, watch mode (pnpm test-unit-ci: once; pnpm test-unit-coverage)
+pnpm eslint-check        # pnpm eslint-fix to fix
+pnpm format              # Prettier (pnpm format-check to check)
+pnpm code-quality:dead-code   # knip
+
+pnpm data:format london  # check data/london/london.json against the schema and tidy it, after an edit
+```
+
+## Layout
+
+| Path                | What it is                                                                                                            |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `packages/schema`   | The `Network` format every dataset is in and the renderer reads, with a Zod validator.                                |
+| `packages/renderer` | The engine: `TransitMap`. See [its README](packages/renderer/_README.md).                                             |
+| `apps/web`          | The explorer: Nuxt 4 + Nuxt UI. The map, minimap and history player come from the renderer; every control is Nuxt UI. |
+| `scripts/`          | `cli.formatCity.ts` (`pnpm data:format <city>`): validates a city's dataset and keeps its layout.                     |
+| `data/<city>/`      | `<city>.json`: the city's dataset and source of truth. The app serves it, the tests check it.                         |
+
+## Data
+
+`data/london/london.json` is the source of truth: one line per station and per segment of track,
+each segment listing its lines and the day each opened (and closed) there. Fix a date by editing it,
+then `pnpm data:format london`; a test fails while the file is invalid or untidy.
+
+- Track and stations: **OpenStreetMap** (ODbL, credited on the map), imported once.
+- Dates: checked line by line against Wikipedia's line, station and railway-company articles.
+- `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
+  Hammersmith & City until 1990, the Overground as one line until 2024).
+
+A new city is a new dataset in the same format, `data/<city>/<city>.json`, checked by the same test,
+plus one entry in `CITIES` (`apps/web/app/utils/explorer.constants.ts`): it gets a card on the
+landing page and its own page at `/<city>`.
+
+Known gaps: only two closed sections (Jubilee to Charing Cross, Aldwych); today's station names
+throughout; Overground routes appear when they became Overground, not as the older railways they are.
+
+Manchester's lines are the lines as built (Bury, Altrincham, the city centre, …), not today's coloured
+services, which share track and were reshuffled in 2018. Its one closed section is the 2012–2014 route
+to Oldham Mumps over the old railway via Werneth. Stops that have since closed (Mosley Street, High
+Street, Woodlands Road) are not drawn.

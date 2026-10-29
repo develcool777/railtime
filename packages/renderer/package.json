@@ -1,0 +1,22 @@
+{
+  "name": "@railtime/renderer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test-unit": "vitest",
+    "test-unit-ci": "vitest run"
+  },
+  "exports": {
+    "./transitMap.service": "./src/transitMap.service.ts",
+    "./transitMap.types": "./src/transitMap.types.ts",
+    "./transitMap.css": "./src/transitMap.css"
+  },
+  "dependencies": {
+    "@railtime/schema": "workspace:*",
+    "maplibre-gl": "^5.6.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}
