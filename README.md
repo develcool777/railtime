@@ -2,7 +2,7 @@
 
 An interactive map of a city's rail network that you can explore as it is today, or as it was in
 any year, and a history player that grows it from the first line to today, one change at a time.
-London (every Underground and Overground line, 1863 to today), Manchester Metrolink (1992 to today) and the
+London (every Underground and Overground line and the Elizabeth line, 1863 to today), Manchester Metrolink (1992 to today) and the
 Tyne and Wear Metro (1980 to today).
 
 ```

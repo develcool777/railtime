@@ -23,8 +23,8 @@ describe('NetworkSnapshotUtils', () => {
 
     test('keeps London at its known size today', () => {
       const snapshot = buildNetworkSnapshot(renderStateOf(playbackOf(londonNetwork())), false);
-      expect(snapshot.stats.stations).toBe(355);
-      expect(snapshot.stats.lines).toBe(17);
+      expect(snapshot.stats.stations).toBe(384);
+      expect(snapshot.stats.lines).toBe(18);
     });
   });
 });
