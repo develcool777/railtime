@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Lviv","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime, from Wikipedia and the press"},
+  "meta": {"city":"Lviv","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
   "networks": {
     "metro": {"name":"Lviv Metro","names":{"uk":"Львівський метрополітен"}}
   },

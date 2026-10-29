@@ -110,7 +110,8 @@ station order is laid out by geography, as no source gives it.
 Some cities were never built: their dataset has no lines, stations or track, only plans, and the
 explorer opens on the first. Lviv has three: the 1980s underground tram, begun around 1990; the
 General Plan's light metro; and a mid-2000s proposal. Chernivtsi never planned a metro: its one plan
-is a fan scheme found online, its stations placed on the places they are named after.
+is a fan scheme found online, its stations placed on the places they are named after. Zaporizhzhia's is
+the 2000s light-metro project, one line of 14 stations along Sobornyi Avenue.
 
 Tyne and Wear's lines are the Green and Yellow, which swapped southern branches on 12 December 2005:
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from
