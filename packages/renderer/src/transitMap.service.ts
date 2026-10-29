@@ -24,7 +24,7 @@ import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.c
 import { Player } from './playback/player.service';
 import type { ActivePlayback, PlayerEvent } from './playback/player.types';
 import type { StepDrawing } from './steps/stepAnimation.types';
-import { createStepAnimation, emptyDrawing } from './steps/stepAnimation.utils';
+import { createStepAnimation, describeSteps, emptyDrawing } from './steps/stepAnimation.utils';
 import {
   DEFAULT_PADDING,
   END_OVERVIEW_MS,
@@ -38,6 +38,7 @@ import {
 } from './transitMap.constants';
 import type {
   CameraMode,
+  ChangeInfo,
   Credit,
   LineInfo,
   MapView,
@@ -167,20 +168,45 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   public setDate(time: number): void {
     this.player.playing = false;
     this.player.seek(time);
-    this.stationLayer.resetPulses();
-    this.snapshotStale = true;
-    this.instant = true;
-    this.emit('step', null);
+    this.jumped();
   }
 
   /** Shows the network with its plan built: every step played, planned ones too. Stops playback. */
   public showFuture(): void {
     this.player.playing = false;
     this.player.seekEnd();
-    this.stationLayer.resetPulses();
-    this.snapshotStale = true;
-    this.instant = true;
-    this.emit('step', null);
+    this.jumped();
+  }
+
+  /**
+   * Shows the network just after a change, on its date. Stops playback.
+   *
+   * @param index - The change's position, from `getChanges`.
+   */
+  public showChange(index: number): void {
+    this.player.playing = false;
+    this.player.seekPast(index);
+    this.jumped();
+  }
+
+  /**
+   * Plays on from a change, starting it now.
+   *
+   * @param index - The change's position, from `getChanges`.
+   */
+  public playFrom(index: number): void {
+    this.player.seekBefore(index);
+    this.jumped();
+    this.player.playing = true;
+  }
+
+  /**
+   * Every change in the timeline, planned ones last, described as its caption will be.
+   *
+   * @returns The changes, in the order they play, coloured for the current theme.
+   */
+  public getChanges(): ChangeInfo[] {
+    return describeSteps({ index: this.index, timeline: this.timeline, visibleLines: new Set(this.index.lineIds), baseColor: line => this.baseColor(line) });
   }
 
   /** Plays history from the current date; from the start if already at today. */
@@ -444,6 +470,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   private createAnimation(step: Step): ReturnType<typeof createStepAnimation> {
     return createStepAnimation(step, { index: this.index, timeline: this.timeline, stationsBefore: this.timeline.stationsOnMap(step.index) });
+  }
+
+  /** Redraws at once after the player jumped, nothing pulsing and no caption. */
+  private jumped(): void {
+    this.stationLayer.resetPulses();
+    this.snapshotStale = true;
+    this.instant = true;
+    this.emit('step', null);
   }
 
   /**

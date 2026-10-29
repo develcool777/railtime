@@ -34,3 +34,15 @@ export const CAMERA_OPTIONS: { label: string; value: CameraMode }[] = [
 
 /** One day, the slider's step. */
 export const DAY_MS = 864e5;
+
+/** The share of the timeline a plan's changes take, at its right end. */
+export const FUTURE_SHARE = 0.16;
+
+/** How many marks of one year stack on the timeline before they overlap. */
+export const MAX_TICK_LEVEL = 3;
+
+/** Years between the labels under the timeline. */
+export const TIMELINE_LABEL_YEARS = 25;
+
+/** Changes listed under "Up next" during playback. */
+export const UP_NEXT_COUNT = 6;

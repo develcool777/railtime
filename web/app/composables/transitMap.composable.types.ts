@@ -1,5 +1,5 @@
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { LineInfo, MapView, StationInfo, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineInfo, MapView, StationInfo, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
 import type { Ref, ShallowRef } from 'vue';
 
@@ -30,6 +30,8 @@ export type TransitMapBinding = {
   station: Ref<StationInfo | null>;
   /** Every line, with its colour in the current theme. */
   lines: Ref<LineInfo[]>;
+  /** Every change in the timeline, planned ones last, coloured for the current theme. */
+  changes: Ref<ChangeInfo[]>;
   /** Where the map looks, once it stops moving. */
   view: Ref<MapView | null>;
 };

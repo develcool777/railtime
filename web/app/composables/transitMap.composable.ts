@@ -1,6 +1,6 @@
 import { useColorMode } from '#imports';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { LineInfo, MapView, Padding, StationInfo, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineInfo, MapView, Padding, StationInfo, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { TransitMapBinding, TransitMapMount } from './transitMap.composable.types';
@@ -35,6 +35,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
   const revealed = ref(0);
   const station = ref<StationInfo | null>(null);
   const lines = ref<LineInfo[]>([]);
+  const changes = ref<ChangeInfo[]>([]);
   // Where it opens, until it first moves: a linked view stays in the address.
   const view = ref<MapView | null>(mount.view ?? null);
   const onResize = () => map.value?.setPadding(panelPadding());
@@ -64,6 +65,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       transitMap.selectStation(info?.id ?? null);
     });
     lines.value = transitMap.getLines();
+    changes.value = transitMap.getChanges();
     map.value = transitMap;
     window.addEventListener('resize', onResize);
   });
@@ -80,9 +82,10 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       if (!transitMap) return;
       transitMap.setTheme(theme());
       lines.value = transitMap.getLines();
+      changes.value = transitMap.getChanges();
       if (station.value) station.value = transitMap.getStationInfo(station.value.id);
     },
   );
 
-  return { map, time, step, revealed, station, lines, view };
+  return { map, time, step, revealed, station, lines, changes, view };
 };

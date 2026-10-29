@@ -71,6 +71,12 @@ export type StepInfo = {
   stations: string[];
 };
 
+/** One change in the timeline, for a list of changes: its caption and where it plays. */
+export type ChangeInfo = StepInfo & {
+  /** Its position in the timeline: what `showChange` and `playFrom` take. */
+  index: number;
+};
+
 /** One line at a station, for a station panel. */
 export type StationLineInfo = {
   id: string;

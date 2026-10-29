@@ -86,6 +86,24 @@ export class Player {
   }
 
   /**
+   * Jumps to just before a step, on its date, with nothing animating: playing starts it.
+   *
+   * @param index - The step's position in the timeline.
+   */
+  public seekBefore(index: number): void {
+    this.seekStep(index, false);
+  }
+
+  /**
+   * Jumps to just after a step, on its date, with nothing animating.
+   *
+   * @param index - The step's position in the timeline.
+   */
+  public seekPast(index: number): void {
+    this.seekStep(index, true);
+  }
+
+  /**
    * Advances playback.
    *
    * @param seconds - Real seconds since the last tick.
@@ -139,6 +157,20 @@ export class Player {
       this.playing = false;
       events.push({ type: 'end' });
     }
+  }
+
+  /**
+   * Puts the clock on a step's date, the end for a planned one, and the cursor on it or past it.
+   *
+   * @param index - The step's position in the timeline; clamped to it.
+   * @param past - Whether the cursor goes past the step, or stays on it.
+   */
+  private seekStep(index: number, past: boolean): void {
+    const step = this.timeline.steps[clamp(index, 0, this.timeline.steps.length - 1)];
+    if (!step) return;
+    this.clock = step.planned ? this.end : clamp(step.time, this.timeline.start, this.end);
+    this.cursor = step.index + (past ? 1 : 0);
+    this.active = null;
   }
 
   /**
