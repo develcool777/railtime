@@ -46,7 +46,7 @@ const segmentAt = (stationA: string, stationB: string, position: number, lines: 
  * - `green` runs C–D from 1970, after D had closed: it passes D by
  * - a transfer between A and D, which opens in 1910
  * - Ukrainian names for the network, `red`, and D now and as Old D; none for the rest
- * - one plan, `extension`: `red` on from D to a new station E in 2030
+ * - one plan, `extension`: `red` on from D to a new station E, then a new station F between B and C
  *
  * @returns The network.
  */
@@ -82,9 +82,11 @@ export const tinyNetwork = (): Network => ({
   plans: {
     extension: {
       name: 'Extension',
-      description: 'Red on to E.',
-      stations: { e: stationAt('E', 4) },
-      segments: [segmentAt('d', 'e', 3, { red: { open: '2030-01-01' } })],
+      stations: { e: stationAt('E', 4), f: stationAt('F', 1.5) },
+      sections: [
+        { line: 'red', stations: ['d', 'e'] },
+        { line: 'red', stations: ['b', 'f', 'c'] },
+      ],
     },
   },
 });

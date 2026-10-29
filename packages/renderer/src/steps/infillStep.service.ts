@@ -38,7 +38,7 @@ export class InfillStepAnimation extends StepAnimation<InfillStep> {
     const lines = this.step.lines.map(line => resolveLine(state, line));
     return {
       kind: 'infill',
-      time: this.step.time,
+      time: this.date,
       title: `${this.nameOf(this.step.station)} opens`,
       subtitle: `on the ${lines.map(line => this.context.index.lineName(line.id)).join(' and ')}`,
       color: required(lines[0], 'line of an infill step').color,

@@ -19,12 +19,6 @@
           class="w-48"
           aria-label="Future plan"
           @update:modelValue="choosePlan(String($event))" />
-        <UPopover v-if="chosenPlan">
-          <UButton icon="i-lucide-info" color="neutral" variant="soft" aria-label="About this plan" />
-          <template #content>
-            <PlanNote :plan="chosenPlan" />
-          </template>
-        </UPopover>
       </div>
       <ExplorerHud :mode :time :stepActive="mode === 'history' && step !== null" />
       <StepCard v-if="mode === 'history'" :step :revealed />
@@ -52,9 +46,12 @@
         v-if="mode === 'explore'"
         :time="time?.time ?? range.end"
         :range
-        :isToday="!time || time.cursor === time.todayCursor"
+        :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
+        :isFuture="time?.future === true"
+        :hasPlan="!!plan"
         @playHistory="playHistory"
-        @seek="showDate" />
+        @seek="showDate"
+        @future="showFuture" />
       <PlaybackBar
         v-else
         :time="time?.time ?? range.start"
@@ -86,7 +83,6 @@
   import ExploreBar from './ExploreBar.vue';
   import ExplorerHud from './ExplorerHud.vue';
   import LinePanel from './LinePanel.vue';
-  import PlanNote from './PlanNote.vue';
   import PlaybackBar from './PlaybackBar.vue';
   import StationPanel from './StationPanel.vue';
   import StepCard from './StepCard.vue';
@@ -128,8 +124,10 @@
     if (!transitMap) return;
     const { start, end } = transitMap.range;
     if (opening.date !== undefined) transitMap.setDate(Math.min(Math.max(opening.date, start), end));
+    // A plan opens on its future, built.
+    else if (props.plan) transitMap.showFuture();
     // A station the network does not have is a stale link: open without it.
-    if (opening.station && props.network.stations[opening.station]) {
+    if (opening.station && (props.network.stations[opening.station] || chosenPlan.value?.stations?.[opening.station])) {
       station.value = transitMap.getStationInfo(opening.station);
       transitMap.selectStation(opening.station);
     }
@@ -137,9 +135,11 @@
 
   // While exploring, the address follows the map, so it can be shared; playback leaves it alone.
   const query = computed(() => {
-    const isToday = !time.value || time.value.cursor === time.value.todayCursor;
+    // No date is the default: today, or with a plan its future, which has no date.
+    const now = time.value;
+    const dated = now !== null && !now.future && (props.plan !== undefined || now.cursor !== now.todayCursor);
     return formatExplorerQuery({
-      ...(time.value && !isToday ? { date: time.value.time } : {}),
+      ...(dated ? { date: now.time } : {}),
       ...(view.value ? { view: view.value } : {}),
       ...(station.value ? { station: station.value.id } : {}),
       ...(props.plan ? { plan: props.plan } : {}),
@@ -174,14 +174,21 @@
     mode.value = 'history';
     map.value?.setSpeed(speed.value);
     map.value?.setCameraMode(camera.value);
-    map.value?.setDate(range.value.start);
+    // With a plan, the future plays from today; without, the history from the start.
+    map.value?.setDate(props.plan ? range.value.today : range.value.start);
     map.value?.play();
   };
 
   const exitHistory = () => {
     mode.value = 'explore';
-    map.value?.setDate(range.value.end);
+    showFuture();
     map.value?.fitNetwork();
+  };
+
+  /** The network as it ends: with a plan, its future built; without, today. */
+  const showFuture = () => {
+    if (props.plan) map.value?.showFuture();
+    else map.value?.setDate(range.value.end);
   };
 
   const seek = (date: number) => {

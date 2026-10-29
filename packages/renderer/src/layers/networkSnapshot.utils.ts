@@ -80,7 +80,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
     const key = `${segment.index}|${line.id}`;
-    const isPlanned = lineSegment.opens > state.today;
+    const isPlanned = lineSegment.section !== null;
     if (!closingNow(lineSegment) && !drawn.has(key)) {
       drawn.add(key);
       (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id)));

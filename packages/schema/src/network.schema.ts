@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Network } from './network.types';
-import { applyPlan } from './plan.utils.ts';
+import type { Network, Plan } from './network.types';
+import { buildPlan } from './plan.utils.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 const lngLat = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
@@ -43,11 +43,10 @@ const transferSchema = z.object({ stationA: z.string(), stationB: z.string() });
 const planSchema = z.object({
   name: z.string().min(1),
   names: names.optional(),
-  description: z.string().min(1),
-  sources: z.array(z.url()).optional(),
+  description: z.string().min(1).optional(),
   lines: z.record(z.string(), lineSchema).optional(),
   stations: z.record(z.string(), stationSchema).optional(),
-  segments: z.array(segmentSchema).optional(),
+  sections: z.array(z.object({ line: z.string(), stations: z.array(z.string()).min(2) })),
   transfers: z.array(transferSchema).optional(),
 });
 
@@ -109,6 +108,28 @@ const checkNetwork = (network: Network, problem: (message: string) => void): voi
 };
 
 /**
+ * A plan's ids that are already the network's, and its sections' lines and stations that are no one's.
+ *
+ * @param network - The network.
+ * @param plan - One of its plans.
+ * @returns A problem for each.
+ */
+const planReferenceProblems = (network: Network, plan: Plan): string[] => [
+  ...Object.keys(plan.lines ?? {})
+    .filter(line => network.lines[line])
+    .map(line => `line ${line} is already in the network`),
+  ...Object.keys(plan.stations ?? {})
+    .filter(station => network.stations[station])
+    .map(station => `station ${station} is already in the network`),
+  ...plan.sections.flatMap((section, position) => [
+    ...(network.lines[section.line] || plan.lines?.[section.line] ? [] : [`section ${position}: unknown line ${section.line}`]),
+    ...section.stations
+      .filter(station => !network.stations[station] && !plan.stations?.[station])
+      .map(station => `section ${position}: unknown station ${station}`),
+  ]),
+];
+
+/**
  * Checks each plan as the network it would build: its own ids new, its references and dates sound.
  * A problem the network already has is reported once, not again for every plan.
  *
@@ -119,10 +140,11 @@ const checkPlans = (network: Network, problem: (message: string) => void): void 
   const known = new Set<string>();
   checkNetwork(network, message => known.add(message));
   for (const [planId, plan] of Object.entries(network.plans ?? {})) {
-    for (const lineId of Object.keys(plan.lines ?? {})) if (network.lines[lineId]) problem(`plan ${planId}: line ${lineId} is already in the network`);
-    for (const stationId of Object.keys(plan.stations ?? {}))
-      if (network.stations[stationId]) problem(`plan ${planId}: station ${stationId} is already in the network`);
-    checkNetwork(applyPlan(network, planId), message => {
+    const references = planReferenceProblems(network, plan);
+    for (const message of references) problem(`plan ${planId}: ${message}`);
+    // Built only once its ids are sound: building needs every station's place.
+    if (references.length > 0) continue;
+    checkNetwork(buildPlan(network, planId).network, message => {
       if (!known.has(message)) problem(`plan ${planId}: ${message}`);
     });
   }

@@ -27,10 +27,11 @@ export type PlayedHistory = {
  * Plays a network's whole history at 1×, drawing every fifth frame of each step as the map would.
  *
  * @param network - The network.
+ * @param plan - One of its plans, built on it and played after its history.
  * @returns How it went.
  */
-export const playWholeHistory = (network: Network): PlayedHistory => {
-  const playback = playbackOf(network);
+export const playWholeHistory = (network: Network, plan?: string): PlayedHistory => {
+  const playback = playbackOf(network, plan);
   const { timeline, player } = playback;
   player.seek(timeline.start);
   player.playing = true;

@@ -12,8 +12,6 @@ export type RenderState = {
   visibleLines: Set<string>;
   /** A line's own colour in the current theme. */
   baseColor: (line: string) => string;
-  /** Today, as a timestamp: track opening after it is planned. */
-  today: number;
 };
 
 /** A line as drawn: the id it is drawn as and its colour now. */

@@ -10,6 +10,7 @@
   "exports": {
     "./network.types": "./src/network.types.ts",
     "./network.schema": "./src/network.schema.ts",
+    "./plan.types": "./src/plan.types.ts",
     "./plan.utils": "./src/plan.utils.ts"
   },
   "dependencies": {

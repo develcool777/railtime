@@ -23,18 +23,10 @@ describe('NetworkSchema', () => {
     expect(problemsOf(plannedNetwork())).toEqual([]);
   });
 
-  test("checks a plan's references against the network it would build", () => {
+  test("checks a plan's sections against the network and the plan", () => {
     const network = plannedNetwork();
-    network.plans!.extension!.segments!.push({
-      stationA: 'c',
-      stationB: 'x',
-      coordinates: [
-        [0.02, 51.5],
-        [0.03, 51.5],
-      ],
-      lines: { blue: { open: '2999-01-01' } },
-    });
-    expect(problemsOf(network)).toEqual(['plan extension: segment 2: unknown station x', 'plan extension: segment 2: unknown line blue']);
+    network.plans!.extension!.sections.push({ line: 'blue', stations: ['d', 'x'] });
+    expect(problemsOf(network)).toEqual(['plan extension: section 2: unknown line blue', 'plan extension: section 2: unknown station x']);
   });
 
   test('refuses a plan reusing an id the network has', () => {

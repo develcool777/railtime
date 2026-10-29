@@ -14,7 +14,7 @@
       <li v-for="line in station.lines" :key="line.id" class="flex items-center gap-2 text-sm" :class="{ 'opacity-60': line.closed }">
         <span class="h-1.5 w-5 flex-none rounded-full" :style="{ background: line.color }" />
         <span class="text-default flex-1">{{ line.name }}</span>
-        <span class="text-muted text-xs tabular-nums">{{ formatSpan(line.opened, line.closed, today) }}</span>
+        <span class="text-muted text-xs tabular-nums">{{ formatSpan(line.opened, line.closed) }}</span>
       </li>
     </ul>
     <div v-if="station.transfers.length > 0" class="border-default mt-3 border-t pt-3">
@@ -43,6 +43,5 @@
   import { formatFormerNames, formatSpan } from '~/utils/format.utils';
 
   defineProps<{ station: StationInfo }>();
-  const today = new Date().toISOString().slice(0, 10);
   const emit = defineEmits<{ close: []; select: [station: string] }>();
 </script>

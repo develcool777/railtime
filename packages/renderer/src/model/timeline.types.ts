@@ -4,8 +4,10 @@ import type { LineSegment, TrackSegment } from './networkIndex.types';
 type StepBase = {
   /** Position in the timeline; also the cursor at which the step plays. */
   index: number;
-  /** The step's date, as a UTC midnight timestamp. */
+  /** The step's date, as a UTC midnight timestamp; `Infinity` for a planned step, which has none. */
   time: number;
+  /** It builds a plan's section: after every dated step, in the plan's order. */
+  planned: boolean;
 };
 
 /** A connected stretch of one (effective) line opens. */
@@ -32,14 +34,14 @@ export type IdentityStep = StepBase & { kind: 'identity'; lines: string[]; text:
  */
 export type Step = OpenStep | CloseStep | InfillStep | StationCloseStep | RenameStep | IdentityStep;
 
-/** A step before the timeline numbers it. */
+/** A step before the timeline numbers it, and marks it planned by its time. */
 export type StepDraft =
-  | Omit<OpenStep, 'index'>
-  | Omit<CloseStep, 'index'>
-  | Omit<InfillStep, 'index'>
-  | Omit<StationCloseStep, 'index'>
-  | Omit<RenameStep, 'index'>
-  | Omit<IdentityStep, 'index'>;
+  | Omit<OpenStep, 'index' | 'planned'>
+  | Omit<CloseStep, 'index' | 'planned'>
+  | Omit<InfillStep, 'index' | 'planned'>
+  | Omit<StationCloseStep, 'index' | 'planned'>
+  | Omit<RenameStep, 'index' | 'planned'>
+  | Omit<IdentityStep, 'index' | 'planned'>;
 
 /** What a line is drawn as at a cursor: its own id or an alias's. `previousId` is set mid-way through an identity change. */
 export type LineIdentity = { id: string; previousId?: string };

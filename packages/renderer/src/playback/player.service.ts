@@ -7,7 +7,9 @@ import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './pla
 
 /**
  * Plays the timeline: the clock runs between dates, stops on a date, and plays that date's steps one
- * by one, each through its phases. Knows nothing of the map: it reports what happened as events.
+ * by one, each through its phases. Planned steps have no date: once the clock reaches the end, they
+ * play one after another while it stands there. Knows nothing of the map: it reports what happened as
+ * events.
  */
 export class Player {
   /** The clock, as a UTC timestamp. */
@@ -22,9 +24,9 @@ export class Player {
   public preSeconds = CAMERA_PRE_SECONDS;
   /** The step playing now, if any. */
   public active: ActivePlayback | null = null;
-  /** Today: where the map opens, and past which every change is planned. */
+  /** Today: where the map opens. */
   public readonly today: number;
-  /** Where playback ends: today, or the last planned change after it. */
+  /** Where the clock ends: today, or a dated step after it. Planned steps play here. */
   public readonly end: number;
   /** The steps to play. */
   private readonly timeline: Timeline;
@@ -34,10 +36,15 @@ export class Player {
   public constructor(timeline: Timeline, today: number, createAnimation: AnimationFactory) {
     this.timeline = timeline;
     this.today = today;
-    this.end = Math.max(today, timeline.steps.at(-1)?.time ?? today);
+    this.end = Math.max(today, timeline.lastDate);
     this.createAnimation = createAnimation;
     this.clock = today;
     this.cursor = timeline.cursorAt(today);
+  }
+
+  /** Whether the map shows a plan's future: a planned step is playing or has played. */
+  public get inFuture(): boolean {
+    return this.cursor > this.timeline.datedCount || this.active?.animation.step.planned === true;
   }
 
   /** The active step's phase, or `null` between steps. */
@@ -71,6 +78,13 @@ export class Player {
     this.active = null;
   }
 
+  /** Jumps past every step, planned ones too, with nothing animating: the network as it ends. */
+  public seekEnd(): void {
+    this.clock = this.end;
+    this.cursor = this.timeline.steps.length;
+    this.active = null;
+  }
+
   /**
    * Advances playback.
    *
@@ -100,25 +114,25 @@ export class Player {
     const next = this.timeline.steps[this.cursor];
     if (this.active) this.finishStep(events);
     else if (next) {
-      this.clock = next.time;
+      this.clock = next.planned ? this.end : next.time;
       this.startStep(next, events);
     }
     return events;
   }
 
   /**
-   * Runs the clock towards the next step, fast through quiet years, and starts it on its date.
+   * Runs the clock towards the next step, fast through quiet years, and starts it on its date; a
+   * planned step starts once the clock reaches the end.
    *
    * @param seconds - Real seconds since the last tick.
    * @param events - Filled with what happened.
    */
   private advanceClock(seconds: number, events: PlayerEvent[]): void {
     const next = this.timeline.steps[this.cursor];
-    const target = next ? next.time : this.end;
+    const target = next && !next.planned ? next.time : this.end;
     const yearsPerSecond = (target - this.clock) / YEAR_MS > SLOW_YEARS_PER_SECOND ? FAST_YEARS_PER_SECOND : SLOW_YEARS_PER_SECOND;
-    this.clock += yearsPerSecond * this.speed * seconds * YEAR_MS;
-    if (next && this.clock >= next.time) {
-      this.clock = next.time;
+    this.clock = Math.min(target, this.clock + yearsPerSecond * this.speed * seconds * YEAR_MS);
+    if (next && this.clock >= target) {
       this.startStep(next, events);
     } else if (!next && this.clock >= this.end) {
       this.clock = this.end;

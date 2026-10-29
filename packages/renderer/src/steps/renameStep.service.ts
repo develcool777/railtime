@@ -37,7 +37,7 @@ export class RenameStepAnimation extends StepAnimation<RenameStep> {
     const [first] = this.context.index.lineSegmentsAt(this.step.station);
     return {
       kind: 'rename',
-      time: this.step.time,
+      time: this.date,
       title: `${this.nameOf(this.step.station, this.step.time - DAY_MS)} renamed`,
       subtitle: `now ${this.nameOf(this.step.station)}`,
       color: first ? state.baseColor(first.line) : '#ffffff',

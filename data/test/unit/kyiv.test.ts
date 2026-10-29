@@ -1,4 +1,3 @@
-import { applyPlan } from '@railtime/schema/plan.utils';
 import { describe, expect, test } from 'vitest';
 import { cityNetwork, playWholeHistory } from '../support/history.utils';
 
@@ -11,8 +10,8 @@ describe('Kyiv', () => {
     expect(played.mostHighlighted).toBe(5);
   });
 
-  test.each(['under-construction', 'long-term'])("plays on through its %s plan to the plan's last change", plan => {
-    const played = playWholeHistory(applyPlan(cityNetwork('kyiv'), plan));
+  test.each(['under-construction', 'long-term'])('plays on through its %s plan, section by section', plan => {
+    const played = playWholeHistory(cityNetwork('kyiv'), plan);
     expect(played.started).toBe(played.steps);
     expect(played.cursor).toBe(played.steps);
     expect(played.steps).toBeGreaterThan(playWholeHistory(cityNetwork('kyiv')).steps);

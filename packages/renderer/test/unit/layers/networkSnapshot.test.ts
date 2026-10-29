@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { applyPlan } from '@railtime/schema/plan.utils';
 import { buildNetworkSnapshot } from '../../../src/layers/networkSnapshot.utils';
 import { toTimestamp } from '../../../src/model/date.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -15,15 +14,16 @@ describe('NetworkSnapshotUtils', () => {
       expect(snapshot.sideBySide.get(1)).toEqual(['red', 'blue']);
     });
 
-    test('draws track opening after today as planned, and a station only it reaches', () => {
-      const playback = playbackOf(applyPlan(tinyNetwork(), 'extension'));
-      playback.player.seek(toTimestamp('2031-01-01'));
+    test("draws a plan's track as planned, and a station only it reaches", () => {
+      const playback = playbackOf(tinyNetwork(), 'extension');
+      playback.player.seekEnd();
       const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
       const extension = playback.index.segments.at(-1)!.coordinates;
       expect(snapshot.planned.features.map(feature => feature.geometry.coordinates)).toEqual([extension]);
       expect(snapshot.lines.features.map(feature => feature.geometry.coordinates)).not.toContainEqual(extension);
-      // D is long closed on red: only E is new.
+      // D is long closed on red, and F stands on built track: only E is a plan's alone.
       expect([...snapshot.plannedStations]).toEqual(['e']);
+      expect(snapshot.stations.has('f')).toBe(true);
     });
 
     test('links a transfer once both its stations are on the map, and draws both as interchanges', () => {

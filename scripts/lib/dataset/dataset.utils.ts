@@ -95,7 +95,8 @@ const partFields = (parts: Pick<Network, 'stations' | 'segments' | 'transfers'> 
 };
 
 /**
- * A plan, its description first and its parts laid out as the network's.
+ * A plan: its name and description, its lines and stations as the network's, then its sections, one
+ * per line in the order they are built, and its transfers.
  *
  * @param plan - The plan.
  * @param indent - The plan's own indentation.
@@ -106,10 +107,10 @@ const planLines = (plan: Plan, indent: string): Written => ({
     [
       ['name', plan.name],
       ...(plan.names ? [['names', plan.names] as [string, unknown]] : []),
-      ['description', plan.description],
-      ...(plan.sources ? [['sources', plan.sources] as [string, unknown]] : []),
-      ...(plan.lines && Object.keys(plan.lines).length > 0 ? [['lines', recordLines(Object.entries(plan.lines), `${indent}  `)] as [string, unknown]] : []),
-      ...partFields({ stations: plan.stations ?? {}, segments: plan.segments ?? [], ...(plan.transfers ? { transfers: plan.transfers } : {}) }, indent),
+      ...(plan.description ? [['description', plan.description] as [string, unknown]] : []),
+      ...partFields({ stations: plan.stations ?? {}, segments: [], ...(plan.lines ? { lines: plan.lines } : {}) }, indent),
+      ['sections', arrayLines(plan.sections, `${indent}  `)],
+      ...partFields({ stations: {}, segments: [], ...(plan.transfers ? { transfers: plan.transfers } : {}) }, indent),
     ],
     indent,
   ),

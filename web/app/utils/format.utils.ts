@@ -35,13 +35,12 @@ export const formatMonth = (time: number): string => {
 /**
  * When a line served a station.
  *
- * @param opened - ISO date it opened there.
+ * @param opened - ISO date it opened there, or `null` for a plan's line, which has none.
  * @param closed - ISO date it closed there, if it has.
- * @param today - Today's ISO date: an opening after it is planned.
- * @returns "since 1906", "1906–1994" or "planned 2030".
+ * @returns "since 1906", "1906–1994" or "planned".
  */
-export const formatSpan = (opened: string, closed: string | undefined, today: string): string => {
-  if (opened > today) return `planned ${opened.slice(0, 4)}`;
+export const formatSpan = (opened: string | null, closed?: string): string => {
+  if (opened === null) return 'planned';
   return closed ? `${opened.slice(0, 4)}–${closed.slice(0, 4)}` : `since ${opened.slice(0, 4)}`;
 };
 
@@ -54,20 +53,6 @@ export const formatSpan = (opened: string, closed: string | undefined, today: st
 export const formatFormerNames = (formerNames: FormerNameInfo[]): string => {
   const names = formerNames.map(former => `${[former.name, ...former.otherNames].join(' / ')} (until ${former.until.slice(0, 4)})`);
   return names.length > 0 ? `Formerly ${names.join(', ')}` : '';
-};
-
-/**
- * A source link as people read it: its site, and the page's own name when the address gives one.
- *
- * @param url - The source, a URL (the schema checks).
- * @returns "uk.wikipedia.org · Сирецько-Печерська лінія", or the site alone.
- */
-export const sourceLabel = (url: string): string => {
-  const { hostname, pathname } = new URL(url);
-  const site = hostname.replace(/^www\./, '');
-  const page = decodeURIComponent(pathname.split('/').findLast(part => part.length > 0) ?? '').replaceAll('_', ' ');
-  // A number is an article or object id, not a name.
-  return page && !/^\d+$/.test(page) ? `${site} · ${page}` : site;
 };
 
 /**

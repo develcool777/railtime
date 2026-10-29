@@ -65,7 +65,7 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
     );
     return {
       kind: 'open',
-      time: this.step.time,
+      time: this.date,
       title: `${index.lineName(this.step.line)} ${this.verb(existed)}`,
       subtitle: `${this.nameOf(required(reach[0], 'first station reached').station)} – ${this.nameOf(required(reach.at(-1), 'last station reached').station)}`,
       color: state.baseColor(this.step.line),

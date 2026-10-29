@@ -103,21 +103,28 @@ export type Transfer = {
   stationB: string;
 };
 
+/** A stretch of line a plan builds, through its stations in order. */
+export type PlanSection = {
+  line: string;
+  /**
+   * Station ids: the network's or the plan's. A new station between two neighbours on the line's
+   * track stands on that track; anywhere else, the section runs straight from station to station.
+   */
+  stations: string[];
+};
+
 /**
- * A future the network may have: the lines, stations, track and transfers it would add, each dated
- * when it is expected to open. Shown only when chosen; ids are its own, but its track and transfers
- * may join the network's stations, and its track may carry the network's lines.
+ * A future the network may have: lines and stations it would add, and the sections it would build,
+ * in the order they are built. Undated: its order is all the time it has (see `buildPlan`).
  */
 export type Plan = {
   name: string;
   names?: Names;
-  /** What it is, how far along it is, and where its dates come from. */
-  description: string;
-  /** Where it is documented. */
-  sources?: string[];
+  /** What it is and where it comes from: for whoever keeps the dataset. */
+  description?: string;
   lines?: Record<string, Line>;
   stations?: Record<string, Station>;
-  segments?: Segment[];
+  sections: PlanSection[];
   transfers?: Transfer[];
 };
 
@@ -136,6 +143,6 @@ export type Network = {
   segments: Segment[];
   /** Changes between stations that are not one station: drawn linked, wherever both are open. */
   transfers?: Transfer[];
-  /** Futures it may have, by id: none is part of the network until chosen (see `applyPlan`). */
+  /** Futures it may have, by id: none is part of the network until chosen (see `buildPlan`). */
   plans?: Record<string, Plan>;
 };

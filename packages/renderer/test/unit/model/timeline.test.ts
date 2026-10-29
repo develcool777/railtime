@@ -3,6 +3,7 @@ import { toTimestamp } from '../../../src/model/date.utils';
 import { NetworkIndex } from '../../../src/model/networkIndex.service';
 import { Timeline } from '../../../src/model/timeline.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { playbackOf } from '../../support/playback.utils';
 
 const timelineOf = (network = tinyNetwork()) => {
   const index = new NetworkIndex(network);
@@ -91,5 +92,22 @@ describe('Timeline', () => {
     expect(timeline.identityOf('pink', identity.index)).toEqual({ id: 'red' });
     expect(timeline.identityOf('pink', identity.index, true)).toEqual({ id: 'pink', previousId: 'red' });
     expect(timeline.identityOf('pink', identity.index + 1)).toEqual({ id: 'pink' });
+  });
+
+  test("follows every dated step with a plan's, undated, in the plan's order", () => {
+    const timeline = new Timeline(playbackOf(tinyNetwork(), 'extension').index);
+    const planned = timeline.steps.slice(timeline.datedCount);
+    expect(planned.map(step => [step.kind, step.planned, step.time])).toEqual([
+      ['open', true, Infinity],
+      ['infill', true, Infinity],
+    ]);
+    expect(timeline.steps.slice(0, timeline.datedCount).every(step => !step.planned)).toBe(true);
+    expect(timeline.cursorAt(toTimestamp('2999-01-01'))).toBe(timeline.datedCount);
+  });
+
+  test("keeps a plan's station off its line until its section plays", () => {
+    const timeline = new Timeline(playbackOf(tinyNetwork(), 'extension').index);
+    expect(timeline.servesStation('f', 'red', timeline.steps.length - 1)).toBe(false);
+    expect(timeline.servesStation('f', 'red', timeline.steps.length)).toBe(true);
   });
 });

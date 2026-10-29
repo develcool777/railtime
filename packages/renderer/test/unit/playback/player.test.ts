@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { applyPlan } from '@railtime/schema/plan.utils';
 import { toTimestamp } from '../../../src/model/date.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { playbackOf } from '../../support/playback.utils';
@@ -16,11 +15,29 @@ describe('Player', () => {
     expect(player.cursor).toBe(timeline.steps.length);
   });
 
-  test('opens at today, and runs on to the last planned change after it', () => {
-    const { timeline, player } = playbackOf(applyPlan(tinyNetwork(), 'extension'));
+  test("opens at today; plays a plan's steps after every dated one, the clock standing at the end", () => {
+    const { timeline, player } = playbackOf(tinyNetwork(), 'extension');
     expect(player.clock).toBe(player.today);
-    expect(player.cursor).toBe(timeline.steps.length - 1);
-    expect(player.end).toBe(toTimestamp('2030-01-01'));
+    expect(player.cursor).toBe(timeline.datedCount);
+    expect(player.inFuture).toBe(false);
+    player.playing = true;
+    const started: boolean[] = [];
+    for (let frame = 0; frame < 2000 && player.playing; frame++) {
+      for (const event of player.tick(1 / 30)) if (event.type === 'stepStart') started.push(event.playback.animation.step.planned);
+      if (player.active) expect(player.inFuture).toBe(true);
+      expect(player.clock).toBe(player.end);
+    }
+    expect(started).toEqual([true, true]);
+    expect(player.cursor).toBe(timeline.steps.length);
+  });
+
+  test('jumps to the end, the plan built', () => {
+    const { timeline, player } = playbackOf(tinyNetwork(), 'extension');
+    player.seekEnd();
+    expect(player.cursor).toBe(timeline.steps.length);
+    expect(player.inFuture).toBe(true);
+    player.seek(toTimestamp('1950-01-01'));
+    expect(player.inFuture).toBe(false);
   });
 
   test('skips to the next step, then finishes it', () => {

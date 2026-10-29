@@ -7,10 +7,7 @@
       :ui="{ body: 'p-0 sm:p-0' }">
       <div class="h-1.5" :style="{ background: step.color }" />
       <div class="px-4 py-3">
-        <p class="text-muted flex items-center gap-1.5 text-xs">
-          {{ formatDay(step.time) }}
-          <UBadge v-if="step.planned" label="Planned" color="neutral" variant="subtle" size="sm" />
-        </p>
+        <p class="text-muted text-xs">{{ step.time === null ? 'Future' : formatDay(step.time) }}</p>
         <p class="text-highlighted mt-0.5 text-base leading-snug font-semibold">{{ step.title }}</p>
         <p v-if="step.subtitle" class="text-muted text-sm">{{ step.subtitle }}</p>
         <ul v-if="shownStations.length" class="mt-2 flex flex-wrap gap-1.5" role="list">

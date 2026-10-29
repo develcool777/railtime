@@ -28,11 +28,13 @@ map.range; // { start, end, today }: end is past today when a plan is shown
 A station's names in other languages (`names`) are on its label, beneath its English name, and in
 `getStationInfo().otherNames`.
 
-**Plans.** `new TransitMap({ …, plan: '<plan id>' })` builds one of the network's `plans` on top of
-it (`applyPlan` in `@railtime/schema`). The map opens at today; anything dated after today is
-planned: its track is drawn dashed in its line's colour, a station only it reaches is a ring, the
-timeline runs on to its last date, and its steps' `StepInfo` has `planned: true`. `TimeState.todayCursor`
-is the cursor at today. A different plan is a new `TransitMap`.
+**Plans.** `new TransitMap({ …, plan: '<plan id>' })` builds one of the network's `plans` on it
+(`buildPlan` in `@railtime/schema`). A plan is undated: the timeline puts its sections after every
+dated step, as `planned` steps at time `Infinity`, and the player plays them one by one once the
+clock reaches its end, the clock standing there. Their track is drawn dashed in its line's colour, a
+station only they reach is a ring, their `StepInfo.time` is `null`, and `TimeState.future` is true
+while one plays or once one has. `map.showFuture()` shows the plan built; `setDate` goes back into
+the dates. A different plan is a new `TransitMap`.
 
 ## Structure
 
