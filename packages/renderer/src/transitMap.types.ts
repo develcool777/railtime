@@ -70,7 +70,7 @@ export type StationInfo = {
   /** Its name on the date shown. */
   name: string;
   lines: StationLineInfo[];
-  /** Its earlier names, oldest first. */
+  /** The names it had before the date shown, oldest first. */
   formerNames: FormerName[];
   /** Stations to change to from here, on the date shown. */
   transfers: TransferInfo[];
@@ -92,7 +92,7 @@ export type TransitMapEvents = {
   step: StepInfo | null;
   /** How many of the current step's stations have appeared. */
   stepProgress: number;
-  /** A station was clicked, or the map away from any station (`null`). */
+  /** A station was clicked; or the map away from any station, or the selected one left the map (`null`). */
   stationClick: StationInfo | null;
   /** Playback reached today. */
   end: undefined;

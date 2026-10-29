@@ -13,7 +13,7 @@ import { buildNetworkSnapshot } from './layers/networkSnapshot.utils';
 import { StationLayer } from './layers/stationLayer.service';
 import { DEFAULT_BASEMAP, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/minimap.service';
-import { DAY_MS, toIsoDate, todayTimestamp } from './model/date.utils';
+import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.utils';
 import { NetworkIndex } from './model/networkIndex.service';
 import { Timeline } from './model/timeline.service';
 import type { Step } from './model/timeline.types';
@@ -341,7 +341,10 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       id: station,
       name: this.index.stationName(station, this.player.clock),
       lines: lines.sort((first, second) => first.opened.localeCompare(second.opened)),
-      formerNames: (info.formerNames ?? []).map(former => ({ name: this.index.nameIn(former), until: former.until })),
+      // Only the names it had dropped by the date shown.
+      formerNames: (info.formerNames ?? [])
+        .filter(former => toTimestamp(former.until) <= this.player.clock)
+        .map(former => ({ name: this.index.nameIn(former), until: former.until })),
       transfers: this.transfersFrom(station),
     };
   }
@@ -550,7 +553,11 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       this.revealedCount = drawing.highlighted.size;
       this.emit('stepProgress', this.revealedCount);
     }
-    if (this.selectedStation && !stations.has(this.selectedStation)) this.selectStation(null);
+    // The selected station is not on the map on this date (gone, or not yet open): let it go, and say so.
+    if (this.selectedStation && !stations.has(this.selectedStation)) {
+      this.selectStation(null);
+      this.emit('stationClick', null);
+    }
   }
 
   /**
