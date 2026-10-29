@@ -110,4 +110,14 @@ describe('London', () => {
     // About 24 minutes at 1×: the bound catches a history that never ends.
     expect(played.seconds).toBeLessThan(60 * 60);
   });
+
+  test.each(['under-construction', 'surrey-canal', 'bakerloo-extension', 'crossrail-2', 'dlr-thamesmead', 'west-london-orbital', 'croxley-rail-link'])(
+    'plays on through its %s plan, section by section',
+    plan => {
+      const played = playWholeHistory(london, plan);
+      expect(played.started).toBe(played.steps);
+      expect(played.cursor).toBe(played.steps);
+      expect(played.steps).toBeGreaterThan(playWholeHistory(london).steps);
+    },
+  );
 });

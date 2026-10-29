@@ -225,5 +225,82 @@
     {"stationA":"shudehill","stationB":"victoria","lines":{"city":{"open":"1992-04-27"}},"coordinates":[[-2.2391,53.48529],[-2.23968,53.48581],[-2.24115,53.48634],[-2.24135,53.48673],[-2.24194,53.48736],[-2.24188,53.48752],[-2.24141,53.48783]]},
     {"stationA":"st-werburghs-road","stationB":"withington","lines":{"south-manchester":{"open":"2013-05-23"}},"coordinates":[[-2.26567,53.43886],[-2.24931,53.43278]]},
     {"stationA":"the-trafford-centre","stationB":"trafford-palazzo","lines":{"trafford-park":{"open":"2020-03-22"}},"coordinates":[[-2.34784,53.46799],[-2.34644,53.46731],[-2.34368,53.46613],[-2.34274,53.46599],[-2.3421,53.46574]]}
-  ]
+  ],
+  "plans": {
+    "picc-vic": {
+      "name": "Picc-Vic tunnel",
+      "status": "abandoned",
+      "description": "SELNEC PTE's 1971 plan for an underground rail link under the city centre between Piccadilly and Victoria, joining the Bury line to the lines south of Piccadilly through five stations; the government refused the grant in 1973 and the scheme was abandoned in 1977.",
+      "lines": {
+        "picc-vic": {"name":"Picc-Vic","network":"metrolink","mode":"tram","color":"#1F4E9C"}
+      },
+      "stations": {
+        "princess-street": {"name":"Princess Street","coordinate":[-2.239,53.4754]},
+        "royal-exchange": {"name":"Royal Exchange","coordinate":[-2.2447,53.4826]}
+      },
+      "sections": [
+        {"line":"picc-vic","stations":["piccadilly","princess-street","st-peters-square"]},
+        {"line":"picc-vic","stations":["st-peters-square","royal-exchange","victoria"]}
+      ],
+      "transfers": [
+        {"stationA":"exchange-square","stationB":"royal-exchange"}
+      ]
+    },
+    "bee-network-2040": {
+      "name": "Bee Network 2040",
+      "status": "planned",
+      "description": "The Metrolink and tram-train extensions of Greater Manchester's Transport Strategy 2040 and its delivery plans, promoted by TfGM and the Combined Authority: East Didsbury to Stockport (a business case going to the government in 2026), the Wythenshawe airport loop, Middleton, Stalybridge, Port Salford and Salford Crescent, and tram-trains onto rail lines to Heywood and Bury (given £5.7m for planning in 2025), Ashton via Denton, Hazel Grove, Wilmslow and Hale. None is funded for construction.",
+      "lines": {
+        "middleton": {"name":"Middleton","network":"metrolink","mode":"tram","color":"#4C9A2A"},
+        "denton": {"name":"Stockport–Ashton","network":"metrolink","mode":"tram","color":"#B5651D"},
+        "salford-crescent": {"name":"Salford Crescent","network":"metrolink","mode":"tram","color":"#2A7AB0"},
+        "greenfield": {"name":"Greenfield","network":"metrolink","mode":"tram","color":"#C2185B"}
+      },
+      "stations": {
+        "davenport": {"name":"Davenport","coordinate":[-2.15215,53.39073]},
+        "davenport-green": {"name":"Davenport Green","coordinate":[-2.2915,53.3745]},
+        "denton": {"name":"Denton","coordinate":[-2.1306,53.4575]},
+        "edgeley": {"name":"Edgeley","coordinate":[-2.1625,53.40583]},
+        "gorsey-bank": {"name":"Gorsey Bank","coordinate":[-2.187,53.404]},
+        "greenfield": {"name":"Greenfield","coordinate":[-2.0142,53.5388]},
+        "grotton": {"name":"Grotton","coordinate":[-2.051,53.534]},
+        "guide-bridge": {"name":"Guide Bridge","coordinate":[-2.11412,53.47476]},
+        "hale": {"name":"Hale","coordinate":[-2.3475,53.37889]},
+        "hazel-grove": {"name":"Hazel Grove","coordinate":[-2.1226,53.3777]},
+        "heaton-mersey": {"name":"Heaton Mersey","coordinate":[-2.2083,53.4107]},
+        "heywood": {"name":"Heywood","coordinate":[-2.2069,53.5889]},
+        "middleton": {"name":"Middleton","coordinate":[-2.2,53.5479]},
+        "newall-green": {"name":"Newall Green","coordinate":[-2.29377,53.37992]},
+        "port-salford": {"name":"Port Salford","coordinate":[-2.3855,53.474]},
+        "reddish-south": {"name":"Reddish South","coordinate":[-2.158,53.4361]},
+        "salford-crescent": {"name":"Salford Crescent","coordinate":[-2.27583,53.48639]},
+        "salford-reds": {"name":"Salford Reds","coordinate":[-2.375,53.4694]},
+        "stalybridge": {"name":"Stalybridge","coordinate":[-2.0647,53.4841]},
+        "stockport-interchange": {"name":"Stockport Interchange","coordinate":[-2.16294,53.40862]},
+        "styal": {"name":"Styal","coordinate":[-2.24,53.348]},
+        "trafford-quays": {"name":"Trafford Quays","coordinate":[-2.362,53.4683]},
+        "wilmslow": {"name":"Wilmslow","coordinate":[-2.226,53.327]},
+        "woodsmoor": {"name":"Woodsmoor","coordinate":[-2.14155,53.3862]},
+        "wythenshawe-hospital": {"name":"Wythenshawe Hospital","coordinate":[-2.2893,53.3883]}
+      },
+      "sections": [
+        {"line":"south-manchester","stations":["east-didsbury","heaton-mersey","gorsey-bank"]},
+        {"line":"south-manchester","stations":["gorsey-bank","edgeley","stockport-interchange"]},
+        {"line":"south-manchester","stations":["edgeley","davenport","woodsmoor","hazel-grove"]},
+        {"line":"denton","stations":["stockport-interchange","reddish-south","denton"]},
+        {"line":"denton","stations":["denton","guide-bridge","ashton-under-lyne"]},
+        {"line":"airport","stations":["roundthorn","wythenshawe-hospital","newall-green"]},
+        {"line":"airport","stations":["newall-green","davenport-green","manchester-airport"]},
+        {"line":"airport","stations":["manchester-airport","styal","wilmslow"]},
+        {"line":"middleton","stations":["bowker-vale","middleton"]},
+        {"line":"middleton","stations":["middleton","westwood"]},
+        {"line":"east-manchester","stations":["ashton-under-lyne","stalybridge"]},
+        {"line":"trafford-park","stations":["the-trafford-centre","trafford-quays","salford-reds","port-salford"]},
+        {"line":"salford-crescent","stations":["mediacityuk","salford-crescent"]},
+        {"line":"oldham-rochdale","stations":["rochdale-railway-station","heywood","bury"]},
+        {"line":"greenfield","stations":["oldham-mumps","grotton","greenfield"]},
+        {"line":"altrincham","stations":["altrincham","hale"]}
+      ]
+    }
+  }
 }

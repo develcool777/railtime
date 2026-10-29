@@ -967,5 +967,179 @@
     {"stationA":"seven-sisters","stationB":"south-tottenham"},
     {"stationA":"walthamstow-central","stationB":"walthamstow-queens-road"},
     {"stationA":"white-city","stationB":"wood-lane"}
-  ]
+  ],
+  "plans": {
+    "under-construction": {
+      "name": "Under construction",
+      "status": "under-construction",
+      "description": "Old Oak Common, the interchange being built in west London for HS2, where the Elizabeth line and Great Western trains will also call on new surface platforms; its box was dug by 2024 and it is due to open with HS2's first services in the early 2030s.",
+      "stations": {
+        "old-oak-common": {"name":"Old Oak Common","coordinate":[-0.24798,51.52493]}
+      },
+      "sections": [
+        {"line":"elizabeth","stations":["paddington","old-oak-common","acton-main-line"]}
+      ]
+    },
+    "surrey-canal": {
+      "name": "Surrey Canal station",
+      "status": "proposed",
+      "description": "An infill station on the Overground between Surrey Quays and Queens Road Peckham, by Millwall's ground, first funded in 2011 as New Bermondsey and renamed Surrey Canal in 2021; it has planning permission but is still awaiting the funding to build it.",
+      "stations": {
+        "surrey-canal": {"name":"Surrey Canal","coordinate":[-0.04934,51.48427]}
+      },
+      "sections": [
+        {"line":"windrush","stations":["surrey-quays","surrey-canal","queens-road-peckham"]}
+      ]
+    },
+    "bakerloo-extension": {
+      "name": "Bakerloo line extension",
+      "status": "proposed",
+      "description": "TfL's extension of the Bakerloo line from Elephant & Castle under the Old Kent Road to New Cross Gate and Lewisham, safeguarded in 2021 and on hold for funding, with a later phase taking over the Hayes line and its Beckenham Junction spur, as consulted in 2014.",
+      "stations": {
+        "beckenham-junction": {"name":"Beckenham Junction","coordinate":[-0.0257,51.4109]},
+        "burgess-park": {"name":"Burgess Park","coordinate":[-0.07679,51.48911]},
+        "catford-bridge": {"name":"Catford Bridge","coordinate":[-0.025,51.4446]},
+        "clock-house": {"name":"Clock House","coordinate":[-0.041,51.4085]},
+        "eden-park": {"name":"Eden Park","coordinate":[-0.0262,51.39]},
+        "elmers-end": {"name":"Elmers End","coordinate":[-0.04989,51.39778]},
+        "hayes": {"name":"Hayes","coordinate":[0.0102,51.3765]},
+        "ladywell": {"name":"Ladywell","coordinate":[-0.0192,51.4562]},
+        "lewisham": {"name":"Lewisham","coordinate":[-0.01452,51.4654]},
+        "lower-sydenham": {"name":"Lower Sydenham","coordinate":[-0.0336,51.4245]},
+        "new-beckenham": {"name":"New Beckenham","coordinate":[-0.0348,51.4164]},
+        "old-kent-road": {"name":"Old Kent Road","coordinate":[-0.05923,51.48021]},
+        "west-wickham": {"name":"West Wickham","coordinate":[-0.0145,51.3813]}
+      },
+      "sections": [
+        {"line":"bakerloo","stations":["elephant-and-castle","burgess-park","old-kent-road","new-cross-gate","lewisham"]},
+        {"line":"bakerloo","stations":["lewisham","ladywell","catford-bridge","lower-sydenham"]},
+        {"line":"bakerloo","stations":["lower-sydenham","new-beckenham","clock-house","elmers-end"]},
+        {"line":"bakerloo","stations":["elmers-end","eden-park","west-wickham","hayes"]},
+        {"line":"bakerloo","stations":["new-beckenham","beckenham-junction"]}
+      ]
+    },
+    "crossrail-2": {
+      "name": "Crossrail 2",
+      "status": "abandoned",
+      "description": "A second cross-London railway from south-west London and Surrey to the Lea Valley, tunnelled from Wimbledon to Tottenham Hale and New Southgate; its route was safeguarded in 2015 and consulted on that year, with Balham preferred to Tooting Broadway and Wood Green offered instead of Turnpike Lane and Alexandra Palace, before it was shelved in 2020.",
+      "lines": {
+        "cr2": {"name":"Crossrail 2","network":"elizabeth","mode":"suburban-rail","color":"#9B7BD4"}
+      },
+      "stations": {
+        "alexandra-palace": {"name":"Alexandra Palace","coordinate":[-0.1197,51.5983]},
+        "berrylands": {"name":"Berrylands","coordinate":[-0.2803,51.3988]},
+        "brimsdown": {"name":"Brimsdown","coordinate":[-0.0308,51.6556]},
+        "broxbourne": {"name":"Broxbourne","coordinate":[-0.011,51.747]},
+        "chessington-north": {"name":"Chessington North","coordinate":[-0.3005,51.3642]},
+        "chessington-south": {"name":"Chessington South","coordinate":[-0.308,51.3569]},
+        "enfield-lock": {"name":"Enfield Lock","coordinate":[-0.0284,51.6709]},
+        "epsom": {"name":"Epsom","coordinate":[-0.269,51.334]},
+        "ewell-west": {"name":"Ewell West","coordinate":[-0.2569,51.3502]},
+        "fulwell": {"name":"Fulwell","coordinate":[-0.3508,51.4334]},
+        "hampton": {"name":"Hampton","coordinate":[-0.3717,51.4159]},
+        "hampton-court": {"name":"Hampton Court","coordinate":[-0.3425,51.4028]},
+        "hampton-wick": {"name":"Hampton Wick","coordinate":[-0.3107,51.4141]},
+        "kempton-park": {"name":"Kempton Park","coordinate":[-0.4095,51.421]},
+        "kings-road-chelsea": {"name":"King's Road Chelsea","coordinate":[-0.169,51.4875]},
+        "kingston": {"name":"Kingston","coordinate":[-0.3012,51.4127]},
+        "malden-manor": {"name":"Malden Manor","coordinate":[-0.261,51.385]},
+        "meridian-water": {"name":"Meridian Water","coordinate":[-0.0501,51.61]},
+        "motspur-park": {"name":"Motspur Park","coordinate":[-0.2397,51.3958]},
+        "new-malden": {"name":"New Malden","coordinate":[-0.256,51.4039]},
+        "new-southgate": {"name":"New Southgate","coordinate":[-0.1432,51.6142]},
+        "norbiton": {"name":"Norbiton","coordinate":[-0.2838,51.4124]},
+        "northumberland-park": {"name":"Northumberland Park","coordinate":[-0.0539,51.6019]},
+        "ponders-end": {"name":"Ponders End","coordinate":[-0.03518,51.6421]},
+        "raynes-park": {"name":"Raynes Park","coordinate":[-0.2299,51.4094]},
+        "shepperton": {"name":"Shepperton","coordinate":[-0.44669,51.39686]},
+        "stoneleigh": {"name":"Stoneleigh","coordinate":[-0.2485,51.363]},
+        "sunbury": {"name":"Sunbury","coordinate":[-0.4178,51.4183]},
+        "surbiton": {"name":"Surbiton","coordinate":[-0.3044,51.3926]},
+        "teddington": {"name":"Teddington","coordinate":[-0.3325,51.4247]},
+        "thames-ditton": {"name":"Thames Ditton","coordinate":[-0.3383,51.3886]},
+        "tolworth": {"name":"Tolworth","coordinate":[-0.2794,51.3768]},
+        "upper-halliford": {"name":"Upper Halliford","coordinate":[-0.431,51.413]},
+        "waltham-cross": {"name":"Waltham Cross","coordinate":[-0.0266,51.6851]},
+        "worcester-park": {"name":"Worcester Park","coordinate":[-0.2451,51.3812]}
+      },
+      "sections": [
+        {"line":"cr2","stations":["victoria","tottenham-court-road","euston","angel","dalston-junction"]},
+        {"line":"cr2","stations":["victoria","kings-road-chelsea","clapham-junction","balham","wimbledon"]},
+        {"line":"cr2","stations":["dalston-junction","seven-sisters","tottenham-hale"]},
+        {"line":"cr2","stations":["seven-sisters","turnpike-lane","alexandra-palace","new-southgate"]},
+        {"line":"cr2","stations":["tottenham-hale","northumberland-park","meridian-water","ponders-end","brimsdown"]},
+        {"line":"cr2","stations":["brimsdown","enfield-lock","waltham-cross","cheshunt","broxbourne"]},
+        {"line":"cr2","stations":["wimbledon","raynes-park","new-malden"]},
+        {"line":"cr2","stations":["new-malden","berrylands","surbiton","thames-ditton","hampton-court"]},
+        {"line":"cr2","stations":["new-malden","norbiton","kingston","hampton-wick","teddington"]},
+        {"line":"cr2","stations":["teddington","fulwell","hampton","kempton-park","sunbury"]},
+        {"line":"cr2","stations":["sunbury","upper-halliford","shepperton"]},
+        {"line":"cr2","stations":["raynes-park","motspur-park","worcester-park","stoneleigh","ewell-west","epsom"]},
+        {"line":"cr2","stations":["motspur-park","malden-manor","tolworth","chessington-north","chessington-south"]}
+      ],
+      "transfers": [
+        {"stationA":"dalston-junction","stationB":"dalston-kingsland"},
+        {"stationA":"euston","stationB":"kings-cross-st-pancras"}
+      ]
+    },
+    "dlr-thamesmead": {
+      "name": "DLR to Thamesmead",
+      "status": "proposed",
+      "description": "TfL's branch of the DLR from Gallions Reach to Beckton Riverside and under the Thames to Thamesmead, consulted in 2024 and 2025 and backed by borrowing approved in 2025; construction could start in 2029 for an opening in the early 2030s.",
+      "lines": {
+        "dlr": {"name":"DLR","network":"underground","mode":"light-metro","color":"#00A4A7"}
+      },
+      "stations": {
+        "beckton-riverside": {"name":"Beckton Riverside","coordinate":[0.07905,51.51473]},
+        "gallions-reach": {"name":"Gallions Reach","coordinate":[0.0719,51.5089]},
+        "thamesmead": {"name":"Thamesmead","coordinate":[0.10385,51.50572]}
+      },
+      "sections": [
+        {"line":"dlr","stations":["gallions-reach","beckton-riverside","thamesmead"]}
+      ]
+    },
+    "west-london-orbital": {
+      "name": "West London Orbital",
+      "status": "proposed",
+      "description": "An Overground route from Hendon to Hounslow over the Dudding Hill freight line and the Kew curve, with new stations at Neasden, Harlesden, Old Oak Common Lane and Lionel Road; promoted by TfL, the West London Alliance boroughs and the OPDC, it went to its first public consultation in autumn 2026.",
+      "lines": {
+        "wlo": {"name":"West London Orbital","network":"overground","mode":"suburban-rail","color":"#6D8B3A"}
+      },
+      "stations": {
+        "brent-cross-west": {"name":"Brent Cross West","coordinate":[-0.2269,51.5687]},
+        "brentford": {"name":"Brentford","coordinate":[-0.3096,51.4875]},
+        "harlesden-2": {"name":"Harlesden","coordinate":[-0.2574,51.5372]},
+        "hendon": {"name":"Hendon","coordinate":[-0.2389,51.58]},
+        "hounslow": {"name":"Hounslow","coordinate":[-0.3622,51.462]},
+        "isleworth": {"name":"Isleworth","coordinate":[-0.337,51.4749]},
+        "lionel-road": {"name":"Lionel Road","coordinate":[-0.2889,51.4917]},
+        "neasden-2": {"name":"Neasden","coordinate":[-0.2512,51.5527]},
+        "old-oak-common-lane": {"name":"Old Oak Common Lane","coordinate":[-0.25189,51.52642]},
+        "syon-lane": {"name":"Syon Lane","coordinate":[-0.3248,51.4818]}
+      },
+      "sections": [
+        {"line":"wlo","stations":["acton-central","old-oak-common-lane","harlesden-2","neasden-2"]},
+        {"line":"wlo","stations":["neasden-2","brent-cross-west","hendon"]},
+        {"line":"wlo","stations":["acton-central","south-acton","lionel-road","brentford"]},
+        {"line":"wlo","stations":["brentford","syon-lane","isleworth","hounslow"]}
+      ],
+      "transfers": [
+        {"stationA":"harlesden","stationB":"harlesden-2"},
+        {"stationA":"neasden","stationB":"neasden-2"},
+        {"stationA":"north-acton","stationB":"old-oak-common-lane"}
+      ]
+    },
+    "croxley-rail-link": {
+      "name": "Croxley Rail Link",
+      "status": "abandoned",
+      "description": "The Metropolitan line diverted from Croxley over the disused Croxley Green branch to Watford High Street and Watford Junction, with new stations at Cassiobridge and Watford Vicarage Road; approved in 2013 and begun in 2017, it was halted in 2018 for lack of funding and abandoned.",
+      "stations": {
+        "cassiobridge": {"name":"Cassiobridge","coordinate":[-0.42428,51.65099]},
+        "watford-vicarage-road": {"name":"Watford Vicarage Road","coordinate":[-0.40928,51.64663]}
+      },
+      "sections": [
+        {"line":"metropolitan","stations":["croxley","cassiobridge","watford-vicarage-road","watford-high-street","watford-junction"]}
+      ]
+    }
+  }
 }
