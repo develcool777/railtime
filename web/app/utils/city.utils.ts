@@ -1,7 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
-import type { CitySummary } from './city.types';
-import { CITIES, LARGE_CITY_LINES, LARGE_CITY_STATIONS } from './explorer.constants';
+import type { CityFilter, CitySummary } from './city.types';
+import { CITIES } from './explorer.constants';
 
 /**
  * Whether a city has a dataset: what a city page's address must name.
@@ -94,11 +94,22 @@ export const summaryOf = (network: Network): CitySummary => {
 };
 
 /**
- * Whether a city's card is drawn large, two columns wide: a big network, or one of three lines or
- * more with futures to show.
+ * Whether a city passes the landing page's search and filters. A city still loading passes only
+ * filters that need nothing from its dataset.
  *
- * @param summary - The city's summary.
- * @returns True for a large card.
+ * @param city - The city, as `CITIES` lists it.
+ * @param summary - Its summary, once its dataset has loaded.
+ * @param filter - The search and filters.
+ * @returns True to show its card.
  */
-export const isLargeCity = (summary: CitySummary): boolean =>
-  summary.stations > LARGE_CITY_STATIONS || (summary.lines.length >= LARGE_CITY_LINES && summary.plans > 0);
+export const matchesFilter = (city: (typeof CITIES)[number], summary: CitySummary | null, filter: CityFilter): boolean => {
+  if (filter.country && city.country !== filter.country) return false;
+  const wanted = filter.query.trim().toLowerCase();
+  const names = [city.label, city.country, ...(summary?.networks ?? [])].map(name => name.toLowerCase());
+  if (wanted && !names.some(name => name.includes(wanted))) return false;
+  if (filter.kind === 'all' && !filter.withPlans) return true;
+  if (!summary) return false;
+  if (filter.kind === 'history' && summary.planOnly) return false;
+  if (filter.kind === 'never-built' && !summary.planOnly) return false;
+  return !filter.withPlans || summary.plans > 0;
+};

@@ -61,9 +61,3 @@ export const PLAN_STATUSES: Record<PlanStatus, { label: string; tone: ChipTone }
   concept: { label: 'Concept', tone: 'neutral' },
   abandoned: { label: 'Abandoned', tone: 'neutral' },
 };
-
-/** More stations than this, and a city's card is drawn large. */
-export const LARGE_CITY_STATIONS = 50;
-
-/** This many lines or more, with plans, and a city's card is drawn large. */
-export const LARGE_CITY_LINES = 3;
