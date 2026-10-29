@@ -1,0 +1,80 @@
+{
+  "meta": {"city":"Donetsk","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "networks": {
+    "metro": {"name":"Donetsk Metro","names":{"uk":"Донецький метрополітен"}}
+  },
+  "lines": {},
+  "stations": {},
+  "segments": [],
+  "plans": {
+    "soviet-project": {
+      "name": "Soviet-era project",
+      "names": {"uk":"Радянський проєкт"},
+      "description": "The three-line network of the 1980s design (feasibility study 1984, Proletarsko-Kyivska line designed 1988–92): about 70 km and 46 stations. Only the first line's first stage, Proletarska to Politekhnichnyi Instytut, was begun in 1992–93; shafts, station pits and about 2.5 km of tunnel were built before work stopped in 2009–2011.",
+      "lines": {
+        "m1": {"name":"Proletarsko-Kyivska","names":{"uk":"Пролетарсько-Київська лінія"},"network":"metro","mode":"metro","color":"#E42B2B"},
+        "m2": {"name":"Petrovsko-Chervonohvardiiska","names":{"uk":"Петровсько-Червоногвардійська лінія"},"network":"metro","mode":"metro","color":"#2E9A6B"},
+        "m3": {"name":"Hirniatsko-Makiivska","names":{"uk":"Гірняцько-Макіївська лінія"},"network":"metro","mode":"metro","color":"#2A2F8F","darkColor":"#6B7BE0"}
+      },
+      "stations": {
+        "akademichna": {"name":"Akademichna","names":{"uk":"Академічна"},"coordinate":[37.786,48.015]},
+        "bilyi-lebid": {"name":"Bilyi Lebid","names":{"uk":"Білий Лебідь"},"coordinate":[37.803,48.0167]},
+        "chervone-mistechko": {"name":"Chervone Mistechko","names":{"uk":"Червоне містечко"},"coordinate":[37.8717,47.9817]},
+        "chervonohvardiiska": {"name":"Chervonohvardiiska","names":{"uk":"Червоногвардійська"},"coordinate":[37.866,48.036]},
+        "chumakovska": {"name":"Chumakovska","names":{"uk":"Чумаківська"},"coordinate":[37.89,47.9808]},
+        "donetsk-2": {"name":"Donetsk-II","names":{"uk":"Донецьк-II"},"coordinate":[37.866,48.014]},
+        "donska-storona": {"name":"Donska Storona","names":{"uk":"Донська сторона"},"coordinate":[37.945,47.973]},
+        "donvuhi": {"name":"DonVUHI","names":{"uk":"ДонВУГІ"},"coordinate":[37.7937,48.0274]},
+        "kalininska": {"name":"Kalininska","names":{"uk":"Калінінська"},"coordinate":[37.834,48.004]},
+        "kirovska": {"name":"Kirovska","names":{"uk":"Кіровська"},"coordinate":[37.754,47.968]},
+        "koksokhimzavod": {"name":"Koksokhimzavod","names":{"uk":"Коксохімзавод"},"coordinate":[37.755,48]},
+        "kuibyshevska": {"name":"Kuibyshevska","names":{"uk":"Куйбишевська"},"coordinate":[37.7836,47.9843]},
+        "livoberezhna": {"name":"Livoberezhna","names":{"uk":"Лівобережна"},"coordinate":[37.8335,47.981]},
+        "mariupolska": {"name":"Mariupolska","names":{"uk":"Маріупольська"},"coordinate":[37.766,47.976]},
+        "mushketovska": {"name":"Mushketovska","names":{"uk":"Мушкетівська"},"coordinate":[37.8586,47.9806]},
+        "odeska": {"name":"Odeska","names":{"uk":"Одеська"},"coordinate":[37.775,47.956]},
+        "ozerna": {"name":"Ozerna","names":{"uk":"Озерна"},"coordinate":[37.722,47.957]},
+        "parkova": {"name":"Parkova","names":{"uk":"Паркова"},"coordinate":[37.822,48.016]},
+        "petrivka": {"name":"Petrivka","names":{"uk":"Петрівка"},"coordinate":[37.637,47.951]},
+        "pivdenna": {"name":"Pivdenna","names":{"uk":"Південна"},"coordinate":[37.772,47.947]},
+        "ploshcha-26-bakinskykh-komisariv": {"name":"Ploshcha 26 Bakinskykh Komisariv","names":{"uk":"Площа 26-ти Бакинських комісарів"},"coordinate":[37.769,48.0103]},
+        "ploshcha-lenina": {"name":"Ploshcha Lenina","names":{"uk":"Площа Леніна"},"coordinate":[37.8044,48.0003]},
+        "ploshcha-peremohy": {"name":"Ploshcha Peremohy","names":{"uk":"Площа Перемоги"},"coordinate":[37.6167,47.9478]},
+        "ploshcha-svobody": {"name":"Ploshcha Svobody","names":{"uk":"Площа Свободи"},"coordinate":[37.7434,47.9605]},
+        "politekhnichnyi-instytut": {"name":"Politekhnichnyi Instytut","names":{"uk":"Політехнічний інститут"},"coordinate":[37.8068,47.9925]},
+        "proletarska": {"name":"Proletarska","names":{"uk":"Пролетарська"},"coordinate":[37.9062,47.9801]},
+        "prospekt-illicha": {"name":"Prospekt Illicha","names":{"uk":"Проспект Ілліча"},"coordinate":[37.852,48.01]},
+        "prospekt-myru": {"name":"Prospekt Myru","names":{"uk":"Проспект Миру"},"coordinate":[37.872,48.022]},
+        "rutchenkove": {"name":"Rutchenkove","names":{"uk":"Рутченкове"},"coordinate":[37.675,47.958]},
+        "selyshche-shyrokyi": {"name":"Selyshche Shyrokyi","names":{"uk":"Селище Широкий"},"coordinate":[37.768,47.938]},
+        "shakhta-29": {"name":"Shakhta No. 29","names":{"uk":"Шахта № 29"},"coordinate":[37.655,47.955]},
+        "shakhtarska": {"name":"Shakhtarska","names":{"uk":"Шахтарська"},"coordinate":[37.781,48.0365]},
+        "shakhtobudivna": {"name":"Shakhtobudivna","names":{"uk":"Шахтобудівна"},"coordinate":[37.855,48.0164]},
+        "shvydkisne-shose": {"name":"Shvydkisne Shose","names":{"uk":"Швидкісне шосе"},"coordinate":[37.838,48.018]},
+        "skhidna": {"name":"Skhidna","names":{"uk":"Східна"},"coordinate":[37.9263,47.9774]},
+        "sportyvna": {"name":"Sportyvna","names":{"uk":"Спортивна"},"coordinate":[37.796,47.989]},
+        "tekstylnyk": {"name":"Tekstylnyk","names":{"uk":"Текстильник"},"coordinate":[37.7,47.952]},
+        "vietkovski-stavky": {"name":"Vietkovski Stavky","names":{"uk":"Вєтковські ставки"},"coordinate":[37.763,48.04]},
+        "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[37.7462,48.0437]},
+        "vulytsia-olimpiieva": {"name":"Vulytsia Olimpiieva","names":{"uk":"Вулиця Олімпієва"},"coordinate":[37.758,47.988]},
+        "zavod-mashynobudivnyk": {"name":"Zavod Mashynobudivnyk","names":{"uk":"Завод «Машинобудівник»"},"coordinate":[37.77,47.966]},
+        "zhovtneva": {"name":"Zhovtneva","names":{"uk":"Жовтнева"},"coordinate":[37.722,48.051]}
+      },
+      "sections": [
+        {"line":"m1","stations":["proletarska","chumakovska","chervone-mistechko","mushketovska","livoberezhna","politekhnichnyi-instytut"]},
+        {"line":"m1","stations":["politekhnichnyi-instytut","ploshcha-lenina","bilyi-lebid"]},
+        {"line":"m1","stations":["bilyi-lebid","donvuhi","shakhtarska","vietkovski-stavky","vokzalna"]},
+        {"line":"m1","stations":["vokzalna","zhovtneva"]},
+        {"line":"m1","stations":["proletarska","skhidna","donska-storona"]},
+        {"line":"m2","stations":["politekhnichnyi-instytut","sportyvna","kuibyshevska","mariupolska"]},
+        {"line":"m2","stations":["mariupolska","kirovska","ploshcha-svobody","ozerna","tekstylnyk"]},
+        {"line":"m2","stations":["tekstylnyk","rutchenkove","shakhta-29","petrivka","ploshcha-peremohy"]},
+        {"line":"m2","stations":["politekhnichnyi-instytut","kalininska","prospekt-illicha","donetsk-2","prospekt-myru"]},
+        {"line":"m2","stations":["prospekt-myru","chervonohvardiiska"]},
+        {"line":"m3","stations":["bilyi-lebid","akademichna","ploshcha-26-bakinskykh-komisariv","koksokhimzavod","vulytsia-olimpiieva","mariupolska"]},
+        {"line":"m3","stations":["mariupolska","zavod-mashynobudivnyk","odeska","pivdenna","selyshche-shyrokyi"]},
+        {"line":"m3","stations":["bilyi-lebid","parkova","shvydkisne-shose","shakhtobudivna","prospekt-myru"]}
+      ]
+    }
+  }
+}
