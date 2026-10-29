@@ -29,9 +29,9 @@ export const citiesByCountry = (): { country: string; cities: typeof CITIES }[] 
 /**
  * The city menu: each country a labelled group.
  *
- * @returns Groups of items, as `USelect` takes them.
+ * @returns Groups of items, as `USelectMenu` takes them: a label, then the cities.
  */
-export const cityMenu = (): ({ type: 'label'; label: string } | { label: string; value: string })[][] =>
+export const cityMenu = (): { type?: 'label'; label: string; value?: string }[][] =>
   citiesByCountry().map(({ country, cities }) => [{ type: 'label' as const, label: country }, ...cities.map(({ label, value }) => ({ label, value }))]);
 
 /**

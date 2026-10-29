@@ -1,26 +1,26 @@
 <template>
-  <Transition name="step-card">
-    <UCard
-      v-if="step"
-      :key="step.title + step.time"
-      class="w-[min(380px,calc(100vw-32px))] overflow-hidden bg-default/85 backdrop-blur"
-      :ui="{ body: 'p-0 sm:p-0' }">
-      <div class="h-1.5" :style="{ background: step.color }" />
-      <div class="px-4 py-3">
-        <p class="text-muted text-xs">{{ step.time === null ? 'Future' : formatDay(step.time) }}</p>
-        <p class="text-highlighted mt-0.5 text-base leading-snug font-semibold">{{ step.title }}</p>
-        <p v-if="step.subtitle" class="text-muted text-sm">{{ step.subtitle }}</p>
-        <ul v-if="shownStations.length" class="mt-2 flex flex-wrap gap-1.5" role="list">
-          <li v-for="name in shownStations" :key="name" class="station-chip">
-            <UBadge color="neutral" variant="outline" size="md">
-              <span class="size-2 rounded-full" :style="{ background: step.color }" />
+  <!-- The card leaving fades out over the one arriving. -->
+  <div class="relative flex-none">
+    <Transition name="step-card">
+      <div v-if="step" :key="step.title + step.time" class="border-default bg-default shadow-card overflow-hidden rounded-xl border">
+        <div class="h-1" :style="{ background: step.color }" />
+        <div class="px-4 pt-3.5 pb-4">
+          <p class="text-muted text-xs tabular-nums">{{ step.time === null ? 'Future' : formatDay(step.time) }}</p>
+          <p class="text-highlighted mt-0.5 text-[17px] leading-snug font-bold">{{ step.title }}</p>
+          <p v-if="step.subtitle" class="text-default text-sm">{{ step.subtitle }}</p>
+          <ul v-if="shownStations.length" class="mt-2.5 flex flex-wrap gap-1.5" role="list">
+            <li
+              v-for="name in shownStations"
+              :key="name"
+              class="station-chip border-default bg-muted text-highlighted flex items-center gap-1.5 rounded border px-2 py-[3px] text-xs font-medium">
+              <span class="size-[7px] rounded-full" :style="{ background: step.color }" />
               {{ name }}
-            </UBadge>
-          </li>
-        </ul>
+            </li>
+          </ul>
+        </div>
       </div>
-    </UCard>
-  </Transition>
+    </Transition>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -44,6 +44,10 @@
     transition:
       opacity 0.35s,
       transform 0.35s;
+  }
+  .step-card-leave-active {
+    position: absolute;
+    inset: 0 0 auto;
   }
   .step-card-enter-from,
   .step-card-leave-to {

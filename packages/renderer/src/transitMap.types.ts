@@ -33,7 +33,12 @@ export type TransitMapOptions = {
    * path it works out itself, so the app passes the URL its bundler gives the file.
    */
   workerUrl?: string;
+  /** Whether MapLibre draws its credits on the map (the default). Without them the app must show `credits` itself, as the licences ask. */
+  attributionControl?: boolean;
 };
+
+/** One credit the map owes: the basemap's or the data's. */
+export type Credit = { text: string; url?: string };
 
 /** What is on the map. */
 export type NetworkStats = { stations: number; km: number; lines: number };
@@ -97,7 +102,15 @@ export type FormerNameInfo = { name: string; otherNames: string[]; until: IsoDat
 export type TransferInfo = { id: string; name: string; lines: { id: string; name: string; color: string }[] };
 
 /** A line, for a legend or toggles. */
-export type LineInfo = { id: string; name: string; network: string; networkName: string; color: string };
+export type LineInfo = {
+  id: string;
+  name: string;
+  network: string;
+  networkName: string;
+  color: string;
+  /** When it first opened, as a timestamp; `null` for a line only a plan builds. */
+  opened: number | null;
+};
 
 /** Events a `TransitMap` emits, by name. */
 export type TransitMapEvents = {

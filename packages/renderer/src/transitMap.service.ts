@@ -12,7 +12,7 @@ import { NetworkLayer } from './layers/networkLayer.service';
 import type { NetworkSnapshot } from './layers/networkSnapshot.types';
 import { buildNetworkSnapshot } from './layers/networkSnapshot.utils';
 import { StationLayer } from './layers/stationLayer.service';
-import { DEFAULT_BASEMAP, PALETTES } from './layers/theme.constants';
+import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/minimap.service';
 import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.utils';
 import { NetworkIndex } from './model/networkIndex.service';
@@ -38,6 +38,7 @@ import {
 } from './transitMap.constants';
 import type {
   CameraMode,
+  Credit,
   LineInfo,
   MapView,
   Padding,
@@ -57,6 +58,8 @@ import type {
  * around it owns every control and caption, calling methods here and listening to events.
  */
 export class TransitMap extends EventEmitter<TransitMapEvents> {
+  /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
+  public readonly credits: Credit[];
   /** The network, indexed for drawing. */
   private readonly index: NetworkIndex;
   /** The network's history as steps. */
@@ -112,6 +115,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.visibleLines = new Set(this.index.lineIds);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
+    // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
+    this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: options.network.meta.attribution }];
     const padding = options.padding ?? DEFAULT_PADDING;
     const opening = options.view
       ? { center: options.view.center, zoom: options.view.zoom }
@@ -127,7 +132,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       container: options.container,
       style: basemap,
       ...opening,
-      attributionControl: { compact: true, customAttribution: options.network.meta.attribution },
+      attributionControl: options.attributionControl === false ? false : { compact: true, customAttribution: options.network.meta.attribution },
     });
     this.camera = new CameraDirector(this.map, padding);
     this.networkLayer = new NetworkLayer(this.map);
@@ -298,6 +303,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
         network: line.network,
         networkName: required(this.index.network.networks[line.network], `network ${line.network}`).name,
         color: this.baseColor(id),
+        opened: Number.isFinite(this.index.lineOpens(id)) ? this.index.lineOpens(id) : null,
       };
     });
   }

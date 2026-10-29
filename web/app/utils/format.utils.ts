@@ -1,4 +1,4 @@
-import type { FormerNameInfo, NetworkStats } from '@railtime/renderer/transitMap.types';
+import type { FormerNameInfo } from '@railtime/renderer/transitMap.types';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -56,10 +56,15 @@ export const formatFormerNames = (formerNames: FormerNameInfo[]): string => {
 };
 
 /**
- * What is on the map, in a line.
+ * What a plan adds, in a line.
  *
- * @param stats - The map's stats.
- * @returns "272 stations · 402 km · 11 lines".
+ * @param stations - Its new stations.
+ * @param km - Its new track, km.
+ * @returns "+4 stations · +6 km", leaving out what it adds none of.
  */
-export const formatStats = (stats: NetworkStats): string =>
-  `${stats.stations} stations · ${Math.round(stats.km)} km · ${stats.lines} line${stats.lines === 1 ? '' : 's'}`;
+export const formatPlanFacts = (stations: number, km: number): string => {
+  const facts: string[] = [];
+  if (stations > 0) facts.push(`+${stations} station${stations === 1 ? '' : 's'}`);
+  if (Math.round(km) > 0) facts.push(`+${Math.round(km)} km`);
+  return facts.join(' · ');
+};

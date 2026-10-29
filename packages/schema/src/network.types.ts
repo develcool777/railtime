@@ -120,7 +120,7 @@ export type PlanSection = {
 export type Plan = {
   name: string;
   names?: Names;
-  /** What it is and where it comes from: for whoever keeps the dataset. */
+  /** What it is, who drew it up and how far it got: shown on its card. */
   description?: string;
   lines?: Record<string, Line>;
   stations?: Record<string, Station>;
