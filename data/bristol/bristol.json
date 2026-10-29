@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Bristol","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "meta": {"city":"Bristol","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Bristol Mass Transit"}
   },
@@ -45,7 +45,7 @@
     "mass-transit": {
       "name": "Bristol underground mass transit",
       "status": "proposed",
-      "description": "Four radial routes from Temple Meads studied for the West of England Combined Authority in the 2019 Jacobs Steer early options report, made public in November 2022: south to the airport, north to Aztec West and Almondsbury, north-east to the Science Park and south-east to Keynsham, each with an underground option (about £4.5 billion in all). Shown here as the underground options; the scheme remains at feasibility stage.",
+      "description": "Four radial routes from Temple Meads studied for the West of England Combined Authority and made public in November 2022: south to the airport, north to Aztec West and Almondsbury, north-east to the Science Park and south-east to Keynsham, each with an underground option (about £4.5 billion in all). Shown here as the underground options; the scheme remains at feasibility stage.",
       "lines": {
         "route-1": {"name":"Route 1 (Airport)","network":"metro","mode":"light-metro","color":"#E4312B"},
         "route-2": {"name":"Route 2 (North Fringe)","network":"metro","mode":"light-metro","color":"#0072CE"},

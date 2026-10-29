@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Zaporizhzhia","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "meta": {"city":"Zaporizhzhia","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Zaporizhzhia Metro","names":{"uk":"Запорізький метрополітен"}}
   },
@@ -11,7 +11,7 @@
       "name": "2000s light-metro project",
       "names": {"uk":"Проєкт легкого метро 2000-х"},
       "status": "abandoned",
-      "description": "The 16 km, 14-station first line of an automated light metro (the RADAN system) designed by Zaporizhzhia architects in 2007, from the Pivdennyi microdistrict past the Zaporizhzhia-1 station and along Sobornyi Avenue to Zaporizka Square, in shallow tunnels with its depot in Pivdennyi; building was to start about 2015 and open by 2025, and it never left paper.",
+      "description": "The 16 km, 14-station first line of an automated light metro (the RADAN system) designed in 2007, from the Pivdennyi microdistrict past the Zaporizhzhia-1 station and along Sobornyi Avenue to Zaporizka Square, in shallow tunnels with its depot in Pivdennyi; building was to start about 2015 and open by 2025, and it never left paper.",
       "lines": {
         "m1": {"name":"Line 1","names":{"uk":"Перша лінія"},"network":"metro","mode":"metro","color":"#1E5FD8"}
       },

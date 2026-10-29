@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Kyiv","start":"1960-11-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "meta": {"city":"Kyiv","start":"1960-11-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Kyiv Metro","names":{"uk":"Київський метрополітен"}}
   },

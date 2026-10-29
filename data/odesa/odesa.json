@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Odesa","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); plans: railtime"},
+  "meta": {"city":"Odesa","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Odesa Metro","names":{"uk":"Одеський метрополітен"}}
   },
@@ -8,10 +8,10 @@
   "segments": [],
   "plans": {
     "soviet-project": {
-      "name": "1985 Lenmetrogiprotrans project",
-      "names": {"uk":"Проєкт Ленметрогіпротрансу 1985 року"},
+      "name": "1985 project",
+      "names": {"uk":"Проєкт 1985 року"},
       "status": "abandoned",
-      "description": "The Malynivsko-Suvorovska line, about 29 km with 19 stations from Kotovskoho village through Luzanivka, Peresyp, the centre and the station to Tairova and Chornomorka, designed by Leningrad's Lenmetrogiprotrans from 1985 and put in the 1989 General Plan; Moscow dropped Odesa from the metro list and nothing was built. Only the 8-station launch section is named; the later stations are placed by district.",
+      "description": "The Malynivsko-Suvorovska line, about 29 km with 19 stations from Kotovskoho village through Luzanivka, Peresyp, the centre and the station to Tairova and Chornomorka, designed from 1985 and put in the 1989 General Plan; Moscow dropped Odesa from the metro list and nothing was built. Only the 8-station launch section is named; the later stations are placed by district.",
       "lines": {
         "m1": {"name":"Malynivsko-Suvorovska","names":{"uk":"Малинівсько-Суворівська лінія"},"network":"metro","mode":"metro","color":"#E4312B"}
       },
@@ -40,7 +40,7 @@
       "name": "2007 General Plan scheme",
       "names": {"uk":"Схема Генплану 2007 року"},
       "status": "abandoned",
-      "description": "Two lines of \"high-speed off-street transport\", about 38 km, laid into the draft General Plan (2007-2010, transport author Dmytro Zhukov) and restated in the 2012 \"Odesa 2022\" plans: North-South from Kotovskoho village to Akademika Hlushka, and a cross line from Fontan to Tyraspilske shose; the mode (metro or light rail) was never fixed and design stopped in 2017.",
+      "description": "Two lines of \"high-speed off-street transport\", about 38 km, laid into the draft General Plan (2007–2010) and restated in the 2012 \"Odesa 2022\" plans: North-South from Kotovskoho village to Akademika Hlushka, and a cross line from Fontan to Tyraspilske shose; the mode (metro or light rail) was never fixed and design stopped in 2017.",
       "lines": {
         "m1": {"name":"North-South","names":{"uk":"Лінія Північ — Південь"},"network":"metro","mode":"metro","color":"#E4312B"},
         "m2": {"name":"Fontan-Tyraspilske Shose","names":{"uk":"Лінія Фонтан — Тираспольське шосе"},"network":"metro","mode":"metro","color":"#7F8FD1"}

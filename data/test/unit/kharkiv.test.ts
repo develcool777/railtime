@@ -9,7 +9,7 @@ describe('Kharkiv', () => {
     expect(played.mostHighlighted).toBeGreaterThan(5);
   });
 
-  test.each(['under-construction', 'long-term', 'gost-kotik-2025'])('plays on through its %s plan, section by section', plan => {
+  test.each(['under-construction', 'long-term', 'concept-2025'])('plays on through its %s plan, section by section', plan => {
     const played = playPlan(cityNetwork('kharkiv'), plan);
     expect(played.steps).toBeGreaterThan(0);
     expect(played.started).toBe(played.steps);

@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Manchester","start":"1992-03-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "meta": {"city":"Manchester","start":"1992-03-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metrolink": {"name":"Metrolink"}
   },

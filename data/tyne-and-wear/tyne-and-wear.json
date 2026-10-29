@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Tyne and Wear","start":"1980-05-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia and Nexus"},
+  "meta": {"city":"Tyne and Wear","start":"1980-05-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Metro"}
   },

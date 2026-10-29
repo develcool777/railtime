@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Kharkiv","start":"1975-08-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "meta": {"city":"Kharkiv","start":"1975-08-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Kharkiv Metro","names":{"uk":"Харківський метрополітен"}}
   },
@@ -137,11 +137,11 @@
         {"stationA":"imeni-o-s-maselskoho","stationB":"imeni-o-s-maselskoho-2"}
       ]
     },
-    "gost-kotik-2025": {
-      "name": "Gost Kotik 2025",
-      "names": {"uk":"Gost Kotik 2025"},
+    "concept-2025": {
+      "name": "2025 concept",
+      "names": {"uk":"Концепція 2025 року"},
       "status": "concept",
-      "description": "A concept map of Kharkiv's metro from the YouTube channel Gost Kotik (2025), not a city plan: the three lines extended to Zaliutyne, Pivdenna, the airport, Novozhanove, Natalii Uzhvii and Saltivske Shose, an orange line from Zhukovskoho to Lysa Hora, and a ring line.",
+      "description": "An unofficial concept, not a city plan: the three lines extended to Zaliutyne, Pivdenna, the airport, Novozhanove, Natalii Uzhvii and Saltivske Shose, an orange line from Zhukovskoho to Lysa Hora, and a ring line.",
       "lines": {
         "orange": {"name":"Zhukovsko-Lysohirska","names":{"uk":"Жуковсько-Лисогірська лінія"},"network":"metro","mode":"metro","color":"#D6935A"},
         "ring": {"name":"Kiltseva","names":{"uk":"Кільцева лінія"},"network":"metro","mode":"metro","color":"#84518C"}

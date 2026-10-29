@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Glasgow","start":"1896-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL); dates: railtime, from Wikipedia"},
+  "meta": {"city":"Glasgow","start":"1896-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Glasgow Subway"}
   },
@@ -83,7 +83,7 @@
     "stds-1988": {
       "name": "Strathclyde Transport Development Study (1988)",
       "status": "abandoned",
-      "description": "Strathclyde PTE's 1988 study looked at Subway extensions north from Hillhead and Kelvinbridge via Kirklee and Maryhill to Summerston, west from Govan to Glasgow Airport, and an eastern city-centre loop via High Street and Gorbals Cross; it concluded that extending the Subway was not warranted.",
+      "description": "Strathclyde PTE's 1988 study proposed Subway extensions north from Hillhead and Kelvinbridge via Kirklee and Maryhill to Summerston, west from Govan to Glasgow Airport, and an eastern city-centre loop via High Street and Gorbals Cross; it concluded that extending the Subway was not warranted.",
       "lines": {
         "summerston": {"name":"Summerston branch","network":"metro","mode":"metro","color":"#7B2D8E"},
         "airport": {"name":"Airport branch","network":"metro","mode":"metro","color":"#0072CE"},
@@ -105,10 +105,10 @@
         {"line":"east-loop","stations":["buchanan-street","high-street","gorbals-cross","bridge-street"]}
       ]
     },
-    "halcrow-1954": {
-      "name": "Halcrow Report (1954)",
+    "extensions-1954": {
+      "name": "1954 extensions",
       "status": "abandoned",
-      "description": "Sir William Halcrow & Partners' 1954 report proposed taking the Subway south from Glasgow Cross to Castlemilk and north from Glasgow Cross through Anderston to an interchange at Partick Cross, then to Kelvindale, Blairdardie and Drumchapel, partly in disused railway tunnels and partly on the surface. Not pursued, mainly for lack of funds.",
+      "description": "A 1954 proposal took the Subway south from Glasgow Cross to Castlemilk and north from Glasgow Cross through Anderston to an interchange at Partick Cross, then to Kelvindale, Blairdardie and Drumchapel, partly in disused railway tunnels and partly on the surface. Not pursued, mainly for lack of funds.",
       "lines": {
         "halcrow": {"name":"Drumchapel – Castlemilk","network":"metro","mode":"metro","color":"#0072CE"}
       },
@@ -133,7 +133,7 @@
     "eastern-circle-1944": {
       "name": "Eastern Circle (1944)",
       "status": "abandoned",
-      "description": "A 1944 Glasgow Corporation scheme for a second, eastern circle leaving the Subway at Buchanan Street through Blochairn, Carntyne and Dalmarnock and returning across the Clyde to Bridge Street and St Enoch. Overtaken by the 1945 Bruce Report and the 1948 Fitzpayne Report, which judged the Subway impractical to extend.",
+      "description": "A 1944 Glasgow Corporation scheme for a second, eastern circle leaving the Subway at Buchanan Street through Blochairn, Carntyne and Dalmarnock and returning across the Clyde to Bridge Street and St Enoch. Overtaken by post-war plans, which judged the Subway impractical to extend.",
       "lines": {
         "eastern": {"name":"Eastern Circle","network":"metro","mode":"metro","color":"#0072CE"}
       },
