@@ -32,6 +32,12 @@ const lineColor = (sourceLayer: string, layerId: string, palette: Palette): stri
   return /motorway|trunk|primary|major/.test(layerId) ? palette.majorRoad : palette.road;
 };
 
+/** A paint property's name, as MapLibre types it. */
+type PaintProperty = Parameters<MapLibreMap['setPaintProperty']>[1];
+
+/** A paint property's value, as MapLibre types it. */
+type PaintValue = Parameters<MapLibreMap['setPaintProperty']>[2];
+
 /**
  * Sets a paint property where the layer has it; not every layer has every property.
  *
@@ -40,7 +46,7 @@ const lineColor = (sourceLayer: string, layerId: string, palette: Palette): stri
  * @param property - The paint property.
  * @param value - Its new value.
  */
-const paintIfPresent = (map: MapLibreMap, layerId: string, property: string, value: unknown): void => {
+const paintIfPresent = (map: MapLibreMap, layerId: string, property: PaintProperty, value: PaintValue): void => {
   try {
     map.setPaintProperty(layerId, property, value);
   } catch {
