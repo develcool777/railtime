@@ -12,6 +12,29 @@ import { CITIES } from './explorer.constants';
 export const isCity = (city: unknown): city is string => CITIES.some(candidate => candidate.value === city);
 
 /**
+ * The cities by country, in menu order.
+ *
+ * @returns Each country with its cities.
+ */
+export const citiesByCountry = (): { country: string; cities: typeof CITIES }[] => {
+  const countries: { country: string; cities: typeof CITIES }[] = [];
+  for (const city of CITIES) {
+    const group = countries.find(entry => entry.country === city.country);
+    if (group) group.cities.push(city);
+    else countries.push({ country: city.country, cities: [city] });
+  }
+  return countries;
+};
+
+/**
+ * The city menu: each country a labelled group.
+ *
+ * @returns Groups of items, as `USelect` takes them.
+ */
+export const cityMenu = (): ({ type: 'label'; label: string } | { label: string; value: string })[][] =>
+  citiesByCountry().map(({ country, cities }) => [{ type: 'label' as const, label: country }, ...cities.map(({ label, value }) => ({ label, value }))]);
+
+/**
  * Where a city's dataset is served, under the site's base URL (`/railtime/` on GitHub Pages).
  *
  * @param city - A city id.

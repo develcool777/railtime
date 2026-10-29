@@ -1,13 +1,16 @@
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
 
-/** The cities with a dataset (`data/<id>/<id>.json`, served at `/data/<id>/<id>.json`), in menu order. */
+/**
+ * The cities with a dataset (`data/<id>/<id>.json`, served at `/data/<id>/<id>.json`), in menu order:
+ * grouped by country, in the order the countries come.
+ */
 export const CITIES = [
-  { label: 'London', value: 'london' },
-  { label: 'Manchester', value: 'manchester' },
-  { label: 'Tyne and Wear', value: 'tyne-and-wear' },
-  { label: 'Kyiv', value: 'kyiv' },
-  { label: 'Kharkiv', value: 'kharkiv' },
-  { label: 'Dnipro', value: 'dnipro' },
+  { label: 'London', value: 'london', country: 'United Kingdom' },
+  { label: 'Manchester', value: 'manchester', country: 'United Kingdom' },
+  { label: 'Tyne and Wear', value: 'tyne-and-wear', country: 'United Kingdom' },
+  { label: 'Kyiv', value: 'kyiv', country: 'Ukraine' },
+  { label: 'Kharkiv', value: 'kharkiv', country: 'Ukraine' },
+  { label: 'Dnipro', value: 'dnipro', country: 'Ukraine' },
 ];
 
 /** Playback speeds offered. */

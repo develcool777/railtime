@@ -10,7 +10,13 @@
         <UTooltip text="All cities">
           <UButton to="/" icon="i-lucide-layout-grid" color="neutral" variant="soft" aria-label="All cities" />
         </UTooltip>
-        <USelect :modelValue="city" :items="CITIES" icon="i-lucide-map-pin" class="w-52" aria-label="City" @update:modelValue="emit('city', String($event))" />
+        <USelect
+          :modelValue="city"
+          :items="CITY_MENU"
+          icon="i-lucide-map-pin"
+          class="w-52"
+          aria-label="City"
+          @update:modelValue="emit('city', String($event))" />
         <USelect
           v-if="planItems.length > (planOnly ? 0 : 1)"
           :modelValue="plan ?? NO_PLAN"
@@ -78,8 +84,8 @@
   import { computed, ref, useTemplateRef, watch } from 'vue';
 
   import { useTransitMap } from '~/composables/transitMap.composable';
-  import { CITIES, DEFAULT_SPEED } from '~/utils/explorer.constants';
-  import { isPlanOnly } from '~/utils/city.utils';
+  import { DEFAULT_SPEED } from '~/utils/explorer.constants';
+  import { cityMenu, isPlanOnly } from '~/utils/city.utils';
   import { formatExplorerQuery, parseExplorerQuery } from '~/utils/explorerUrl.utils';
 
   import ExploreBar from './ExploreBar.vue';
@@ -106,12 +112,14 @@
     ...(props.plan ? { plan: props.plan } : {}),
   });
 
+  const CITY_MENU = cityMenu();
+
   /** The select's value for the network as it is. */
   const NO_PLAN = 'none';
   const planOnly = isPlanOnly(props.network);
   const planItems = computed(() => [
     // A network never built has nothing to show without a plan.
-    ...(planOnly ? [] : [{ label: 'No plans', value: NO_PLAN }]),
+    ...(planOnly ? [] : [{ label: 'Current network', value: NO_PLAN }]),
     ...Object.entries(props.network.plans ?? {}).map(([id, plan]) => ({ label: plan.name, value: id })),
   ]);
   const chosenPlan = computed(() => (props.plan ? props.network.plans?.[props.plan] : undefined));

@@ -1,8 +1,22 @@
 import { describe, expect, test } from 'vitest';
-import { isPlanOnly, planToOpen, summaryOf } from '../../../app/utils/city.utils';
+import { citiesByCountry, cityMenu, isPlanOnly, planToOpen, summaryOf } from '../../../app/utils/city.utils';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 
 describe('CityUtils', () => {
+  describe('citiesByCountry', () => {
+    test('groups every city under its country, in menu order', () => {
+      const groups = citiesByCountry();
+      expect(groups.map(group => group.country)).toEqual(['United Kingdom', 'Ukraine']);
+      expect(groups.flatMap(group => group.cities.map(city => city.value))).toContain('kyiv');
+    });
+  });
+
+  describe('cityMenu', () => {
+    test('heads each group with its country', () => {
+      expect(cityMenu()[1]![0]).toEqual({ type: 'label', label: 'Ukraine' });
+    });
+  });
+
   describe('isPlanOnly', () => {
     test('is a network with plans and no track', () => {
       expect(isPlanOnly(planOnlyNetwork())).toBe(true);
