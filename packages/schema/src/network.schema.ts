@@ -4,9 +4,12 @@ import type { Network } from './network.types';
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 const lngLat = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'expected #rrggbb');
+/** Names by BCP 47 language code: `uk`, `pt-BR`. */
+const names = z.record(z.string().regex(/^[a-z]{2,3}(-[A-Z][A-Za-z0-9]{1,7})?$/, 'expected a language code: uk, pt-BR'), z.string().min(1));
 
 const lineSchema = z.object({
   name: z.string().min(1),
+  names: names.optional(),
   network: z.string().min(1),
   mode: z.enum(['metro', 'light-metro', 'tram', 'suburban-rail', 'rail', 'cable']),
   color,
@@ -17,10 +20,11 @@ const lineSchema = z.object({
 
 const stationSchema = z.object({
   name: z.string().min(1),
+  names: names.optional(),
   coordinate: lngLat,
   infill: z.record(z.string(), isoDate).optional(),
   closed: z.record(z.string(), isoDate).optional(),
-  formerNames: z.array(z.object({ name: z.string().min(1), until: isoDate })).optional(),
+  formerNames: z.array(z.object({ name: z.string().min(1), names: names.optional(), until: isoDate })).optional(),
 });
 
 const segmentSchema = z.object({
@@ -37,7 +41,7 @@ const segmentSchema = z.object({
 const networkSchema = z
   .object({
     meta: z.object({ city: z.string(), start: isoDate, built: isoDate, attribution: z.string() }),
-    networks: z.record(z.string(), z.object({ name: z.string() })),
+    networks: z.record(z.string(), z.object({ name: z.string(), names: names.optional() })),
     lines: z.record(z.string(), lineSchema),
     stations: z.record(z.string(), stationSchema),
     segments: z.array(segmentSchema),

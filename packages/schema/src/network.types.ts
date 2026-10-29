@@ -11,12 +11,19 @@ export type IsoDate = string;
 /** A `[longitude, latitude]` coordinate. */
 export type LngLat = [number, number];
 
+/**
+ * Names in languages other than English, by BCP 47 language code (`uk`, `pt-BR`). The English name
+ * is the thing's `name`; a language without an entry falls back to it.
+ */
+export type Names = Record<string, string>;
+
 /** What kind of railway a line is: decides how it is classified and counted, not how it is drawn. */
 export type Mode = 'metro' | 'light-metro' | 'tram' | 'suburban-rail' | 'rail' | 'cable';
 
 /** A family of lines run as one brand. */
 export type NetworkInfo = {
   name: string;
+  names?: Names;
 };
 
 /** Until `until`, the line is drawn and named as line `as`: a branch shown as its parent line until it became its own. */
@@ -29,7 +36,10 @@ export type LineAlias = {
 
 /** A line, as people know it. */
 export type Line = {
+  /** Its English name, short: "Victoria", shown as "Victoria line". */
   name: string;
+  /** Its name in other languages, in full as people say it there: "Святошинсько-Броварська лінія". */
+  names?: Names;
   network: string;
   mode: Mode;
   color: string;
@@ -43,6 +53,7 @@ export type Line = {
 /** A name a station had until a date. */
 export type FormerName = {
   name: string;
+  names?: Names;
   until: IsoDate;
 };
 
@@ -50,6 +61,8 @@ export type FormerName = {
 export type Station = {
   /** Its name today, or when it closed. */
   name: string;
+  /** That name in other languages. */
+  names?: Names;
   coordinate: LngLat;
   /** Lines this station opened on after the line was already running through it: line id to date. */
   infill?: Record<string, IsoDate>;

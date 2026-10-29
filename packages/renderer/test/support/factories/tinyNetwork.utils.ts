@@ -44,14 +44,15 @@ const segmentAt = (stationA: string, stationB: string, position: number, lines: 
  * - `blue` runs B–C from 1930, is suspended there 1940–1945 and closes it in 1950
  * - `pink` shares A–B, drawn as `red` until 1990
  * - `green` runs C–D from 1970, after D had closed: it passes D by
+ * - Ukrainian names for the network, `red`, and D now and as Old D; none for the rest
  *
  * @returns The network.
  */
 export const tinyNetwork = (): Network => ({
   meta: { city: 'Test', start: '1899-01-01', built: '2026-01-01', attribution: '' },
-  networks: { metro: { name: 'Metro' } },
+  networks: { metro: { name: 'Metro', names: { uk: 'Метро' } } },
   lines: {
-    red: { name: 'Red', network: 'metro', mode: 'metro', color: '#ff0000' },
+    red: { name: 'Red', names: { uk: 'Червона лінія' }, network: 'metro', mode: 'metro', color: '#ff0000' },
     blue: { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' },
     pink: { name: 'Pink', network: 'metro', mode: 'metro', color: '#ff88cc', aliases: [{ until: '1990-01-01', as: 'red', text: 'Pink becomes its own line' }] },
     green: { name: 'Green', network: 'metro', mode: 'metro', color: '#00aa00' },
@@ -60,7 +61,12 @@ export const tinyNetwork = (): Network => ({
     a: { ...stationAt('A', 0), formerNames: [{ name: 'Pre A', until: '1899-06-01' }] },
     b: stationAt('B', 1),
     c: { ...stationAt('C', 2), infill: { red: '1920-06-01', blue: '1960-06-01' } },
-    d: { ...stationAt('D', 3), closed: { red: '1960-01-01' }, formerNames: [{ name: 'Old D', until: '1925-01-01' }] },
+    d: {
+      ...stationAt('D', 3),
+      names: { uk: 'Д' },
+      closed: { red: '1960-01-01' },
+      formerNames: [{ name: 'Old D', names: { uk: 'Старий Д' }, until: '1925-01-01' }],
+    },
   },
   segments: [
     segmentAt('a', 'b', 0, { red: { open: '1900-01-01' }, pink: { open: '1900-01-01' } }),

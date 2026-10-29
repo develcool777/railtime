@@ -93,6 +93,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     // Before the first map: MapLibre starts its workers with it.
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
     this.index = new NetworkIndex(options.network);
+    if (options.language && this.index.languages.includes(options.language)) this.index.language = options.language;
     this.timeline = new Timeline(this.index);
     this.player = new Player(this.timeline, todayTimestamp(), step => this.createAnimation(step));
     this.theme = options.theme ?? 'dark';
@@ -211,6 +212,22 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.snapshotStale = true;
   }
 
+  /** Every language the network has names in besides English, by code (`uk`). */
+  public get languages(): string[] {
+    return this.index.languages;
+  }
+
+  /**
+   * Names stations, lines and networks in a language: on the map, in captions and in what
+   * `getLines` and `getStationInfo` return. A language the network has no names in is English.
+   *
+   * @param language - One of `languages`, or `null` for English.
+   */
+  public setLanguage(language: string | null): void {
+    this.index.language = language !== null && this.index.languages.includes(language) ? language : null;
+    this.snapshotStale = true;
+  }
+
   /**
    * Shows only some lines.
    *
@@ -271,9 +288,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       const line = this.index.lineOf(id);
       return {
         id,
-        name: line.name,
+        name: this.index.nameIn(line),
         network: line.network,
-        networkName: required(this.index.network.networks[line.network], `network ${line.network}`).name,
+        networkName: this.index.nameIn(required(this.index.network.networks[line.network], `network ${line.network}`)),
         color: this.baseColor(id),
       };
     });
@@ -313,7 +330,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       id: station,
       name: this.index.stationName(station, this.player.clock),
       lines: lines.sort((first, second) => first.opened.localeCompare(second.opened)),
-      formerNames: info.formerNames ?? [],
+      formerNames: (info.formerNames ?? []).map(former => ({ name: this.index.nameIn(former), until: former.until })),
     };
   }
 
