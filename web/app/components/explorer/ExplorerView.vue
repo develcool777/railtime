@@ -22,7 +22,7 @@
           :modelValue="plan ?? NO_PLAN"
           :items="planItems"
           icon="i-lucide-route"
-          class="w-48"
+          class="w-60"
           aria-label="Future plan"
           @update:modelValue="choosePlan(String($event))" />
       </div>

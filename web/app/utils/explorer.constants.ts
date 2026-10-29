@@ -11,6 +11,8 @@ export const CITIES = [
   { label: 'Kyiv', value: 'kyiv', country: 'Ukraine' },
   { label: 'Kharkiv', value: 'kharkiv', country: 'Ukraine' },
   { label: 'Dnipro', value: 'dnipro', country: 'Ukraine' },
+  { label: 'Lviv', value: 'lviv', country: 'Ukraine' },
+  { label: 'Chernivtsi', value: 'chernivtsi', country: 'Ukraine' },
 ];
 
 /** Playback speeds offered. */

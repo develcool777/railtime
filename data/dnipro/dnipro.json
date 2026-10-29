@@ -20,5 +20,65 @@
     {"stationA":"metrobudivnykiv","stationB":"vokzalna","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.99683,48.47483],[35.00273,48.47296],[35.00396,48.47271],[35.00477,48.47267],[35.00645,48.47293],[35.01536,48.47516],[35.01598,48.47527],[35.01635,48.47528],[35.01753,48.47508]]},
     {"stationA":"pokrovska","stationB":"prospekt-svobody","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.92675,48.47922],[34.93098,48.47974],[34.93248,48.47982],[34.93574,48.47988],[34.944,48.48013],[34.94481,48.4802]]},
     {"stationA":"prospekt-svobody","stationB":"zavodska","lines":{"tsentralno-zavodska":{"open":"1995-12-29"}},"coordinates":[[34.94481,48.4802],[34.94646,48.48033],[34.94744,48.48031],[34.94796,48.48022],[34.94862,48.48],[34.94943,48.47955],[34.9532,48.47708],[34.95551,48.47602],[34.95676,48.47569],[34.95846,48.47559],[34.95937,48.4756],[34.96059,48.47573]]}
-  ]
+  ],
+  "plans": {
+    "under-construction": {
+      "name": "Under construction",
+      "names": {"uk":"Будується"},
+      "description": "The Tsentralno-Zavodska line's 4 km extension from Vokzalna under Yavornytskoho Avenue to Teatralna, Tsentralna and Muzeina, under construction since the 1990s (Limak contract 2016, stations by Zaha Hadid Architects); work stopped in February 2022 when the contractor left.",
+      "stations": {
+        "muzeina": {"name":"Muzeina","names":{"uk":"Музейна"},"coordinate":[35.0646,48.4548]},
+        "teatralna": {"name":"Teatralna","names":{"uk":"Театральна"},"coordinate":[35.03186,48.47216]},
+        "tsentralna": {"name":"Tsentralna","names":{"uk":"Центральна"},"coordinate":[35.045,48.46528]}
+      },
+      "sections": [
+        {"line":"tsentralno-zavodska","stations":["vokzalna","teatralna","tsentralna","muzeina"]}
+      ]
+    },
+    "long-term": {
+      "name": "Long-term plan",
+      "names": {"uk":"Перспективний план"},
+      "description": "The metro of Dnipro's General Plan to 2026 and the city's 2008 scheme: the Tsentralno-Zavodska line west to Parus and south-east past the Southern Station to Peremoha and Topolia, and a second line from Shynna in the south through the centre and across the Central Bridge to Kharkivska on the left bank.",
+      "lines": {
+        "druha": {"name":"Line 2","names":{"uk":"Друга лінія"},"network":"metro","mode":"metro","color":"#003399","darkColor":"#5B8DEF"}
+      },
+      "stations": {
+        "dnipro": {"name":"Dnipro","names":{"uk":"Дніпро"},"coordinate":[35.074,48.4518]},
+        "enerhetychna": {"name":"Enerhetychna","names":{"uk":"Енергетична"},"coordinate":[34.99771,48.42309]},
+        "industrialna": {"name":"Industrialna","names":{"uk":"Індустріальна"},"coordinate":[35.07194,48.49915]},
+        "kharkivska": {"name":"Kharkivska","names":{"uk":"Харківська"},"coordinate":[35.07986,48.51873]},
+        "kosmichna": {"name":"Kosmichna","names":{"uk":"Космічна"},"coordinate":[35.05912,48.42257]},
+        "muzeina": {"name":"Muzeina","names":{"uk":"Музейна"},"coordinate":[35.0646,48.4548]},
+        "parus-1": {"name":"Parus-1","names":{"uk":"Парус-1"},"coordinate":[34.90455,48.47582]},
+        "parus-2": {"name":"Parus-2","names":{"uk":"Парус-2"},"coordinate":[34.88925,48.47386]},
+        "pivdennyi-vokzal": {"name":"Pivdennyi Vokzal","names":{"uk":"Південний вокзал"},"coordinate":[35.0634,48.43829]},
+        "prospekt-heroiv": {"name":"Prospekt Heroiv","names":{"uk":"Проспект Героїв"},"coordinate":[35.06044,48.41686]},
+        "pushkinska": {"name":"Pushkinska","names":{"uk":"Пушкінська"},"coordinate":[35.02954,48.46278]},
+        "robocha": {"name":"Robocha","names":{"uk":"Робоча"},"coordinate":[35.00961,48.45133]},
+        "shynna": {"name":"Shynna","names":{"uk":"Шинна"},"coordinate":[34.99898,48.41109]},
+        "slobozhanskyi-prospekt": {"name":"Slobozhanskyi Prospekt","names":{"uk":"Слобожанський проспект"},"coordinate":[35.06243,48.48367]},
+        "sokil": {"name":"Sokil","names":{"uk":"Сокіл"},"coordinate":[35.05552,48.40866]},
+        "sportyvna": {"name":"Sportyvna","names":{"uk":"Спортивна"},"coordinate":[35.00487,48.43788]},
+        "teatralna": {"name":"Teatralna","names":{"uk":"Театральна"},"coordinate":[35.03186,48.47216]},
+        "topolia-1": {"name":"Topolia-1","names":{"uk":"Тополя-1"},"coordinate":[35.04004,48.40353]},
+        "topolia-2": {"name":"Topolia-2","names":{"uk":"Тополя-2"},"coordinate":[35.0285,48.4004]},
+        "tsentralna": {"name":"Tsentralna","names":{"uk":"Центральна"},"coordinate":[35.045,48.46528]},
+        "yevropeiska": {"name":"Yevropeiska","names":{"uk":"Європейська"},"coordinate":[35.05098,48.46722]}
+      },
+      "sections": [
+        {"line":"tsentralno-zavodska","stations":["vokzalna","teatralna","tsentralna","muzeina"]},
+        {"line":"tsentralno-zavodska","stations":["muzeina","dnipro","pivdennyi-vokzal"]},
+        {"line":"tsentralno-zavodska","stations":["pokrovska","parus-1","parus-2"]},
+        {"line":"druha","stations":["pushkinska","yevropeiska","slobozhanskyi-prospekt","industrialna"]},
+        {"line":"tsentralno-zavodska","stations":["pivdennyi-vokzal","kosmichna","prospekt-heroiv","sokil"]},
+        {"line":"druha","stations":["industrialna","kharkivska"]},
+        {"line":"druha","stations":["pushkinska","robocha","sportyvna"]},
+        {"line":"tsentralno-zavodska","stations":["sokil","topolia-1","topolia-2"]},
+        {"line":"druha","stations":["sportyvna","enerhetychna","shynna"]}
+      ],
+      "transfers": [
+        {"stationA":"tsentralna","stationB":"yevropeiska"}
+      ]
+    }
+  }
 }
