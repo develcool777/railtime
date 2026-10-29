@@ -24,16 +24,15 @@ export type PlayedHistory = {
 };
 
 /**
- * Plays a network's whole history at 1×, drawing every fifth frame of each step as the map would.
+ * Plays a network at 1× from where its player stands until it ends, drawing every fifth frame of
+ * each step as the map would.
  *
- * @param network - The network.
- * @param plan - One of its plans, built on it and played after its history.
+ * @param playback - The network's pieces, its player placed where to start.
+ * @param skipped - Steps before the start, left out of the count.
  * @returns How it went.
  */
-export const playWholeHistory = (network: Network, plan?: string): PlayedHistory => {
-  const playback = playbackOf(network, plan);
+const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): PlayedHistory => {
   const { timeline, player } = playback;
-  player.seek(timeline.start);
   player.playing = true;
   const frameSeconds = 1 / 20;
   let seconds = 0;
@@ -50,5 +49,31 @@ export const playWholeHistory = (network: Network, plan?: string): PlayedHistory
     player.active.animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress: player.progress, holdProgress: player.holdProgress }, drawing);
     mostHighlighted = Math.max(mostHighlighted, drawing.highlighted.size);
   }
-  return { steps: timeline.steps.length, started, cursor: player.cursor, mostHighlighted, seconds };
+  return { steps: timeline.steps.length - skipped, started, cursor: player.cursor - skipped, mostHighlighted, seconds };
+};
+
+/**
+ * Plays a network's whole history at 1×, from its first day, drawing frames as the map would.
+ *
+ * @param network - The network.
+ * @param plan - One of its plans, built on it and played after its history.
+ * @returns How it went.
+ */
+export const playWholeHistory = (network: Network, plan?: string): PlayedHistory => {
+  const playback = playbackOf(network, plan);
+  playback.player.seek(playback.timeline.start);
+  return playOut(playback, 0);
+};
+
+/**
+ * Plays a plan on its network from today, as "Play future" does: only the plan's sections.
+ *
+ * @param network - The network.
+ * @param plan - One of its plans.
+ * @returns How it went, counting the steps from today alone.
+ */
+export const playPlan = (network: Network, plan: string): PlayedHistory => {
+  const playback = playbackOf(network, plan);
+  // The player opens at today: whatever is dated after it plays first, as in the app.
+  return playOut(playback, playback.player.cursor);
 };
