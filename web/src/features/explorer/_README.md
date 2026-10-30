@@ -18,6 +18,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | `changes/`  | The Changes section, which follows playback                                                           | `ChangesSection`, `ChangeRow`                                     |
 | `stations/` | The Stations section, a station's view and the walk from it along its lines; finding stations by name | `StationsSection`, `StationView`, `StationLinks`, `StationSearch` |
 | `route/`    | The Route section: a route between two stations (`useRouteFinder`)                                    | `RouteSection`                                                    |
+| `insights/` | The Insights section: how the network grew, and its records on the date shown (`useInsights`)         | `InsightsSection`, `GrowthChart`, `DecadeChart`                   |
 | `reach/`    | The Reach section: how far you get from a station, by time (`useReachFinder`)                         | `ReachSection`                                                    |
 | `plans/`    | The Plans section, the plan shown and its legend (`useExplorerPlan`)                                  | `PlansSection`, `PlanLegend`                                      |
 | `header/`   | The header's city picker and search                                                                   | `CitySelect`, `ExplorerSearch`, `SearchButton`                    |
@@ -44,7 +45,7 @@ At the top, what every part shares or what ties them together:
 - **A part never imports another part's composable.** What one needs from another is handed in as
   a callback: the time control calls `onPlay` (the panel's `followPlayback`), the route calls
   `openSection`. So the order of the calls in `ExplorerView` is the one place that ties them, and
-  it reads top to bottom: layout, map, plan, panel, time, route, reach, address, keys.
+  it reads top to bottom: layout, map, plan, panel, time, route, reach, insights, address, keys.
 - **Components** take props and emit; none reaches into a composable.
 
 ## Adding to it

@@ -20,6 +20,8 @@
     "@railtime/data": "workspace:*",
     "@railtime/renderer": "workspace:*",
     "@railtime/schema": "workspace:*",
+    "@unovis/ts": "1.7.1",
+    "@unovis/vue": "1.7.1",
     "maplibre-gl": "^6.16.0",
     "nuxt": "^4.6.3",
     "tailwindcss": "^4.3.3",

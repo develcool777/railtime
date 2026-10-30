@@ -59,6 +59,7 @@
                 @preference="routePreference = $event"
                 @station="openStation" />
               <ReachSection v-else-if="section === 'reach'" :stations :from="reachFrom" :reach="foundReach" @from="reachFrom = $event" @station="openStation" />
+              <InsightsSection v-else-if="section === 'insights'" :growth :records :year="shownYear" @year="showYear" @station="openStation" @line="pushLine" />
               <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
             </div>
           </div>
@@ -185,6 +186,7 @@
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
+  import { useInsights } from '~/features/explorer/insights/insights.composable';
   import { useReachFinder } from '~/features/explorer/reach/reach.composable';
   import { useRouteFinder } from '~/features/explorer/route/route.composable';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
@@ -280,6 +282,13 @@
 
   const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding, section, timeMode });
   const { reachFrom, foundReach, reachMark } = useReachFinder({ binding, section, timeMode });
+
+  const { growth, records, shownYear } = useInsights({ binding });
+  // A year picked on a chart: the map as it was at its end (today, for this year), the timeline open to say so.
+  const showYear = (year: number) => {
+    pick({ kind: 'date', time: Math.min(Date.UTC(year, 11, 31), range.value.today) });
+    if (timeMode.value === 'rest') openTimeline();
+  };
 
   // A dot on each section whose choice is in force while another is open: a plan shown, a route or a reach set.
   const marks = computed(() => {

@@ -23,6 +23,8 @@ import { Minimap } from './minimap/minimap.service';
 import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.utils';
 import { lineBranches, lineLengthKm, stepChangesLine } from './model/lineDetails.utils';
 import { boundsOf } from './model/geometry.utils';
+import type { NetworkHistory } from './model/history.types';
+import { networkAt, networkHistory, openingsByDecade } from './model/history.utils';
 import { NetworkIndex } from './model/networkIndex.service';
 import type { TrackSegment } from './model/networkIndex.types';
 import { RouteFinder } from './model/routeFinder.service';
@@ -56,6 +58,8 @@ import type {
   LineInfo,
   MapView,
   Padding,
+  NetworkGrowth,
+  NetworkRecords,
   ReachInfo,
   RouteInfo,
   RoutePreference,
@@ -108,6 +112,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private reachTrack: ReachTrackFeature[] = [];
   /** The stations the reach drawn gets to, its start among them. */
   private reachStops: PointFeature<ReachStopProperties>[] = [];
+  /** The network year by year, worked out the first time it is asked for: it does not change. */
+  private history: NetworkHistory | null = null;
   /** The station the reach drawn starts at: the camera frames a reach when it changes. */
   private reachFrom: string | null = null;
   /** The overview inset, if the app gave it a container. */
@@ -522,6 +528,51 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
+   * The network year by year up to this one, and how many stations opened in each decade.
+   *
+   * @returns Its growth.
+   */
+  public getGrowth(): NetworkGrowth {
+    const { years, firstYears } = this.networkHistory();
+    return { years, decades: openingsByDecade(firstYears) };
+  }
+
+  /**
+   * The network's records on the date shown: the stations open longest, those most lines call at,
+   * and the longest lines.
+   *
+   * @param count - How many of each.
+   * @returns The records.
+   */
+  public getRecords(count = 5): NetworkRecords {
+    const cursor = this.player.cursor;
+    const { firstYears } = this.networkHistory();
+    const { stations } = networkAt(this.index, this.timeline, cursor);
+    const name = (station: string) => this.index.stationName(station, this.player.clock);
+    const oldest = [...stations.keys()]
+      .flatMap(station => {
+        const year = firstYears.get(station);
+        return year === undefined ? [] : [{ id: station, name: name(station), year }];
+      })
+      .sort((first, second) => first.year - second.year || first.name.localeCompare(second.name))
+      .slice(0, count);
+    const busiest = [...stations]
+      .map(([station, lines]) => ({
+        id: station,
+        name: name(station),
+        lines: [...lines].sort(this.index.compareLines).map(line => ({ id: line, name: this.index.lineName(line), color: this.baseColor(line) })),
+      }))
+      .sort((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
+      .slice(0, count);
+    const longest = this.index.lineIds
+      .map(line => ({ id: line, name: this.index.lineName(line), color: this.baseColor(line), km: lineLengthKm(this.index, this.timeline, line, cursor) }))
+      .filter(line => line.km > 0)
+      .sort((first, second) => second.km - first.km)
+      .slice(0, count);
+    return { oldest, busiest, longest };
+  }
+
+  /**
    * How long it takes to get from a station to every other on the date shown, by the fastest routes.
    *
    * @param from - The station to start at.
@@ -696,6 +747,16 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
         },
       ];
     });
+  }
+
+  /**
+   * The network year by year, worked out once.
+   *
+   * @returns Its history up to this year.
+   */
+  private networkHistory(): NetworkHistory {
+    this.history ??= networkHistory(this.index, this.timeline, new Date(this.player.today).getUTCFullYear());
+    return this.history;
   }
 
   /** The overlay's layer groups, bottom to top. */
