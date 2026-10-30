@@ -1,18 +1,20 @@
-import { Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl';
+import { type GeoJSONSource, type LineLayerSpecification, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl';
 import { recolorBasemap } from '../layers/basemap.utils';
-import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from '../layers/theme.constants';
+import { LINE_LAYOUT } from '../layers/layers.constants';
+import { DEFAULT_BASEMAP, PALETTES } from '../layers/theme.constants';
 import type { Credit, Theme } from '../transitMap.types';
-import { OPENSTREETMAP_CREDIT, STILL_FORMAT, STILL_PIXEL_RATIO, STILL_QUALITY, STILL_TIMEOUT_MS } from './basemapStill.constants';
-import type { BasemapStillOptions, StillRequest } from './basemapStill.types';
+import { STILL_CREDITS, STILL_FORMAT, STILL_LINE_WIDTH, STILL_PIXEL_RATIO, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from './basemapStill.constants';
+import type { BasemapStillOptions, StillRequest, StillTrack } from './basemapStill.types';
 
 /**
  * Still pictures of the basemap, for previews: one hidden map, moved to each view in turn and
  * photographed once its tiles are in, so a page of previews costs one WebGL context, not one each.
- * The basemap is the map's own, in the same theme colours. Browser only.
+ * The basemap is the map's own, in the same theme colours, with any track asked for drawn over it.
+ * Browser only.
  */
 export class BasemapStill {
   /** What a page showing stills of the default basemap owes credit to. */
-  public static readonly credits: Credit[] = [...DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT];
+  public static readonly credits: Credit[] = STILL_CREDITS;
   /** The hidden map. */
   private readonly map: MapLibreMap;
   /** Its container, off screen. */
@@ -43,6 +45,7 @@ export class BasemapStill {
     this.loaded = new Promise(resolve =>
       this.map.once('style.load', () => {
         recolorBasemap(this.map, PALETTES[this.theme], { labels: true });
+        this.installTrack();
         resolve();
       }),
     );
@@ -92,8 +95,38 @@ export class BasemapStill {
     Object.assign(this.container.style, { width: `${request.width}px`, height: `${request.height}px` });
     this.map.resize();
     this.map.jumpTo({ center: request.view.center, zoom: request.view.zoom });
+    this.drawTrack(request.track ?? []);
     await this.settled();
     return this.map.getCanvas().toDataURL(STILL_FORMAT, STILL_QUALITY);
+  }
+
+  /** Adds the source and layers a still's track is drawn with, on top of the basemap. */
+  private installTrack(): void {
+    this.map.addSource(STILL_TRACK.source, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    const paint: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': STILL_LINE_WIDTH };
+    this.map.addLayer({ id: STILL_TRACK.solid, type: 'line', source: STILL_TRACK.source, filter: ['!', ['get', 'dashed']], layout: LINE_LAYOUT, paint });
+    this.map.addLayer({
+      id: STILL_TRACK.dashed,
+      type: 'line',
+      source: STILL_TRACK.source,
+      filter: ['get', 'dashed'],
+      layout: { 'line-join': 'round' },
+      paint: { ...paint, 'line-dasharray': [2, 1.6] },
+    });
+  }
+
+  /**
+   * Draws a still's track, replacing the last one's.
+   *
+   * @param track - Each line's track, bottom first.
+   */
+  private drawTrack(track: StillTrack[]): void {
+    const features = track.map(line => ({
+      type: 'Feature' as const,
+      properties: { color: line.color, dashed: line.dashed === true },
+      geometry: { type: 'MultiLineString' as const, coordinates: line.paths },
+    }));
+    (this.map.getSource(STILL_TRACK.source) as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
   }
 
   /**

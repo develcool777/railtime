@@ -2,8 +2,8 @@ import type { CityIndex } from '@railtime/schema/cityIndex.types';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import { citiesByCountry, cityMenu, matchesFilter, networkUrlOf, planToOpen } from '../../../app/utils/city.utils';
-import { CITIES, CITY_INDEX_URL } from '../../../app/utils/explorer.constants';
+import { citiesByCountry, cityMenu, matchesFilter, networkUrlOf, planToOpen, previewUrlOf } from '../../../app/utils/city.utils';
+import { CITIES } from '../../../app/utils/explorer.constants';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 
 /** What the site serves at `/data/`. */
@@ -30,8 +30,13 @@ describe('CityUtils', () => {
       for (const city of CITIES) expect(existsSync(`${SERVED}${networkUrlOf(city.value).replace(/^data\//, '')}`), city.value).toBe(true);
     });
 
+    test("finds every city's previews beside its dataset", () => {
+      expect(previewUrlOf('kyiv', 'dark')).toBe('data/ukraine/kyiv/kyiv.dark.webp');
+      for (const city of CITIES) expect(existsSync(`${SERVED}${previewUrlOf(city.value, 'light').replace(/^data\//, '')}`), city.value).toBe(true);
+    });
+
     test('lists in the index every city the menu has, and no other', () => {
-      const index: CityIndex = JSON.parse(readFileSync(`${SERVED}${CITY_INDEX_URL.replace(/^data\//, '')}`, 'utf8'));
+      const index: CityIndex = JSON.parse(readFileSync(`${SERVED}cities.json`, 'utf8'));
       expect(Object.keys(index).sort()).toEqual(CITIES.map(city => city.value).sort());
     });
   });
@@ -53,9 +58,8 @@ describe('CityUtils', () => {
       openedYear: 1960,
       planOnly: false,
       plans: 2,
-      lines: [],
+      lines: 3,
       stations: 52,
-      track: [],
     };
     const all = { query: '', country: '', kind: 'all' as const, withPlans: false };
 

@@ -1,3 +1,4 @@
+import { DEFAULT_BASEMAP_CREDITS } from '../layers/theme.constants';
 import type { Credit } from '../transitMap.types';
 
 /** Device pixels per CSS pixel in a still: sharp on a high-density screen, whatever the one it is taken on. */
@@ -14,3 +15,12 @@ export const STILL_QUALITY = 0.85;
 
 /** The basemap's data, credited on a page of stills as the map credits it. */
 export const OPENSTREETMAP_CREDIT: Credit = { text: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright' };
+
+/** What a page showing stills of the default basemap owes credit to: the basemap, then its data. */
+export const STILL_CREDITS: Credit[] = [...DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT];
+
+/** The width of a line drawn over a still, CSS pixels. */
+export const STILL_LINE_WIDTH = 2.5;
+
+/** The overlay source and layers a still draws its track with. */
+export const STILL_TRACK = { source: 'rt-still-track', solid: 'rt-still-track-solid', dashed: 'rt-still-track-dashed' } as const;

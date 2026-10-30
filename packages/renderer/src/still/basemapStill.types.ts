@@ -1,3 +1,4 @@
+import type { LngLat } from '@railtime/schema/network.types';
 import type { MapView, Theme } from '../transitMap.types';
 
 /** What a `BasemapStill` is created with. */
@@ -9,5 +10,8 @@ export type BasemapStillOptions = {
   workerUrl?: string;
 };
 
-/** One picture to take: where the basemap looks, and the picture's size in CSS pixels. */
-export type StillRequest = { view: MapView; width: number; height: number };
+/** A line's track drawn over a still, in one theme's colour: dashed for track not built. */
+export type StillTrack = { color: string; paths: LngLat[][]; dashed?: boolean };
+
+/** One picture to take: where the basemap looks, the picture's size in CSS pixels, and any track to draw over it, bottom first. */
+export type StillRequest = { view: MapView; width: number; height: number; track?: StillTrack[] };

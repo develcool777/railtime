@@ -13,7 +13,8 @@
     "./transitMap.types": "./src/transitMap.types.ts",
     "./transitMap.css": "./src/transitMap.css",
     "./basemapStill.service": "./src/still/basemapStill.service.ts",
-    "./basemapStill.types": "./src/still/basemapStill.types.ts"
+    "./basemapStill.types": "./src/still/basemapStill.types.ts",
+    "./basemapStill.constants": "./src/still/basemapStill.constants.ts"
   },
   "dependencies": {
     "@railtime/schema": "workspace:*",

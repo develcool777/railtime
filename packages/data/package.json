@@ -7,12 +7,19 @@
   "scripts": {
     "format": "node src/cli.formatCity.ts",
     "test-unit": "vitest",
-    "test-unit-ci": "vitest run"
+    "test-unit-ci": "vitest run",
+    "previews": "node src/cli.renderPreviews.ts"
+  },
+  "exports": {
+    "./cities.json": "./cities/cities.json"
   },
   "dependencies": {
     "@railtime/schema": "workspace:*"
   },
   "devDependencies": {
+    "@railtime/renderer": "workspace:*",
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.60.0",
     "vitest": "^5.0.5"
   }
 }

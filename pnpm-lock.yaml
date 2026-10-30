@@ -63,6 +63,15 @@ importers:
         specifier: workspace:*
         version: link:../schema
     devDependencies:
+      '@railtime/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      playwright-core:
+        specifier: ^1.60.0
+        version: 1.64.1
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
@@ -98,6 +107,9 @@ importers:
       '@nuxt/ui':
         specifier: ^4.12.0
         version: 4.12.0(2b61f3a60ea1492a2001fe09ae2b454b)
+      '@railtime/data':
+        specifier: workspace:*
+        version: link:../packages/data
       '@railtime/renderer':
         specifier: workspace:*
         version: link:../packages/renderer
@@ -3972,6 +3984,11 @@ packages:
 
   pkg-types@2.4.0:
     resolution: {integrity: sha512-07Fys7iVx0X6TcviMOgogM1Lk33ZyqOezMnU79S+kffWqwolG/5W9V8EgQSeYCIfFTYVgssRbnH630Oa2+soBA==}
+
+  playwright-core@1.64.1:
+    resolution: {integrity: sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   postcss-calc@11.2.3:
     resolution: {integrity: sha512-pFW3MR2a4W7uHcSGUiyQGGXZWHon83ljbNwnUJ1mRKublWQbv+3o9NiqhlV4TJfNby+U+zLY2OgiywzhA5eFqw==}
@@ -9391,6 +9408,8 @@ snapshots:
       confbox: 0.3.1
       exsolve: 1.2.0
       pathe: 2.0.3
+
+  playwright-core@1.64.1: {}
 
   postcss-calc@11.2.3(postcss@8.5.32):
     dependencies:
