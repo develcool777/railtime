@@ -18,6 +18,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | `changes/`  | The Changes section, which follows playback                                                           | `ChangesSection`, `ChangeRow`                                     |
 | `stations/` | The Stations section, a station's view and the walk from it along its lines; finding stations by name | `StationsSection`, `StationView`, `StationLinks`, `StationSearch` |
 | `route/`    | The Route section: a route between two stations (`useRouteFinder`)                                    | `RouteSection`                                                    |
+| `reach/`    | The Reach section: how far you get from a station, by time (`useReachFinder`)                         | `ReachSection`                                                    |
 | `plans/`    | The Plans section, the plan shown and its legend (`useExplorerPlan`)                                  | `PlansSection`, `PlanLegend`                                      |
 | `header/`   | The header's city picker and search                                                                   | `CitySelect`, `ExplorerSearch`, `SearchButton`                    |
 | `address/`  | The address: read at opening, then kept in step with the map (`useExplorerAddress`)                   | —                                                                 |
@@ -38,12 +39,12 @@ At the top, what every part shares or what ties them together:
   and sends commands to `map.value`.
 - **The time control's mode** (`timeMode`) is the one piece of state several parts read: the
   layout keeps more room under the map as the control grows, the panel's Changes follows playback,
-  the route hides while it plays, the address stops following. `ExplorerView` owns it; `useExplorerTime`
+  the route and the reach hide while it plays, the address stops following. `ExplorerView` owns it; `useExplorerTime`
   drives it.
 - **A part never imports another part's composable.** What one needs from another is handed in as
   a callback: the time control calls `onPlay` (the panel's `followPlayback`), the route calls
   `openSection`. So the order of the calls in `ExplorerView` is the one place that ties them, and
-  it reads top to bottom: layout, map, plan, panel, time, route, address, keys.
+  it reads top to bottom: layout, map, plan, panel, time, route, reach, address, keys.
 - **Components** take props and emit; none reaches into a composable.
 
 ## Adding to it

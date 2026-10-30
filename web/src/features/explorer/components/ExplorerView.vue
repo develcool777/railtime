@@ -58,6 +58,7 @@
                 @swap="swapEnds"
                 @preference="routePreference = $event"
                 @station="openStation" />
+              <ReachSection v-else-if="section === 'reach'" :stations :from="reachFrom" :reach="foundReach" @from="reachFrom = $event" @station="openStation" />
               <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
             </div>
           </div>
@@ -184,6 +185,7 @@
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
+  import { useReachFinder } from '~/features/explorer/reach/reach.composable';
   import { useRouteFinder } from '~/features/explorer/route/route.composable';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
   import { useExplorerTime } from '~/features/explorer/time/time.composable';
@@ -277,12 +279,14 @@
   } = useExplorerTime({ binding, timeMode, plan: props.plan, planOnly, currentChange, onPlay: followPlayback });
 
   const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding, section, timeMode });
+  const { reachFrom, foundReach, reachMark } = useReachFinder({ binding, section, timeMode });
 
-  // A dot on each section whose choice is in force while another is open: a plan shown, a route set.
+  // A dot on each section whose choice is in force while another is open: a plan shown, a route or a reach set.
   const marks = computed(() => {
     const shown: Partial<Record<Section, string>> = {};
     if (planMark) shown.plans = planMark;
     if (routeMark.value) shown.route = routeMark.value;
+    if (reachMark.value) shown.reach = reachMark.value;
     return shown;
   });
 

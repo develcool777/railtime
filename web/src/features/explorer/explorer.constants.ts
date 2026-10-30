@@ -6,6 +6,7 @@ export const SECTIONS: { id: Section; label: string; icon: string }[] = [
   { id: 'stations', label: 'Stations', icon: 'i-lucide-map-pin' },
   { id: 'changes', label: 'Changes', icon: 'i-lucide-history' },
   { id: 'route', label: 'Route', icon: 'i-lucide-route' },
+  { id: 'reach', label: 'Reach', icon: 'i-lucide-radar' },
   { id: 'plans', label: 'Plans', icon: 'i-lucide-drafting-compass' },
 ];
 

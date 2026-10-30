@@ -66,4 +66,27 @@ describe('RouteFinder', () => {
       expect(routeOf('a', 'a')).toBeNull();
     });
   });
+
+  describe('reach', () => {
+    test('times every station from the start, by its fastest route, soonest first', () => {
+      const index = new NetworkIndex(routeNetwork());
+      const timeline = new Timeline(index);
+      const finder = new RouteFinder(index, timeline);
+      const reach = finder.reach('a', timeline.steps.length);
+      expect(reach.get('a')).toBe(0);
+      expect(reach.get('d')).toBeCloseTo(ride(3), 0);
+      for (const station of ['b', 'c', 'd', 'e', 'g', 'h']) {
+        expect(reach.get(station)).toBeCloseTo(finder.find('a', station, timeline.steps.length)?.minutes ?? Number.NaN, 5);
+      }
+      const times = [...reach.values()];
+      expect(times).toEqual([...times].sort((first, second) => first - second));
+    });
+
+    test('reaches nothing from a station no line calls at on the date', () => {
+      // On the small network, C is on red's track from 1910 but a stop only from 1920.
+      const index = new NetworkIndex(tinyNetwork());
+      const timeline = new Timeline(index);
+      expect(new RouteFinder(index, timeline).reach('c', timeline.cursorAt(Date.UTC(1915, 6, 1))).size).toBe(0);
+    });
+  });
 });

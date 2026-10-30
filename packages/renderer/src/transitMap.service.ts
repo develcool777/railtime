@@ -4,13 +4,16 @@ import { buildPlan } from '@railtime/schema/plan.utils';
 import { required } from './core/required.utils';
 import { ActiveStepLayer } from './layers/activeStepLayer.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
-import type { PointFeature, RouteFeature, RouteStopProperties, StationLines } from './layers/features.types';
+import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties, StationLines } from './layers/features.types';
 import { pointFeature } from './layers/features.utils';
 import { routeStopMarks } from './layers/routeStops.utils';
 import type { RenderState } from './layers/lineStyle.types';
 import { LAYERS } from './layers/layers.constants';
 import type { MapLayer } from './layers/mapLayer.service';
 import { NetworkLayer } from './layers/networkLayer.service';
+import { REACH_BANDS } from './layers/reach.constants';
+import { bandOf, reachedSegments } from './layers/reach.utils';
+import { ReachLayer } from './layers/reachLayer.service';
 import { RouteLayer } from './layers/routeLayer.service';
 import type { NetworkSnapshot } from './layers/networkSnapshot.types';
 import { buildNetworkSnapshot } from './layers/networkSnapshot.utils';
@@ -21,6 +24,7 @@ import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.uti
 import { lineBranches, lineLengthKm, stepChangesLine } from './model/lineDetails.utils';
 import { boundsOf } from './model/geometry.utils';
 import { NetworkIndex } from './model/networkIndex.service';
+import type { TrackSegment } from './model/networkIndex.types';
 import { RouteFinder } from './model/routeFinder.service';
 import { Timeline } from './model/timeline.service';
 import type { Step } from './model/timeline.types';
@@ -52,6 +56,7 @@ import type {
   LineInfo,
   MapView,
   Padding,
+  ReachInfo,
   RouteInfo,
   RoutePreference,
   StationInfo,
@@ -97,6 +102,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private route: RouteFeature[] = [];
   /** Its stops, marked. */
   private routeStops: PointFeature<RouteStopProperties>[] = [];
+  /** How far one gets from a station, when it is shown. */
+  private readonly reachLayer: ReachLayer;
+  /** The reach's track drawn, kept so the overlay can draw it again once installed. */
+  private reachTrack: ReachTrackFeature[] = [];
+  /** The stations the reach drawn gets to, its start among them. */
+  private reachStops: PointFeature<ReachStopProperties>[] = [];
+  /** The station the reach drawn starts at: the camera frames a reach when it changes. */
+  private reachFrom: string | null = null;
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
   /** The map's colour theme. */
@@ -170,6 +183,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.networkLayer = new NetworkLayer(this.map);
     this.activeStepLayer = new ActiveStepLayer(this.map);
     this.routeLayer = new RouteLayer(this.map);
+    this.reachLayer = new ReachLayer(this.map);
     this.routeFinder = new RouteFinder(this.index, this.timeline);
     this.stationLayer = new StationLayer(
       this.map,
@@ -508,6 +522,69 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
+   * How long it takes to get from a station to every other on the date shown, by the fastest routes.
+   *
+   * @param from - The station to start at.
+   * @returns The stations it gets to, soonest first, and the bands they are coloured in; `null` if no line calls there on the date.
+   */
+  public findReach(from: string): ReachInfo | null {
+    const minutes = this.routeFinder.reach(from, this.player.cursor);
+    if (minutes.size === 0) return null;
+    const name = (station: string) => this.index.stationName(station, this.player.clock);
+    // The search reaches stations soonest first, so they come in that order.
+    const stations = [...minutes].filter(([station]) => station !== from).map(([id, time]) => ({ id, name: name(id), minutes: time, band: bandOf(time) }));
+    return { from: { id: from, name: name(from) }, stations, bands: REACH_BANDS };
+  }
+
+  /**
+   * Draws how far one gets from a station, or clears it: the track and the stations in the colour of
+   * how long they take, each named with its time where there is room, over the network faded as
+   * behind a route. A new start is framed with all it reaches.
+   *
+   * @param reach - A reach `findReach` gave, or `null`.
+   */
+  public showReach(reach: ReachInfo | null): void {
+    const minutes = new Map<string, number>(reach ? [[reach.from.id, 0], ...reach.stations.map(station => [station.id, station.minutes] as const)] : []);
+    const open = new Map<number, TrackSegment>();
+    for (const lineSegment of this.index.lineSegments) {
+      if (this.timeline.isOpen(lineSegment, this.player.cursor)) open.set(lineSegment.segment.index, lineSegment.segment);
+    }
+    this.reachTrack = reachedSegments(minutes, open.values()).map(({ segment, minutes: time }) => ({
+      type: 'Feature',
+      properties: { color: required(REACH_BANDS[bandOf(time)], 'reach band').color },
+      geometry: { type: 'LineString', coordinates: required(this.index.segments[segment], `segment ${segment}`).coordinates },
+    }));
+    this.reachStops = reach
+      ? [
+          pointFeature(this.index.coordOf(reach.from.id), {
+            color: required(REACH_BANDS[0], 'reach band').color,
+            label: reach.from.name,
+            minutes: 0,
+            origin: true,
+          }),
+          ...reach.stations.map(station =>
+            pointFeature(this.index.coordOf(station.id), {
+              color: required(REACH_BANDS[station.band], 'reach band').color,
+              label: `${station.name} · ${Math.round(station.minutes)} min`,
+              minutes: station.minutes,
+              origin: false,
+            }),
+          ),
+        ]
+      : [];
+    if (this.ready) {
+      this.reachLayer.update(this.reachTrack, this.reachStops);
+      this.applyBackdrop();
+    }
+    const from = reach?.from.id ?? null;
+    if (from !== null && from !== this.reachFrom) {
+      const bounds = boundsOf(this.reachStops.map(stop => stop.geometry.coordinates));
+      if (bounds) this.camera.fit(bounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+    }
+    this.reachFrom = from;
+  }
+
+  /**
    * The stations on the map on the date shown, for a search: each with its names and its lines' colours.
    *
    * @returns The stations, by name.
@@ -623,14 +700,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** The overlay's layer groups, bottom to top. */
   private get layers(): MapLayer[] {
-    return [this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer];
+    return [this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
   }
 
-  /** Fades the network behind a route shown; else brings forward the lines in focus. */
+  /** Fades the network behind a route or a reach shown; else brings forward the lines in focus. */
   private applyBackdrop(): void {
-    const routeShown = this.route.length > 0;
-    this.networkLayer.focus(routeShown ? [] : this.focusedLines);
-    this.stationLayer.fade(routeShown);
+    const backdrop = this.route.length > 0 || this.reachStops.length > 0;
+    this.networkLayer.focus(backdrop ? [] : this.focusedLines);
+    this.stationLayer.fade(backdrop);
   }
 
   /** Recolours the basemap and installs the overlay once the style has loaded. */
@@ -641,6 +718,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     // A station selected before the style loaded (from a link) gets its ring now, a route its track.
     this.stationLayer.select(this.selectedStation);
     this.routeLayer.update(this.route, this.routeStops);
+    this.reachLayer.update(this.reachTrack, this.reachStops);
     this.applyBackdrop();
     this.ready = true;
     this.snapshotStale = true;
