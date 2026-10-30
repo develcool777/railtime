@@ -11,7 +11,7 @@
       "name": "Concept",
       "names": {"uk":"Концепція"},
       "status": "concept",
-      "description": "An unofficial concept, not a city plan: three lines through the centre and a ring. The Prutska line runs west to east from Rosha to Hraviton, the Sadhirsko-Pivdenna line from Sadhora south across the centre, and the Holovna line along the main street from the Prut to the south; the Kiltseva ring links the station, the airport and the south. Chernivtsi has never planned a metro; the stations stand, roughly, on the places they are named after.",
+      "description": "An unofficial concept, not a city plan: three lines through the centre and a ring. The Prutska line runs west to east from Rosha to Hraviton, the Sadhirsko-Pivdenna line from Sadhora south across the centre, and the Holovna line along the main street from the Prut to Pivdennyi Masyv; the Kiltseva ring links the station, the airport and the south. Chernivtsi has never planned a metro; the stations stand, roughly, on the places they are named after.",
       "lines": {
         "prutska": {"name":"Prutska","names":{"uk":"Прутська лінія"},"network":"metro","mode":"metro","color":"#D52B1E"},
         "sadhirsko-pivdenna": {"name":"Sadhirsko-Pivdenna","names":{"uk":"Садгірсько-південна лінія"},"network":"metro","mode":"metro","color":"#2F80ED"},
@@ -29,7 +29,7 @@
         "moskovska": {"name":"Moskovska","names":{"uk":"Московська"},"coordinate":[25.9493,48.3461]},
         "ozerna": {"name":"Ozerna","names":{"uk":"Озерна"},"coordinate":[25.9704,48.2774]},
         "park-imeni-shevchenka": {"name":"Park imeni Shevchenka","names":{"uk":"Парк ім. Шевченка"},"coordinate":[25.9398,48.2791]},
-        "pivdenna": {"name":"Pivdenna","names":{"uk":"Південна"},"coordinate":[25.961,48.2612]},
+        "pivdennyi-masyv": {"name":"Pivdennyi Masyv","names":{"uk":"Південний масив"},"coordinate":[25.956,48.2595]},
         "prospekt-nezalezhnosti": {"name":"Prospekt Nezalezhnosti","names":{"uk":"Проспект Незалежності"},"coordinate":[25.9458,48.269]},
         "prutska": {"name":"Prutska","names":{"uk":"Прутська"},"coordinate":[25.9235,48.3085]},
         "rohatka": {"name":"Rohatka","names":{"uk":"Рогатка"},"coordinate":[25.9535,48.2748]},
@@ -56,7 +56,7 @@
         {"line":"prutska","stations":["zavodska","rosha"]},
         {"line":"holovna","stations":["teatralna","stadion-bukovyna","rohatka"]},
         {"line":"holovna","stations":["teatralna","kalichanka"]},
-        {"line":"holovna","stations":["rohatka","pivdenna"]}
+        {"line":"holovna","stations":["rohatka","pivdennyi-masyv"]}
       ],
       "transfers": [
         {"stationA":"teatralna","stationB":"tsentralna"}
