@@ -25,6 +25,9 @@
         class="font-semibold"
         @click="emit('seek', range.today)" />
       <UButton v-if="hasPlan && !isFuture" label="Future" color="neutral" variant="outline" size="lg" class="font-semibold" @click="emit('future')" />
+      <UTooltip :text="hasPlan ? 'Close, back to the plan' : 'Close, back to today'">
+        <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="lg" square aria-label="Close the timeline" @click="emit('close')" />
+      </UTooltip>
     </div>
   </div>
 </template>
@@ -46,5 +49,5 @@
     /** Something was built: a network never built has no years to slide through. */
     hasHistory: boolean;
   }>();
-  const emit = defineEmits<{ play: []; pick: [target: TimelineTarget]; seek: [time: number]; future: [] }>();
+  const emit = defineEmits<{ play: []; pick: [target: TimelineTarget]; seek: [time: number]; future: []; close: [] }>();
 </script>

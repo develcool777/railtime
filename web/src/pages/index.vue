@@ -1,17 +1,6 @@
 <template>
   <div class="bg-page min-h-full">
-    <header class="border-default bg-default sticky top-0 z-10 border-b">
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-8 py-3.5 max-sm:px-4">
-        <NuxtLink to="/" class="flex items-center gap-2.5" aria-label="Railtime">
-          <span class="flex gap-[3px]" aria-hidden="true">
-            <span class="bg-brand-500 h-[18px] w-1.5 rounded-sm" />
-            <span class="bg-brand-300 h-[18px] w-1.5 rounded-sm" />
-          </span>
-          <span class="text-highlighted text-lg font-extrabold tracking-tight">railtime</span>
-        </NuxtLink>
-        <UColorModeButton color="neutral" variant="outline" />
-      </div>
-    </header>
+    <SiteHeader />
 
     <section class="hero border-default border-b">
       <div class="mx-auto max-w-7xl px-8 pt-16 pb-14 max-sm:px-4 max-sm:pt-10 max-sm:pb-9">
@@ -24,7 +13,7 @@
     </section>
 
     <!-- Search and filters, kept in reach while scrolling; on a phone they would cover half the screen, so they scroll away. -->
-    <div class="border-default bg-page/95 z-[9] border-b backdrop-blur-sm sm:sticky sm:top-[63px]">
+    <div class="border-default bg-page/95 z-[9] border-b backdrop-blur-sm sm:sticky sm:top-(--ui-header-height)">
       <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5 px-8 py-3 max-sm:px-4">
         <UInput
           v-model="filter.query"
