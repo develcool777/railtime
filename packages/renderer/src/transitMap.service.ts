@@ -109,6 +109,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private revealedCount = 0;
   /** The station ringed on the map. */
   private selectedStation: string | null = null;
+  /** The lines brought forward, the rest faded; `null` when every line is. */
+  private focusedLines: string[] | null = null;
   /** Clock day, cursor and playing state at the last `time` event, to emit only on change. */
   private lastTimeKey = '';
   /** The minimap was last sent a non-empty active drawing. */
@@ -289,6 +291,26 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   public setVisibleLines(lineIds: string[]): void {
     this.visibleLines = new Set(lineIds);
     this.snapshotStale = true;
+  }
+
+  /**
+   * Brings some lines forward and fades the rest, as for a line's or a route's panel; `null` shows every line alike.
+   *
+   * @param lineIds - The lines to bring forward, or `null`.
+   */
+  public focusLines(lineIds: string[] | null): void {
+    this.focusedLines = lineIds;
+    if (this.ready) this.networkLayer.focus(lineIds);
+  }
+
+  /** Zooms in a step, about the centre. */
+  public zoomIn(): void {
+    this.map.zoomIn();
+  }
+
+  /** Zooms out a step, about the centre. */
+  public zoomOut(): void {
+    this.map.zoomOut();
   }
 
   /**
@@ -574,6 +596,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     // A station selected before the style loaded (from a link) gets its ring now, a route its track.
     this.stationLayer.select(this.selectedStation);
     this.routeLayer.update(this.route);
+    this.networkLayer.focus(this.focusedLines);
     this.ready = true;
     this.snapshotStale = true;
     this.instant = true;

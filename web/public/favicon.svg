@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .brand { fill: #2a9d6f; } .soft { fill: #8fd4b4; } .ink { fill: #152030; } .station { fill: #ffffff; stroke: #152030; }
+    @media (prefers-color-scheme: dark) {
+      .brand { fill: #4dbb87; } .soft { fill: #1f704f; } .ink { fill: #e6edf3; } .station { fill: #16202d; stroke: #e6edf3; }
+    }
+  </style>
+  <rect x="6" y="3" width="7" height="26" rx="3.5" class="brand" />
+  <rect x="19" y="3" width="7" height="26" rx="3.5" class="soft" />
+  <rect x="9" y="13.5" width="14" height="5" class="ink" />
+  <circle cx="16" cy="16" r="5.5" stroke-width="3" class="station" />
+</svg>

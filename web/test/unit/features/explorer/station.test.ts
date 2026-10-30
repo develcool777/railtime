@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { findStations, foldName } from '~/features/explorer/station.utils';
+import type { LineDetails } from '@railtime/renderer/transitMap.types';
+import { findStations, foldName, nextStations } from '~/features/explorer/station.utils';
 
 /**
  * A station as the map lists it, red.
@@ -43,6 +44,54 @@ describe('StationUtils', () => {
     test('finds nothing for an empty query, and no more than asked', () => {
       expect(findStations(STATIONS, '  ', 5)).toEqual([]);
       expect(findStations(STATIONS, 'c', 2)).toHaveLength(2);
+    });
+  });
+
+  describe('nextStations', () => {
+    /**
+     * A line on the date shown, with its runs of stops.
+     *
+     * @param id - Its id, which is its name too.
+     * @param branches - Its runs, each a list of station ids.
+     * @returns The line.
+     */
+    const line = (id: string, branches: string[][]): LineDetails => ({
+      id,
+      name: id,
+      network: 'metro',
+      networkName: 'Metro',
+      color: `#${id}`,
+      opened: 0,
+      stations: 0,
+      km: 0,
+      branches: branches.map(run => run.map(stop => ({ id: stop, name: stop.toUpperCase() }))),
+      changes: [],
+    });
+
+    test('lists each stop either side once, with every line that runs there', () => {
+      const found = nextStations('b', [line('red', [['a', 'b', 'c']]), line('blue', [['c', 'b', 'd']])]);
+      expect(found).toEqual([
+        { id: 'a', name: 'A', lines: [{ id: 'red', name: 'red', color: '#red' }] },
+        {
+          id: 'c',
+          name: 'C',
+          lines: [
+            { id: 'red', name: 'red', color: '#red' },
+            { id: 'blue', name: 'blue', color: '#blue' },
+          ],
+        },
+        { id: 'd', name: 'D', lines: [{ id: 'blue', name: 'blue', color: '#blue' }] },
+      ]);
+    });
+
+    test('counts the first stop of a branch from the station it leaves', () => {
+      const found = nextStations('b', [
+        line('red', [
+          ['a', 'b', 'c'],
+          ['b', 'x'],
+        ]),
+      ]);
+      expect(found.map(next => next.id)).toEqual(['a', 'c', 'x']);
     });
   });
 });

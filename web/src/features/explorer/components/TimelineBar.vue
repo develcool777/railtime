@@ -27,13 +27,14 @@
       :key="tick.index"
       class="tick absolute -translate-x-1/2 rounded-sm"
       :class="tick.closure ? 'bg-dimmed size-[3px]' : 'h-2 w-[3px]'"
-      :style="{ left: percent(tick.left), bottom: `${32 + tick.level * 5}px`, background: tick.closure ? undefined : tick.color }"
+      :style="{ left: percent(tick.left), bottom: `${32 + tick.level * 5}px`, background: tickColor(tick) }"
       :title="tick.label" />
 
     <div class="bg-accented absolute top-[24px] right-0 left-0 h-1 rounded-full" />
-    <div class="bg-primary absolute top-[24px] left-0 h-1 rounded-full" :style="{ width: percent(thumb) }" />
+    <div class="bg-primary absolute top-[24px] left-0 h-1 rounded-full" :class="{ glide: playing }" :style="{ width: percent(thumb) }" />
     <div
       class="border-primary bg-default shadow-card absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-[3px]"
+      :class="{ glide: playing }"
       :style="{ left: percent(thumb) }" />
 
     <span
@@ -53,7 +54,7 @@
 
   import { FUTURE_SHARE } from '~/features/explorer/explorer.constants';
   import { yearOf } from '~/features/explorer/format.utils';
-  import type { TimelineScale, TimelineTarget } from '~/features/explorer/timeline.types';
+  import type { TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/timeline.types';
   import { targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/timeline.utils';
 
   const props = defineProps<{
@@ -62,6 +63,8 @@
     time: TimeState | null;
     /** What it sets, for screen readers. */
     label: string;
+    /** History is playing: the changes still to come are grey, and the thumb glides between them. */
+    playing?: boolean;
   }>();
   const emit = defineEmits<{ pick: [target: TimelineTarget] }>();
 
@@ -82,6 +85,13 @@
     if (!props.time) return '';
     return props.time.future ? 'Future' : String(yearOf(props.time.time));
   });
+
+  /** A tick's colour: its line's, but grey for a closure, or while playing for a change still to come. */
+  const tickColor = (tick: TimelineTick): string | undefined => {
+    if (tick.closure) return undefined;
+    if (props.playing && props.time && tick.index >= props.time.cursor) return 'var(--ui-border-accented)';
+    return tick.color;
+  };
 
   const percent = (fraction: number): string => `${(fraction * 100).toFixed(3)}%`;
 
@@ -115,7 +125,17 @@
     const moves: Record<string, number> = { ArrowLeft: now - year, ArrowRight: now + year, Home: scale.value.start, End: scale.value.end };
     const next = moves[event.key];
     if (next === undefined) return;
+    // The page's own arrow keys would step again.
     event.preventDefault();
+    event.stopPropagation();
     emit('pick', { kind: 'date', time: Math.min(Math.max(next, scale.value.start), scale.value.end) });
   };
 </script>
+
+<style scoped>
+  .glide {
+    transition:
+      left 0.4s,
+      width 0.4s;
+  }
+</style>

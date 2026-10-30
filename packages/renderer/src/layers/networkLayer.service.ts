@@ -1,15 +1,23 @@
-import type { Map as MapLibreMap } from 'maplibre-gl';
+import type { DataDrivenPropertyValueSpecification, Map as MapLibreMap } from 'maplibre-gl';
 import { byZoom, sideBySideOffset } from './layerStyle.utils';
-import { LAYERS, LINE_LAYOUT, SOURCES } from './layers.constants';
+import { LAYERS, LINE_LAYOUT, SOURCES, UNFOCUSED_OPACITY } from './layers.constants';
 import { MapLayer } from './mapLayer.service';
 import type { NetworkSnapshot } from './networkSnapshot.types';
 import type { Palette } from './theme.types';
+
+/** How opaque each of the layer's line layers is with every line in focus; the glow's is the theme's. */
+const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned]: 0.85 } as const;
 
 /**
  * The network already on the map: every open line, with a soft glow beneath, closed track as dashed
  * ghosts, planned track dashed in its line's colour, and transfers between stations as links drawn like an interchange's ring.
  */
 export class NetworkLayer extends MapLayer {
+  /** The lines in focus, the rest faded; `null` when every line is. */
+  private focused: string[] | null = null;
+  /** The glow's opacity in the current theme. */
+  private glowOpacity = 0;
+
   public constructor(map: MapLibreMap) {
     super(map);
   }
@@ -25,7 +33,7 @@ export class NetworkLayer extends MapLayer {
       type: 'line',
       source: SOURCES.ghosts,
       layout: LINE_LAYOUT,
-      paint: { 'line-color': ['get', 'color'], 'line-width': byZoom(1.2, 3), 'line-opacity': 0.35, 'line-dasharray': [1.5, 2] },
+      paint: { 'line-color': ['get', 'color'], 'line-width': byZoom(1.2, 3), 'line-opacity': FULL_OPACITY[LAYERS.ghosts], 'line-dasharray': [1.5, 2] },
     });
     this.map.addLayer({
       id: LAYERS.glow,
@@ -51,7 +59,7 @@ export class NetworkLayer extends MapLayer {
         'line-color': ['get', 'color'],
         'line-width': byZoom(2.2, 5.5),
         'line-offset': sideBySideOffset(),
-        'line-opacity': 0.85,
+        'line-opacity': FULL_OPACITY[LAYERS.planned],
         'line-dasharray': [1.2, 1],
       },
     });
@@ -72,8 +80,41 @@ export class NetworkLayer extends MapLayer {
    * @param palette - The theme's colours.
    */
   public applyPalette(palette: Palette): void {
-    this.map.setPaintProperty(LAYERS.glow, 'line-opacity', palette.glowOpacity);
+    this.glowOpacity = palette.glowOpacity;
     this.map.setPaintProperty(LAYERS.transferCasing, 'line-color', palette.interchangeRing);
+    this.applyFocus();
+  }
+
+  /**
+   * Brings some lines forward and fades the rest, or shows every line alike.
+   *
+   * @param lineIds - The lines in focus; `null` for every line.
+   */
+  public focus(lineIds: string[] | null): void {
+    this.focused = lineIds;
+    this.applyFocus();
+  }
+
+  /** Sets each line layer's opacity: full for the lines in focus, faded for the rest. */
+  private applyFocus(): void {
+    const opacities = [
+      [LAYERS.ghosts, FULL_OPACITY[LAYERS.ghosts]],
+      [LAYERS.glow, this.glowOpacity],
+      [LAYERS.lines, FULL_OPACITY[LAYERS.lines]],
+      [LAYERS.planned, FULL_OPACITY[LAYERS.planned]],
+    ] as const;
+    for (const [layer, full] of opacities) this.map.setPaintProperty(layer, 'line-opacity', this.opacityFor(full));
+  }
+
+  /**
+   * A layer's opacity, given how opaque it is in focus.
+   *
+   * @param full - Its opacity in focus.
+   * @returns A constant with every line in focus; else an expression on each feature's line.
+   */
+  private opacityFor(full: number): DataDrivenPropertyValueSpecification<number> {
+    if (this.focused === null) return full;
+    return ['case', ['in', ['get', 'line'], ['literal', this.focused]], full, full * UNFOCUSED_OPACITY];
   }
 
   /**

@@ -76,14 +76,14 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     // Closed track is a ghost until its line returns there.
     const returned = lineSegment.next !== null && (timeline.isOpen(lineSegment.next, cursor) || timeline.hasClosed(lineSegment.next, cursor));
     if ((timeline.hasClosed(lineSegment, cursor) || closingNow(lineSegment)) && !returned)
-      ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0));
+      ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0, 0, lineSegment.line));
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
     const key = `${segment.index}|${line.id}`;
     const isPlanned = lineSegment.section !== null;
     if (!closingNow(lineSegment) && !drawn.has(key)) {
       drawn.add(key);
-      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id)));
+      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id), 0, lineSegment.line));
     }
     segmentsOnMap.add(segment.index);
     linesOnMap.add(line.id);

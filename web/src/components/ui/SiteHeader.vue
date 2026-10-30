@@ -1,20 +1,25 @@
 <template>
-  <UHeader :toggle="false" :ui="{ root: 'bg-default/95', container: wide ? 'max-w-none px-4 sm:px-4 lg:px-4' : 'max-w-7xl px-8 max-sm:px-4' }">
+  <UHeader
+    :toggle="false"
+    :ui="{
+      root: wide ? 'bg-default h-14 max-lg:h-13' : 'bg-default/95',
+      container: wide ? 'grid max-w-none grid-cols-[1fr_minmax(0,420px)_1fr] px-4 sm:px-4 lg:px-4 max-lg:flex' : 'max-w-7xl px-8 max-sm:px-4',
+      left: 'min-w-0',
+      center: 'min-w-0 justify-center',
+    }">
     <template #left>
-      <slot name="leading" />
-      <NuxtLink to="/" class="flex items-center gap-2.5" aria-label="Railtime, all cities">
-        <span class="flex gap-[3px]" aria-hidden="true">
-          <span class="bg-brand-500 h-[18px] w-1.5 rounded-sm" />
-          <span class="bg-brand-300 h-[18px] w-1.5 rounded-sm" />
-        </span>
-        <span class="text-highlighted text-lg font-extrabold tracking-tight">railtime</span>
+      <NuxtLink to="/" class="flex flex-none items-center gap-2" aria-label="Railtime, all cities">
+        <LogoMark class="size-6 flex-none" />
+        <span class="text-highlighted text-lg leading-6 font-bold tracking-[-0.01em]" :class="{ 'max-lg:hidden': $slots.context }">railtime</span>
       </NuxtLink>
       <!-- Where in the site: on a city's page, the city. -->
       <template v-if="$slots.context">
-        <span class="text-dimmed mx-1 text-lg" aria-hidden="true">/</span>
+        <span class="text-dimmed mx-1 text-lg max-lg:hidden" aria-hidden="true">/</span>
         <slot name="context" />
       </template>
     </template>
+
+    <slot name="center" />
 
     <template #right>
       <slot />

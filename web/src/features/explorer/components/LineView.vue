@@ -1,55 +1,36 @@
 <template>
-  <div class="flex flex-col gap-4 px-6 pt-3.5 pb-6 max-sm:px-4">
-    <button type="button" class="text-muted hover:text-highlighted flex items-center gap-1.5 self-start text-[13px] font-medium" @click="emit('close')">
-      <UIcon name="i-lucide-arrow-left" class="size-4" />
-      {{ backLabel }}
-    </button>
-
-    <div>
-      <div class="flex items-center gap-2.5">
-        <span class="h-2 w-[26px] flex-none rounded-full" :style="{ background: line.color }" />
-        <h2 class="text-highlighted text-2xl leading-tight font-extrabold tracking-tight">{{ line.name }}</h2>
-      </div>
-      <p class="text-muted mt-1 text-[13px]">{{ line.networkName }} · {{ line.opened === null ? 'planned' : `opened ${formatDay(line.opened)}` }}</p>
-      <div v-if="line.branches.length > 0" class="mt-3 flex gap-6">
-        <div>
-          <p class="text-highlighted text-xl font-bold tabular-nums">{{ line.stations }}</p>
-          <p class="text-muted text-xs">stations</p>
-        </div>
-        <div>
-          <p class="text-highlighted text-xl font-bold tabular-nums">{{ Math.round(line.km) }}</p>
-          <p class="text-muted text-xs">km</p>
-        </div>
-        <div v-if="line.branches.length > 1">
-          <p class="text-highlighted text-xl font-bold tabular-nums">{{ line.branches.length - 1 }}</p>
-          <p class="text-muted text-xs">{{ line.branches.length === 2 ? 'branch' : 'branches' }}</p>
-        </div>
-      </div>
-      <p v-else class="text-muted mt-3 text-sm">Not open on the date shown.</p>
-    </div>
-
+  <div class="flex flex-col gap-5 px-4 pt-3 pb-6">
+    <p v-if="line.branches.length === 0" class="text-muted text-sm">Not open on the date shown.</p>
     <section v-for="(run, position) in line.branches" :key="position">
-      <h3 class="eyebrow text-muted mb-2">{{ position === 0 ? 'Stations' : `Branch from ${run[0]?.name}` }}</h3>
+      <h3 class="eyebrow text-muted pb-1">{{ position === 0 ? 'Stations' : `Branch from ${run[0]?.name}` }}</h3>
       <!-- A line diagram: the line down the side, a stop at each station. -->
-      <ol class="relative" role="list">
-        <span class="absolute top-3 bottom-3 left-[7px] w-1 rounded-full" :style="{ background: line.color }" />
+      <ol class="relative -mx-2" role="list">
+        <span class="absolute top-4 bottom-4 left-[17px] w-1 rounded-full" :style="{ background: line.color }" />
         <li v-for="(stop, place) in run" :key="`${stop.id}-${place}`" :class="{ 'opacity-60': position > 0 && place === 0 }">
           <button
             type="button"
-            class="hover:bg-elevated relative flex w-full items-center gap-3 rounded-md py-1 pr-2 text-left transition-colors duration-150"
+            class="hover:bg-elevated relative flex h-8 w-full items-center gap-3 rounded-md px-2 text-left transition-colors duration-150"
             @click="emit('station', stop.id)">
-            <span class="bg-default size-[18px] flex-none rounded-full border-[3px]" :style="{ borderColor: line.color }" />
-            <span class="text-highlighted text-sm font-medium">{{ stop.name }}</span>
+            <span class="flex w-5 flex-none justify-center">
+              <span v-if="otherLines(stop.id).length > 0" class="bg-default size-3 rounded-full border-2 border-(--ui-text-highlighted)" />
+              <span v-else class="bg-default size-2.5 rounded-full border-2" :style="{ borderColor: line.color }" />
+            </span>
+            <span class="text-highlighted flex-1 truncate text-sm" :class="otherLines(stop.id).length > 0 ? 'font-semibold' : 'font-medium'">{{
+              stop.name
+            }}</span>
+            <span class="flex flex-none gap-0.5">
+              <span v-for="color in otherLines(stop.id)" :key="color" class="h-1 w-2.5 rounded-full" :style="{ background: color }" />
+            </span>
           </button>
         </li>
       </ol>
     </section>
 
     <section v-if="changes.length > 0">
-      <h3 class="eyebrow text-muted mb-1">History</h3>
+      <h3 class="eyebrow text-muted pb-1">Changes</h3>
       <ul role="list" class="-mx-2">
         <li v-for="change in changes" :key="change.index">
-          <ChangeRow :change :upcoming="time !== null && change.index >= time.cursor" @select="emit('change', $event)" />
+          <ChangeRow :change @select="emit('change', $event)" />
         </li>
       </ul>
     </section>
@@ -57,17 +38,17 @@
 </template>
 
 <script setup lang="ts">
-  import type { ChangeInfo, LineDetails, TimeState } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo, LineDetails } from '@railtime/renderer/transitMap.types';
 
-  import { formatDay } from '~/features/explorer/format.utils';
-
-  defineProps<{
+  const props = defineProps<{
     line: LineDetails;
     /** The changes that made the line. */
     changes: ChangeInfo[];
-    time: TimeState | null;
-    /** Where the back link returns to: the tab the line was opened from. */
-    backLabel: string;
+    /** Each station on the map's lines' colours, to mark the interchanges. */
+    stationColors: Map<string, string[]>;
   }>();
-  const emit = defineEmits<{ close: []; station: [station: string]; change: [index: number] }>();
+  const emit = defineEmits<{ station: [station: string]; change: [index: number] }>();
+
+  /** The other lines' colours at a stop: none for a stop on this line alone. */
+  const otherLines = (station: string): string[] => (props.stationColors.get(station) ?? []).filter(color => color !== props.line.color);
 </script>

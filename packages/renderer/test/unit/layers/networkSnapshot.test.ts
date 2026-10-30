@@ -14,6 +14,14 @@ describe('NetworkSnapshotUtils', () => {
       expect(snapshot.sideBySide.get(1)).toEqual(['red', 'blue']);
     });
 
+    test('tags each stretch of track with its line, so lines can be brought forward', () => {
+      const playback = playbackOf(tinyNetwork());
+      playback.player.seek(toTimestamp('1935-01-01'));
+      const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
+      expect(new Set(snapshot.lines.features.map(feature => feature.properties.line))).toEqual(new Set(['red', 'blue']));
+      expect(snapshot.transfers.features.every(feature => feature.properties.line === '')).toBe(true);
+    });
+
     test("draws a plan's track as planned, and a station only it reaches", () => {
       const playback = playbackOf(tinyNetwork(), 'extension');
       playback.player.seekEnd();

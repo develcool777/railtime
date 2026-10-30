@@ -29,6 +29,8 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'en' },
       title: 'Railtime',
+      // The logo mark, served from public/ under the base URL (/railtime/ on GitHub Pages).
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: `${process.env.NUXT_APP_BASE_URL ?? '/'}favicon.svg` }],
       meta: [
         {
           name: 'description',
