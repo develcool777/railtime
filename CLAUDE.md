@@ -42,6 +42,21 @@ colours, `pnpm data:previews <city>` too (it draws the landing page's pictures i
   `layers/networkSnapshot.utils.ts` take no map: keep new logic there and test it (see Tests).
 - **A new kind of step** is a `StepAnimation` subclass plus one line in `createStepAnimation`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
+- **The web app** follows the investors site's layout, in `web/src/`:
+
+  ```text
+  pages/  css/            routes, styles
+  components/ui/          components every surface uses (StatusChip, SegmentedControl, MapCredits)
+  constants/  utils/      the city catalogue (CITIES, city.utils): what any page needs
+  features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
+                          seo; its components in components/, the rest flat beside them
+  ```
+
+  Components are used by tag, never imported (`nuxt.config.ts` scans `components/` and every
+  `features/*/components/`); anything else in a feature is imported by its path
+  (`~/features/explorer/timeline.utils`), so what one feature takes from another can be searched for.
+  Something one surface uses goes in its feature; it moves to the top when a second needs it.
+
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
   camelCase attributes and events.
 
@@ -58,7 +73,8 @@ packages/data/
   test/unit/dataset/        mirrors src/dataset/
   test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
                             cities/united-kingdom/london/london.json, played through the renderer
-web/test/unit/              mirrors web/app/ for its plain helpers (utils/); components are checked in the browser
+web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts); components are checked in the browser;
+                            they import as the app does, from ~/, and test/support/ from @test/
 ```
 
 - The renderer knows no city: its tests use made-up networks (`tinyNetwork`). A check of a city's
