@@ -90,7 +90,7 @@ Some cities were never built: their dataset has no lines, stations or track, onl
 explorer opens on the first. Lviv has three: the 1980s underground tram, begun around 1990; the
 General Plan's light metro; and a mid-2000s proposal. Chernivtsi never planned a metro: its two plans
 are unofficial concepts, one of four lines within the city, the other running them on to the towns
-and villages around, as Moscow's metro does, with a fifth line north over the Prut and a sixth south-west to Storozhynets. Their stations
+and villages around, as Moscow's metro does, with a fifth line north over the Prut and a sixth south-west to Storozhynets; the yellow line reaches Hlyboka. Their stations
 stand on the places they are named after, as OpenStreetMap has them. Zaporizhzhia's is
 the 2000s light-metro project, one line of 14 stations along Sobornyi Avenue. Odesa has two: the 1985
 design's first line, and the two lines of the 2007 draft General Plan. Donetsk's metro was begun in
