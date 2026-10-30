@@ -12,33 +12,32 @@
           <span class="text-muted text-xs tabular-nums">{{ formatSpan(line.opened, line.closed) }}</span>
           <UIcon name="i-lucide-chevron-right" class="text-dimmed size-4 flex-none" />
         </button>
-        <!-- The stops either side, as a platform's sign gives them: back to the left, on to the right. -->
-        <div v-for="(direction, place) in directions.get(line.id) ?? []" :key="place" class="grid grid-cols-2 gap-1 pr-1 pb-1 pl-[38px]">
-          <button
-            v-if="direction.previous"
-            type="button"
-            class="hover:bg-elevated min-w-0 rounded-md px-1.5 py-1 text-left transition-colors duration-150"
-            @click="emit('select', direction.previous.id)">
-            <span class="text-highlighted flex items-center gap-1 text-[13px] font-medium">
-              <UIcon name="i-lucide-chevron-left" class="text-muted size-3.5 flex-none" />
-              <span class="truncate">{{ direction.previous.name }}</span>
+        <!-- A piece of the line, drawn as the line's view draws it: the stop before, this station, the stop after. The line sits over the rows' hover, under the dots. -->
+        <ol v-for="(direction, place) in directions.get(line.id) ?? []" :key="place" class="relative mt-0.5 mb-1 ml-[30px]" role="list">
+          <span class="absolute top-3.5 bottom-3.5 left-[9px] w-1 rounded-full" :style="{ background: line.color }" />
+          <li v-for="row in stripAround(direction, station)" :key="row.id">
+            <span v-if="row.here" class="flex h-7 items-center gap-2.5 px-0.5" aria-current="location">
+              <span class="flex w-4 flex-none justify-center">
+                <span
+                  class="relative size-3.5 rounded-full border-[3px] border-(--ui-bg)"
+                  :style="{ background: line.color, boxShadow: `0 0 0 2px ${line.color}` }" />
+              </span>
+              <span class="text-highlighted min-w-0 flex-1 truncate text-[13px] font-bold">{{ row.name }}</span>
+              <span class="text-dimmed flex-none pr-2 text-[11px]">{{ row.note }}</span>
             </span>
-            <span v-if="direction.previous.towards" class="text-muted block pl-[18px] text-[11px] leading-tight">towards {{ direction.previous.towards }}</span>
-          </button>
-          <span v-else class="text-dimmed self-center px-1.5 text-[11px]">end of the line</span>
-          <button
-            v-if="direction.next"
-            type="button"
-            class="hover:bg-elevated min-w-0 rounded-md px-1.5 py-1 text-right transition-colors duration-150"
-            @click="emit('select', direction.next.id)">
-            <span class="text-highlighted flex items-center justify-end gap-1 text-[13px] font-medium">
-              <span class="truncate">{{ direction.next.name }}</span>
-              <UIcon name="i-lucide-chevron-right" class="text-muted size-3.5 flex-none" />
-            </span>
-            <span v-if="direction.next.towards" class="text-muted block pr-[18px] text-[11px] leading-tight">towards {{ direction.next.towards }}</span>
-          </button>
-          <span v-else class="text-dimmed self-center px-1.5 text-right text-[11px]">end of the line</span>
-        </div>
+            <button
+              v-else
+              type="button"
+              class="hover:bg-elevated flex h-7 w-full items-center gap-2.5 rounded-md px-0.5 text-left transition-colors duration-150"
+              @click="emit('select', row.id)">
+              <span class="flex w-4 flex-none justify-center">
+                <span class="bg-default relative size-2.5 rounded-full border-2" :style="{ borderColor: line.color }" />
+              </span>
+              <span class="text-default min-w-0 flex-1 truncate text-[13px] font-medium">{{ row.name }}</span>
+              <span class="text-muted max-w-[50%] flex-none truncate pr-2 text-[11px]">{{ row.note }}</span>
+            </button>
+          </li>
+        </ol>
       </li>
     </ul>
 
@@ -61,6 +60,7 @@
 
   import { formatSpan } from '~/features/explorer/format.utils';
   import type { LineDirection } from '~/features/explorer/stations/station.types';
+  import { stripAround } from '~/features/explorer/stations/station.utils';
 
   const props = defineProps<{
     station: StationInfo;

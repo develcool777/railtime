@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { LineDetails } from '@railtime/renderer/transitMap.types';
-import { directionsAt, findStations, foldName, stationsByLetter } from '~/features/explorer/stations/station.utils';
+import { directionsAt, findStations, foldName, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
 
 /**
  * A station as the map lists it, red.
@@ -110,6 +110,26 @@ describe('StationUtils', () => {
         ['K', ['Khreshchatyk', "King's Cross St. Pancras"]],
         ['N', ['Náměstí Míru']],
         ['O', ['Oxford Circus']],
+      ]);
+    });
+  });
+  describe('stripAround', () => {
+    const HERE = { id: 'c', name: 'C' };
+
+    test('puts the station between the stops either side, each saying where the line goes on', () => {
+      const rows = stripAround({ previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: null } }, HERE);
+      expect(rows).toEqual([
+        { id: 'b', name: 'B', here: false, note: 'towards A' },
+        { id: 'c', name: 'C', here: true, note: '' },
+        { id: 'd', name: 'D', here: false, note: 'end of the line' },
+      ]);
+    });
+
+    test('at an end, the station says so, with no stop that way', () => {
+      const rows = stripAround({ previous: null, next: { id: 'd', name: 'D', towards: 'E' } }, HERE);
+      expect(rows.map(row => [row.name, row.note])).toEqual([
+        ['C', 'end of the line'],
+        ['D', 'towards E'],
       ]);
     });
   });

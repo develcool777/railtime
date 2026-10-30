@@ -1,6 +1,6 @@
 import type { LineDetails, StationSummary } from '@railtime/renderer/transitMap.types';
 
-import type { LineDirection, StationGroup, StopToward } from '~/features/explorer/stations/station.types';
+import type { LineDirection, StationGroup, StopToward, StripStop } from '~/features/explorer/stations/station.types';
 
 /**
  * A name as a search compares it: lower case, accents and apostrophes dropped, so "kings cross"
@@ -85,4 +85,30 @@ export const stationsByLetter = (stations: StationSummary[]): StationGroup[] => 
     else groups.push({ letter, stations: [station] });
   }
   return groups;
+};
+
+/**
+ * The piece of a line a station's view draws, in the line's order: the stop before, the station,
+ * the stop after, each beside where the line goes on past it. At an end there is no stop that way,
+ * and the station itself says so.
+ *
+ * @param direction - The stops either side on one run of the line.
+ * @param here - The station.
+ * @param here.id - Its id.
+ * @param here.name - Its name.
+ * @returns The rows, top to bottom.
+ */
+export const stripAround = (direction: LineDirection, here: { id: string; name: string }): StripStop[] => {
+  const beside = (stop: StopToward): StripStop => ({
+    id: stop.id,
+    name: stop.name,
+    here: false,
+    note: stop.towards ? `towards ${stop.towards}` : 'end of the line',
+  });
+  const atEnd = !direction.previous || !direction.next;
+  return [
+    ...(direction.previous ? [beside(direction.previous)] : []),
+    { id: here.id, name: here.name, here: true, note: atEnd ? 'end of the line' : '' },
+    ...(direction.next ? [beside(direction.next)] : []),
+  ];
 };
