@@ -11,7 +11,7 @@
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
-      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" @pick="pickSection" />
+      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" :marked :markNote @pick="pickSection" />
 
       <!-- The map keeps its size: the panel slides over its left edge, which resizing it every frame would make stutter. -->
       <div class="relative min-w-0 flex-1 overflow-hidden">
@@ -31,7 +31,7 @@
           :style="phone ? { height: sheet === 'full' ? 'calc(100% - 8px)' : `${SHEET_HEIGHTS[sheet]}px` } : { width: `${panelWidth}px` }"
           :inert="!phone && !panelOpen"
           aria-label="Panel">
-          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" @pick="pickSection" />
+          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" :marked :markNote @pick="pickSection" />
           <div v-show="!phone || sheet !== 'peek'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <PanelTop
               :title="panelTop.title"
@@ -215,15 +215,13 @@
   watch([timeMode, sheet, phone], () => map.value?.setPadding(mapPadding(timeMode.value)));
   watch(panelCover, left => map.value?.setCover({ left }));
 
-  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts } = useExplorerPlan({
+  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, marked, markNote, openingSection, choosePlan } = useExplorerPlan({
     network: props.network,
     plan: props.plan,
     time,
     timeMode,
+    onChoose: id => emit('plan', id),
   });
-  const choosePlan = (id: string | undefined) => {
-    if (id !== props.plan) emit('plan', id);
-  };
 
   const {
     sections,
@@ -252,6 +250,7 @@
   } = useExplorerPanel({
     network: props.network,
     plan: props.plan,
+    opening: openingSection,
     chosenPlan,
     planCount,
     binding,
