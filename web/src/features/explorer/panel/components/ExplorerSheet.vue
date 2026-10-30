@@ -18,11 +18,11 @@
         class="flex h-13 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors duration-150"
         :class="section.id === open ? 'bg-selected text-selected' : 'text-muted'"
         :aria-pressed="section.id === open"
-        :aria-description="section.id === marked ? markNote : undefined"
+        :aria-description="marks[section.id]"
         @click="emit('pick', section.id)">
         <span class="relative">
           <UIcon :name="section.icon" class="size-5" />
-          <span v-if="section.id === marked" class="bg-primary ring-default absolute -top-0.5 -right-1 size-2 rounded-full ring-2" />
+          <span v-if="marks[section.id]" class="bg-primary ring-default absolute -top-0.5 -right-1 size-2 rounded-full ring-2" />
         </span>
         <span class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
       </button>
@@ -40,10 +40,8 @@
     sections: { id: Section; label: string; icon: string }[];
     /** The section shown; none while the sheet is down to its tabs. */
     open: Section | null;
-    /** A section whose choice is in force, a dot on its icon: Plans while a plan is shown. */
-    marked?: Section | null;
-    /** What the dot means, for a screen reader. */
-    markNote?: string;
+    /** Sections whose choice is in force, a dot on each icon (Plans while a plan is shown), with what the dot says. */
+    marks: Partial<Record<Section, string>>;
   }>();
   const emit = defineEmits<{ pick: [section: Section] }>();
   const snap = defineModel<SheetSnap>('snap', { required: true });

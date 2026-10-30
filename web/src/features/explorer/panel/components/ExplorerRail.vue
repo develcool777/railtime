@@ -6,11 +6,11 @@
         class="flex h-14 w-15 flex-col items-center justify-center gap-1 rounded-lg transition-colors duration-150"
         :class="section.id === open ? 'bg-selected text-selected' : 'text-muted hover:bg-elevated hover:text-highlighted'"
         :aria-pressed="section.id === open"
-        :aria-description="section.id === marked ? markNote : undefined"
+        :aria-description="marks[section.id]"
         @click="emit('pick', section.id)">
         <span class="relative">
           <UIcon :name="section.icon" class="size-5" />
-          <span v-if="section.id === marked" class="bg-primary ring-muted absolute -top-0.5 -right-1 size-2 rounded-full ring-2" />
+          <span v-if="marks[section.id]" class="bg-primary ring-muted absolute -top-0.5 -right-1 size-2 rounded-full ring-2" />
         </span>
         <span class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
       </button>
@@ -25,10 +25,8 @@
     sections: { id: Section; label: string; icon: string }[];
     /** The section open in the panel; none while it is folded. */
     open: Section | null;
-    /** A section whose choice is in force, a dot on its icon: Plans while a plan is shown. */
-    marked?: Section | null;
-    /** What the dot means, for a screen reader. */
-    markNote?: string;
+    /** Sections whose choice is in force, a dot on each icon (Plans while a plan is shown), with what the dot says. */
+    marks: Partial<Record<Section, string>>;
   }>();
   const emit = defineEmits<{ pick: [section: Section] }>();
 </script>

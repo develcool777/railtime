@@ -26,5 +26,7 @@ export const useRouteFinder = (input: RouteFinderInput): RouteFinder => {
 
   const swapEnds = () => (routeEnds.value = { from: routeEnds.value.to, to: routeEnds.value.from });
 
-  return { routeEnds, routePreference, foundRoute, swapEnds };
+  const routeMark = computed(() => (foundRoute.value ? `A route from ${foundRoute.value.from.name} to ${foundRoute.value.to.name} is set` : undefined));
+
+  return { routeEnds, routePreference, foundRoute, swapEnds, routeMark };
 };

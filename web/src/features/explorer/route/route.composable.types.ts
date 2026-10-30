@@ -21,4 +21,6 @@ export type RouteFinder = {
   foundRoute: ComputedRef<RouteInfo | null>;
   /** Swaps where it starts and ends. */
   swapEnds: () => void;
+  /** What the dot on Route says while a route is set, whatever section is open; none without one. */
+  routeMark: ComputedRef<string | undefined>;
 };
