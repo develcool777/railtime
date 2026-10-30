@@ -7,6 +7,7 @@ export const SECTIONS: { id: Section; label: string; icon: string }[] = [
   { id: 'changes', label: 'Changes', icon: 'i-lucide-history' },
   { id: 'route', label: 'Route', icon: 'i-lucide-route' },
   { id: 'reach', label: 'Reach', icon: 'i-lucide-radar' },
+  { id: 'insights', label: 'Insights', icon: 'i-lucide-chart-line' },
   { id: 'plans', label: 'Plans', icon: 'i-lucide-drafting-compass' },
 ];
 

@@ -1,4 +1,5 @@
 import type { IsoDate, LngLat, Network } from '@railtime/schema/network.types';
+import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from './model/history.types';
 import type { RoutePreference as ModelRoutePreference } from './model/routeFinder.types';
 import type { Step } from './model/timeline.types';
 
@@ -204,6 +205,25 @@ export type ReachInfo = {
   stations: ReachStation[];
   /** The bands its stations are coloured in, soonest first. */
   bands: ReachBand[];
+};
+
+/** The network at the end of one year. */
+export type YearStats = ModelYearStats;
+
+/** How many stations first opened in a decade. */
+export type DecadeOpenings = ModelDecadeOpenings;
+
+/** The network year by year, and how many stations opened in each decade. Plans have no date and are not in it. */
+export type NetworkGrowth = { years: YearStats[]; decades: DecadeOpenings[] };
+
+/** The network's records on the date shown, each list longest or oldest first. */
+export type NetworkRecords = {
+  /** The stations open longest, with the year each first opened. */
+  oldest: { id: string; name: string; year: number }[];
+  /** The stations most lines call at. */
+  busiest: { id: string; name: string; lines: { id: string; name: string; color: string }[] }[];
+  /** The longest lines. */
+  longest: { id: string; name: string; color: string; km: number }[];
 };
 
 /** Events a `TransitMap` emits, by name. */
