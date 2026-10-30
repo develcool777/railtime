@@ -70,13 +70,14 @@
       "name": "Concept: Greater Chernivtsi",
       "names": {"uk":"Концепція: агломерація"},
       "status": "concept",
-      "description": "An unofficial concept, not a city plan: the city's four lines run on past its edge to the towns and villages around, as Moscow's metro does, and a fifth, the Zhuchanska line, crosses the Prut to the north. The Prutska line reaches Luzhany in the west and Boiany in the east; the Sadhirsko-Pivdenna line Vaslovivtsi in the north and Mykhalcha in the south-west; the Diahonalna line Bila and Hrushivka; the Zhuchanska line Chornivka. The stations stand on the places they are named after.",
+      "description": "An unofficial concept, not a city plan: the city's four lines run on past its edge to the towns and villages around, as Moscow's metro does, a fifth, the Zhuchanska line, crosses the Prut to the north, and a sixth, the Storozhynetska line, runs from the southern railway station past Velykyi Kuchuriv and Sniachiv to Storozhynets. The Prutska line reaches Luzhany in the west and Boiany in the east; the Sadhirsko-Pivdenna line Vaslovivtsi in the north and Mykhalcha in the south-west; the Diahonalna line Bila and Hrushivka; the Zhuchanska line Chornivka. The stations stand on the places they are named after.",
       "lines": {
         "prutska": {"name":"Prutska","names":{"uk":"Прутська лінія"},"network":"metro","mode":"metro","color":"#D52B1E"},
         "sadhirsko-pivdenna": {"name":"Sadhirsko-Pivdenna","names":{"uk":"Садгірсько-південна лінія"},"network":"metro","mode":"metro","color":"#2F80ED"},
         "kiltseva": {"name":"Kiltseva","names":{"uk":"Кільцева лінія"},"network":"metro","mode":"metro","color":"#2E8B3A"},
         "diahonalna": {"name":"Diahonalna","names":{"uk":"Діагональна лінія"},"network":"metro","mode":"metro","color":"#E8B517"},
-        "zhuchanska": {"name":"Zhuchanska","names":{"uk":"Жучанська лінія"},"network":"metro","mode":"metro","color":"#8E44AD"}
+        "zhuchanska": {"name":"Zhuchanska","names":{"uk":"Жучанська лінія"},"network":"metro","mode":"metro","color":"#8E44AD"},
+        "storozhynetska": {"name":"Storozhynetska","names":{"uk":"Сторожинецька лінія"},"network":"metro","mode":"metro","color":"#E67E22"}
       },
       "stations": {
         "aeroport": {"name":"Aeroport","names":{"uk":"Аеропорт"},"coordinate":[25.9676,48.2668]},
@@ -86,6 +87,8 @@
         "chornivka": {"name":"Chornivka","names":{"uk":"Чорнівка"},"coordinate":[26.01389,48.41991]},
         "dubynska": {"name":"Dubynska","names":{"uk":"Дубинська"},"coordinate":[25.9221,48.2695]},
         "fastivska": {"name":"Fastivska","names":{"uk":"Фастівська"},"coordinate":[25.9726,48.2852]},
+        "hlybochok": {"name":"Hlybochok","names":{"uk":"Глибочок"},"coordinate":[25.76918,48.17388]},
+        "hodyliv": {"name":"Hodyliv","names":{"uk":"Годилів"},"coordinate":[25.9305,48.2461]},
         "horikhivska": {"name":"Horikhivska","names":{"uk":"Горіхівська"},"coordinate":[25.9078,48.2816]},
         "horishni-sherivtsi": {"name":"Horishni Sherivtsi","names":{"uk":"Горішні Шерівці"},"coordinate":[25.9483,48.3942]},
         "hraviton": {"name":"Hraviton","names":{"uk":"Гравітон"},"coordinate":[25.993,48.2738]},
@@ -112,12 +115,15 @@
         "prutska": {"name":"Prutska","names":{"uk":"Прутська"},"coordinate":[25.92358,48.30516]},
         "sadhirska": {"name":"Sadhirska","names":{"uk":"Садгірська"},"coordinate":[25.96,48.341]},
         "shantsi": {"name":"Shantsi","names":{"uk":"Шанці"},"coordinate":[25.9919,48.3714]},
+        "sniachiv": {"name":"Sniachiv","names":{"uk":"Снячів"},"coordinate":[25.8447,48.1902]},
         "stara-zhuchka": {"name":"Stara Zhuchka","names":{"uk":"Стара Жучка"},"coordinate":[25.96064,48.31984]},
+        "storozhynets": {"name":"Storozhynets","names":{"uk":"Сторожинець"},"coordinate":[25.7208,48.1629]},
         "teatralna": {"name":"Teatralna","names":{"uk":"Театральна"},"coordinate":[25.9322,48.2921]},
         "tsentralna": {"name":"Tsentralna","names":{"uk":"Центральна"},"coordinate":[25.9352,48.2921]},
         "tsetsyno": {"name":"Tsetsyno","names":{"uk":"Цецино"},"coordinate":[25.88915,48.29754]},
         "universytet": {"name":"Universytet","names":{"uk":"Університет"},"coordinate":[25.9242,48.2968]},
         "vaslovivtsi": {"name":"Vaslovivtsi","names":{"uk":"Васловівці"},"coordinate":[25.92158,48.44693]},
+        "velykyi-kuchuriv": {"name":"Velykyi Kuchuriv","names":{"uk":"Великий Кучурів"},"coordinate":[25.9076,48.2026]},
         "vokzalna": {"name":"Vokzalna","names":{"uk":"Вокзальна"},"coordinate":[25.9302,48.3009]},
         "zavodska": {"name":"Zavodska","names":{"uk":"Заводська"},"coordinate":[25.9212,48.3188]},
         "zavoloka": {"name":"Zavoloka","names":{"uk":"Заволока"},"coordinate":[25.8876,48.26177]},
@@ -148,7 +154,10 @@
         {"line":"prutska","stations":["ostrytsia","boiany"]},
         {"line":"sadhirsko-pivdenna","stations":["horishni-sherivtsi","vaslovivtsi"]},
         {"line":"diahonalna","stations":["koroviia","hrushivka"]},
-        {"line":"zhuchanska","stations":["shantsi","chornivka"]}
+        {"line":"zhuchanska","stations":["shantsi","chornivka"]},
+        {"line":"storozhynetska","stations":["pivdennyi-vokzal","hodyliv","velykyi-kuchuriv"]},
+        {"line":"storozhynetska","stations":["velykyi-kuchuriv","sniachiv","hlybochok"]},
+        {"line":"storozhynetska","stations":["hlybochok","storozhynets"]}
       ],
       "transfers": [
         {"stationA":"teatralna","stationB":"tsentralna"}
