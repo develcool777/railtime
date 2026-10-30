@@ -6,7 +6,9 @@
           <UDashboardSidebarCollapse color="neutral" variant="ghost" />
           <UDashboardSidebarToggle color="neutral" variant="ghost" />
         </template>
-        <CitySelect :city @city="emit('city', $event)" />
+        <template #context>
+          <CitySelect :city @city="emit('city', $event)" />
+        </template>
       </SiteHeader>
 
       <div class="flex min-h-0 flex-1">
@@ -26,7 +28,19 @@
           :autoClose="false"
           :ui="{ root: 'bg-default min-h-0', body: 'gap-0 p-0 sm:p-0', content: 'max-h-[80dvh]' }">
           <template #default="{ collapsed: railOnly }">
-            <UNavigationMenu v-if="railOnly" :items="railItems" orientation="vertical" collapsed tooltip class="p-2" aria-label="Panel" />
+            <!-- Folded: each tab an icon with its name under it, opening the panel on it. -->
+            <nav v-if="railOnly" class="flex flex-col items-center gap-1 py-2" aria-label="Panel">
+              <UButton
+                v-for="entry in tabs"
+                :key="entry.id"
+                :icon="TAB_ICONS[entry.id]"
+                :label="entry.label"
+                :color="tab === entry.id ? 'primary' : 'neutral'"
+                :variant="tab === entry.id ? 'soft' : 'ghost'"
+                class="w-14 flex-col gap-1 px-1 py-2 text-[11px] font-semibold"
+                :ui="{ leadingIcon: 'size-5' }"
+                @click="openTab(entry.id)" />
+            </nav>
             <div v-else class="flex min-h-0 flex-1 flex-col">
               <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
 
@@ -100,7 +114,11 @@
             <div class="absolute inset-0">
               <div ref="mapElement" class="h-full w-full" />
             </div>
-            <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" class="absolute top-4 left-4" />
+            <div class="absolute top-4 left-4 flex flex-col items-start gap-2">
+              <!-- With the panel folded, the date and the counts stay on the map. -->
+              <DateBlock v-if="collapsed && !mapOnly" compact class="max-lg:hidden" :mode :time :planName="chosenPlan?.name" :stepActive="step !== null" />
+              <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" />
+            </div>
             <div class="absolute top-4 right-4 flex flex-col gap-2">
               <UTooltip :text="mapOnly ? 'Show panels (Esc)' : 'Map only'">
                 <UButton
@@ -203,7 +221,6 @@
 
 <script setup lang="ts">
   import { useRoute, useRouter } from '#imports';
-  import type { NavigationMenuItem } from '@nuxt/ui';
   import type { CameraMode, RoutePreference, RouteStop } from '@railtime/renderer/transitMap.types';
   import type { Network } from '@railtime/schema/network.types';
   import { isPlanOnly } from '@railtime/schema/plan.utils';
@@ -261,21 +278,13 @@
   const collapsed = ref(false);
   /** Below the panel's width it is a drawer: whether it is open. */
   const drawerOpen = ref(false);
+  /** Each tab's icon, on the rail. */
   const TAB_ICONS = { lines: 'i-lucide-list', changes: 'i-lucide-history', route: 'i-lucide-route', plans: 'i-lucide-drafting-compass' };
-  /** The rail: one icon per tab, opening the panel on it. */
-  const railItems = computed<NavigationMenuItem[]>(() =>
-    tabs.value.map(entry => ({
-      label: entry.label,
-      // The rail hides the label: the icon is named for screen readers, as the tooltip names it on sight.
-      'aria-label': entry.label,
-      icon: TAB_ICONS[entry.id],
-      active: tab.value === entry.id,
-      onSelect: () => {
-        tab.value = entry.id;
-        collapsed.value = false;
-      },
-    })),
-  );
+  /** Opens the panel on a tab, from the rail. */
+  const openTab = (id: (typeof tab)['value']) => {
+    tab.value = id;
+    collapsed.value = false;
+  };
   /** Brings the panel into sight, for what was picked on the map: unfolds it, or on a phone opens its drawer. */
   const revealPanel = () => {
     if (window.matchMedia('(width < 64rem)').matches) drawerOpen.value = true;

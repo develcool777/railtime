@@ -9,6 +9,11 @@
         </span>
         <span class="text-highlighted text-lg font-extrabold tracking-tight">railtime</span>
       </NuxtLink>
+      <!-- Where in the site: on a city's page, the city. -->
+      <template v-if="$slots.context">
+        <span class="text-dimmed mx-1 text-lg" aria-hidden="true">/</span>
+        <slot name="context" />
+      </template>
     </template>
 
     <template #right>
