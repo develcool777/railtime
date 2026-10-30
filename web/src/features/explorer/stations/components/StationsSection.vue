@@ -2,12 +2,12 @@
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <UInput
       v-model="query"
-      icon="i-lucide-list-filter"
-      placeholder="Filter stations"
+      icon="i-lucide-search"
+      placeholder="Search stations"
       variant="none"
       class="w-full"
       :ui="{ base: 'bg-muted ring-muted focus-visible:ring-primary h-9 rounded-lg ring ring-inset focus-visible:ring-2' }"
-      aria-label="Filter stations" />
+      aria-label="Search stations" />
     <p v-if="stations.length === 0" class="text-muted text-sm">No station is open on the date shown.</p>
     <p v-else-if="groups.length === 0" class="text-muted text-sm">No station matches.</p>
     <section v-for="group in groups" :key="group.letter">
@@ -44,7 +44,7 @@
   const emit = defineEmits<{ open: [station: string] }>();
 
   const query = ref('');
-  /** A to Z under their letters; filtered, the best matches first, under no letter. */
+  /** A to Z under their letters; searched, the best matches first, under no letter. */
   const groups = computed((): StationGroup[] => {
     if (!query.value.trim()) return stationsByLetter(props.stations);
     const found = findStations(props.stations, query.value, props.stations.length);

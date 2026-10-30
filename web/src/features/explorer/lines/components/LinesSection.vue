@@ -2,12 +2,12 @@
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <UInput
       v-model="query"
-      icon="i-lucide-list-filter"
-      placeholder="Filter lines"
+      icon="i-lucide-search"
+      placeholder="Search lines"
       variant="none"
       class="w-full"
       :ui="{ base: 'bg-muted ring-muted focus-visible:ring-primary h-9 rounded-lg ring ring-inset focus-visible:ring-2' }"
-      aria-label="Filter lines" />
+      aria-label="Search lines" />
     <p v-if="groups.length === 0" class="text-muted text-sm">No line matches.</p>
     <section v-for="group in groups" :key="group.network">
       <div class="flex items-center justify-between gap-2 px-2 pb-1">
@@ -48,6 +48,7 @@
   import { computed, ref } from 'vue';
 
   import { yearOf } from '~/features/explorer/format.utils';
+  import { foldName } from '~/features/explorer/stations/station.utils';
 
   const props = defineProps<{
     lines: LineInfo[];
@@ -60,10 +61,10 @@
   const query = ref('');
 
   const groups = computed(() => {
-    const wanted = query.value.trim().toLowerCase();
+    const wanted = foldName(query.value);
     const byNetwork = new Map<string, { network: string; name: string; lines: LineInfo[] }>();
     for (const line of props.lines) {
-      if (wanted && !line.name.toLowerCase().includes(wanted)) continue;
+      if (wanted && !foldName(line.name).includes(wanted)) continue;
       // A plan's own lines come under their own heading, whatever brand they would run as.
       const network = line.opened === null ? 'planned' : line.network;
       const group = byNetwork.get(network) ?? { network, name: line.opened === null ? 'Planned' : line.networkName, lines: [] };
