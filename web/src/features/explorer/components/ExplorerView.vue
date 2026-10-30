@@ -1,166 +1,214 @@
 <template>
-  <div ref="explorer" class="explorer bg-page h-full w-full" :class="{ 'map-only': mapOnly }">
-    <aside v-show="!mapOnly" class="explorer-panel border-default bg-default flex min-h-0 flex-col sm:border-r max-sm:border-t">
-      <PanelHeader :city @city="emit('city', $event)" />
-      <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
-
-      <!-- On a phone the panel is a sheet: the date always, the rest when opened. -->
-      <button
-        v-if="mode === 'explore' && !station"
-        type="button"
-        class="border-muted text-muted flex items-center justify-center gap-1.5 border-b py-1.5 text-xs font-semibold sm:hidden"
-        :aria-expanded="sheetOpen"
-        @click="sheetOpen = !sheetOpen">
-        {{ sheetOpen ? 'Hide' : tabs.map(entry => entry.label).join(' · ') }}
-        <UIcon :name="sheetOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'" class="size-3.5" />
-      </button>
-
-      <div class="explorer-sheet flex min-h-0 flex-1 flex-col" :class="{ open: sheetOpen || station || mode === 'history' }">
-        <div v-if="mode === 'history'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
-          <StepCard :step :revealed />
-          <!-- On a phone the map needs the room: the step card alone. -->
-          <UpNext class="max-sm:hidden" :changes :from="(time?.cursor ?? 0) + (step ? 1 : 0)" @select="jumpTo" />
-        </div>
-        <StationView
-          v-else-if="station"
-          class="min-h-0 flex-1 overflow-auto"
-          :station
-          :backLabel="lineDetails?.name ?? tabLabel"
-          :date="shownDate"
-          @close="closeStation"
-          @select="openStation"
-          @routeFrom="routeFromStation('from')"
-          @routeTo="routeFromStation('to')" />
-        <LineView
-          v-else-if="lineDetails"
-          class="min-h-0 flex-1 overflow-auto"
-          :line="lineDetails"
-          :changes="lineChanges"
-          :time
-          :backLabel="tabLabel"
-          @close="openLine = null"
-          @station="openStation"
-          @change="map?.showChange($event)" />
-        <template v-else>
-          <!-- The route tab has searches of its own. -->
-          <div v-if="tab !== 'route'" class="px-4 pt-3">
-            <StationSearch :stations @select="openStation" />
-          </div>
-          <div class="border-muted flex gap-1 border-b px-4 pt-2.5" role="tablist" aria-label="Panel">
-            <button
-              v-for="entry in tabs"
-              :key="entry.id"
-              type="button"
-              role="tab"
-              :aria-selected="tab === entry.id"
-              class="-mb-px flex items-baseline gap-1.5 border-b-2 px-2.5 pt-2 pb-2.5 text-sm font-semibold transition-colors duration-150"
-              :class="tab === entry.id ? 'border-primary text-highlighted' : 'text-muted hover:text-highlighted border-transparent'"
-              @click="tab = entry.id">
-              {{ entry.label }}
-              <span class="text-xs font-medium tabular-nums">{{ entry.count }}</span>
-            </button>
-          </div>
-          <div class="min-h-0 flex-1 overflow-auto" role="tabpanel">
-            <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="openLine = $event" />
-            <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
-            <RouteTab
-              v-else-if="tab === 'route'"
-              :stations
-              :ends="routeEnds"
-              :preference="routePreference"
-              :route="foundRoute"
-              @from="routeEnds.from = $event"
-              @to="routeEnds.to = $event"
-              @swap="routeEnds = { from: routeEnds.to, to: routeEnds.from }"
-              @preference="routePreference = $event"
-              @station="openStation" />
-            <PlansTab v-else :network :plan @choose="choosePlan" />
-          </div>
+  <div ref="explorer" class="bg-page h-dvh w-full">
+    <UDashboardGroup storageKey="railtime-explorer" unit="px" class="relative h-full flex-col">
+      <SiteHeader v-if="!mapOnly" wide>
+        <template #leading>
+          <UDashboardSidebarCollapse color="neutral" variant="ghost" />
+          <UDashboardSidebarToggle color="neutral" variant="ghost" />
         </template>
-      </div>
-    </aside>
+        <template #context>
+          <CitySelect :city @city="emit('city', $event)" />
+        </template>
+      </SiteHeader>
 
-    <div class="explorer-map relative min-h-0">
-      <!-- MapLibre sets `position: relative` on its container, unlayered, so it beats Tailwind's `absolute`: the wrapper positions, the container fills it. -->
-      <div class="absolute inset-0">
-        <div ref="mapElement" class="h-full w-full" />
-      </div>
-      <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" class="absolute top-4 left-4" />
-      <div class="absolute top-4 right-4 flex flex-col gap-2">
-        <UTooltip :text="mapOnly ? 'Show panels (Esc)' : 'Map only'">
-          <UButton
-            :icon="mapOnly ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
-            color="neutral"
-            variant="outline"
-            class="bg-default shadow-soft"
-            :aria-label="mapOnly ? 'Show panels' : 'Map only'"
-            :aria-pressed="mapOnly"
-            @click="toggleMapOnly" />
-        </UTooltip>
-        <UTooltip :text="stationNames ? 'Hide station names' : 'Show station names'">
-          <UButton
-            icon="i-lucide-type"
-            :color="stationNames ? 'neutral' : 'primary'"
-            :variant="stationNames ? 'outline' : 'soft'"
-            class="shadow-soft"
-            :class="{ 'bg-default': stationNames }"
-            :aria-label="stationNames ? 'Hide station names' : 'Show station names'"
-            :aria-pressed="!stationNames"
-            @click="setStationNames(!stationNames)" />
-        </UTooltip>
-      </div>
-      <!-- The map's credits stay on it with the panels gone: its licence asks for them. -->
-      <MapCredits v-if="mapOnly" :credits class="bg-default/80 absolute right-0 bottom-0 rounded-tl-md px-2 py-1" />
-      <!-- The same wrapper as the map's: MapLibre makes the minimap's container relative too. -->
-      <div
-        v-show="mode === 'history' && camera !== 'overview'"
-        class="border-default shadow-soft absolute right-4 bottom-4 hidden h-32 w-50 overflow-hidden rounded-lg border sm:block">
-        <div ref="minimapElement" class="h-full w-full" aria-label="Overview of the whole city" />
-      </div>
-    </div>
+      <div class="flex min-h-0 flex-1">
+        <!-- The panel: a rail of icons when collapsed; on a phone, a drawer the header's button opens. -->
+        <UDashboardSidebar
+          v-if="!mapOnly"
+          v-model:open="drawerOpen"
+          v-model:collapsed="collapsed"
+          mode="drawer"
+          collapsible
+          resizable
+          :defaultSize="420"
+          :minSize="360"
+          :maxSize="560"
+          :collapsedSize="64"
+          :toggle="false"
+          :autoClose="false"
+          :ui="{ root: 'bg-default min-h-0', body: 'gap-0 p-0 sm:p-0', content: 'max-h-[80dvh]' }">
+          <template #default="{ collapsed: railOnly }">
+            <div class="flex min-h-0 flex-1 max-lg:flex-col">
+              <!-- The rail, always there: each section an icon with its name; the open one's folds the panel. On a phone, a row atop the drawer. -->
+              <nav class="border-default flex shrink-0 gap-1 p-1.5 lg:w-16 lg:flex-col lg:items-center lg:border-r max-lg:border-b" aria-label="Panel">
+                <UButton
+                  v-for="entry in tabs"
+                  :key="entry.id"
+                  :icon="TAB_ICONS[entry.id]"
+                  :label="entry.label"
+                  :color="tab === entry.id && !railOnly ? 'primary' : 'neutral'"
+                  :variant="tab === entry.id && !railOnly ? 'soft' : 'ghost'"
+                  :aria-pressed="tab === entry.id && !railOnly"
+                  class="flex-col gap-1 px-1 py-2 text-[11px] font-semibold max-lg:flex-1 lg:w-14"
+                  :ui="{ leadingIcon: 'size-5' }"
+                  @click="pickSection(entry.id, railOnly)" />
+              </nav>
+              <div v-if="!railOnly" class="flex min-h-0 min-w-0 flex-1 flex-col">
+                <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
 
-    <div v-show="!mapOnly" class="explorer-dock border-default bg-default flex flex-col gap-1.5 border-t px-5 pt-3 pb-2 max-sm:px-3 max-sm:pb-4">
-      <div class="flex items-center gap-2">
-        <ExploreDock
-          v-if="mode === 'explore'"
-          class="min-w-0 flex-1"
-          :time
-          :changes
-          :range
-          :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
-          :isFuture="time?.future === true"
-          :hasPlan="!!plan"
-          :hasHistory="!planOnly"
-          @play="playHistory"
-          @pick="pick"
-          @seek="showDate"
-          @future="showFuture" />
-        <PlaybackDock
-          v-else
-          class="min-w-0 flex-1"
-          :time
-          :changes
-          :range
-          :playing="time?.playing ?? false"
-          :speed
-          :camera
-          @play="map?.play()"
-          @pause="map?.pause()"
-          @skip="map?.skip()"
-          @pick="pick"
-          @speed="setSpeed"
-          @camera="setCamera"
-          @exit="exitHistory" />
-        <!-- On a phone the credits fold into a button, still a tap away. -->
-        <UPopover class="sm:hidden">
-          <UButton icon="i-lucide-info" color="neutral" variant="ghost" aria-label="Credits" />
-          <template #content>
-            <MapCredits :credits class="max-w-72 p-3" />
+                <div v-if="mode === 'history'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
+                  <StepCard :step :revealed />
+                  <UpNext :changes :from="(time?.cursor ?? 0) + (step ? 1 : 0)" @select="jumpTo" />
+                </div>
+                <StationView
+                  v-else-if="station"
+                  class="min-h-0 flex-1 overflow-auto"
+                  :station
+                  :backLabel="lineDetails?.name ?? tabLabel"
+                  :date="shownDate"
+                  @close="closeStation"
+                  @select="openStation"
+                  @routeFrom="routeFromStation('from')"
+                  @routeTo="routeFromStation('to')" />
+                <LineView
+                  v-else-if="lineDetails"
+                  class="min-h-0 flex-1 overflow-auto"
+                  :line="lineDetails"
+                  :changes="lineChanges"
+                  :time
+                  :backLabel="tabLabel"
+                  @close="openLine = null"
+                  @station="openStation"
+                  @change="map?.showChange($event)" />
+                <template v-else>
+                  <!-- The route tab has searches of its own. -->
+                  <div v-if="tab !== 'route'" class="px-4 pt-3">
+                    <StationSearch :stations @select="openStation" />
+                  </div>
+                  <h2 class="text-highlighted flex items-baseline gap-2 px-4 pt-3 pb-2 text-sm font-bold">
+                    {{ tabLabel }}
+                    <span class="text-muted text-xs font-medium tabular-nums">{{ tabs.find(entry => entry.id === tab)?.count }}</span>
+                  </h2>
+                  <div class="min-h-0 flex-1 overflow-auto">
+                    <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="openLine = $event" />
+                    <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
+                    <RouteTab
+                      v-else-if="tab === 'route'"
+                      :stations
+                      :ends="routeEnds"
+                      :preference="routePreference"
+                      :route="foundRoute"
+                      @from="routeEnds.from = $event"
+                      @to="routeEnds.to = $event"
+                      @swap="routeEnds = { from: routeEnds.to, to: routeEnds.from }"
+                      @preference="routePreference = $event"
+                      @station="openStation" />
+                    <PlansTab v-else :network :plan @choose="choosePlan" />
+                  </div>
+                </template>
+              </div>
+            </div>
           </template>
-        </UPopover>
+        </UDashboardSidebar>
+
+        <UDashboardPanel :ui="{ root: 'min-h-0' }">
+          <div class="relative min-h-0 flex-1">
+            <!-- MapLibre sets `position: relative` on its container, unlayered, so it beats Tailwind's `absolute`: the wrapper positions, the container fills it. -->
+            <div class="absolute inset-0">
+              <div ref="mapElement" class="h-full w-full" />
+            </div>
+            <div class="absolute top-4 left-4 flex flex-col items-start gap-2">
+              <!-- With the panel folded, the date and the counts stay on the map. -->
+              <DateBlock v-if="collapsed && !mapOnly" compact class="max-lg:hidden" :mode :time :planName="chosenPlan?.name" :stepActive="step !== null" />
+              <PlanLegend v-if="plan && mode === 'explore' && time?.future" :built="!planOnly" />
+            </div>
+            <div class="absolute top-4 right-4 flex flex-col gap-2">
+              <UTooltip :text="mapOnly ? 'Show panels (Esc)' : 'Map only'">
+                <UButton
+                  :icon="mapOnly ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+                  color="neutral"
+                  variant="outline"
+                  class="bg-default shadow-soft"
+                  :aria-label="mapOnly ? 'Show panels' : 'Map only'"
+                  :aria-pressed="mapOnly"
+                  @click="toggleMapOnly" />
+              </UTooltip>
+              <UTooltip :text="stationNames ? 'Hide station names' : 'Show station names'">
+                <UButton
+                  icon="i-lucide-type"
+                  :color="stationNames ? 'neutral' : 'primary'"
+                  :variant="stationNames ? 'outline' : 'soft'"
+                  class="shadow-soft"
+                  :class="{ 'bg-default': stationNames }"
+                  :aria-label="stationNames ? 'Hide station names' : 'Show station names'"
+                  :aria-pressed="!stationNames"
+                  @click="setStationNames(!stationNames)" />
+              </UTooltip>
+            </div>
+            <!-- The timeline is asked for, not shown: the map opens on the network as it is. -->
+            <UButton
+              v-if="!mapOnly && !dockShown"
+              :icon="planOnly ? 'i-lucide-play' : 'i-lucide-history'"
+              :label="planOnly ? 'Play the plan' : 'History'"
+              color="neutral"
+              variant="outline"
+              size="lg"
+              class="bg-default shadow-soft absolute bottom-4 left-4 font-semibold"
+              @click="openTimeline" />
+            <!-- The map's credits stay on it with the dock gone: its licence asks for them. -->
+            <MapCredits v-if="mapOnly || !dockShown" :credits class="bg-default/80 absolute right-0 bottom-0 max-w-[60%] rounded-tl-md px-2 py-1 text-right" />
+            <!-- The same wrapper as the map's: MapLibre makes the minimap's container relative too. -->
+            <div
+              v-show="mode === 'history' && camera !== 'overview'"
+              class="border-default shadow-soft absolute right-4 bottom-4 hidden h-32 w-50 overflow-hidden rounded-lg border sm:block">
+              <div ref="minimapElement" class="h-full w-full" aria-label="Overview of the whole city" />
+            </div>
+          </div>
+
+          <div v-show="!mapOnly && dockShown" class="border-default bg-default flex flex-col gap-1.5 border-t px-5 pt-3 pb-2 max-sm:px-3 max-sm:pb-4">
+            <!-- Below the panel's width it is a drawer: the date stays in sight while playing. -->
+            <DateBlock
+              v-if="mode === 'history'"
+              class="-mx-5 -mt-3 lg:hidden max-sm:-mx-3"
+              :mode
+              :time
+              :planName="chosenPlan?.name"
+              :stepActive="step !== null" />
+            <div class="flex items-center gap-2">
+              <ExploreDock
+                v-if="mode === 'explore'"
+                class="min-w-0 flex-1"
+                :time
+                :changes
+                :range
+                :isToday="!time || (time.cursor === time.todayCursor && !time.future)"
+                :isFuture="time?.future === true"
+                :hasPlan="!!plan"
+                :hasHistory="!planOnly"
+                @play="playHistory"
+                @pick="pick"
+                @seek="showDate"
+                @future="showFuture"
+                @close="closeTimeline" />
+              <PlaybackDock
+                v-else
+                class="min-w-0 flex-1"
+                :time
+                :changes
+                :range
+                :playing="time?.playing ?? false"
+                :speed
+                :camera
+                @play="map?.play()"
+                @pause="map?.pause()"
+                @skip="map?.skip()"
+                @pick="pick"
+                @speed="setSpeed"
+                @camera="setCamera"
+                @exit="exitHistory" />
+              <!-- On a phone the credits fold into a button, still a tap away. -->
+              <UPopover class="sm:hidden">
+                <UButton icon="i-lucide-info" color="neutral" variant="ghost" aria-label="Credits" />
+                <template #content>
+                  <MapCredits :credits class="max-w-72 p-3" />
+                </template>
+              </UPopover>
+            </div>
+            <MapCredits :credits class="text-right max-sm:hidden" />
+          </div>
+        </UDashboardPanel>
       </div>
-      <MapCredits :credits class="text-right max-sm:hidden" />
-    </div>
+    </UDashboardGroup>
   </div>
 </template>
 
@@ -218,8 +266,33 @@
     ...(planCount > 0 ? [{ id: 'plans' as const, label: 'Plans', count: String(planCount) }] : []),
   ]);
   const tabLabel = computed(() => tabs.value.find(entry => entry.id === tab.value)?.label ?? 'Lines');
-  /** On a phone, whether the sheet shows the tabs. */
-  const sheetOpen = ref(false);
+
+  /** The panel folded to a rail of icons; the choice is kept in a cookie, as its width is. */
+  const collapsed = ref(false);
+  /** Below the panel's width it is a drawer: whether it is open. */
+  const drawerOpen = ref(false);
+  /** Each tab's icon, on the rail. */
+  const TAB_ICONS = { lines: 'i-lucide-list', changes: 'i-lucide-history', route: 'i-lucide-route', plans: 'i-lucide-drafting-compass' };
+  /**
+   * A section picked on the rail: the panel opens on it, over a station's or a line's view; the open
+   * section's own icon folds the panel, as an editor's activity bar does.
+   */
+  const pickSection = (id: (typeof tab)['value'], folded: boolean) => {
+    const showing = tab.value === id && !station.value && !openLine.value;
+    if (showing && !folded) {
+      collapsed.value = true;
+      return;
+    }
+    tab.value = id;
+    closeStation();
+    openLine.value = null;
+    collapsed.value = false;
+  };
+  /** Brings the panel into sight, for what was picked on the map: unfolds it, or on a phone opens its drawer. */
+  const revealPanel = () => {
+    if (window.matchMedia('(width < 64rem)').matches) drawerOpen.value = true;
+    else collapsed.value = false;
+  };
 
   /** The line whose panel is open, if any: its stops and history, on the date shown. */
   const openLine = ref<string | null>(null);
@@ -291,6 +364,14 @@
     map.value?.setVisibleLines([...next]);
   };
 
+  // A station picked on the map opens its view in the panel, wherever the panel is.
+  watch(
+    () => station.value?.id,
+    picked => {
+      if (picked) revealPanel();
+    },
+  );
+
   const closeStation = () => {
     station.value = null;
     map.value?.selectStation(null);
@@ -304,6 +385,31 @@
   };
 
   const showDate = (date: number) => map.value?.setDate(date);
+
+  /**
+   * The timeline under the map: closed until asked for, so the page opens on the network as it is.
+   * A date away from that (a link's, a change picked in the panel) opens it, so the way back is in sight.
+   */
+  const dockOpen = ref(false);
+  const dockShown = computed(() => dockOpen.value || mode.value === 'history');
+  /** The network as it is: today, or with a plan its future built. */
+  const atRest = computed(() => {
+    const now = time.value;
+    if (!now) return true;
+    return props.plan ? now.future : now.cursor === now.todayCursor && !now.future;
+  });
+  watch(atRest, rest => {
+    if (!rest) dockOpen.value = true;
+  });
+  /** A network never built has no years to slide through: its button plays the plan. */
+  const openTimeline = () => {
+    if (planOnly) playHistory();
+    else dockOpen.value = true;
+  };
+  const closeTimeline = () => {
+    dockOpen.value = false;
+    showFuture();
+  };
 
   const playHistory = () => {
     closeStation();
@@ -396,50 +502,3 @@
     document.removeEventListener('keydown', onKeydown);
   });
 </script>
-
-<style scoped>
-  /* The panel down the side, the map beside it, the dock under the map. */
-  .explorer {
-    display: grid;
-    grid-template-columns: 360px minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-areas:
-      'panel map'
-      'panel dock';
-  }
-  .explorer-panel {
-    grid-area: panel;
-  }
-  .explorer-map {
-    grid-area: map;
-  }
-  .explorer-dock {
-    grid-area: dock;
-  }
-
-  /* Only the map. */
-  .explorer.map-only {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-    grid-template-areas: 'map';
-  }
-
-  /* A phone: the map, the panel as a sheet under it, then the dock. */
-  @media (width < 40rem) {
-    .explorer {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1fr) auto auto;
-      grid-template-areas:
-        'map'
-        'panel'
-        'dock';
-    }
-    .explorer-sheet {
-      display: none;
-      max-height: 45dvh;
-    }
-    .explorer-sheet.open {
-      display: flex;
-    }
-  }
-</style>

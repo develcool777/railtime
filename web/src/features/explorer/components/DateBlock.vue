@@ -1,12 +1,16 @@
 <template>
   <div
-    class="border-muted flex flex-col gap-1.5 border-b px-6 pt-5 pb-4.5 max-sm:flex-row max-sm:items-end max-sm:justify-between max-sm:px-4 max-sm:pt-3 max-sm:pb-3">
+    :class="
+      compact
+        ? 'bg-default/95 border-default shadow-soft flex items-end gap-5 rounded-lg border px-4 py-3 backdrop-blur-sm'
+        : 'border-muted flex flex-col gap-1.5 border-b px-6 pt-5 pb-4.5 max-sm:flex-row max-sm:items-end max-sm:justify-between max-sm:px-4 max-sm:pt-3 max-sm:pb-3'
+    ">
     <div>
       <p class="eyebrow text-primary">{{ eyebrow }}</p>
-      <p class="big-date text-highlighted font-extrabold tabular-nums" :class="{ playing: mode === 'history' }">{{ dateText }}</p>
-      <p v-if="mode === 'history' && dateLabel" class="text-muted mt-1 text-[13px] tabular-nums max-sm:hidden">{{ dateLabel }}</p>
+      <p class="big-date text-highlighted font-extrabold tabular-nums" :class="{ playing: mode === 'history', compact }">{{ dateText }}</p>
+      <p v-if="mode === 'history' && dateLabel && !compact" class="text-muted mt-1 text-[13px] tabular-nums max-sm:hidden">{{ dateLabel }}</p>
     </div>
-    <dl v-if="time" class="mt-1.5 flex gap-4.5 max-sm:mt-0 max-sm:gap-3">
+    <dl v-if="time" class="flex gap-4.5 max-sm:gap-3" :class="{ 'mt-1.5 max-sm:mt-0': !compact }">
       <div v-for="stat in stats" :key="stat.label" class="flex flex-col-reverse">
         <dt class="text-muted text-xs">{{ stat.label }}</dt>
         <dd class="text-highlighted text-[17px] leading-tight font-bold tabular-nums max-sm:text-[15px]">{{ stat.value }}</dd>
@@ -28,6 +32,8 @@
     planName?: string;
     /** A step is playing: show its exact day. */
     stepActive: boolean;
+    /** A card on the map, for when the panel is folded: one row, a smaller date. */
+    compact?: boolean;
   }>();
 
   const isFuture = computed(() => props.time?.future === true);
@@ -69,6 +75,9 @@
   }
   .big-date.playing {
     font-size: 64px;
+  }
+  .big-date.compact {
+    font-size: 26px;
   }
   @media (width < 40rem) {
     .big-date,

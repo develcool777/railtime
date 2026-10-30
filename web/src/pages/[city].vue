@@ -51,7 +51,9 @@
   usePageSeo(seo);
 
   // The map only runs in the browser, so the network is fetched there too.
-  const { data: network, error } = useFetch<Network>(() => networkUrlOf(city.value), { server: false, baseURL });
+  // The base URL is joined here, as for the pictures: ofetch leaves a relative path as it is when the base
+  // is `/`, and the browser would resolve it against the page's own address (/london/data/…).
+  const { data: network, error } = useFetch<Network>(() => `${baseURL}${networkUrlOf(city.value)}`, { server: false });
 
   // A plan rebuilds the map: the page keys the explorer on it, so a new one mounts where the old one looked.
   // A network never built always shows a plan: its first, unless the address names another.

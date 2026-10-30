@@ -46,7 +46,7 @@ colours, `pnpm data:previews <city>` too (it draws the landing page's pictures i
 
   ```text
   pages/  css/            routes, styles
-  components/ui/          components every surface uses (StatusChip, SegmentedControl, MapCredits)
+  components/ui/          components every surface uses (SiteHeader, StatusChip, MapCredits…)
   constants/  utils/      the city catalogue (CITIES, city.utils): what any page needs
   features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
                           seo; its components in components/, the rest flat beside them
