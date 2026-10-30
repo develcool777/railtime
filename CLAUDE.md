@@ -50,11 +50,17 @@ colours, `pnpm data:previews <city>` too (it draws the landing page's pictures i
   constants/  utils/      the city catalogue (CITIES, city.utils): what any page needs
   features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
                           seo; its components in components/, the rest flat beside them
+  features/<name>/<part>/ a big feature in parts, as dataroom-ui's modules/fileRenderer: each part
+                          (explorer's map/, time/, panel/, lines/…) its own components/ and files;
+                          the feature's top holds the frame and what the parts share, and a
+                          _README.md maps it
   ```
 
-  Components are used by tag, never imported (`nuxt.config.ts` scans `components/` and every
-  `features/*/components/`); anything else in a feature is imported by its path
-  (`~/features/explorer/timeline.utils`), so what one feature takes from another can be searched for.
+  Components are used by tag, never imported (`nuxt.config.ts` scans every `components/` under
+  `features/`); anything else in a feature is imported by its path
+  (`~/features/explorer/time/timeline.utils`), so what one feature or part takes from another can be
+  searched for. In the explorer, a part never imports another part's composable: `ExplorerView`
+  wires them, handing one's actions to another as callbacks.
   Something one surface uses goes in its feature; it moves to the top when a second needs it.
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
