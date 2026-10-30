@@ -9,18 +9,18 @@ the code. The reasons behind a rule sit in the comment beside the code that keep
 One folder per part. Each holds its components in `components/` and, flat beside them, what they
 work with: its composables, utilities, types and constants, named `<thing>.<role>.ts`.
 
-| Part        | What                                                                                          | Components                                     |
-| ----------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `map/`      | The map: `useTransitMap` mounts it and mirrors its events; the station-names choice           | `MapTools`                                     |
-| `time/`     | The time control: at rest, the timeline, the player (`useExplorerTime`); the timeline's scale | `TimeControl`, `TimelineBar`                   |
-| `panel/`    | The panel's frame: the open section, the views pushed over it, its top (`useExplorerPanel`)   | `PanelTop`, `ExplorerRail`, `ExplorerSheet`    |
-| `lines/`    | The Lines section, and a line's view                                                          | `LinesSection`, `LineView`                     |
-| `changes/`  | The Changes section, which follows playback                                                   | `ChangesSection`, `ChangeRow`                  |
-| `stations/` | A station's view, and finding stations by name                                                | `StationView`, `StationLinks`, `StationSearch` |
-| `route/`    | The Route section: a route between two stations (`useRouteFinder`)                            | `RouteSection`                                 |
-| `plans/`    | The Plans section, the plan shown and its legend (`useExplorerPlan`)                          | `PlansSection`, `PlanLegend`                   |
-| `header/`   | The header's city picker and search                                                           | `CitySelect`, `ExplorerSearch`, `SearchButton` |
-| `address/`  | The address: read at opening, then kept in step with the map (`useExplorerAddress`)           | —                                              |
+| Part        | What                                                                                                  | Components                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `map/`      | The map: `useTransitMap` mounts it and mirrors its events; the station-names choice                   | `MapTools`                                                        |
+| `time/`     | The time control: at rest, the timeline, the player (`useExplorerTime`); the timeline's scale         | `TimeControl`, `TimelineBar`                                      |
+| `panel/`    | The panel's frame: the open section, the views pushed over it, its top (`useExplorerPanel`)           | `PanelTop`, `ExplorerRail`, `ExplorerSheet`                       |
+| `lines/`    | The Lines section, and a line's view                                                                  | `LinesSection`, `LineView`                                        |
+| `changes/`  | The Changes section, which follows playback                                                           | `ChangesSection`, `ChangeRow`                                     |
+| `stations/` | The Stations section, a station's view and the walk from it along its lines; finding stations by name | `StationsSection`, `StationView`, `StationLinks`, `StationSearch` |
+| `route/`    | The Route section: a route between two stations (`useRouteFinder`)                                    | `RouteSection`                                                    |
+| `plans/`    | The Plans section, the plan shown and its legend (`useExplorerPlan`)                                  | `PlansSection`, `PlanLegend`                                      |
+| `header/`   | The header's city picker and search                                                                   | `CitySelect`, `ExplorerSearch`, `SearchButton`                    |
+| `address/`  | The address: read at opening, then kept in step with the map (`useExplorerAddress`)                   | —                                                                 |
 
 At the top, what every part shares or what ties them together:
 

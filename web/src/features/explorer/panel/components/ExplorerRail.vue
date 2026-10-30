@@ -3,12 +3,10 @@
     <UTooltip v-for="(section, position) in sections" :key="section.id" :text="section.label" :kbds="[String(position + 1)]" :content="{ side: 'right' }">
       <button
         type="button"
-        class="relative flex h-14 w-15 flex-col items-center justify-center gap-1 rounded-lg transition-colors duration-150"
+        class="flex h-14 w-15 flex-col items-center justify-center gap-1 rounded-lg transition-colors duration-150"
         :class="section.id === open ? 'bg-selected text-selected' : 'text-muted hover:bg-elevated hover:text-highlighted'"
         :aria-pressed="section.id === open"
         @click="emit('pick', section.id)">
-        <!-- The open section's mark, at the rail's edge. -->
-        <span v-if="section.id === open" class="bg-brand-500 absolute top-3.5 bottom-3.5 -left-1.5 w-[3px] rounded-r-[3px]" />
         <UIcon :name="section.icon" class="size-5" />
         <span class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
       </button>

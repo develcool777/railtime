@@ -53,6 +53,7 @@ const sectionInput = (overrides: Partial<SectionTopInput>): SectionTopInput => (
   currentChange: null,
   time: timeAt({}),
   planCount: 2,
+  stationCount: 3,
   ...overrides,
 });
 
@@ -72,6 +73,10 @@ describe('PanelUtils', () => {
   describe('stationTop', () => {
     test('says when its first line called there, and its lines’ colours', () => {
       expect(stationTop(STATION, 'Lines')).toEqual({ title: 'Centre', context: 'opened 1900', dots: ['#0000ff', '#ff0000'], backLabel: 'Lines' });
+    });
+
+    test('gives its names in other languages first', () => {
+      expect(stationTop({ ...STATION, otherNames: ['Центр'] }, 'Lines').context).toBe('Центр · opened 1900');
     });
 
     test('is planned when no line has called there yet', () => {
@@ -109,6 +114,10 @@ describe('PanelUtils', () => {
       expect(top.title).toBe('Playing history');
       expect(top.context).toMatch(/^2 of 3 · .*1950$/);
       expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true })).title).toBe('Playing the future');
+    });
+
+    test('counts the stations on the map', () => {
+      expect(sectionTop(sectionInput({ section: 'stations', label: 'Stations' }))).toEqual({ title: 'Stations', context: '3 stations on the map' });
     });
 
     test('counts the plans, one in the singular', () => {

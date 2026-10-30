@@ -3,7 +3,7 @@ import { defineShortcuts } from '#imports';
 import type { ExplorerShortcutActions } from '~/features/explorer/shortcuts.composable.types';
 
 /**
- * The explorer's keys: `/` searches, `[` folds the panel, `1`–`4` open the sections, `H` the
+ * The explorer's keys: `/` searches, `[` folds the panel, `1`–`5` open the sections, `H` the
  * timeline, Space plays or pauses, the arrows step through time, `N` names the stations, `F` is map
  * only, and Esc closes the innermost thing open.
  *

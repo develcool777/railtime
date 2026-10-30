@@ -1,6 +1,6 @@
 import type { LineDetails, StationSummary } from '@railtime/renderer/transitMap.types';
 
-import type { NextStation } from '~/features/explorer/stations/station.types';
+import type { LineDirection, StationGroup, StopToward, StripStop } from '~/features/explorer/stations/station.types';
 
 /**
  * A name as a search compares it: lower case, accents and apostrophes dropped, so "kings cross"
@@ -45,27 +45,70 @@ export const findStations = (stations: StationSummary[], query: string, limit: n
 };
 
 /**
- * The stations one stop away from a station, on any of its lines on the date shown, each with the
- * lines that run there: on a branch, the stop it leaves from counts as its neighbour too.
+ * The stop one before and one after a station on a line, each with the end of the line that way,
+ * as a platform's sign gives them: once for each run it is on, so a junction has a pair for each
+ * branch. A branch's first stop is the station it leaves from, so from there a branch goes one way.
  *
  * @param station - The station's id.
- * @param lines - Its lines on the date shown, with their stops.
- * @returns Each neighbour once, in the order the lines reach them.
+ * @param line - The line on the date shown, with its stops.
+ * @returns Each pair, in the line's order; none where the line does not call.
  */
-export const nextStations = (station: string, lines: LineDetails[]): NextStation[] => {
-  const found = new Map<string, NextStation>();
-  for (const line of lines) {
-    for (const run of line.branches) {
-      run.forEach((stop, place) => {
-        if (stop.id !== station) return;
-        for (const neighbour of [run[place - 1], run[place + 1]]) {
-          if (!neighbour || neighbour.id === station) continue;
-          const entry = found.get(neighbour.id) ?? { id: neighbour.id, name: neighbour.name, lines: [] };
-          if (!entry.lines.some(known => known.id === line.id)) entry.lines.push({ id: line.id, name: line.name, color: line.color });
-          found.set(neighbour.id, entry);
-        }
-      });
-    }
+export const directionsAt = (station: string, line: LineDetails): LineDirection[] => {
+  const found: LineDirection[] = [];
+  const toward = (stop: { id: string; name: string } | undefined, end: { name: string } | undefined): StopToward | null =>
+    stop ? { id: stop.id, name: stop.name, towards: end && end.name !== stop.name ? end.name : null } : null;
+  for (const run of line.branches) {
+    run.forEach((stop, place) => {
+      if (stop.id !== station) return;
+      const direction = { previous: toward(run[place - 1], run[0]), next: toward(run[place + 1], run.at(-1)) };
+      const known = found.some(entry => entry.previous?.id === direction.previous?.id && entry.next?.id === direction.next?.id);
+      if ((direction.previous || direction.next) && !known) found.push(direction);
+    });
   }
-  return [...found.values()];
+  return found;
+};
+
+/**
+ * The stations A to Z, under the first letter of their names (accents dropped, so "Náměstí" is
+ * under N).
+ *
+ * @param stations - The stations on the map.
+ * @returns Each letter with its stations, in order.
+ */
+export const stationsByLetter = (stations: StationSummary[]): StationGroup[] => {
+  const groups: StationGroup[] = [];
+  const sorted = [...stations].sort((first, second) => first.name.localeCompare(second.name));
+  for (const station of sorted) {
+    const letter = (foldName(station.name).charAt(0) || '#').toUpperCase();
+    const group = groups.at(-1);
+    if (group?.letter === letter) group.stations.push(station);
+    else groups.push({ letter, stations: [station] });
+  }
+  return groups;
+};
+
+/**
+ * The piece of a line a station's view draws, in the line's order: the stop before, the station,
+ * the stop after, each beside where the line goes on past it. At an end there is no stop that way,
+ * and the station itself says so.
+ *
+ * @param direction - The stops either side on one run of the line.
+ * @param here - The station.
+ * @param here.id - Its id.
+ * @param here.name - Its name.
+ * @returns The rows, top to bottom.
+ */
+export const stripAround = (direction: LineDirection, here: { id: string; name: string }): StripStop[] => {
+  const beside = (stop: StopToward): StripStop => ({
+    id: stop.id,
+    name: stop.name,
+    here: false,
+    note: stop.towards ? `towards ${stop.towards}` : 'end of the line',
+  });
+  const atEnd = !direction.previous || !direction.next;
+  return [
+    ...(direction.previous ? [beside(direction.previous)] : []),
+    { id: here.id, name: here.name, here: true, note: atEnd ? 'end of the line' : '' },
+    ...(direction.next ? [beside(direction.next)] : []),
+  ];
 };

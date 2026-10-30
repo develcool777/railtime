@@ -3,6 +3,7 @@ import type { Section, SheetSnap } from '~/features/explorer/explorer.types';
 /** The panel's sections, in the rail's order, each with its icon. Plans shows only for a city with plans. */
 export const SECTIONS: { id: Section; label: string; icon: string }[] = [
   { id: 'lines', label: 'Lines', icon: 'i-lucide-list' },
+  { id: 'stations', label: 'Stations', icon: 'i-lucide-map-pin' },
   { id: 'changes', label: 'Changes', icon: 'i-lucide-history' },
   { id: 'route', label: 'Route', icon: 'i-lucide-route' },
   { id: 'plans', label: 'Plans', icon: 'i-lucide-drafting-compass' },

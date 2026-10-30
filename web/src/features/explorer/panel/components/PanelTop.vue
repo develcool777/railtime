@@ -6,15 +6,15 @@
         {{ backLabel }}
       </button>
       <span v-else />
-      <UTooltip v-if="foldable" text="Fold the panel" :kbds="['[']">
+      <UTooltip v-if="foldable" text="Close the panel" :kbds="['[']">
         <UButton
-          icon="i-lucide-chevrons-left"
+          icon="i-lucide-x"
           color="neutral"
           variant="ghost"
           size="sm"
           square
           class="size-7 rounded-md"
-          aria-label="Fold the panel"
+          aria-label="Close the panel"
           @click="emit('fold')" />
       </UTooltip>
     </div>

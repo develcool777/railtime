@@ -10,8 +10,6 @@ export type RouteFinderInput = {
   /** The panel's open section: the route is drawn while it is Route. */
   section: Ref<Section>;
   timeMode: Ref<TimeMode>;
-  /** Opens a section in the panel, for a route started from a station. */
-  openSection: (id: Section) => void;
 };
 
 /** A route between two stations, on the date shown. */
@@ -23,8 +21,6 @@ export type RouteFinder = {
   foundRoute: ComputedRef<RouteInfo | null>;
   /** Whether it is drawn on the map: while Route is open, but for playback. */
   routeShown: ComputedRef<boolean>;
-  /** Starts or ends the route at the station whose view is open, and opens Route. */
-  routeFromStation: (end: 'from' | 'to') => void;
   /** Swaps where it starts and ends. */
   swapEnds: () => void;
 };

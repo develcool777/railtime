@@ -11,7 +11,7 @@
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
-      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? section : null" @pick="pickSection" />
+      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" @pick="pickSection" />
 
       <!-- The panel: beside the map, a column that folds and resizes; on a phone, a sheet over it. -->
       <section
@@ -24,7 +24,7 @@
         "
         :style="phone ? { height: sheet === 'full' ? 'calc(100% - 8px)' : `${SHEET_HEIGHTS[sheet]}px` } : { width: `${panelOpen ? panelWidth : 0}px` }"
         aria-label="Panel">
-        <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : section" @pick="pickSection" />
+        <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" @pick="pickSection" />
         <div
           v-show="phone ? sheet !== 'peek' : panelOpen"
           class="flex min-h-0 flex-1 flex-col overflow-hidden"
@@ -38,16 +38,9 @@
             @back="goBack"
             @fold="panelOpen = false" />
           <div class="min-h-0 flex-1 overflow-y-auto">
-            <StationView
-              v-if="station"
-              :station
-              :next="stationNeighbours"
-              :date="shownDate"
-              @select="openStation"
-              @line="pushLine"
-              @routeFrom="routeFromStation('from')"
-              @routeTo="routeFromStation('to')" />
+            <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="walkTo" @line="pushLine" />
             <LineView v-else-if="lineDetails" :line="lineDetails" :changes="lineChanges" :stationColors @station="openStation" @change="showChange" />
+            <StationsSection v-else-if="section === 'stations'" :stations @open="openStation" />
             <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="pushLine" />
             <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="pickChange" />
             <RouteSection
@@ -217,11 +210,12 @@
   const {
     sections,
     section,
+    railSection,
     lineDetails,
     lineChanges,
     stations,
     stationColors,
-    stationNeighbours,
+    stationDirections,
     visible,
     setVisible,
     currentChange,
@@ -233,6 +227,7 @@
     hasPushedView,
     pushLine,
     openStation,
+    walkTo,
     pickChange,
     showChange,
     followPlayback,
@@ -264,7 +259,7 @@
     stepTime,
   } = useExplorerTime({ binding, timeMode, plan: props.plan, planOnly, currentChange, onPlay: followPlayback });
 
-  const { routeEnds, routePreference, foundRoute, routeShown, routeFromStation, swapEnds } = useRouteFinder({ binding, section, timeMode, openSection });
+  const { routeEnds, routePreference, foundRoute, routeShown, swapEnds } = useRouteFinder({ binding, section, timeMode });
 
   useExplorerAddress({ network: props.network, plan: props.plan, chosenPlan, binding, timeMode, opening });
 

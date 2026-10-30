@@ -5,7 +5,8 @@ import { SECTIONS } from '~/features/explorer/explorer.constants';
 import type { Section } from '~/features/explorer/explorer.types';
 import type { ExplorerPanel, ExplorerPanelInput } from '~/features/explorer/panel/panel.composable.types';
 import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel.utils';
-import { nextStations } from '~/features/explorer/stations/station.utils';
+import type { LineDirection } from '~/features/explorer/stations/station.types';
+import { directionsAt } from '~/features/explorer/stations/station.utils';
 
 /**
  * The panel: the section open, the line or station view pushed over it, what each lists on the
@@ -43,22 +44,20 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
   // None while playing, when the panel follows the changes.
   const stations = computed(() => (time.value && !time.value.playing && map.value ? map.value.getStations() : []));
   const stationColors = computed(() => new Map(stations.value.map(entry => [entry.id, entry.colors])));
-  const stationNeighbours = computed(() => {
+  const stationDirections = computed(() => {
     const transitMap = map.value;
     // Read for the date shown: lines open and close.
     const shown = time.value?.cursor;
-    if (!station.value || !transitMap || shown === undefined) return [];
-    return nextStations(
-      station.value.id,
-      station.value.lines.map(line => transitMap.getLineDetails(line.id)),
-    );
+    if (!station.value || !transitMap || shown === undefined) return new Map<string, LineDirection[]>();
+    const here = station.value.id;
+    return new Map(station.value.lines.map(line => [line.id, directionsAt(here, transitMap.getLineDetails(line.id))]));
   });
 
   const currentChange = computed(() => currentChangeIndex(changes.value, time.value, timeMode.value === 'playing' && step.value !== null));
   const shownDate = computed(() => (!time.value || time.value.future ? null : time.value.time));
 
   const panelTop = computed(() => {
-    if (station.value) return stationTop(station.value, lineDetails.value?.name ?? sectionLabel.value);
+    if (station.value) return stationTop(station.value, stationTrail.value.at(-1)?.name ?? lineDetails.value?.name ?? sectionLabel.value);
     if (lineDetails.value) return lineTop(lineDetails.value, sectionLabel.value);
     return sectionTop({
       section: section.value,
@@ -71,10 +70,16 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
       currentChange: currentChange.value,
       time: time.value,
       planCount,
+      stationCount: stations.value.length,
     });
   });
 
+  // The stations walked through from a station's view, so Back retraces the walk.
+  const stationTrail = ref<{ id: string; name: string }[]>([]);
+  let walking = false;
+
   const closeStation = () => {
+    stationTrail.value = [];
     station.value = null;
     map.value?.selectStation(null);
   };
@@ -83,14 +88,29 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
     station.value = map.value.getStationInfo(id);
     map.value.selectStation(id);
   };
-  // A station picked on the map opens its view in the panel, wherever the panel is.
+  const walkTo = (id: string) => {
+    if (!station.value || station.value.id === id) return;
+    stationTrail.value = [...stationTrail.value, { id: station.value.id, name: station.value.name }];
+    walking = true;
+    openStation(id);
+  };
+  // A station picked on the map opens its view in the panel, wherever the panel is; picked anywhere
+  // but by a walk, it starts a new one.
   watch(
     () => station.value?.id,
     picked => {
       if (picked) layout.revealPanel();
+      if (!walking) stationTrail.value = [];
+      walking = false;
     },
   );
 
+  // The rail marks what is on top: a station's view is the Stations section's, a line's the Lines'.
+  const railSection = computed((): Section => {
+    if (station.value) return 'stations';
+    if (openLine.value) return 'lines';
+    return section.value;
+  });
   const hasPushedView = () => station.value !== null || openLine.value !== null;
   const openSection = (id: Section) => {
     section.value = id;
@@ -104,7 +124,12 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
     else openSection(id);
   };
   const goBack = () => {
-    if (station.value) closeStation();
+    const previous = stationTrail.value.at(-1);
+    if (previous) {
+      stationTrail.value = stationTrail.value.slice(0, -1);
+      walking = true;
+      openStation(previous.id);
+    } else if (station.value) closeStation();
     else openLine.value = null;
   };
   const pushLine = (id: string) => {
@@ -127,12 +152,13 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
   return {
     sections,
     section,
+    railSection,
     openLine,
     lineDetails,
     lineChanges,
     stations,
     stationColors,
-    stationNeighbours,
+    stationDirections,
     visible,
     setVisible,
     currentChange,
@@ -144,6 +170,7 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
     hasPushedView,
     pushLine,
     openStation,
+    walkTo,
     closeStation,
     pickChange,
     showChange,
