@@ -37,6 +37,7 @@ export const LAYERS = {
   routeLine: 'rt-route-line',
   routeWalk: 'rt-route-walk',
   routeStops: 'rt-route-stops',
+  routePassLabels: 'rt-route-pass-labels',
   routeLabels: 'rt-route-labels',
 } as const;
 

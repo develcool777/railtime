@@ -473,9 +473,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       }));
     });
     this.routeStops = route
-      ? routeStopMarks(route).map(mark =>
-          pointFeature(this.index.coordOf(mark.station), { kind: mark.kind, color: mark.color, name: mark.kind === 'pass' ? '' : mark.name }),
-        )
+      ? routeStopMarks(route).map(mark => pointFeature(this.index.coordOf(mark.station), { kind: mark.kind, color: mark.color, name: mark.name }))
       : [];
     if (this.ready) {
       this.routeLayer.update(this.route, this.routeStops);

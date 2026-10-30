@@ -9,7 +9,8 @@ import type { Palette } from './theme.types';
 /**
  * A route over the network, drawn above everything else: each ride wide, in its line's colour, on a
  * casing that lifts it off the map; each walk dashed; a dot at each stop it passes, a ring where a
- * ride begins or ends, a filled dot at its end, and the names of its start, changes and end.
+ * ride begins or ends, a filled dot at its end. Its start, changes and end are always named; the
+ * stops between, smaller, where there is room.
  */
 export class RouteLayer extends MapLayer {
   public constructor(map: MapLibreMap) {
@@ -64,10 +65,18 @@ export class RouteLayer extends MapLayer {
       },
     });
     this.map.addLayer({
+      id: LAYERS.routePassLabels,
+      type: 'symbol',
+      source: SOURCES.routeStops,
+      filter: isPassed,
+      layout: { 'text-field': ['get', 'name'], 'text-font': font, 'text-size': byZoom(10.5, 13), 'text-anchor': 'left', 'text-offset': [0.8, 0] },
+      paint: { 'text-halo-width': 1.5 },
+    });
+    this.map.addLayer({
       id: LAYERS.routeLabels,
       type: 'symbol',
       source: SOURCES.routeStops,
-      filter: ['!=', ['get', 'name'], ''],
+      filter: ['!', isPassed],
       layout: {
         'text-field': ['get', 'name'],
         'text-font': font,
@@ -75,7 +84,6 @@ export class RouteLayer extends MapLayer {
         'text-anchor': 'left',
         'text-offset': [1, 0],
         'text-allow-overlap': true,
-        'text-ignore-placement': true,
       },
       paint: { 'text-halo-width': 2 },
     });
@@ -89,8 +97,11 @@ export class RouteLayer extends MapLayer {
   public applyPalette(palette: Palette): void {
     this.map.setPaintProperty(LAYERS.routeCasing, 'line-color', palette.labelHalo);
     this.map.setPaintProperty(LAYERS.routeWalk, 'line-color', palette.label);
-    this.map.setPaintProperty(LAYERS.routeLabels, 'text-color', palette.label);
-    this.map.setPaintProperty(LAYERS.routeLabels, 'text-halo-color', palette.labelHalo);
+    for (const layer of [LAYERS.routePassLabels, LAYERS.routeLabels]) {
+      this.map.setPaintProperty(layer, 'text-color', palette.label);
+      this.map.setPaintProperty(layer, 'text-halo-color', palette.labelHalo);
+    }
+    this.map.setPaintProperty(LAYERS.routePassLabels, 'text-opacity', 0.8);
   }
 
   /**

@@ -24,7 +24,7 @@ export type LineFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] },
 /** A stretch of a route: ridden on a line, in its colour, or walked between two stations. */
 export type RouteFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, { color: string; walk: boolean }>;
 
-/** Properties of a stop on a route: how it is marked, its line's colour, and its name where the map gives one. */
+/** Properties of a stop on a route: how it is marked, its line's colour, and its name. */
 export type RouteStopProperties = { kind: RouteStopKind; color: string; name: string };
 
 /** A drawn point. */
