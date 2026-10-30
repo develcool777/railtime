@@ -1,20 +1,21 @@
-import { useColorMode } from '#imports';
+import { useColorMode, useState } from '#imports';
 import { isPlanOnly } from '@railtime/schema/plan.utils';
 import { computed, ref, watch } from 'vue';
 
+import type { Section } from '~/features/explorer/explorer.types';
 import { formatPlanFacts, formatStats } from '~/features/explorer/format.utils';
 import type { ExplorerPlan, ExplorerPlanInput } from '~/features/explorer/plans/plan.composable.types';
 import { planFacts } from '~/features/explorer/plans/plan.utils';
 
 /**
  * The plan shown, if any, and what the page says about it: its summary, the legend for its dashed
- * track, and what is built today to compare it with.
+ * track, what is built today to compare it with, and choosing another.
  *
- * @param input - The network, the plan, and where the map is.
+ * @param input - The network, the plan, where the map is, and what choosing one does.
  * @returns The plan and its captions.
  */
 export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
-  const { network, plan, time, timeMode } = input;
+  const { network, plan, time, timeMode, onChoose } = input;
   const colorMode = useColorMode();
 
   const chosenPlan = computed(() => (plan ? network.plans?.[plan] : undefined));
@@ -39,6 +40,16 @@ export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
     if (!builtFacts.value && !plan && drawnToday) builtFacts.value = formatStats(now.stats);
   });
 
+  // Choosing a plan, the built network too, mounts the explorer afresh: it opens again on Plans, where the choice was made.
+  const planPicked = useState('railtime-plan-picked', () => false);
+  const openingSection: Section = plan || planPicked.value ? 'plans' : 'lines';
+  planPicked.value = false;
+  const choosePlan = (id: string | undefined) => {
+    if (id === plan) return;
+    planPicked.value = true;
+    onChoose(id);
+  };
+
   return {
     planOnly: isPlanOnly(network),
     planCount: Object.keys(network.plans ?? {}).length,
@@ -46,5 +57,10 @@ export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
     planSummary,
     planLegend,
     builtFacts,
+    // Plans wears a dot while a plan is shown, whatever section is open.
+    marked: plan ? 'plans' : null,
+    markNote: plan ? 'A plan is shown' : undefined,
+    openingSection,
+    choosePlan,
   };
 };

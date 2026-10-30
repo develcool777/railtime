@@ -171,14 +171,14 @@
 </template>
 
 <script setup lang="ts">
-  import { useRoute, useState } from '#imports';
+  import { useRoute } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { computed, ref, useTemplateRef, watch } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
-  import type { Section, TimeMode } from '~/features/explorer/explorer.types';
+  import type { TimeMode } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useStationNames } from '~/features/explorer/map/stationNames.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
@@ -215,24 +215,13 @@
   watch([timeMode, sheet, phone], () => map.value?.setPadding(mapPadding(timeMode.value)));
   watch(panelCover, left => map.value?.setCover({ left }));
 
-  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts } = useExplorerPlan({
+  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, marked, markNote, openingSection, choosePlan } = useExplorerPlan({
     network: props.network,
     plan: props.plan,
     time,
     timeMode,
+    onChoose: id => emit('plan', id),
   });
-  // Choosing a plan, the built network too, mounts the explorer afresh: it opens again on Plans, where the choice was made.
-  // Plans wears a dot while a plan is shown, whatever section is open.
-  const marked: Section | null = props.plan ? 'plans' : null;
-  const markNote = props.plan ? 'A plan is shown' : undefined;
-  const planPicked = useState('railtime-plan-picked', () => false);
-  const openingSection: Section = props.plan || planPicked.value ? 'plans' : 'lines';
-  planPicked.value = false;
-  const choosePlan = (id: string | undefined) => {
-    if (id === props.plan) return;
-    planPicked.value = true;
-    emit('plan', id);
-  };
 
   const {
     sections,
