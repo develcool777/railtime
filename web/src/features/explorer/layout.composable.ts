@@ -1,5 +1,5 @@
 import { useCookie } from '#imports';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { ShallowRef } from 'vue';
 
 import { PANEL_WIDTH, PHONE_QUERY } from '~/features/explorer/explorer.constants';
@@ -22,6 +22,9 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
 
   const panelOpen = useCookie<boolean>('railtime-panel-open', { default: () => true });
   const panelWidth = useCookie<number>('railtime-panel-width', { default: () => PANEL_WIDTH.initial });
+
+  const mapOnly = ref(false);
+  const panelCover = computed(() => (phone.value || mapOnly.value || !panelOpen.value ? 0 : panelWidth.value));
 
   const resizing = ref(false);
   const startResize = (event: PointerEvent) => {
@@ -46,7 +49,6 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
     if (!phone.value) panelOpen.value = !panelOpen.value;
   };
 
-  const mapOnly = ref(false);
   const toggleMapOnly = async () => {
     mapOnly.value = !mapOnly.value;
     // Not every browser has full screen (an iPhone's Safari): there the panels still hide.
@@ -72,6 +74,7 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
     sheet,
     panelOpen,
     panelWidth,
+    panelCover,
     resizing,
     startResize,
     revealPanel,

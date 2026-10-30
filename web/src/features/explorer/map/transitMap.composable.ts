@@ -32,6 +32,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       network: mount.network,
       theme: theme(),
       padding: mount.padding(),
+      cover: { left: mount.cover() },
       // The page shows the credits itself, in a corner of the map.
       attributionControl: false,
       workerUrl,

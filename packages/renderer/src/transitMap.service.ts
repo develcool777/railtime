@@ -33,6 +33,7 @@ import type { StepDrawing } from './steps/stepAnimation.types';
 import { createStepAnimation, describeSteps, emptyDrawing } from './steps/stepAnimation.utils';
 import {
   DEFAULT_PADDING,
+  NO_COVER,
   END_OVERVIEW_MS,
   FIT_NETWORK_MS,
   MAX_FRAME_SECONDS,
@@ -140,13 +141,19 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
     this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: options.network.meta.attribution }];
     const padding = options.padding ?? DEFAULT_PADDING;
+    const cover = { ...NO_COVER, ...options.cover };
     const opening = options.view
       ? { center: options.view.center, zoom: options.view.zoom }
       : {
           bounds: this.index.bounds as LngLatBoundsLike,
           // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
           fitBoundsOptions: {
-            padding: { top: padding.top, bottom: padding.bottom, left: OPENING_SIDE_PADDING, right: OPENING_SIDE_PADDING },
+            padding: {
+              top: padding.top + cover.top,
+              bottom: padding.bottom + cover.bottom,
+              left: OPENING_SIDE_PADDING + cover.left,
+              right: OPENING_SIDE_PADDING + cover.right,
+            },
             maxZoom: OPENING_MAX_ZOOM,
           },
         };
@@ -156,6 +163,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       ...opening,
       attributionControl: options.attributionControl === false ? false : { compact: true, customAttribution: options.network.meta.attribution },
     });
+    // A linked view's centre was the middle of what the cover left; a fitted opening already keeps clear of it.
+    if (options.view) this.map.setPadding(cover);
+    else this.setCover(cover);
     this.camera = new CameraDirector(this.map, padding);
     this.networkLayer = new NetworkLayer(this.map);
     this.activeStepLayer = new ActiveStepLayer(this.map);
@@ -274,6 +284,20 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   public setPadding(padding: Padding): void {
     this.camera.padding = padding;
+  }
+
+  /**
+   * Sets the panels the app lays over the map's edges. The map's centre, where a station is flown
+   * to, moves into the middle of the rest, and every frame keeps clear of them; what is drawn stays
+   * where it is, so a panel slides over the map without moving it.
+   *
+   * @param cover - Pixels covered on each side; a side left out is uncovered.
+   */
+  public setCover(cover: Partial<Padding>): void {
+    const next = { ...NO_COVER, ...cover };
+    const { clientWidth, clientHeight } = this.map.getContainer();
+    const middle: [number, number] = [next.left + (clientWidth - next.left - next.right) / 2, next.top + (clientHeight - next.top - next.bottom) / 2];
+    this.map.jumpTo({ center: this.map.unproject(middle), padding: next });
   }
 
   /**
