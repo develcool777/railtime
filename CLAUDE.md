@@ -15,7 +15,8 @@ index) and `web` (the Nuxt 4 + Nuxt UI explorer).
 
 `pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
 `pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
-After editing a city's dataset, run `pnpm data:format <city>`.
+After editing a city's dataset, run `pnpm data:format <city>`; after changing its track or lines'
+colours, `pnpm data:previews <city>` too (it draws the landing page's pictures in Chrome).
 
 ## Conventions (enforced)
 

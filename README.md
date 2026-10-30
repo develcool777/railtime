@@ -26,6 +26,7 @@ pnpm format              # Prettier (pnpm format-check to check)
 pnpm code-quality:dead-code   # knip
 
 pnpm data:format london  # check a city's dataset against the schema, tidy it and rewrite the index
+pnpm data:previews london  # draw its card's pictures (needs Chrome)
 ```
 
 ## How it's built

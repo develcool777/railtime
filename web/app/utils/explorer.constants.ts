@@ -33,9 +33,6 @@ export const CITIES = [
   { label: 'Bratislava', value: 'bratislava', country: 'Slovakia' },
 ];
 
-/** Where the index of every city is served (`data/cities.json`): what the landing page shows. */
-export const CITY_INDEX_URL = 'data/cities.json';
-
 /** Playback speeds offered. */
 export const SPEED_OPTIONS = [1, 2, 4, 8].map(speed => ({ label: `${speed}×`, value: speed }));
 

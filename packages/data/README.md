@@ -1,17 +1,20 @@
 # @railtime/data
 
-Every city's dataset, grouped by country, the index of them, the command that keeps them tidy, and
-their tests.
+Every city's dataset, grouped by country, the index of them, each city's preview pictures, the
+commands that keep them, and their tests.
 
 ```text
 packages/data/
   cities/
     cities.json                          the index: what the landing page shows of each city
     united-kingdom/london/london.json    a city's dataset, its source of truth
+    united-kingdom/london/london.dark.webp, london.light.webp   its card's picture, in each theme
     ukraine/kyiv/kyiv.json
     …
   src/cli.formatCity.ts                  pnpm data:format <city>
+  src/cli.renderPreviews.ts              pnpm data:previews [city]
   test/unit/dataset/                     the command's helpers, and the index kept up to date
+  test/unit/preview/                     the previews' helpers, and every city has its pictures
   test/unit/cities/<country>/<city>.test.ts   plays a city's history through the renderer
 ```
 
@@ -19,9 +22,18 @@ The app serves `cities/` as it is, at `/data/`: `/data/united-kingdom/london/lon
 
 ## The index
 
-`cities/cities.json` sums up each city (its lines, how many stations and plans, when it opened) with
-its track simplified, so the landing page loads one small file, not every dataset. `pnpm data:format`
-rewrites it; a test fails while it is out of date.
+`cities/cities.json` sums up each city (how many lines, stations and plans, when it opened), so the
+landing page needs one small file, not every dataset: it is built into the page, which is prerendered
+whole. `pnpm data:format` rewrites it; a test fails while it is out of date.
+
+## The previews
+
+Each city's card shows a picture of its network: the map's own basemap in the theme's colours, with
+today's track over it (a network never built: its first plan, dashed). `pnpm data:previews [city]`
+draws them, `<city>.dark.webp` and `<city>.light.webp` beside the dataset, in the Chrome installed on
+the machine (Playwright drives it) with the renderer's `BasemapStill`; it needs the network for the
+basemap's tiles. Run it after changing a city's track or its lines' colours. The pictures are
+committed, as the datasets are; a test fails while a city has none.
 
 ## A dataset
 
@@ -45,8 +57,8 @@ Track and stations come from OpenStreetMap.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
 
-A new city is a new dataset in the same format, then `pnpm data:format <city>` to add it to the index,
-plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
+A new city is a new dataset in the same format, then `pnpm data:format <city>` to add it to the index
+and `pnpm data:previews <city>` to draw its card's pictures, plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
 and its own page at `/<city>`. Its history gets a test of its own,
 `test/unit/cities/<country>/<city>.test.ts` (camelCase), which plays it through the renderer.
 

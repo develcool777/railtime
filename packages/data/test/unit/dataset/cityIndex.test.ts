@@ -25,7 +25,7 @@ describe('CityIndexUtils', () => {
       const { network, country } = cityOf('london');
       const entry = indexEntryOf(network, country);
       expect(entry).toMatchObject({ name: 'London', country: 'united-kingdom', openedYear: 1863, planOnly: false });
-      expect(entry.lines.map(line => line.id)).toContain('victoria');
+      expect(entry.lines).toBeGreaterThan(10);
       expect(entry.plans).toBe(Object.keys(network.plans ?? {}).length);
     });
 
@@ -34,13 +34,7 @@ describe('CityIndexUtils', () => {
       const entry = indexEntryOf(network, country);
       expect(entry).toMatchObject({ planOnly: true, openedYear: null });
       expect(entry.stations).toBeGreaterThan(0);
-      expect(entry.track.length).toBeGreaterThan(0);
-    });
-
-    test('draws its track simpler than the dataset keeps it', () => {
-      const { network, country } = cityOf('london');
-      const drawn = indexEntryOf(network, country).track.flatMap(line => line.paths.flat()).length;
-      expect(drawn).toBeLessThan(network.segments.flatMap(segment => segment.coordinates).length / 2);
+      expect(entry.lines).toBeGreaterThan(0);
     });
   });
 

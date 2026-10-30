@@ -16,6 +16,7 @@
     "format-check": "prettier --check .",
     "code-quality:dead-code": "knip",
     "data:format": "pnpm --filter @railtime/data format",
+    "data:previews": "pnpm --filter @railtime/data previews",
     "test-unit-coverage": "vitest run --coverage"
   },
   "devDependencies": {

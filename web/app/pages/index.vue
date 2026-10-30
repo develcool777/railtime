@@ -54,7 +54,7 @@
           <span class="text-muted text-[13px] font-normal">{{ cities.length }} {{ cities.length === 1 ? 'city' : 'cities' }}</span>
         </h2>
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="summaryOf(city.value)" :failed="!!index.error.value" />
+          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="summaryOf(city.value)" :eager="EAGER_CITIES.has(city.value)" />
         </div>
       </section>
       <div v-if="sections.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
@@ -64,14 +64,15 @@
     </main>
 
     <footer class="border-default border-t">
-      <MapCredits :credits="BasemapStill.credits" class="mx-auto max-w-7xl px-8 py-4 max-sm:px-4" />
+      <MapCredits :credits="STILL_CREDITS" class="mx-auto max-w-7xl px-8 py-4 max-sm:px-4" />
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { navigateTo, useFetch, useHead, useRoute, useRuntimeConfig } from '#imports';
-  import { BasemapStill } from '@railtime/renderer/basemapStill.service';
+  import { navigateTo, useHead, useRoute } from '#imports';
+  import CITY_INDEX from '@railtime/data/cities.json';
+  import { STILL_CREDITS } from '@railtime/renderer/basemapStill.constants';
   import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed, reactive } from 'vue';
 
@@ -80,7 +81,7 @@
   import SegmentedControl from '~/components/explorer/SegmentedControl.vue';
   import type { CityFilter } from '~/utils/city.types';
   import { citiesByCountry, isCity, matchesFilter } from '~/utils/city.utils';
-  import { CITIES, CITY_INDEX_URL } from '~/utils/explorer.constants';
+  import { CITIES } from '~/utils/explorer.constants';
 
   useHead({ title: 'Railtime' });
 
@@ -97,9 +98,16 @@
     { label: 'Never built', value: 'never-built' },
   ];
 
-  // What every card shows, from one small file: each city's whole dataset waits for its own page.
-  const index = useFetch<CityIndex>(CITY_INDEX_URL, { server: false, lazy: true, baseURL: useRuntimeConfig().app.baseURL });
-  const summaryOf = (city: string): CityIndexEntry | null => index.data.value?.[city] ?? null;
+  // What every card shows, built into the page: it is prerendered whole, its pictures already drawn.
+  const INDEX: CityIndex = CITY_INDEX;
+  const summaryOf = (city: string): CityIndexEntry => {
+    const entry = INDEX[city];
+    // A test keeps the index and the menu's cities the same.
+    if (!entry) throw new Error(`${city} is not in cities.json`);
+    return entry;
+  };
+  /** The first row's cards: their pictures load at once, the rest as they are scrolled to. */
+  const EAGER_CITIES = new Set(CITIES.slice(0, 4).map(city => city.value));
 
   const filter = reactive<CityFilter>({ query: '', country: '', kind: 'all', withPlans: false });
   const countryChoice = computed({
