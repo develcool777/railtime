@@ -185,6 +185,27 @@ export type RouteInfo = {
   segments: number[][];
 };
 
+/** A band of a reach: the stations reached within its minutes, in its colour. */
+export type ReachBand = {
+  /** The most minutes in it; `null` for the last, which has no end. */
+  upTo: number | null;
+  /** "15–30 min". */
+  label: string;
+  color: string;
+};
+
+/** A station a reach gets to. */
+export type ReachStation = { id: string; name: string; minutes: number; band: number };
+
+/** How far one can get from a station on the date shown, and how long it takes. */
+export type ReachInfo = {
+  from: RouteStop;
+  /** Every other station reached, soonest first. */
+  stations: ReachStation[];
+  /** The bands its stations are coloured in, soonest first. */
+  bands: ReachBand[];
+};
+
 /** Events a `TransitMap` emits, by name. */
 export type TransitMapEvents = {
   /** The basemap and overlay are ready. */

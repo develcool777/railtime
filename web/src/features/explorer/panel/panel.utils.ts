@@ -66,5 +66,6 @@ export const sectionTop = (input: SectionTopInput): PanelTopContent => {
     return { title, context: first ? `${count} since ${yearOf(first)}` : count };
   }
   if (section === 'route') return { title: input.label, context: 'Between any two stations, on the date shown' };
+  if (section === 'reach') return { title: input.label, context: 'How far you get from a station, on the date shown' };
   return { title: input.label, context: `${counted(input.planCount, 'plan')} drawn up` };
 };

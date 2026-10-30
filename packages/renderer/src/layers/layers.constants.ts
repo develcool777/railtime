@@ -11,6 +11,8 @@ export const SOURCES = {
   heads: 'rt-heads',
   route: 'rt-route',
   routeStops: 'rt-route-stops',
+  reachTrack: 'rt-reach-track',
+  reachStops: 'rt-reach-stops',
   stations: 'rt-stations',
   pulses: 'rt-pulses',
   selection: 'rt-selection',
@@ -39,6 +41,10 @@ export const LAYERS = {
   routeStops: 'rt-route-stops',
   routePassLabels: 'rt-route-pass-labels',
   routeLabels: 'rt-route-labels',
+  reachTrack: 'rt-reach-track',
+  reachStops: 'rt-reach-stops',
+  reachLabels: 'rt-reach-labels',
+  reachOriginLabel: 'rt-reach-origin-label',
 } as const;
 
 /** How strongly lines out of focus still show (`focusLines`): a fraction of their usual opacity. */

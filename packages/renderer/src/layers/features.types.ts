@@ -24,6 +24,12 @@ export type LineFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] },
 /** A stretch of a route: ridden on a line, in its colour, or walked between two stations. */
 export type RouteFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, { color: string; walk: boolean }>;
 
+/** A stretch of track a reach colours, in its band's colour. */
+export type ReachTrackFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, { color: string }>;
+
+/** Properties of a station a reach gets to: its band's colour, its name and time, and whether it is the start. */
+export type ReachStopProperties = { color: string; label: string; minutes: number; origin: boolean };
+
 /** Properties of a stop on a route: how it is marked, its line's colour, and its name. */
 export type RouteStopProperties = { kind: RouteStopKind; color: string; name: string };
 

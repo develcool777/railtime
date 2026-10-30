@@ -45,6 +45,40 @@ export class RouteFinder {
   }
 
   /**
+   * How long the fastest routes take from one station to every other the network of a date reaches:
+   * the search `find` makes, run to the end.
+   *
+   * @param from - The station to start at.
+   * @param cursor - The cursor: the network as it was then.
+   * @returns Minutes to each station reached, by id, the start's 0; none if no line calls at the start.
+   */
+  public reach(from: string, cursor: number): Map<string, number> {
+    this.cursor = cursor;
+    this.penalty = 0;
+    const minutes = new Map<string, number>();
+    const best = new Map<Place, number>();
+    const queue = new PriorityQueue<Place>();
+    for (const line of this.linesCallingAt(from)) {
+      best.set(this.placeOf(from, line), 0);
+      queue.push(this.placeOf(from, line), 0);
+    }
+    for (let next = queue.pop(); next; next = queue.pop()) {
+      const { item: place, cost } = next;
+      if (cost > (best.get(place) ?? Infinity)) continue;
+      const { station, line } = this.partsOf(place);
+      // Places come off the queue soonest first: the first a line calls at is the station's time.
+      if (!minutes.has(station) && this.timeline.servesStation(station, line, this.cursor)) minutes.set(station, cost);
+      for (const edge of this.edgesFrom(place)) {
+        const total = cost + edge.minutes;
+        if (total >= (best.get(edge.to) ?? Infinity)) continue;
+        best.set(edge.to, total);
+        queue.push(edge.to, total);
+      }
+    }
+    return minutes;
+  }
+
+  /**
    * Dijkstra's search, from every line calling at the start until a line calling at the end.
    *
    * @param from - The station to start at.
