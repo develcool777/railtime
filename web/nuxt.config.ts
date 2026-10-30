@@ -14,11 +14,12 @@ export default defineNuxtConfig({
   // The map follows the system theme until the user picks one.
   colorMode: { preference: 'system', fallback: 'dark' },
   // Components are used by tag, without an import: the shared ones in components/, and each feature's
-  // own in features/<name>/components/. A feature's other code is imported by its path, so what one
-  // feature takes from another can be searched for.
+  // own in features/<name>/components/ or, in a feature made of parts, features/<name>/<part>/components/.
+  // A feature's other code is imported by its path, so what one feature takes from another can be
+  // searched for.
   components: [
     { path: '~/components', pathPrefix: false },
-    { path: '~/features', pathPrefix: false, pattern: '*/components/**' },
+    { path: '~/features', pathPrefix: false, pattern: '**/components/**' },
   ],
   // Tests are type-checked with the app, and reach their shared factories as @test/.
   typescript: {
