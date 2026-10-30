@@ -97,7 +97,7 @@ export class BasemapStill {
     this.map.jumpTo({ center: request.view.center, zoom: request.view.zoom });
     this.drawTrack(request.track ?? []);
     await this.settled();
-    return this.map.getCanvas().toDataURL(STILL_FORMAT, STILL_QUALITY);
+    return this.map.getCanvas().toDataURL(request.format ?? STILL_FORMAT, STILL_QUALITY);
   }
 
   /** Adds the source and layers a still's track is drawn with, on top of the basemap. */

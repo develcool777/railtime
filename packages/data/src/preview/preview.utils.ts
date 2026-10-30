@@ -103,3 +103,12 @@ export const previewRequestOf = (network: Network, theme: PreviewTheme, size: Pr
  * @returns The path of `<city>.<theme>.webp` beside it.
  */
 export const previewPathOf = (datasetPath: string, theme: PreviewTheme): string => datasetPath.replace(/\.json$/, `.${theme}.webp`);
+
+/**
+ * Where a city's social card is kept: the picture a link to its page shows, beside its dataset. JPEG,
+ * which every link preview reads.
+ *
+ * @param datasetPath - The path of `cities/<country>/<city>/<city>.json`.
+ * @returns The path of `<city>.social.jpg` beside it.
+ */
+export const socialPathOf = (datasetPath: string): string => datasetPath.replace(/\.json$/, '.social.jpg');

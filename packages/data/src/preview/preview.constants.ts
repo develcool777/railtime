@@ -3,6 +3,12 @@ import type { PreviewSize, PreviewTheme } from './preview.types.ts';
 /** A preview's size in CSS pixels: a city card's picture, a little wider than most cards, which crop it. */
 export const PREVIEW_SIZE: PreviewSize = { width: 400, height: 170 };
 
+/** A social card's size in CSS pixels: drawn at twice that, 1200 × 630, as link previews want. */
+export const SOCIAL_SIZE: PreviewSize = { width: 600, height: 315 };
+
+/** The theme a social card is drawn in. */
+export const SOCIAL_THEME: PreviewTheme = 'dark';
+
 /** The themes a preview is drawn in, one picture each. */
 export const PREVIEW_THEMES: PreviewTheme[] = ['dark', 'light'];
 

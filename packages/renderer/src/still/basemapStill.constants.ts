@@ -7,7 +7,7 @@ export const STILL_PIXEL_RATIO = 2;
 /** How long a still waits for its tiles before it is taken as it is, ms. */
 export const STILL_TIMEOUT_MS = 8000;
 
-/** The image format of a still. */
+/** The image format of a still, unless one is asked for. */
 export const STILL_FORMAT = 'image/webp';
 
 /** A still's quality, 0..1. */
