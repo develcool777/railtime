@@ -9,13 +9,14 @@
   "plans": {
     "concept": {
       "name": "Concept",
-      "names": {"uk":"Фанатська схема"},
+      "names": {"uk":"Концепція"},
       "status": "concept",
-      "description": "An unofficial concept, not a city plan: two lines through the centre and a ring. Chernivtsi has never planned a metro; the stations stand on the places they are named after.",
+      "description": "An unofficial concept, not a city plan: three lines through the centre and a ring. The Prutska line runs west to east from Rosha to Hraviton, the Sadhirsko-Pivdenna line from Sadhora south across the centre, and the Holovna line along the main street from the Prut to the south; the Kiltseva ring links the station, the airport and the south. Chernivtsi has never planned a metro; the stations stand, roughly, on the places they are named after.",
       "lines": {
         "prutska": {"name":"Prutska","names":{"uk":"Прутська лінія"},"network":"metro","mode":"metro","color":"#D52B1E"},
         "sadhirsko-pivdenna": {"name":"Sadhirsko-Pivdenna","names":{"uk":"Садгірсько-південна лінія"},"network":"metro","mode":"metro","color":"#2F80ED"},
-        "kiltseva": {"name":"Kiltseva","names":{"uk":"Кільцева лінія"},"network":"metro","mode":"metro","color":"#2E8B3A"}
+        "kiltseva": {"name":"Kiltseva","names":{"uk":"Кільцева лінія"},"network":"metro","mode":"metro","color":"#2E8B3A"},
+        "holovna": {"name":"Holovna","names":{"uk":"Головна лінія"},"network":"metro","mode":"metro","color":"#E8B517"}
       },
       "stations": {
         "aeroport": {"name":"Aeroport","names":{"uk":"Аеропорт"},"coordinate":[25.9676,48.2668]},
@@ -23,13 +24,19 @@
         "fastivska": {"name":"Fastivska","names":{"uk":"Фастівська"},"coordinate":[25.9726,48.2852]},
         "horikhivska": {"name":"Horikhivska","names":{"uk":"Горіхівська"},"coordinate":[25.9078,48.2816]},
         "hraviton": {"name":"Hraviton","names":{"uk":"Гравітон"},"coordinate":[25.993,48.2738]},
+        "kalichanka": {"name":"Kalichanka","names":{"uk":"Каличанка"},"coordinate":[25.936,48.3065]},
         "kalynivskyi-rynok": {"name":"Kalynivskyi Rynok","names":{"uk":"Калинівський ринок"},"coordinate":[25.9627,48.3131]},
         "moskovska": {"name":"Moskovska","names":{"uk":"Московська"},"coordinate":[25.9493,48.3461]},
         "ozerna": {"name":"Ozerna","names":{"uk":"Озерна"},"coordinate":[25.9704,48.2774]},
         "park-imeni-shevchenka": {"name":"Park imeni Shevchenka","names":{"uk":"Парк ім. Шевченка"},"coordinate":[25.9398,48.2791]},
+        "pivdenna": {"name":"Pivdenna","names":{"uk":"Південна"},"coordinate":[25.961,48.2612]},
         "prospekt-nezalezhnosti": {"name":"Prospekt Nezalezhnosti","names":{"uk":"Проспект Незалежності"},"coordinate":[25.9458,48.269]},
         "prutska": {"name":"Prutska","names":{"uk":"Прутська"},"coordinate":[25.9235,48.3085]},
+        "rohatka": {"name":"Rohatka","names":{"uk":"Рогатка"},"coordinate":[25.9535,48.2748]},
+        "rosha": {"name":"Rosha","names":{"uk":"Роша"},"coordinate":[25.901,48.3175]},
         "sadhirska": {"name":"Sadhirska","names":{"uk":"Садгірська"},"coordinate":[25.96,48.341]},
+        "stadion-bukovyna": {"name":"Stadion Bukovyna","names":{"uk":"Стадіон «Буковина»"},"coordinate":[25.9452,48.2852]},
+        "teatralna": {"name":"Teatralna","names":{"uk":"Театральна"},"coordinate":[25.9378,48.2936]},
         "tsentralna": {"name":"Tsentralna","names":{"uk":"Центральна"},"coordinate":[25.9352,48.2921]},
         "tsetsyno": {"name":"Tsetsyno","names":{"uk":"Цецино"},"coordinate":[25.887,48.295]},
         "universytet": {"name":"Universytet","names":{"uk":"Університет"},"coordinate":[25.9242,48.2968]},
@@ -45,7 +52,14 @@
         {"line":"sadhirsko-pivdenna","stations":["tsentralna","kalynivskyi-rynok","sadhirska","moskovska"]},
         {"line":"kiltseva","stations":["vokzalna","kalynivskyi-rynok","fastivska"]},
         {"line":"kiltseva","stations":["fastivska","aeroport","prospekt-nezalezhnosti"]},
-        {"line":"kiltseva","stations":["prospekt-nezalezhnosti","dubynska","horikhivska","tsetsyno","universytet","vokzalna"]}
+        {"line":"kiltseva","stations":["prospekt-nezalezhnosti","dubynska","horikhivska","tsetsyno","universytet","vokzalna"]},
+        {"line":"prutska","stations":["zavodska","rosha"]},
+        {"line":"holovna","stations":["teatralna","stadion-bukovyna","rohatka"]},
+        {"line":"holovna","stations":["teatralna","kalichanka"]},
+        {"line":"holovna","stations":["rohatka","pivdenna"]}
+      ],
+      "transfers": [
+        {"stationA":"teatralna","stationB":"tsentralna"}
       ]
     }
   }
