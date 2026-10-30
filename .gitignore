@@ -2,6 +2,7 @@ node_modules/
 dist
 .nuxt/
 .output/
+.data/
 .DS_Store
 *.log
 coverage/
