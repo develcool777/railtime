@@ -57,9 +57,7 @@ export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
     planSummary,
     planLegend,
     builtFacts,
-    // Plans wears a dot while a plan is shown, whatever section is open.
-    marked: plan ? 'plans' : null,
-    markNote: plan ? 'A plan is shown' : undefined,
+    planMark: plan ? 'A plan is shown' : undefined,
     openingSection,
     choosePlan,
   };

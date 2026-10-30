@@ -11,7 +11,7 @@
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
-      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" :marked :markNote @pick="pickSection" />
+      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" :marks @pick="pickSection" />
 
       <!-- The map keeps its size: the panel slides over its left edge, which resizing it every frame would make stutter. -->
       <div class="relative min-w-0 flex-1 overflow-hidden">
@@ -31,7 +31,7 @@
           :style="phone ? { height: sheet === 'full' ? 'calc(100% - 8px)' : `${SHEET_HEIGHTS[sheet]}px` } : { width: `${panelWidth}px` }"
           :inert="!phone && !panelOpen"
           aria-label="Panel">
-          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" :marked :markNote @pick="pickSection" />
+          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" :marks @pick="pickSection" />
           <div v-show="!phone || sheet !== 'peek'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <PanelTop
               :title="panelTop.title"
@@ -178,7 +178,7 @@
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
-  import type { TimeMode } from '~/features/explorer/explorer.types';
+  import type { Section, TimeMode } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useStationNames } from '~/features/explorer/map/stationNames.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
@@ -215,7 +215,7 @@
   watch([timeMode, sheet, phone], () => map.value?.setPadding(mapPadding(timeMode.value)));
   watch(panelCover, left => map.value?.setCover({ left }));
 
-  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, marked, markNote, openingSection, choosePlan } = useExplorerPlan({
+  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, planMark, openingSection, choosePlan } = useExplorerPlan({
     network: props.network,
     plan: props.plan,
     time,
@@ -276,7 +276,15 @@
     stepTime,
   } = useExplorerTime({ binding, timeMode, plan: props.plan, planOnly, currentChange, onPlay: followPlayback });
 
-  const { routeEnds, routePreference, foundRoute, swapEnds } = useRouteFinder({ binding, section, timeMode });
+  const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding, section, timeMode });
+
+  // A dot on each section whose choice is in force while another is open: a plan shown, a route set.
+  const marks = computed(() => {
+    const shown: Partial<Record<Section, string>> = {};
+    if (planMark) shown.plans = planMark;
+    if (routeMark.value) shown.route = routeMark.value;
+    return shown;
+  });
 
   useExplorerAddress({ network: props.network, plan: props.plan, chosenPlan, binding, timeMode, opening });
 

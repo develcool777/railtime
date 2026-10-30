@@ -28,10 +28,8 @@ export type ExplorerPlan = {
   planLegend: ComputedRef<{ name: string; color: string } | null>;
   /** What is built today, for the Plans section's first card. */
   builtFacts: Ref<string>;
-  /** The section wearing a dot: Plans while a plan is shown. */
-  marked: Section | null;
-  /** What the dot means, for a screen reader. */
-  markNote: string | undefined;
+  /** What the dot on Plans says while a plan is shown, whatever section is open; none without one. */
+  planMark: string | undefined;
   /** The section the panel opens on: Plans with a plan shown, or one just chosen; else Lines. */
   openingSection: Section;
   /** Chooses a plan, or the built network; the one shown already does nothing. */
