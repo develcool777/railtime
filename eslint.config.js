@@ -115,7 +115,7 @@ export default defineConfig(
 
   // ---- JSDoc on every class, member and export ---------------------------------
   {
-    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'web/app/**/*.ts'],
+    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'web/src/**/*.ts'],
     ignores: ['**/*.test.ts'],
     plugins: { jsdoc },
     rules: {
@@ -139,7 +139,7 @@ export default defineConfig(
 
   // ---- File names ------------------------------------------------------------
   {
-    files: ['packages/*/src/**/*.ts', 'web/app/**/*.ts'],
+    files: ['packages/*/src/**/*.ts', 'web/src/**/*.ts'],
     ignores: [...TOOL_CONFIGS, CLI_FILES],
     plugins: { 'check-file': checkFile },
     rules: {
@@ -163,7 +163,7 @@ export default defineConfig(
     rules: { 'check-file/filename-naming-convention': ['error', { '**/*.ts': SCRIPT_FILE }] },
   },
   {
-    files: ['web/app/components/**/*.vue'],
+    files: ['web/src/**/components/**/*.vue'],
     plugins: { 'check-file': checkFile },
     rules: { 'check-file/filename-naming-convention': ['error', { '**/*.vue': 'PASCAL_CASE' }] },
   },

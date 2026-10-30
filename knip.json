@@ -18,8 +18,8 @@
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "web": {
-      "entry": ["app/pages/**/*.vue", "test/**/*.test.ts"],
-      "project": ["app/**/*.{ts,vue,css}", "test/**/*.ts"],
+      "entry": ["src/pages/**/*.vue", "test/**/*.test.ts"],
+      "project": ["src/**/*.{ts,vue,css}", "test/**/*.ts"],
       "ignoreDependencies": ["@iconify-json/lucide", "vue-tsc"]
     }
   }

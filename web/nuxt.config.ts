@@ -1,17 +1,30 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { fileURLToPath } from 'node:url';
-import { CITIES } from './app/utils/explorer.constants';
+import { CITIES } from './src/constants/city.constants';
 
 /** Where the site is published: GitHub Pages, under `/railtime/` (`NUXT_APP_BASE_URL`). */
 const siteUrl = process.env.NUXT_PUBLIC_SITE_URL ?? 'https://develcool777.github.io';
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
+  // The investors site's layout: shared code at the top of src/, each product surface in features/<name>/.
+  srcDir: 'src/',
   modules: ['@nuxt/ui', '@nuxtjs/sitemap', '@nuxtjs/robots'],
-  css: ['~/assets/css/main.css', '@railtime/renderer/transitMap.css'],
+  css: ['~/css/main.css', '@railtime/renderer/transitMap.css'],
   // The map follows the system theme until the user picks one.
   colorMode: { preference: 'system', fallback: 'dark' },
-  typescript: { strict: true },
+  // Components are used by tag, without an import: the shared ones in components/, and each feature's
+  // own in features/<name>/components/. A feature's other code is imported by its path, so what one
+  // feature takes from another can be searched for.
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/features', pathPrefix: false, pattern: '*/components/**' },
+  ],
+  // Tests are type-checked with the app, and reach their shared factories as @test/.
+  typescript: {
+    strict: true,
+    tsConfig: { compilerOptions: { paths: { '@test/*': ['../test/*'] } }, include: ['../test/**/*'] },
+  },
   app: {
     head: {
       htmlAttrs: { lang: 'en' },

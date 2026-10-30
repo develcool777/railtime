@@ -2,9 +2,9 @@ import type { CityIndex } from '@railtime/schema/cityIndex.types';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import { citiesByCountry, cityMenu, matchesFilter, networkUrlOf, planToOpen, previewUrlOf } from '../../../app/utils/city.utils';
-import { CITIES } from '../../../app/utils/explorer.constants';
-import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
+import { citiesByCountry, cityMenu, networkUrlOf, planToOpen, previewUrlOf } from '~/utils/city.utils';
+import { CITIES } from '~/constants/city.constants';
+import { planOnlyNetwork } from '@test/support/factories/planOnlyNetwork.utils';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));
@@ -46,40 +46,6 @@ describe('CityUtils', () => {
       expect(planToOpen(planOnlyNetwork(), 'second')).toBe('second');
       expect(planToOpen(planOnlyNetwork(), 'nowhere')).toBe('first');
       expect(planToOpen(planOnlyNetwork(), undefined)).toBe('first');
-    });
-  });
-
-  describe('matchesFilter', () => {
-    const kyiv = { label: 'Kyiv', value: 'kyiv', country: 'Ukraine' };
-    const summary = {
-      name: 'Kyiv',
-      country: 'ukraine',
-      networks: ['Kyiv Metro'],
-      openedYear: 1960,
-      planOnly: false,
-      plans: 2,
-      lines: 3,
-      stations: 52,
-    };
-    const all = { query: '', country: '', kind: 'all' as const, withPlans: false };
-
-    test('matches the name, country or a network, in any case', () => {
-      expect(matchesFilter(kyiv, summary, { ...all, query: 'KYI' })).toBe(true);
-      expect(matchesFilter(kyiv, summary, { ...all, query: 'ukr' })).toBe(true);
-      expect(matchesFilter(kyiv, summary, { ...all, query: 'metro' })).toBe(true);
-      expect(matchesFilter(kyiv, summary, { ...all, query: 'london' })).toBe(false);
-    });
-
-    test('keeps a country, a kind of city, and cities with plans', () => {
-      expect(matchesFilter(kyiv, summary, { ...all, country: 'United Kingdom' })).toBe(false);
-      expect(matchesFilter(kyiv, summary, { ...all, kind: 'history' })).toBe(true);
-      expect(matchesFilter(kyiv, summary, { ...all, kind: 'never-built' })).toBe(false);
-      expect(matchesFilter(kyiv, { ...summary, plans: 0 }, { ...all, withPlans: true })).toBe(false);
-    });
-
-    test('shows a city while the index loads only when no filter needs it', () => {
-      expect(matchesFilter(kyiv, null, all)).toBe(true);
-      expect(matchesFilter(kyiv, null, { ...all, kind: 'history' })).toBe(false);
     });
   });
 });

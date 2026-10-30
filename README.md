@@ -40,7 +40,8 @@ railtime/
 │   ├── renderer/    the engine, TransitMap: draws a network on MapLibre and plays its history; no UI
 │   └── data/        every city's dataset, by country (cities/<country>/<city>/), the index of them
 │                    (cities/cities.json), pnpm data:format, and a test per city
-├── web/             the app: Nuxt 4 pages and Nuxt UI components around the renderer
+├── web/             the app: Nuxt 4 and Nuxt UI around the renderer; src/ by surface (features/explorer,
+│                    features/landing, features/seo), shared code at its top
 └── .github/         CI (checks on every pull request) and the GitHub Pages deploy
 ```
 
