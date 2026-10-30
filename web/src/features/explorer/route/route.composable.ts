@@ -26,5 +26,5 @@ export const useRouteFinder = (input: RouteFinderInput): RouteFinder => {
 
   const swapEnds = () => (routeEnds.value = { from: routeEnds.value.to, to: routeEnds.value.from });
 
-  return { routeEnds, routePreference, foundRoute, routeShown, swapEnds };
+  return { routeEnds, routePreference, foundRoute, swapEnds };
 };

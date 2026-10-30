@@ -1,4 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
+import type { RouteStopKind } from './routeStops.types';
 
 /** Minimal GeoJSON, so the renderer needs no @types/geojson. */
 type Feature<Geometry, Properties> = { type: 'Feature'; properties: Properties; geometry: Geometry };
@@ -22,6 +23,9 @@ export type LineFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] },
 
 /** A stretch of a route: ridden on a line, in its colour, or walked between two stations. */
 export type RouteFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, { color: string; walk: boolean }>;
+
+/** Properties of a stop on a route: how it is marked, its line's colour, and its name where the map gives one. */
+export type RouteStopProperties = { kind: RouteStopKind; color: string; name: string };
 
 /** A drawn point. */
 export type PointFeature<Properties> = Feature<{ type: 'Point'; coordinates: LngLat }, Properties>;

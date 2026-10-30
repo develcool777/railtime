@@ -1,20 +1,29 @@
-import type { FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
-import type { FeatureCollection, RouteFeature } from './features.types';
+import type { ExpressionSpecification, FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import type { FeatureCollection, PointFeature, RouteFeature, RouteStopProperties } from './features.types';
 import { emptyCollection } from './features.utils';
 import { byZoom } from './layerStyle.utils';
 import { LAYERS, LINE_LAYOUT, SOURCES } from './layers.constants';
 import { MapLayer } from './mapLayer.service';
 import type { Palette } from './theme.types';
 
-/** A route over the network: each ride wide, in its line's colour, on a casing that lifts it off the map; each walk dashed. */
+/**
+ * A route over the network, drawn above everything else: each ride wide, in its line's colour, on a
+ * casing that lifts it off the map; each walk dashed; a dot at each stop it passes, a ring where a
+ * ride begins or ends, a filled dot at its end, and the names of its start, changes and end.
+ */
 export class RouteLayer extends MapLayer {
   public constructor(map: MapLibreMap) {
     super(map);
   }
 
-  /** Adds the route's casing, rides and walks. */
-  public install(): void {
+  /**
+   * Adds the route's casing, rides, walks, stops and names.
+   *
+   * @param font - A font stack the basemap's glyph server has.
+   */
+  public install(font: string[]): void {
     this.addSource(SOURCES.route);
+    this.addSource(SOURCES.routeStops);
     const ridden: FilterSpecification = ['!', ['get', 'walk']];
     this.map.addLayer({
       id: LAYERS.routeCasing,
@@ -40,6 +49,36 @@ export class RouteLayer extends MapLayer {
       layout: { 'line-cap': 'round' },
       paint: { 'line-width': byZoom(3, 5), 'line-dasharray': [0.5, 2] },
     });
+    const isEnd: ExpressionSpecification = ['==', ['get', 'kind'], 'end'];
+    // A size by zoom must be the outermost expression, so each stop's kind is chosen inside it.
+    const isPassed: ExpressionSpecification = ['==', ['get', 'kind'], 'pass'];
+    this.map.addLayer({
+      id: LAYERS.routeStops,
+      type: 'circle',
+      source: SOURCES.routeStops,
+      paint: {
+        'circle-radius': byZoom(['case', isPassed, 2.2, 4.5], ['case', isPassed, 4.5, 9]),
+        'circle-color': ['case', isEnd, ['get', 'color'], '#ffffff'],
+        'circle-stroke-color': ['case', isEnd, '#ffffff', ['get', 'color']],
+        'circle-stroke-width': byZoom(['case', isPassed, 1.2, 2.5], ['case', isPassed, 2, 4]),
+      },
+    });
+    this.map.addLayer({
+      id: LAYERS.routeLabels,
+      type: 'symbol',
+      source: SOURCES.routeStops,
+      filter: ['!=', ['get', 'name'], ''],
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': font,
+        'text-size': byZoom(12, 15),
+        'text-anchor': 'left',
+        'text-offset': [1, 0],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: { 'text-halo-width': 2 },
+    });
   }
 
   /**
@@ -50,15 +89,19 @@ export class RouteLayer extends MapLayer {
   public applyPalette(palette: Palette): void {
     this.map.setPaintProperty(LAYERS.routeCasing, 'line-color', palette.labelHalo);
     this.map.setPaintProperty(LAYERS.routeWalk, 'line-color', palette.label);
+    this.map.setPaintProperty(LAYERS.routeLabels, 'text-color', palette.label);
+    this.map.setPaintProperty(LAYERS.routeLabels, 'text-halo-color', palette.labelHalo);
   }
 
   /**
    * Draws a route, or clears it.
    *
    * @param features - The route's stretches; none to clear it.
+   * @param stops - Its stops, marked; none to clear them.
    */
-  public update(features: RouteFeature[]): void {
+  public update(features: RouteFeature[], stops: PointFeature<RouteStopProperties>[]): void {
     const collection: FeatureCollection<RouteFeature> = { ...emptyCollection<RouteFeature>(), features };
     this.setData(SOURCES.route, collection);
+    this.setData(SOURCES.routeStops, { ...emptyCollection<PointFeature<RouteStopProperties>>(), features: stops });
   }
 }

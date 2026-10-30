@@ -19,8 +19,6 @@ export type RouteFinder = {
   routePreference: Ref<RoutePreference>;
   /** The route between the two, on the date shown; `null` until both are picked, or with none. */
   foundRoute: ComputedRef<RouteInfo | null>;
-  /** Whether it is drawn on the map: while Route is open, but for playback. */
-  routeShown: ComputedRef<boolean>;
   /** Swaps where it starts and ends. */
   swapEnds: () => void;
 };

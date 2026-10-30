@@ -21,6 +21,9 @@ export const SELECTED_STATION_ZOOM = 13;
 /** How long the camera takes to fly to a selected station, ms. */
 export const SELECT_FLY_MS = 800;
 
+/** Room the camera keeps beside a route it frames, pixels: its stops' names are written to their right. */
+export const ROUTE_NAME_ROOM = { right: 110, top: 12, bottom: 12 };
+
 /** How long the camera takes to fit the whole network, ms. */
 export const FIT_NETWORK_MS = 1200;
 

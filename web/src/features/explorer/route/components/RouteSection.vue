@@ -30,7 +30,7 @@
       class="self-start"
       @update:modelValue="emit('preference', $event)" />
 
-    <p v-if="!ends.from || !ends.to" class="text-muted text-sm">Pick two stations, here or from a station's view.</p>
+    <p v-if="!ends.from || !ends.to" class="text-muted text-sm">Pick where the route starts and ends.</p>
     <p v-else-if="!route" class="text-muted text-sm">No route between them on the date shown.</p>
     <template v-else>
       <div>

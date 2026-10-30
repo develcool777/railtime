@@ -27,7 +27,7 @@ map.setStationLabels(false); // dots only, no names
 map.getStations(); // the stations on the map on the date shown, for a search
 map.getLineDetails('line-a'); // its stops in order, by branch, its km and its changes
 const route = map.findRoute('station-a', 'station-b'); // Dijkstra over the network of the date shown
-map.showRoute(route); // draw it and frame it; showRoute(null) clears it
+map.showRoute(route); // draw it over the network, faded behind it, and frame it; showRoute(null) clears it
 map.setTheme('light');
 map.setView({ center: [lng, lat], zoom: 12 }); // or open there: new TransitMap({ …, view })
 map.range; // { start, end, today }: end is past today when a plan is shown

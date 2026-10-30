@@ -6,7 +6,7 @@ import type { NetworkSnapshot } from './networkSnapshot.types';
 import type { Palette } from './theme.types';
 
 /** How opaque each of the layer's line layers is with every line in focus; the glow's is the theme's. */
-const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned]: 0.85 } as const;
+const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned]: 0.85, [LAYERS.transferCasing]: 1, [LAYERS.transferCore]: 1 } as const;
 
 /**
  * The network already on the map: every open line, with a soft glow beneath, closed track as dashed
@@ -102,6 +102,9 @@ export class NetworkLayer extends MapLayer {
       [LAYERS.glow, this.glowOpacity],
       [LAYERS.lines, FULL_OPACITY[LAYERS.lines]],
       [LAYERS.planned, FULL_OPACITY[LAYERS.planned]],
+      // A transfer's link belongs to no line: it fades whenever some lines are brought forward.
+      [LAYERS.transferCasing, FULL_OPACITY[LAYERS.transferCasing]],
+      [LAYERS.transferCore, FULL_OPACITY[LAYERS.transferCore]],
     ] as const;
     for (const [layer, full] of opacities) this.map.setPaintProperty(layer, 'line-opacity', this.opacityFor(full));
   }

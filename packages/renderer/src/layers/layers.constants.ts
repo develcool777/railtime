@@ -10,6 +10,7 @@ export const SOURCES = {
   active: 'rt-active',
   heads: 'rt-heads',
   route: 'rt-route',
+  routeStops: 'rt-route-stops',
   stations: 'rt-stations',
   pulses: 'rt-pulses',
   selection: 'rt-selection',
@@ -27,18 +28,23 @@ export const LAYERS = {
   activeLines: 'rt-active-lines',
   headGlow: 'rt-head-glow',
   headCore: 'rt-head-core',
-  routeCasing: 'rt-route-casing',
-  routeLine: 'rt-route-line',
-  routeWalk: 'rt-route-walk',
   pulses: 'rt-pulses',
   selection: 'rt-selection',
   stations: 'rt-stations',
   labels: 'rt-labels',
   newLabels: 'rt-new-labels',
+  routeCasing: 'rt-route-casing',
+  routeLine: 'rt-route-line',
+  routeWalk: 'rt-route-walk',
+  routeStops: 'rt-route-stops',
+  routeLabels: 'rt-route-labels',
 } as const;
 
 /** How strongly lines out of focus still show (`focusLines`): a fraction of their usual opacity. */
 export const UNFOCUSED_OPACITY = 0.15;
+
+/** How strongly the stations still show behind a route: a fraction of their usual opacity. Their names go. */
+export const BACKDROP_STATION_OPACITY = 0.25;
 
 /** Round ends and joins, so segments meet without seams. */
 export const LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } as const;
