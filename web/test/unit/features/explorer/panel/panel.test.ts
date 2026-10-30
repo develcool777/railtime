@@ -53,6 +53,7 @@ const sectionInput = (overrides: Partial<SectionTopInput>): SectionTopInput => (
   currentChange: null,
   time: timeAt({}),
   planCount: 2,
+  stationCount: 3,
   ...overrides,
 });
 
@@ -113,6 +114,10 @@ describe('PanelUtils', () => {
       expect(top.title).toBe('Playing history');
       expect(top.context).toMatch(/^2 of 3 · .*1950$/);
       expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true })).title).toBe('Playing the future');
+    });
+
+    test('counts the stations on the map', () => {
+      expect(sectionTop(sectionInput({ section: 'stations', label: 'Stations' }))).toEqual({ title: 'Stations', context: '3 stations on the map' });
     });
 
     test('counts the plans, one in the singular', () => {

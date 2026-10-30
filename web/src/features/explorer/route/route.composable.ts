@@ -11,8 +11,8 @@ import type { RouteFinder, RouteFinderInput } from '~/features/explorer/route/ro
  * @returns The route's ends, the route found, and what changes them.
  */
 export const useRouteFinder = (input: RouteFinderInput): RouteFinder => {
-  const { binding, section, timeMode, openSection } = input;
-  const { map, time, station } = binding;
+  const { binding, section, timeMode } = input;
+  const { map, time } = binding;
 
   const routeEnds = ref<{ from: RouteStop | null; to: RouteStop | null }>({ from: null, to: null });
   const routePreference = ref<RoutePreference>('fastest');
@@ -24,12 +24,7 @@ export const useRouteFinder = (input: RouteFinderInput): RouteFinder => {
   const routeShown = computed(() => section.value === 'route' && timeMode.value !== 'playing');
   watch([foundRoute, routeShown], () => map.value?.showRoute(routeShown.value ? foundRoute.value : null));
 
-  const routeFromStation = (end: 'from' | 'to') => {
-    if (!station.value) return;
-    routeEnds.value = { ...routeEnds.value, [end]: { id: station.value.id, name: station.value.name } };
-    openSection('route');
-  };
   const swapEnds = () => (routeEnds.value = { from: routeEnds.value.to, to: routeEnds.value.from });
 
-  return { routeEnds, routePreference, foundRoute, routeShown, routeFromStation, swapEnds };
+  return { routeEnds, routePreference, foundRoute, routeShown, swapEnds };
 };

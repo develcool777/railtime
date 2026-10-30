@@ -5,7 +5,7 @@ import type { ComputedRef, Ref } from 'vue';
 import type { Section, TimeMode } from '~/features/explorer/explorer.types';
 import type { ExplorerLayout } from '~/features/explorer/layout.composable.types';
 import type { PanelTopContent } from '~/features/explorer/panel/panel.types';
-import type { NextStation } from '~/features/explorer/stations/station.types';
+import type { LineDirection } from '~/features/explorer/stations/station.types';
 import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
 
 /** What `useExplorerPanel` reads. */
@@ -26,6 +26,8 @@ export type ExplorerPanel = {
   sections: { id: Section; label: string; icon: string }[];
   /** The section open. */
   section: Ref<Section>;
+  /** The section the rail marks: the one a pushed view belongs to, else the one open. */
+  railSection: ComputedRef<Section>;
   /** The line whose view is pushed over the section, if any. */
   openLine: Ref<string | null>;
   /** That line, on the date shown. */
@@ -36,8 +38,8 @@ export type ExplorerPanel = {
   stations: ComputedRef<StationSummary[]>;
   /** Each station's lines' colours, to mark a line's interchanges. */
   stationColors: ComputedRef<Map<string, string[]>>;
-  /** The stations one stop from the station whose view is open. */
-  stationNeighbours: ComputedRef<NextStation[]>;
+  /** The stops either side of the station whose view is open, on each of its lines, by line. */
+  stationDirections: ComputedRef<Map<string, LineDirection[]>>;
   /** The lines shown on the map. */
   visible: Ref<Set<string>>;
   /** Shows these lines on the map, and hides the rest. */
@@ -52,7 +54,7 @@ export type ExplorerPanel = {
   pickSection: (id: Section) => void;
   /** Opens a section over any pushed view, and brings the panel into sight. */
   openSection: (id: Section) => void;
-  /** Back from a pushed view: from a station to the line under it, else to the section. */
+  /** Back from a pushed view: along a walk to the station before, from a station to the line under it, else to the section. */
   goBack: () => void;
   /** Whether a line's or a station's view is pushed over the section. */
   hasPushedView: () => boolean;
@@ -60,6 +62,8 @@ export type ExplorerPanel = {
   pushLine: (id: string) => void;
   /** Opens a station's view and rings it on the map. */
   openStation: (id: string) => void;
+  /** Walks from the station whose view is open to another, which Back returns from. */
+  walkTo: (id: string) => void;
   /** Closes the station's view and its ring. */
   closeStation: () => void;
   /** A change picked in a list: while playing, playback jumps to it; otherwise the map shows it. */

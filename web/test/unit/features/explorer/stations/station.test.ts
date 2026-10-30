@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { LineDetails } from '@railtime/renderer/transitMap.types';
-import { findStations, foldName, nextStations } from '~/features/explorer/stations/station.utils';
+import { directionsAt, findStations, foldName, stationsByLetter } from '~/features/explorer/stations/station.utils';
 
 /**
  * A station as the map lists it, red.
@@ -47,20 +47,19 @@ describe('StationUtils', () => {
     });
   });
 
-  describe('nextStations', () => {
+  describe('directionsAt', () => {
     /**
-     * A line on the date shown, with its runs of stops.
+     * A line on the date shown, with its runs of stops; a stop's name is its id in capitals.
      *
-     * @param id - Its id, which is its name too.
      * @param branches - Its runs, each a list of station ids.
      * @returns The line.
      */
-    const line = (id: string, branches: string[][]): LineDetails => ({
-      id,
-      name: id,
+    const line = (branches: string[][]): LineDetails => ({
+      id: 'red',
+      name: 'Red',
       network: 'metro',
       networkName: 'Metro',
-      color: `#${id}`,
+      color: '#ff0000',
       opened: 0,
       stations: 0,
       km: 0,
@@ -68,30 +67,50 @@ describe('StationUtils', () => {
       changes: [],
     });
 
-    test('lists each stop either side once, with every line that runs there', () => {
-      const found = nextStations('b', [line('red', [['a', 'b', 'c']]), line('blue', [['c', 'b', 'd']])]);
-      expect(found).toEqual([
-        { id: 'a', name: 'A', lines: [{ id: 'red', name: 'red', color: '#red' }] },
-        {
-          id: 'c',
-          name: 'C',
-          lines: [
-            { id: 'red', name: 'red', color: '#red' },
-            { id: 'blue', name: 'blue', color: '#blue' },
-          ],
-        },
-        { id: 'd', name: 'D', lines: [{ id: 'blue', name: 'blue', color: '#blue' }] },
+    test('gives the stop either side, each with the end of the line that way', () => {
+      expect(directionsAt('c', line([['a', 'b', 'c', 'd', 'e']]))).toEqual([
+        { previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: 'E' } },
       ]);
     });
 
-    test('counts the first stop of a branch from the station it leaves', () => {
-      const found = nextStations('b', [
-        line('red', [
-          ['a', 'b', 'c'],
-          ['b', 'x'],
-        ]),
+    test('says no "towards" for a stop that is the end', () => {
+      expect(directionsAt('b', line([['a', 'b', 'c']]))).toEqual([
+        { previous: { id: 'a', name: 'A', towards: null }, next: { id: 'c', name: 'C', towards: null } },
       ]);
-      expect(found.map(next => next.id)).toEqual(['a', 'c', 'x']);
+    });
+
+    test('at an end, goes one way', () => {
+      expect(directionsAt('a', line([['a', 'b', 'c']]))).toEqual([{ previous: null, next: { id: 'b', name: 'B', towards: 'C' } }]);
+    });
+
+    test('at a junction, gives a pair for the branch too', () => {
+      const found = directionsAt(
+        'b',
+        line([
+          ['a', 'b', 'c'],
+          ['b', 'x', 'y'],
+        ]),
+      );
+      expect(found).toEqual([
+        { previous: { id: 'a', name: 'A', towards: null }, next: { id: 'c', name: 'C', towards: null } },
+        { previous: null, next: { id: 'x', name: 'X', towards: 'Y' } },
+      ]);
+    });
+
+    test('gives nothing where the line does not call', () => {
+      expect(directionsAt('z', line([['a', 'b']]))).toEqual([]);
+    });
+  });
+  describe('stationsByLetter', () => {
+    test('puts the stations A to Z under their first letter, accents dropped', () => {
+      const groups = stationsByLetter(STATIONS);
+      expect(groups.map(group => [group.letter, group.stations.map(found => found.name)])).toEqual([
+        ['C', ['Circus Road']],
+        ['D', ['Dalston Kingsland']],
+        ['K', ['Khreshchatyk', "King's Cross St. Pancras"]],
+        ['N', ['Náměstí Míru']],
+        ['O', ['Oxford Circus']],
+      ]);
     });
   });
 });

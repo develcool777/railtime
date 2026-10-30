@@ -30,4 +30,6 @@ export type SectionTopInput = {
   time: TimeState | null;
   /** How many plans the city has. */
   planCount: number;
+  /** How many stations are on the map on the date shown. */
+  stationCount: number;
 };
