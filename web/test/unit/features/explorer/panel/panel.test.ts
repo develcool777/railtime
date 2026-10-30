@@ -74,6 +74,10 @@ describe('PanelUtils', () => {
       expect(stationTop(STATION, 'Lines')).toEqual({ title: 'Centre', context: 'opened 1900', dots: ['#0000ff', '#ff0000'], backLabel: 'Lines' });
     });
 
+    test('gives its names in other languages first', () => {
+      expect(stationTop({ ...STATION, otherNames: ['Центр'] }, 'Lines').context).toBe('Центр · opened 1900');
+    });
+
     test('is planned when no line has called there yet', () => {
       const planned = { ...STATION, lines: [{ id: 'green', name: 'Green', color: '#00ff00', opened: null }] };
       expect(stationTop(planned, 'Plans').context).toBe('planned');

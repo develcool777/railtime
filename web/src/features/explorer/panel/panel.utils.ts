@@ -13,7 +13,8 @@ import type { PanelTopContent, SectionTopInput } from '~/features/explorer/panel
 const counted = (count: number, noun: string): string => (count === 1 ? `1 ${noun}` : `${count} ${noun}s`);
 
 /**
- * The top of a station's view: its name, the year its first line called there, its lines' colours.
+ * The top of a station's view: its name; under it, its names in other languages and the year its
+ * first line called there; its lines' colours.
  *
  * @param station - The station, on the date shown.
  * @param backLabel - What the view was opened over.
@@ -23,7 +24,7 @@ export const stationTop = (station: StationInfo, backLabel: string): PanelTopCon
   const opened = station.lines.flatMap(line => (line.opened ? [line.opened.slice(0, 4)] : [])).sort()[0];
   return {
     title: station.name,
-    context: opened ? `opened ${opened}` : 'planned',
+    context: [...station.otherNames, opened ? `opened ${opened}` : 'planned'].join(' · '),
     dots: station.lines.map(line => line.color),
     backLabel,
   };

@@ -9,7 +9,7 @@
     <!-- Filled for an opening, hollow for a plan's, grey and hollow for a closure. -->
     <span class="mt-[5px] size-2.5 flex-none rounded-full border-2" :style="dotStyle" />
     <span class="min-w-0 flex-1">
-      <span class="text-highlighted block text-sm leading-5 font-medium">{{ change.title }}</span>
+      <span class="text-highlighted block text-sm leading-5 font-medium">{{ title ?? change.title }}</span>
       <span v-if="change.subtitle" class="text-muted block truncate text-xs leading-4">{{ change.subtitle }}</span>
     </span>
   </button>
@@ -27,6 +27,8 @@
     current?: boolean;
     /** Played already, while history plays. */
     past?: boolean;
+    /** A shorter title, where the context says the rest (a line's own view). */
+    title?: string;
   }>();
   const emit = defineEmits<{ select: [index: number] }>();
 
