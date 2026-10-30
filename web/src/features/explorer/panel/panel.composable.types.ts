@@ -13,6 +13,8 @@ export type ExplorerPanelInput = {
   network: Network;
   /** The plan shown, if any. */
   plan?: string;
+  /** The section the panel opens on. */
+  opening: Section;
   chosenPlan: ComputedRef<Plan | undefined>;
   planCount: number;
   binding: TransitMapBinding;

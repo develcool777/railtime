@@ -16,12 +16,11 @@ import { directionsAt } from '~/features/explorer/stations/station.utils';
  * @returns The panel's state and what changes it.
  */
 export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
-  const { network, plan, chosenPlan, planCount, binding, layout, timeMode } = input;
+  const { network, plan, opening, chosenPlan, planCount, binding, layout, timeMode } = input;
   const { map, time, step, station, lines, changes } = binding;
 
-  // A plan opens on Plans, where it was picked.
   const sections = SECTIONS.filter(entry => entry.id !== 'plans' || planCount > 0);
-  const section = ref<Section>(plan ? 'plans' : 'lines');
+  const section = ref<Section>(opening);
   const sectionLabel = computed(() => sections.find(entry => entry.id === section.value)?.label ?? 'Lines');
 
   const visible = ref(new Set([...Object.keys(network.lines), ...Object.keys(chosenPlan.value?.lines ?? {})]));

@@ -32,10 +32,11 @@ export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
     return { name: chosenPlan.value.name, color: colorMode.value === 'light' ? firstLine.color : firstLine.darkColor };
   });
 
-  // Read once the map first shows today: with a plan shown it never does, and the card is not shown.
+  // Read once the map first shows today, drawn: before its first frame its stats are all nought. With a plan shown it never shows today, and the card goes without.
   const builtFacts = ref('');
   watch(time, now => {
-    if (!builtFacts.value && !plan && now && now.cursor === now.todayCursor && !now.future) builtFacts.value = formatStats(now.stats);
+    const drawnToday = now && now.cursor === now.todayCursor && !now.future && now.stats.stations > 0;
+    if (!builtFacts.value && !plan && drawnToday) builtFacts.value = formatStats(now.stats);
   });
 
   return {

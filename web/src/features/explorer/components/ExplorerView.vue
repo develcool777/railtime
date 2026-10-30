@@ -11,7 +11,7 @@
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
-      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" @pick="pickSection" />
+      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" :marked :markNote @pick="pickSection" />
 
       <!-- The map keeps its size: the panel slides over its left edge, which resizing it every frame would make stutter. -->
       <div class="relative min-w-0 flex-1 overflow-hidden">
@@ -31,7 +31,7 @@
           :style="phone ? { height: sheet === 'full' ? 'calc(100% - 8px)' : `${SHEET_HEIGHTS[sheet]}px` } : { width: `${panelWidth}px` }"
           :inert="!phone && !panelOpen"
           aria-label="Panel">
-          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" @pick="pickSection" />
+          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" :marked :markNote @pick="pickSection" />
           <div v-show="!phone || sheet !== 'peek'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <PanelTop
               :title="panelTop.title"
@@ -171,14 +171,14 @@
 </template>
 
 <script setup lang="ts">
-  import { useRoute } from '#imports';
+  import { useRoute, useState } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { computed, ref, useTemplateRef, watch } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
-  import type { TimeMode } from '~/features/explorer/explorer.types';
+  import type { Section, TimeMode } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useStationNames } from '~/features/explorer/map/stationNames.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
@@ -221,8 +221,17 @@
     time,
     timeMode,
   });
+  // Choosing a plan, the built network too, mounts the explorer afresh: it opens again on Plans, where the choice was made.
+  // Plans wears a dot while a plan is shown, whatever section is open.
+  const marked: Section | null = props.plan ? 'plans' : null;
+  const markNote = props.plan ? 'A plan is shown' : undefined;
+  const planPicked = useState('railtime-plan-picked', () => false);
+  const openingSection: Section = props.plan || planPicked.value ? 'plans' : 'lines';
+  planPicked.value = false;
   const choosePlan = (id: string | undefined) => {
-    if (id !== props.plan) emit('plan', id);
+    if (id === props.plan) return;
+    planPicked.value = true;
+    emit('plan', id);
   };
 
   const {
@@ -252,6 +261,7 @@
   } = useExplorerPanel({
     network: props.network,
     plan: props.plan,
+    opening: openingSection,
     chosenPlan,
     planCount,
     binding,
