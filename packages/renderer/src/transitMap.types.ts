@@ -25,6 +25,8 @@ export type TransitMapOptions = {
   minimapContainer?: HTMLElement;
   /** Room the app's own panels take up, kept clear when the camera frames something. */
   padding?: Padding;
+  /** A panel the app lays over an edge of the map, pixels: the map's centre and every frame stay clear of it (`setCover`). */
+  cover?: Partial<Padding>;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
   /** One of the network's plans, built on top of it: its sections play after every dated change, one by one, drawn as planned (`showFuture`). */

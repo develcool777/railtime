@@ -16,6 +16,8 @@ export type TransitMapMount = {
   plan?: string;
   /** Room the camera keeps clear of the cards on the map, for the layout now: read at mount and on each resize. */
   padding: () => Padding;
+  /** How much of the map's left a panel covers, pixels: the map opens clear of it. */
+  cover: () => number;
 };
 
 /** The mounted map, and its events as reactive state. */

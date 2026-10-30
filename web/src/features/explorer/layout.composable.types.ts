@@ -1,5 +1,5 @@
 import type { Padding } from '@railtime/renderer/transitMap.types';
-import type { Ref } from 'vue';
+import type { ComputedRef, Ref } from 'vue';
 
 import type { SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
@@ -13,6 +13,8 @@ export type ExplorerLayout = {
   panelOpen: Ref<boolean>;
   /** The panel's width beside the map, pixels; kept in a cookie. */
   panelWidth: Ref<number>;
+  /** How much of the map's left the panel covers, pixels: its width while open beside the map, else none. */
+  panelCover: ComputedRef<number>;
   /** The panel's edge is being dragged. */
   resizing: Ref<boolean>;
   /** Starts dragging the panel's edge. */
