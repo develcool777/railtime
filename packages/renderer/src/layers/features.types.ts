@@ -13,6 +13,8 @@ type LineProperties = {
   offset: number;
   /** 1 for new track while its step plays, fading to 0. Draws it wider. */
   highlight: number;
+  /** The line it is drawn for, so the app can bring some lines forward (`focusLines`); empty for a transfer's link. */
+  line: string;
 };
 
 /** A drawn line. */

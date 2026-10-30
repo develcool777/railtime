@@ -37,6 +37,9 @@ export const LAYERS = {
   newLabels: 'rt-new-labels',
 } as const;
 
+/** How strongly lines out of focus still show (`focusLines`): a fraction of their usual opacity. */
+export const UNFOCUSED_OPACITY = 0.15;
+
 /** Round ends and joins, so segments meet without seams. */
 export const LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } as const;
 

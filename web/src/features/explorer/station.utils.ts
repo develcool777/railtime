@@ -1,4 +1,6 @@
-import type { StationSummary } from '@railtime/renderer/transitMap.types';
+import type { LineDetails, StationSummary } from '@railtime/renderer/transitMap.types';
+
+import type { NextStation } from '~/features/explorer/station.types';
 
 /**
  * A name as a search compares it: lower case, accents and apostrophes dropped, so "kings cross"
@@ -40,4 +42,30 @@ export const findStations = (stations: StationSummary[], query: string, limit: n
     .sort((first, second) => first.rank - second.rank || first.station.name.localeCompare(second.station.name))
     .slice(0, limit)
     .map(entry => entry.station);
+};
+
+/**
+ * The stations one stop away from a station, on any of its lines on the date shown, each with the
+ * lines that run there: on a branch, the stop it leaves from counts as its neighbour too.
+ *
+ * @param station - The station's id.
+ * @param lines - Its lines on the date shown, with their stops.
+ * @returns Each neighbour once, in the order the lines reach them.
+ */
+export const nextStations = (station: string, lines: LineDetails[]): NextStation[] => {
+  const found = new Map<string, NextStation>();
+  for (const line of lines) {
+    for (const run of line.branches) {
+      run.forEach((stop, place) => {
+        if (stop.id !== station) return;
+        for (const neighbour of [run[place - 1], run[place + 1]]) {
+          if (!neighbour || neighbour.id === station) continue;
+          const entry = found.get(neighbour.id) ?? { id: neighbour.id, name: neighbour.name, lines: [] };
+          if (!entry.lines.some(known => known.id === line.id)) entry.lines.push({ id: line.id, name: line.name, color: line.color });
+          found.set(neighbour.id, entry);
+        }
+      });
+    }
+  }
+  return [...found.values()];
 };

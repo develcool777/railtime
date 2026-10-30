@@ -4,13 +4,16 @@
     :modelValue="undefined"
     :items="matches"
     ignoreFilter
-    icon="i-lucide-search"
     :placeholder
-    size="lg"
-    variant="soft"
+    variant="outline"
     class="w-full"
+    :ui="{ base: 'h-9 rounded-lg', leading: 'ps-3' }"
     :aria-label="placeholder"
     @update:modelValue="choose">
+    <!-- Where the route starts, hollow; where it ends, filled. -->
+    <template #leading>
+      <span class="size-2 rounded-full border-2 border-(--ui-text-highlighted)" :class="{ 'bg-(--ui-text-highlighted)': end === 'to' }" />
+    </template>
     <template #item-leading="{ item }">
       <span class="flex w-[22px] flex-none gap-0.5">
         <span v-for="color in item.colors" :key="color" class="h-1.5 flex-1 rounded-full" :style="{ background: color }" />
@@ -36,6 +39,8 @@
       /** The stations on the map on the date shown. */
       stations: StationSummary[];
       placeholder?: string;
+      /** The end of a route it picks. */
+      end: 'from' | 'to';
     }>(),
     { placeholder: 'Find a station' },
   );

@@ -15,11 +15,12 @@ export const emptyCollection = <Item>(): FeatureCollection<Item> => ({ type: 'Fe
  * @param color - Its colour.
  * @param offset - Its side-by-side slot, relative to the direction of `coordinates`.
  * @param highlight - 0 normally, up to 1 for new track.
+ * @param line - The line it is drawn for; none for a transfer's link.
  * @returns The feature.
  */
-export const lineFeature = (coordinates: LngLat[], color: string, offset: number, highlight = 0): LineFeature => ({
+export const lineFeature = (coordinates: LngLat[], color: string, offset: number, highlight = 0, line = ''): LineFeature => ({
   type: 'Feature',
-  properties: { color, offset, highlight },
+  properties: { color, offset, highlight, line },
   geometry: { type: 'LineString', coordinates },
 });
 
