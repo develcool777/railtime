@@ -22,18 +22,6 @@ export const formatDay = (time: number): string => {
 };
 
 /**
- * When a line served a station.
- *
- * @param opened - ISO date it opened there, or `null` for a plan's line, which has none.
- * @param closed - ISO date it closed there, if it has.
- * @returns "since 1906", "1906–1994" or "planned".
- */
-export const formatSpan = (opened: string | null, closed?: string): string => {
-  if (opened === null) return 'planned';
-  return closed ? `${opened.slice(0, 4)}–${closed.slice(0, 4)}` : `since ${opened.slice(0, 4)}`;
-};
-
-/**
  * What a plan adds, in a line.
  *
  * @param stations - Its new stations.

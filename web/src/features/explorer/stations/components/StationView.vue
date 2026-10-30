@@ -9,7 +9,6 @@
           @click="emit('line', line.id)">
           <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: line.color }" />
           <span class="text-highlighted flex-1 truncate text-sm font-medium">{{ line.name }}</span>
-          <span class="text-muted text-xs tabular-nums">{{ formatSpan(line.opened, line.closed) }}</span>
           <UIcon name="i-lucide-chevron-right" class="text-dimmed size-4 flex-none" />
         </button>
         <!-- A piece of the line, drawn as the line's view draws it: the stop before, this station, the stop after. The line sits over the rows' hover, under the dots. -->
@@ -58,7 +57,6 @@
 <script setup lang="ts">
   import type { StationInfo, StationLineInfo } from '@railtime/renderer/transitMap.types';
 
-  import { formatSpan } from '~/features/explorer/format.utils';
   import type { LineDirection } from '~/features/explorer/stations/station.types';
   import { stripAround } from '~/features/explorer/stations/station.utils';
 
