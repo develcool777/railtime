@@ -61,5 +61,6 @@ export default defineNuxtConfig({
   },
   // Links end with a slash, as the pages' canonical addresses do: no redirect on the way.
   experimental: { defaults: { nuxtLink: { trailingSlash: 'append' } } },
-  devtools: { enabled: true },
+  // Off: on `nuxt dev` it makes an empty server/ (for server routes this site has none of) and .data/.
+  devtools: { enabled: false },
 });
