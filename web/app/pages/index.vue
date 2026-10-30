@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-  import { navigateTo, useHead, useRoute } from '#imports';
+  import { navigateTo, useRoute } from '#imports';
   import CITY_INDEX from '@railtime/data/cities.json';
   import { STILL_CREDITS } from '@railtime/renderer/basemapStill.constants';
   import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
@@ -81,9 +81,11 @@
   import SegmentedControl from '~/components/explorer/SegmentedControl.vue';
   import type { CityFilter } from '~/utils/city.types';
   import { citiesByCountry, isCity, matchesFilter } from '~/utils/city.utils';
+  import { usePageSeo } from '~/composables/pageSeo.composable';
   import { CITIES } from '~/utils/explorer.constants';
+  import { landingSeo } from '~/utils/seo.utils';
 
-  useHead({ title: 'Railtime' });
+  usePageSeo(landingSeo(CITIES.length));
 
   // Links from before city pages (`/?city=tyne-and-wear`) still land on the city.
   const route = useRoute();

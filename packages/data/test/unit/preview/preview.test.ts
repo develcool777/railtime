@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { datasets } from '../../../src/dataset/city.utils.ts';
 import { PREVIEW_SIZE, PREVIEW_THEMES } from '../../../src/preview/preview.constants.ts';
-import { fitView, previewPathOf, previewRequestOf, previewTrackOf } from '../../../src/preview/preview.utils.ts';
+import { fitView, previewPathOf, previewRequestOf, previewTrackOf, socialPathOf } from '../../../src/preview/preview.utils.ts';
 
 /** Every city's dataset. */
 const DATASETS = datasets();
@@ -62,15 +62,16 @@ describe('PreviewUtils', () => {
   });
 
   describe('previewPathOf', () => {
-    test('keeps each theme beside the dataset', () => {
+    test('keeps each theme, and the social card, beside the dataset', () => {
       expect(previewPathOf('/cities/ukraine/kyiv/kyiv.json', 'dark')).toBe('/cities/ukraine/kyiv/kyiv.dark.webp');
+      expect(socialPathOf('/cities/ukraine/kyiv/kyiv.json')).toBe('/cities/ukraine/kyiv/kyiv.social.jpg');
     });
 
     test.each(DATASETS.map(dataset => dataset.city))('%s has a preview in every theme (pnpm data:previews <city>)', city => {
       const { path } = DATASETS.find(dataset => dataset.city === city)!;
-      for (const theme of PREVIEW_THEMES) {
-        expect(existsSync(previewPathOf(path, theme)), theme).toBe(true);
-        expect(statSync(previewPathOf(path, theme)).size).toBeGreaterThan(2048);
+      for (const picture of [...PREVIEW_THEMES.map(theme => previewPathOf(path, theme)), socialPathOf(path)]) {
+        expect(existsSync(picture), picture).toBe(true);
+        expect(statSync(picture).size).toBeGreaterThan(2048);
       }
     });
   });

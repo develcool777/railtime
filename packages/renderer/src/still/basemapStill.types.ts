@@ -13,5 +13,8 @@ export type BasemapStillOptions = {
 /** A line's track drawn over a still, in one theme's colour: dashed for track not built. */
 export type StillTrack = { color: string; paths: LngLat[][]; dashed?: boolean };
 
-/** One picture to take: where the basemap looks, the picture's size in CSS pixels, and any track to draw over it, bottom first. */
-export type StillRequest = { view: MapView; width: number; height: number; track?: StillTrack[] };
+/**
+ * One picture to take: where the basemap looks, the picture's size in CSS pixels, any track to draw
+ * over it (bottom first), and its format: WebP unless asked otherwise.
+ */
+export type StillRequest = { view: MapView; width: number; height: number; track?: StillTrack[]; format?: 'image/webp' | 'image/jpeg' };
