@@ -20,90 +20,83 @@
           mode="drawer"
           collapsible
           resizable
-          :defaultSize="360"
-          :minSize="300"
-          :maxSize="480"
+          :defaultSize="420"
+          :minSize="360"
+          :maxSize="560"
           :collapsedSize="64"
           :toggle="false"
           :autoClose="false"
           :ui="{ root: 'bg-default min-h-0', body: 'gap-0 p-0 sm:p-0', content: 'max-h-[80dvh]' }">
           <template #default="{ collapsed: railOnly }">
-            <!-- Folded: each tab an icon with its name under it, opening the panel on it. -->
-            <nav v-if="railOnly" class="flex flex-col items-center gap-1 py-2" aria-label="Panel">
-              <UButton
-                v-for="entry in tabs"
-                :key="entry.id"
-                :icon="TAB_ICONS[entry.id]"
-                :label="entry.label"
-                :color="tab === entry.id ? 'primary' : 'neutral'"
-                :variant="tab === entry.id ? 'soft' : 'ghost'"
-                class="w-14 flex-col gap-1 px-1 py-2 text-[11px] font-semibold"
-                :ui="{ leadingIcon: 'size-5' }"
-                @click="openTab(entry.id)" />
-            </nav>
-            <div v-else class="flex min-h-0 flex-1 flex-col">
-              <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
+            <div class="flex min-h-0 flex-1 max-lg:flex-col">
+              <!-- The rail, always there: each section an icon with its name; the open one's folds the panel. On a phone, a row atop the drawer. -->
+              <nav class="border-default flex shrink-0 gap-1 p-1.5 lg:w-16 lg:flex-col lg:items-center lg:border-r max-lg:border-b" aria-label="Panel">
+                <UButton
+                  v-for="entry in tabs"
+                  :key="entry.id"
+                  :icon="TAB_ICONS[entry.id]"
+                  :label="entry.label"
+                  :color="tab === entry.id && !railOnly ? 'primary' : 'neutral'"
+                  :variant="tab === entry.id && !railOnly ? 'soft' : 'ghost'"
+                  :aria-pressed="tab === entry.id && !railOnly"
+                  class="flex-col gap-1 px-1 py-2 text-[11px] font-semibold max-lg:flex-1 lg:w-14"
+                  :ui="{ leadingIcon: 'size-5' }"
+                  @click="pickSection(entry.id, railOnly)" />
+              </nav>
+              <div v-if="!railOnly" class="flex min-h-0 min-w-0 flex-1 flex-col">
+                <DateBlock :mode :time :planName="chosenPlan?.name" :stepActive="mode === 'history' && step !== null" />
 
-              <div v-if="mode === 'history'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
-                <StepCard :step :revealed />
-                <UpNext :changes :from="(time?.cursor ?? 0) + (step ? 1 : 0)" @select="jumpTo" />
+                <div v-if="mode === 'history'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
+                  <StepCard :step :revealed />
+                  <UpNext :changes :from="(time?.cursor ?? 0) + (step ? 1 : 0)" @select="jumpTo" />
+                </div>
+                <StationView
+                  v-else-if="station"
+                  class="min-h-0 flex-1 overflow-auto"
+                  :station
+                  :backLabel="lineDetails?.name ?? tabLabel"
+                  :date="shownDate"
+                  @close="closeStation"
+                  @select="openStation"
+                  @routeFrom="routeFromStation('from')"
+                  @routeTo="routeFromStation('to')" />
+                <LineView
+                  v-else-if="lineDetails"
+                  class="min-h-0 flex-1 overflow-auto"
+                  :line="lineDetails"
+                  :changes="lineChanges"
+                  :time
+                  :backLabel="tabLabel"
+                  @close="openLine = null"
+                  @station="openStation"
+                  @change="map?.showChange($event)" />
+                <template v-else>
+                  <!-- The route tab has searches of its own. -->
+                  <div v-if="tab !== 'route'" class="px-4 pt-3">
+                    <StationSearch :stations @select="openStation" />
+                  </div>
+                  <h2 class="text-highlighted flex items-baseline gap-2 px-4 pt-3 pb-2 text-sm font-bold">
+                    {{ tabLabel }}
+                    <span class="text-muted text-xs font-medium tabular-nums">{{ tabs.find(entry => entry.id === tab)?.count }}</span>
+                  </h2>
+                  <div class="min-h-0 flex-1 overflow-auto">
+                    <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="openLine = $event" />
+                    <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
+                    <RouteTab
+                      v-else-if="tab === 'route'"
+                      :stations
+                      :ends="routeEnds"
+                      :preference="routePreference"
+                      :route="foundRoute"
+                      @from="routeEnds.from = $event"
+                      @to="routeEnds.to = $event"
+                      @swap="routeEnds = { from: routeEnds.to, to: routeEnds.from }"
+                      @preference="routePreference = $event"
+                      @station="openStation" />
+                    <PlansTab v-else :network :plan @choose="choosePlan" />
+                  </div>
+                </template>
               </div>
-              <StationView
-                v-else-if="station"
-                class="min-h-0 flex-1 overflow-auto"
-                :station
-                :backLabel="lineDetails?.name ?? tabLabel"
-                :date="shownDate"
-                @close="closeStation"
-                @select="openStation"
-                @routeFrom="routeFromStation('from')"
-                @routeTo="routeFromStation('to')" />
-              <LineView
-                v-else-if="lineDetails"
-                class="min-h-0 flex-1 overflow-auto"
-                :line="lineDetails"
-                :changes="lineChanges"
-                :time
-                :backLabel="tabLabel"
-                @close="openLine = null"
-                @station="openStation"
-                @change="map?.showChange($event)" />
-              <template v-else>
-                <!-- The route tab has searches of its own. -->
-                <div v-if="tab !== 'route'" class="px-4 pt-3">
-                  <StationSearch :stations @select="openStation" />
-                </div>
-                <div class="border-muted flex gap-1 border-b px-4 pt-2.5" role="tablist" aria-label="Panel">
-                  <button
-                    v-for="entry in tabs"
-                    :key="entry.id"
-                    type="button"
-                    role="tab"
-                    :aria-selected="tab === entry.id"
-                    class="-mb-px flex items-baseline gap-1.5 border-b-2 px-2.5 pt-2 pb-2.5 text-sm font-semibold transition-colors duration-150"
-                    :class="tab === entry.id ? 'border-primary text-highlighted' : 'text-muted hover:text-highlighted border-transparent'"
-                    @click="tab = entry.id">
-                    {{ entry.label }}
-                    <span class="text-xs font-medium tabular-nums">{{ entry.count }}</span>
-                  </button>
-                </div>
-                <div class="min-h-0 flex-1 overflow-auto" role="tabpanel">
-                  <LinesTab v-if="tab === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="openLine = $event" />
-                  <ChangesTab v-else-if="tab === 'changes'" :changes :time @select="map?.showChange($event)" />
-                  <RouteTab
-                    v-else-if="tab === 'route'"
-                    :stations
-                    :ends="routeEnds"
-                    :preference="routePreference"
-                    :route="foundRoute"
-                    @from="routeEnds.from = $event"
-                    @to="routeEnds.to = $event"
-                    @swap="routeEnds = { from: routeEnds.to, to: routeEnds.from }"
-                    @preference="routePreference = $event"
-                    @station="openStation" />
-                  <PlansTab v-else :network :plan @choose="choosePlan" />
-                </div>
-              </template>
             </div>
           </template>
         </UDashboardSidebar>
@@ -280,9 +273,19 @@
   const drawerOpen = ref(false);
   /** Each tab's icon, on the rail. */
   const TAB_ICONS = { lines: 'i-lucide-list', changes: 'i-lucide-history', route: 'i-lucide-route', plans: 'i-lucide-drafting-compass' };
-  /** Opens the panel on a tab, from the rail. */
-  const openTab = (id: (typeof tab)['value']) => {
+  /**
+   * A section picked on the rail: the panel opens on it, over a station's or a line's view; the open
+   * section's own icon folds the panel, as an editor's activity bar does.
+   */
+  const pickSection = (id: (typeof tab)['value'], folded: boolean) => {
+    const showing = tab.value === id && !station.value && !openLine.value;
+    if (showing && !folded) {
+      collapsed.value = true;
+      return;
+    }
     tab.value = id;
+    closeStation();
+    openLine.value = null;
     collapsed.value = false;
   };
   /** Brings the panel into sight, for what was picked on the map: unfolds it, or on a phone opens its drawer. */
