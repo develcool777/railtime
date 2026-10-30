@@ -9,9 +9,9 @@
     title="Search"
     description="Find a station, a line or a city"
     class="top-18 translate-y-0 rounded-lg shadow-[0_20px_60px_rgba(21,32,48,0.25)] sm:h-auto sm:max-h-[28rem] sm:max-w-[560px]"
-    :ui="{ input: '[&_input]:h-13 [&_input]:text-base' }">
+    :ui="{ input: '[&_input]:h-13 [&_input]:text-base', item: 'items-center' }">
     <template #item-leading="{ item }">
-      <span v-if="'colors' in item" class="flex w-[22px] flex-none gap-0.5">
+      <span v-if="'colors' in item" class="flex w-[22px] flex-none items-center gap-0.5">
         <span v-for="color in item.colors" :key="color" class="h-1.5 flex-1 rounded-full" :style="{ background: color }" />
       </span>
       <UIcon v-else name="i-lucide-map-pin" class="text-dimmed size-4" />

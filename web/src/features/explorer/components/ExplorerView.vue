@@ -259,18 +259,16 @@
     stepTime,
   } = useExplorerTime({ binding, timeMode, plan: props.plan, planOnly, currentChange, onPlay: followPlayback });
 
-  const { routeEnds, routePreference, foundRoute, routeShown, swapEnds } = useRouteFinder({ binding, section, timeMode });
+  const { routeEnds, routePreference, foundRoute, swapEnds } = useRouteFinder({ binding, section, timeMode });
 
   useExplorerAddress({ network: props.network, plan: props.plan, chosenPlan, binding, timeMode, opening });
 
   const { stationNames, setStationNames } = useStationNames(map);
 
-  /** The lines the map brings forward: a line's own in its view, a route's on the route; every line otherwise. */
+  /** The lines the map brings forward: a line's own in its view; every line otherwise. A route shown fades them all itself. */
   const focusedLines = computed(() => {
     if (timeMode.value === 'playing' || station.value) return null;
-    if (lineDetails.value) return [lineDetails.value.id];
-    if (routeShown.value && foundRoute.value) return foundRoute.value.legs.flatMap(leg => (leg.kind === 'ride' ? [leg.line] : []));
-    return null;
+    return lineDetails.value ? [lineDetails.value.id] : null;
   });
   watch(focusedLines, (next, previous) => {
     if (JSON.stringify(next) !== JSON.stringify(previous)) map.value?.focusLines(next);

@@ -4,7 +4,9 @@ import { buildPlan } from '@railtime/schema/plan.utils';
 import { required } from './core/required.utils';
 import { ActiveStepLayer } from './layers/activeStepLayer.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
-import type { RouteFeature, StationLines } from './layers/features.types';
+import type { PointFeature, RouteFeature, RouteStopProperties, StationLines } from './layers/features.types';
+import { pointFeature } from './layers/features.utils';
+import { routeStopMarks } from './layers/routeStops.utils';
 import type { RenderState } from './layers/lineStyle.types';
 import { LAYERS } from './layers/layers.constants';
 import type { MapLayer } from './layers/mapLayer.service';
@@ -39,6 +41,7 @@ import {
   OPENING_SIDE_PADDING,
   SELECTED_STATION_ZOOM,
   SELECT_FLY_MS,
+  ROUTE_NAME_ROOM,
 } from './transitMap.constants';
 import type {
   CameraMode,
@@ -91,6 +94,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private readonly routeFinder: RouteFinder;
   /** The route drawn, kept so the overlay can draw it again once installed. */
   private route: RouteFeature[] = [];
+  /** Its stops, marked. */
+  private routeStops: PointFeature<RouteStopProperties>[] = [];
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
   /** The map's colour theme. */
@@ -294,13 +299,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * Brings some lines forward and fades the rest, as for a line's or a route's panel; `null` shows every line alike.
+   * Brings some lines forward and fades the rest, as for a line's panel; `null` shows every line
+   * alike. A route shown fades every line behind it, whatever this asks.
    *
    * @param lineIds - The lines to bring forward, or `null`.
    */
   public focusLines(lineIds: string[] | null): void {
     this.focusedLines = lineIds;
-    if (this.ready) this.networkLayer.focus(lineIds);
+    if (this.ready) this.applyBackdrop();
   }
 
   /** Zooms in a step, about the centre. */
@@ -443,7 +449,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * Draws a route over the network and frames it, or clears it.
+   * Draws a route over the network and frames it, or clears it. While one is shown the network is
+   * its backdrop: every line faded, the stations faded and unnamed; the route's own stops are marked
+   * on it, its start, changes and end named.
    *
    * @param route - A route `findRoute` gave, or `null`.
    */
@@ -464,9 +472,15 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
         geometry: { type: 'LineString', coordinates: required(this.index.segments[segment], `segment ${segment}`).coordinates },
       }));
     });
-    if (this.ready) this.routeLayer.update(this.route);
+    this.routeStops = route
+      ? routeStopMarks(route).map(mark => pointFeature(this.index.coordOf(mark.station), { kind: mark.kind, color: mark.color, name: mark.name }))
+      : [];
+    if (this.ready) {
+      this.routeLayer.update(this.route, this.routeStops);
+      this.applyBackdrop();
+    }
     const bounds = boundsOf(this.route.flatMap(feature => feature.geometry.coordinates));
-    if (bounds) this.camera.fit(bounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+    if (bounds) this.camera.fit(bounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS, ROUTE_NAME_ROOM);
   }
 
   /**
@@ -585,7 +599,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** The overlay's layer groups, bottom to top. */
   private get layers(): MapLayer[] {
-    return [this.networkLayer, this.activeStepLayer, this.routeLayer, this.stationLayer];
+    return [this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer];
+  }
+
+  /** Fades the network behind a route shown; else brings forward the lines in focus. */
+  private applyBackdrop(): void {
+    const routeShown = this.route.length > 0;
+    this.networkLayer.focus(routeShown ? [] : this.focusedLines);
+    this.stationLayer.fade(routeShown);
   }
 
   /** Recolours the basemap and installs the overlay once the style has loaded. */
@@ -595,8 +616,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.applyPalette();
     // A station selected before the style loaded (from a link) gets its ring now, a route its track.
     this.stationLayer.select(this.selectedStation);
-    this.routeLayer.update(this.route);
-    this.networkLayer.focus(this.focusedLines);
+    this.routeLayer.update(this.route, this.routeStops);
+    this.applyBackdrop();
     this.ready = true;
     this.snapshotStale = true;
     this.instant = true;

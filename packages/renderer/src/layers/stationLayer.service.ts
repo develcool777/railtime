@@ -4,7 +4,7 @@ import { clamp, easeOutBack } from '../playback/easing.utils';
 import type { PointFeature, PulseProperties, StationProperties } from './features.types';
 import { emptyCollection, pointFeature } from './features.utils';
 import { byZoom } from './layerStyle.utils';
-import { LABEL_MIN_ZOOM, LAYERS, POP_IN_MS, PULSE_GROWTH, PULSE_MS, SOURCES } from './layers.constants';
+import { BACKDROP_STATION_OPACITY, LABEL_MIN_ZOOM, LAYERS, POP_IN_MS, PULSE_GROWTH, PULSE_MS, SOURCES } from './layers.constants';
 import { MapLayer } from './mapLayer.service';
 import type { StationFrame } from './stationLayer.types';
 import type { Palette } from './theme.types';
@@ -30,6 +30,8 @@ export class StationLayer extends MapLayer {
   private readonly pulsedAt = new Map<string, number>();
   /** Whether stations are named on the map: kept, so a layer installed later starts the same. */
   private labelsShown = true;
+  /** Whether the stations are a backdrop, faded and unnamed, behind a route. */
+  private faded = false;
 
   public constructor(
     map: MapLibreMap,
@@ -79,9 +81,6 @@ export class StationLayer extends MapLayer {
         ),
         'circle-color': '#ffffff',
         'circle-stroke-width': byZoom(1.2, 2.5),
-        // A planned station is a ring: its fill all but gone.
-        'circle-opacity': ['*', ['get', 'opacity'], ['case', ['get', 'planned'], 0.2, 1]],
-        'circle-stroke-opacity': ['get', 'opacity'],
       },
     });
     const label: SymbolLayerSpecification['layout'] = {
@@ -97,7 +96,7 @@ export class StationLayer extends MapLayer {
       minzoom: LABEL_MIN_ZOOM,
       filter: ['!', ['get', 'highlighted']],
       layout: { ...label, 'text-size': byZoom(11, 14), 'text-offset': [0.9, 0] },
-      paint: { 'text-opacity': ['get', 'labelOpacity'], 'text-halo-width': 1.5 },
+      paint: { 'text-halo-width': 1.5 },
     });
     this.map.addLayer({
       id: LAYERS.newLabels,
@@ -105,8 +104,28 @@ export class StationLayer extends MapLayer {
       source: SOURCES.stations,
       filter: ['get', 'highlighted'],
       layout: { ...label, 'text-size': byZoom(13, 16), 'text-offset': [1, 0], 'text-allow-overlap': true, 'text-ignore-placement': true },
-      paint: { 'text-opacity': ['get', 'labelOpacity'], 'text-halo-width': 2 },
+      paint: { 'text-halo-width': 2 },
     });
+    this.applyFade();
+  }
+
+  /**
+   * Fades the stations to a backdrop behind a route, their names gone; or brings them back.
+   *
+   * @param faded - Whether they are a backdrop.
+   */
+  public fade(faded: boolean): void {
+    this.faded = faded;
+    if (this.map.getLayer(LAYERS.stations)) this.applyFade();
+  }
+
+  /** Sets the dots' and names' opacities, each frame's own times the backdrop's, if faded. */
+  private applyFade(): void {
+    const dots = this.faded ? BACKDROP_STATION_OPACITY : 1;
+    // A planned station is a ring: its fill all but gone.
+    this.map.setPaintProperty(LAYERS.stations, 'circle-opacity', ['*', dots, ['get', 'opacity'], ['case', ['get', 'planned'], 0.2, 1]]);
+    this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-opacity', ['*', dots, ['get', 'opacity']]);
+    for (const layer of [LAYERS.labels, LAYERS.newLabels]) this.map.setPaintProperty(layer, 'text-opacity', ['*', this.faded ? 0 : 1, ['get', 'labelOpacity']]);
   }
 
   /**

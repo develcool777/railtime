@@ -49,8 +49,15 @@ export class CameraDirector {
    * @param bounds - What to frame.
    * @param maxZoom - The closest the camera may go.
    * @param durationMs - How long the move takes.
+   * @param room - Room to keep clear beyond the app's padding, pixels: for names drawn beside what is framed.
    */
-  public fit(bounds: Bounds, maxZoom: number, durationMs: number): void {
-    this.map.fitBounds(bounds as LngLatBoundsLike, { padding: this.padding, maxZoom, duration: durationMs });
+  public fit(bounds: Bounds, maxZoom: number, durationMs: number, room: Partial<Padding> = {}): void {
+    const padding = {
+      top: this.padding.top + (room.top ?? 0),
+      right: this.padding.right + (room.right ?? 0),
+      bottom: this.padding.bottom + (room.bottom ?? 0),
+      left: this.padding.left + (room.left ?? 0),
+    };
+    this.map.fitBounds(bounds as LngLatBoundsLike, { padding, maxZoom, duration: durationMs });
   }
 }

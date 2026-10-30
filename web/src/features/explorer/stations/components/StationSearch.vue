@@ -15,7 +15,7 @@
       <span class="size-2 rounded-full border-2 border-(--ui-text-highlighted)" :class="{ 'bg-(--ui-text-highlighted)': end === 'to' }" />
     </template>
     <template #item-leading="{ item }">
-      <span class="flex w-[22px] flex-none gap-0.5">
+      <span class="flex w-[22px] flex-none items-center gap-0.5 self-center">
         <span v-for="color in item.colors" :key="color" class="h-1.5 flex-1 rounded-full" :style="{ background: color }" />
       </span>
     </template>
