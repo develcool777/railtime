@@ -5,7 +5,8 @@
         <CitySelect v-model:open="cityMenuOpen" :city @city="emit('city', $event)" />
       </template>
       <template #center>
-        <SearchButton @open="searchOpen = true" />
+        <!-- Opens the search, as ⌘K and / do. -->
+        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="searchOpen = true" />
       </template>
       <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="searchOpen = true" />
     </SiteHeader>
@@ -97,15 +98,18 @@
             @fit="map?.fitNetwork()"
             @stationNames="setStationNames"
             @mapOnly="toggleMapOnly" />
-          <button
+          <UButton
             v-else
-            type="button"
-            class="map-card text-highlighted absolute top-4 right-4 flex h-10 items-center gap-1.5 px-3 text-sm font-semibold"
+            icon="i-lucide-minimize-2"
+            label="Exit map only"
+            color="neutral"
+            variant="outline"
+            class="map-card absolute top-4 right-4 h-10 px-3 font-semibold"
             @click="toggleMapOnly">
-            <UIcon name="i-lucide-minimize-2" class="size-4" />
-            Exit map only
-            <UKbd value="Esc" />
-          </button>
+            <template #trailing>
+              <UKbd value="Esc" />
+            </template>
+          </UButton>
 
           <!-- The time control, and above it while following playback the minimap; on a phone it rides above the sheet. -->
           <div

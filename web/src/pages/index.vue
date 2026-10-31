@@ -23,7 +23,7 @@
           class="min-w-[220px] flex-1"
           aria-label="Search cities" />
         <USelect v-model="countryChoice" :items="COUNTRY_ITEMS" size="lg" class="w-48 max-sm:flex-1" aria-label="Country" />
-        <SegmentedControl v-model="filter.kind" :items="KIND_ITEMS" label="Kind of city" />
+        <UTabs v-model="filter.kind" :items="KIND_ITEMS" :content="false" size="md" aria-label="Kind of city" />
         <UButton
           :icon="filter.withPlans ? 'i-lucide-check' : 'i-lucide-route'"
           label="With plans"

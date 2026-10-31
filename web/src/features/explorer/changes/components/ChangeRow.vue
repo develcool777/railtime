@@ -1,10 +1,5 @@
 <template>
-  <button
-    type="button"
-    class="flex w-full items-start gap-2.5 rounded-lg p-2 text-left transition-[background-color,opacity] duration-150"
-    :class="[current ? 'bg-selected ring-selected' : 'hover:bg-elevated', { 'opacity-50': past }]"
-    :aria-current="current || undefined"
-    @click="emit('select', change.index)">
+  <ListRow :active="current" class="items-start p-2" :class="{ 'opacity-50': past }" :aria-current="current || undefined" @click="emit('select', change.index)">
     <span class="text-muted w-10 flex-none text-xs leading-5 font-semibold tabular-nums">{{ change.time === null ? 'Plan' : yearOf(change.time) }}</span>
     <!-- Filled for an opening, hollow for a plan's, grey and hollow for a closure. -->
     <span class="mt-[5px] size-2.5 flex-none rounded-full border-2" :style="dotStyle" />
@@ -12,7 +7,7 @@
       <span class="text-highlighted block text-sm leading-5 font-medium">{{ title ?? change.title }}</span>
       <span v-if="change.subtitle" class="text-muted block truncate text-xs leading-4">{{ change.subtitle }}</span>
     </span>
-  </button>
+  </ListRow>
 </template>
 
 <script setup lang="ts">

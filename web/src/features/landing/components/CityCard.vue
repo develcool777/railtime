@@ -22,9 +22,9 @@
       </div>
       <p class="text-muted truncate text-[13px]">{{ summary.networks.join(' · ') }}</p>
       <div class="mt-1 flex flex-wrap items-center gap-1.5">
-        <StatusChip v-if="summary.planOnly" tone="amber">Never built</StatusChip>
-        <StatusChip v-else tone="green">History to play</StatusChip>
-        <StatusChip v-if="summary.plans > 0" tone="blue">{{ summary.plans }} plan{{ summary.plans === 1 ? '' : 's' }}</StatusChip>
+        <UBadge v-if="summary.planOnly" color="warning" label="Never built" />
+        <UBadge v-else color="success" label="History to play" />
+        <UBadge v-if="summary.plans > 0" color="info" :label="`${summary.plans} plan${summary.plans === 1 ? '' : 's'}`" />
         <span class="text-muted text-[11px] tabular-nums">
           {{ summary.lines }} line{{ summary.lines === 1 ? '' : 's' }} · {{ summary.stations }} stations
         </span>

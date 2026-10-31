@@ -21,7 +21,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | `insights/` | The Insights section: how the network grew, and its records on the date shown (`useInsights`)         | `InsightsSection`, `GrowthChart`, `DecadeChart`                   |
 | `reach/`    | The Reach section: how far you get from a station, by time (`useReachFinder`)                         | `ReachSection`                                                    |
 | `plans/`    | The Plans section, the plan shown and its legend (`useExplorerPlan`)                                  | `PlansSection`, `PlanLegend`                                      |
-| `header/`   | The header's city picker and search                                                                   | `CitySelect`, `ExplorerSearch`, `SearchButton`                    |
+| `header/`   | The header's city picker and search                                                                   | `CitySelect`, `ExplorerSearch`                                    |
 | `address/`  | The address: read at opening, then kept in step with the map (`useExplorerAddress`)                   | —                                                                 |
 
 At the top, what every part shares or what ties them together:

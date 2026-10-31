@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <!-- One list at a time: its stops, or the changes that made it. -->
-    <SegmentedControl v-if="changes.length > 0" v-model="shown" :items="TABS" label="Show" class="self-start" />
+    <UTabs v-if="changes.length > 0" v-model="shown" :items="TABS" :content="false" class="self-start" aria-label="Show" />
 
     <template v-if="shown === 'stops'">
       <p v-if="line.branches.length === 0" class="text-muted text-sm">Not open on the date shown.</p>
@@ -11,10 +11,7 @@
         <ol class="relative -mx-2" role="list">
           <span class="absolute top-4 bottom-4 left-[17px] w-1 rounded-full" :style="{ background: line.color }" />
           <li v-for="(stop, place) in run" :key="`${stop.id}-${place}`" :class="{ 'opacity-60': position > 0 && place === 0 }">
-            <button
-              type="button"
-              class="hover:bg-elevated relative flex h-8 w-full items-center gap-3 rounded-md px-2 text-left transition-colors duration-150"
-              @click="emit('station', stop.id)">
+            <ListRow class="relative gap-3" @click="emit('station', stop.id)">
               <span class="flex w-5 flex-none justify-center">
                 <span v-if="otherLines(stop.id).length > 0" class="bg-default size-3 rounded-full border-2 border-(--ui-text-highlighted)" />
                 <span v-else class="bg-default size-2.5 rounded-full border-2" :style="{ borderColor: line.color }" />
@@ -25,7 +22,7 @@
               <span class="flex flex-none gap-0.5">
                 <span v-for="color in otherLines(stop.id)" :key="color" class="h-1 w-2.5 rounded-full" :style="{ background: color }" />
               </span>
-            </button>
+            </ListRow>
           </li>
         </ol>
       </section>

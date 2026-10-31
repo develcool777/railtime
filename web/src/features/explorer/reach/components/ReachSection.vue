@@ -28,31 +28,27 @@
       <!-- Each band, its stations listed on request, the nearest open. -->
       <ul class="flex flex-col" role="list">
         <li v-for="group in groups" :key="group.position">
-          <button
-            type="button"
-            class="hover:bg-elevated flex h-9 w-full items-center gap-2.5 rounded-md px-2 text-left transition-colors duration-150 disabled:opacity-50"
-            :disabled="group.stations.length === 0"
-            :aria-expanded="unfolded.has(group.position)"
-            @click="toggle(group.position)">
-            <span class="size-2.5 flex-none rounded-full" :style="{ background: group.band.color }" />
-            <span class="text-highlighted flex-1 text-sm font-medium">{{ group.band.label }}</span>
-            <span class="text-muted text-xs tabular-nums">{{ group.stations.length }}</span>
-            <UIcon
-              name="i-lucide-chevron-right"
-              class="text-dimmed size-4 flex-none transition-transform duration-150"
-              :class="{ 'rotate-90': unfolded.has(group.position), invisible: group.stations.length === 0 }" />
-          </button>
-          <ul v-if="unfolded.has(group.position)" class="pb-2 pl-7" role="list">
-            <li v-for="station in group.stations" :key="station.id">
-              <button
-                type="button"
-                class="hover:bg-elevated flex h-7 w-full items-center justify-between gap-2 rounded-md px-2 text-left"
-                @click="emit('station', station.id)">
-                <span class="text-default truncate text-xs">{{ station.name }}</span>
-                <span class="text-muted flex-none text-xs tabular-nums">{{ formatMinutes(station.minutes) }}</span>
-              </button>
-            </li>
-          </ul>
+          <UCollapsible :open="unfolded.has(group.position)" :disabled="group.stations.length === 0" @update:open="toggle(group.position)">
+            <ListRow class="group" :disabled="group.stations.length === 0">
+              <span class="size-2.5 flex-none rounded-full" :style="{ background: group.band.color }" />
+              <span class="text-highlighted flex-1 text-sm font-medium">{{ group.band.label }}</span>
+              <span class="text-muted text-xs tabular-nums">{{ group.stations.length }}</span>
+              <UIcon
+                name="i-lucide-chevron-right"
+                class="text-dimmed size-4 flex-none transition-transform duration-150 group-data-[state=open]:rotate-90"
+                :class="{ invisible: group.stations.length === 0 }" />
+            </ListRow>
+            <template #content>
+              <ul class="pb-2 pl-7" role="list">
+                <li v-for="station in group.stations" :key="station.id">
+                  <ListRow class="h-7" @click="emit('station', station.id)">
+                    <span class="text-default min-w-0 flex-1 truncate text-xs">{{ station.name }}</span>
+                    <span class="text-muted flex-none text-xs tabular-nums">{{ formatMinutes(station.minutes) }}</span>
+                  </ListRow>
+                </li>
+              </ul>
+            </template>
+          </UCollapsible>
         </li>
       </ul>
       <p class="text-dimmed text-xs">

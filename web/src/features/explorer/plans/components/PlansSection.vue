@@ -1,27 +1,27 @@
 <template>
-  <div class="flex flex-col gap-2 p-4">
-    <button
-      v-for="card in cards"
-      :key="card.id ?? BUILT"
-      type="button"
-      class="flex w-full flex-col gap-1.5 rounded-lg border p-3 text-left transition-colors duration-150"
-      :class="card.id === plan ? 'border-primary bg-selected' : 'border-default bg-default hover:border-accented'"
-      :aria-pressed="card.id === plan"
-      @click="emit('choose', card.id)">
+  <!-- One plan at a time, or the network as built: a choice of cards. -->
+  <URadioGroup :modelValue="plan ?? BUILT" :items="cards" variant="card" indicator="end" class="p-4" aria-label="Plans" @update:modelValue="choose">
+    <template #label="{ item }">
       <span class="flex items-start justify-between gap-2">
-        <span class="text-highlighted text-sm leading-5 font-bold">{{ card.name }}</span>
-        <StatusChip v-if="card.status" :tone="PLAN_STATUSES[card.status].tone">{{ PLAN_STATUSES[card.status].label }}</StatusChip>
+        <span class="text-highlighted text-sm leading-5 font-bold">{{ item.name }}</span>
+        <UBadge v-if="item.status" :color="PLAN_STATUSES[item.status].color" :label="PLAN_STATUSES[item.status].label" />
       </span>
-      <!-- Two lines each; the plan shown in full. -->
-      <span v-if="card.description" class="text-default text-xs leading-4" :class="{ 'line-clamp-2': card.id !== plan }">{{ card.description }}</span>
-      <span v-if="card.colors.length > 0 || card.facts" class="flex items-center gap-2">
-        <span class="flex flex-wrap gap-1">
-          <span v-for="color in card.colors" :key="color" class="h-1.5 w-[22px] rounded-full" :style="{ background: color }" />
+    </template>
+    <template #description="{ item }">
+      <span class="flex flex-col gap-1.5 pt-1">
+        <!-- Two lines each; the plan shown in full. -->
+        <span v-if="item.description" class="text-default text-xs leading-4" :class="{ 'line-clamp-2': item.value !== (plan ?? BUILT) }">{{
+          item.description
+        }}</span>
+        <span v-if="item.colors.length > 0 || item.facts" class="flex items-center gap-2">
+          <span class="flex flex-wrap gap-1">
+            <span v-for="color in item.colors" :key="color" class="h-1.5 w-[22px] rounded-full" :style="{ background: color }" />
+          </span>
+          <span class="text-muted text-xs tabular-nums">{{ item.facts }}</span>
         </span>
-        <span class="text-muted text-xs tabular-nums">{{ card.facts }}</span>
       </span>
-    </button>
-  </div>
+    </template>
+  </URadioGroup>
 </template>
 
 <script setup lang="ts">
@@ -50,13 +50,16 @@
   // Building every plan once, as the section opens: what each adds does not change.
   const facts = Object.fromEntries(Object.keys(props.network.plans ?? {}).map(id => [id, planFacts(props.network, id)]));
 
+  /** Shows the plan picked, or the network as built. */
+  const choose = (value: unknown) => emit('choose', value === BUILT ? undefined : String(value));
+
   const cards = computed(() => {
     const dark = colorMode.value !== 'light';
     const plans = Object.entries(props.network.plans ?? {}).map(([id, plan]) => {
       // Every plan has its facts: they were worked out for each id above.
       const { stations, km, lines } = facts[id]!;
       return {
-        id: id as string | undefined,
+        value: id,
         name: plan.name,
         status: plan.status as PlanStatus | undefined,
         description: plan.description,
@@ -67,7 +70,7 @@
     // A network never built has nothing to show without a plan.
     if (isPlanOnly(props.network)) return plans;
     return [
-      { id: undefined, name: 'Built', status: undefined, description: 'The network as it is today, and its history.', colors: [], facts: props.built },
+      { value: BUILT, name: 'Built', status: undefined, description: 'The network as it is today, and its history.', colors: [], facts: props.built },
       ...plans,
     ];
   });

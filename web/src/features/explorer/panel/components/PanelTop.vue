@@ -1,10 +1,15 @@
 <template>
   <div class="border-muted flex-none border-b px-4 pt-3.5 pb-3">
     <div v-if="backLabel || foldable" class="flex h-6 items-center justify-between">
-      <button v-if="backLabel" type="button" class="text-muted hover:text-highlighted flex items-center gap-0.5 text-xs font-medium" @click="emit('back')">
-        <UIcon name="i-lucide-chevron-left" class="size-4" />
-        {{ backLabel }}
-      </button>
+      <UButton
+        v-if="backLabel"
+        icon="i-lucide-chevron-left"
+        :label="backLabel"
+        color="neutral"
+        variant="link"
+        size="xs"
+        class="text-muted -ml-1 gap-0.5 px-0"
+        @click="emit('back')" />
       <span v-else />
       <UTooltip v-if="foldable" text="Close the panel" :kbds="['[']">
         <UButton

@@ -1,31 +1,34 @@
 <template>
   <div class="flex-none">
     <!-- The handle: a tap steps through the snaps, a swipe up or down moves one. -->
-    <button
-      type="button"
-      class="flex h-5 w-full touch-none items-center justify-center"
+    <UButton
+      color="neutral"
+      variant="ghost"
+      class="h-5 w-full touch-none justify-center rounded-none p-0 hover:bg-transparent"
       :aria-label="`Sheet: ${snap}. Tap to resize`"
       @pointerdown="onPointerDown"
       @pointerup="onPointerUp"
       @pointercancel="startY = null">
       <span class="bg-accented h-[5px] w-10 rounded-full" />
-    </button>
+    </UButton>
     <nav class="flex gap-1 px-2 pb-2" aria-label="Sections">
-      <button
+      <UButton
         v-for="section in sections"
         :key="section.id"
-        type="button"
-        class="flex h-13 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors duration-150"
-        :class="section.id === open ? 'bg-selected text-selected' : 'text-muted'"
+        color="neutral"
+        variant="ghost"
+        :active="section.id === open"
+        activeColor="primary"
+        activeVariant="soft"
+        class="text-muted h-13 min-w-0 flex-1 flex-col justify-center gap-0.5 px-0"
         :aria-pressed="section.id === open"
         :aria-description="marks[section.id]"
         @click="emit('pick', section.id)">
-        <span class="relative">
+        <UChip :show="!!marks[section.id]" size="md">
           <UIcon :name="section.icon" class="size-5" />
-          <span v-if="marks[section.id]" class="bg-primary ring-default absolute -top-0.5 -right-1 size-2 rounded-full ring-2" />
-        </span>
+        </UChip>
         <span class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
-      </button>
+      </UButton>
     </nav>
   </div>
 </template>

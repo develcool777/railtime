@@ -1,19 +1,22 @@
 <template>
   <nav class="border-default bg-muted flex w-18 flex-none flex-col items-center gap-1 border-r py-2" aria-label="Sections">
     <UTooltip v-for="(section, position) in sections" :key="section.id" :text="section.label" :kbds="[String(position + 1)]" :content="{ side: 'right' }">
-      <button
-        type="button"
-        class="flex h-14 w-15 flex-col items-center justify-center gap-1 rounded-lg transition-colors duration-150"
-        :class="section.id === open ? 'bg-selected text-selected' : 'text-muted hover:bg-elevated hover:text-highlighted'"
+      <UButton
+        color="neutral"
+        variant="ghost"
+        :active="section.id === open"
+        activeColor="primary"
+        activeVariant="soft"
+        class="text-muted h-14 w-15 flex-col justify-center gap-1"
         :aria-pressed="section.id === open"
         :aria-description="marks[section.id]"
         @click="emit('pick', section.id)">
-        <span class="relative">
+        <!-- A dot while the section's choice is in force: a plan shown, a route set. -->
+        <UChip :show="!!marks[section.id]" size="md">
           <UIcon :name="section.icon" class="size-5" />
-          <span v-if="marks[section.id]" class="bg-primary ring-muted absolute -top-0.5 -right-1 size-2 rounded-full ring-2" />
-        </span>
+        </UChip>
         <span class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
-      </button>
+      </UButton>
     </UTooltip>
   </nav>
 </template>
