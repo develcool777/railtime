@@ -8,17 +8,14 @@ import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { REACH_BANDS } from '../../../src/reach/layer.constants';
 import { bandOf, reachStops, reachTrack, reachedSegments } from '../../../src/reach/layer.utils';
 import { toTimestamp } from '../../../src/core/date.utils';
-import { NetworkQueries } from '../../../src/network/queries.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { playbackOf } from '../../support/playback.utils';
+import { networkNow, playbackOf } from '../../support/playback.utils';
 
 /** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */
 const reachFromA = () => {
   const playback = playbackOf(tinyNetwork());
-  playback.player.seek(toTimestamp('1955-01-01'));
-  const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
-  const moment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#f00' };
-  return { playback, reach: queries.reach('a', moment)! };
+  playback.player.seek({ time: toTimestamp('1955-01-01') });
+  return { playback, reach: networkNow(playback).reach('a')! };
 };
 
 describe('ReachLayer', () => {
@@ -124,7 +121,7 @@ describe('ReachLayerUtils', () => {
     test("colours the start's own track, though no station is reached beyond it, and only track open at the cursor", () => {
       const playback = playbackOf(tinyNetwork());
       // Only A–B is open in 1905: C, reached, is on track that opens in 1910.
-      playback.player.seek(toTimestamp('1905-01-01'));
+      playback.player.seek({ time: toTimestamp('1905-01-01') });
       const reach = { from: { id: 'a', name: 'A' }, stations: [{ id: 'c', name: 'C', minutes: 20, band: 1 }], bands: REACH_BANDS };
       const track = reachTrack(playback.index, playback.timeline, playback.player.cursor, reach);
       expect(track.map(feature => feature.geometry.coordinates)).toEqual([playback.index.segments[0]!.coordinates]);

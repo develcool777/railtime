@@ -1,4 +1,4 @@
-import type { MapState, Padding } from './transitMap.types';
+import type { MapProps, Padding } from './transitMap.types';
 
 /** Room kept clear around the map's edges when no padding is given. */
 export const DEFAULT_PADDING: Padding = { top: 140, bottom: 120, left: 60, right: 60 };
@@ -7,7 +7,7 @@ export const DEFAULT_PADDING: Padding = { top: 140, bottom: 120, left: 60, right
 export const NO_COVER: Padding = { top: 0, bottom: 0, left: 0, right: 0 };
 
 /** How a map is set unless told otherwise: dark, flat, named, every line alike, nothing selected or drawn over it. */
-export const DEFAULT_MAP_STATE: MapState = {
+export const DEFAULT_MAP_PROPS: MapProps = {
   theme: 'dark',
   viewMode: '2d',
   stationLabels: true,
@@ -19,6 +19,7 @@ export const DEFAULT_MAP_STATE: MapState = {
   camera: 'follow',
   padding: DEFAULT_PADDING,
   cover: NO_COVER,
+  boundary: null,
 };
 
 /** Room kept clear at the map's sides when it first opens, pixels. */

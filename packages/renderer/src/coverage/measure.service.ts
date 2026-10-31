@@ -21,11 +21,14 @@ export class CoverageMeasure {
   private readonly index: NetworkIndex;
   /** Its timeline. */
   private readonly timeline: Timeline;
+  /** Today, which the history runs to. */
+  private readonly today: number;
   /** The covered share year by year, worked out the first time it is asked for. */
   private years: CoverageYear[] | null = null;
 
-  public constructor(boundary: CityBoundary, index: NetworkIndex, timeline: Timeline) {
+  public constructor(boundary: CityBoundary, index: NetworkIndex, timeline: Timeline, today: number) {
     this.boundary = boundary;
+    this.today = today;
     this.grid = new CoverageGrid(boundary);
     this.index = index;
     this.timeline = timeline;
@@ -61,11 +64,10 @@ export class CoverageMeasure {
    * The share of the city within the headline distance of a station at the end of each year, from
    * the timeline's start to today's.
    *
-   * @param today - Today, a timestamp.
    * @returns A share for each year, oldest first.
    */
-  public history(today: number): CoverageYear[] {
-    const years: [number, number] = [new Date(this.timeline.start).getUTCFullYear(), new Date(today).getUTCFullYear()];
+  public history(): CoverageYear[] {
+    const years: [number, number] = [new Date(this.timeline.start).getUTCFullYear(), new Date(this.today).getUTCFullYear()];
     this.years ??= coverageHistory(this.index, this.timeline, this.grid, years, COVERAGE_HEADLINE_METRES);
     return this.years;
   }

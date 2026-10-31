@@ -20,8 +20,8 @@ import { playbackOf } from '../../support/playback.utils';
  */
 const framesOn = (date: string, plan?: string) => {
   const playback = playbackOf(tinyNetwork(), plan);
-  if (plan) playback.player.seekEnd();
-  else playback.player.seek(toTimestamp(date));
+  if (plan) playback.player.seek('future');
+  else playback.player.seek({ time: toTimestamp(date) });
   const fake = fakeMap();
   const network = new NetworkLayer(fake.map);
   const activeStep = new ActiveStepLayer(fake.map);
@@ -81,7 +81,7 @@ describe('FrameRenderer', () => {
   test('plays a step frame by frame, counting its new stations, and clears it from the map and the minimap once it ends', () => {
     const { frames, fake, playback, minimap } = framesOn('1905-01-01');
     frames.draw(0, null);
-    playback.player.playing = true;
+    playback.player.play();
     playback.player.skip();
     frames.stepStarted();
     const revealed: number[] = [];
@@ -117,7 +117,7 @@ describe('FrameRenderer', () => {
     expect(frames.timeState()).toBeNull();
     frames.draw(0, null);
     expect(frames.timeState()).toMatchObject({ stats: { stations: 4, lines: 2 }, playing: false, future: false });
-    playback.player.seek(toTimestamp('1935-01-02'));
+    playback.player.seek({ time: toTimestamp('1935-01-02') });
     expect(frames.timeState()?.time).toBe(toTimestamp('1935-01-02'));
     expect(frames.timeState()).toBeNull();
   });
@@ -125,9 +125,9 @@ describe('FrameRenderer', () => {
   test("blends a line's colour on every frame while its identity changes", () => {
     const { frames, fake, playback } = framesOn('1989-06-01');
     const identity = playback.timeline.steps.find(step => step.kind === 'identity')!;
-    playback.player.seekBefore(identity.index);
+    playback.player.seek({ beforeChange: identity.index });
     frames.draw(0, null);
-    playback.player.playing = true;
+    playback.player.play();
     playback.player.tick(1 / 60);
     frames.stepStarted();
     // Past the camera's move, into the drawing.

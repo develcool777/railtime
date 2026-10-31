@@ -13,6 +13,8 @@ import {
   VIEW_TILT_MS,
 } from '../../../src/playback/camera.constants';
 import { CameraDirector } from '../../../src/playback/camera.service';
+import type { CameraSettings } from '../../../src/playback/camera.types';
+import type { ViewMode } from '../../../src/transitMap.types';
 import { chaseStartOf, chaseZoomOf, followOf } from '../../../src/playback/camera.utils';
 import type { StepAnimation } from '../../../src/steps/animation.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
@@ -29,38 +31,45 @@ const PADDING = { top: 10, right: 20, bottom: 30, left: 40 };
  */
 const stepAfter = (date: string) => {
   const playback = playbackOf(tinyNetwork());
-  playback.player.seek(toTimestamp(date));
+  playback.player.seek({ time: toTimestamp(date) });
   playback.player.skip();
   const fake = fakeMap();
   const coordOf = (station: string) => playback.index.coordOf(station);
-  return { fake, camera: new CameraDirector(fake.map, PADDING), animation: playback.player.active!.animation, coordOf };
+  // The props the camera reads: changed here as the app would change them.
+  const settings: CameraSettings = { padding: PADDING, camera: 'follow', viewMode: '2d' };
+  const camera = new CameraDirector(fake.map, () => settings);
+  const view = (mode: ViewMode) => {
+    settings.viewMode = mode;
+    camera.tilt();
+  };
+  return { fake, camera, settings, view, animation: playback.player.active!.animation, coordOf };
 };
 
 describe('CameraDirector', () => {
   test('tilts into 3D, coming down to where the buildings stand, and lies flat facing north again', () => {
-    const { fake, camera } = stepAfter('1905-01-01');
+    const { fake, camera, view } = stepAfter('1905-01-01');
     expect(camera.viewMode).toBe('2d');
-    camera.setViewMode('3d');
+    view('3d');
     expect(camera.viewMode).toBe('3d');
     expect(fake.moves[0]).toMatchObject({
       kind: 'ease',
       options: { pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: VIEW_3D_ENTRY_ZOOM, duration: VIEW_TILT_MS },
     });
     // Already closer: it stays as close.
-    camera.setViewMode('2d');
+    view('2d');
     fake.view.zoom = 17;
-    camera.setViewMode('3d');
+    view('3d');
     expect(fake.moves[2]?.options.zoom).toBe(17);
-    camera.setViewMode('2d');
+    view('2d');
     expect(fake.moves[3]).toMatchObject({ kind: 'ease', options: { pitch: 0, bearing: 0 } });
     // Asked again for the view it has: nothing.
-    camera.setViewMode('2d');
+    view('2d');
     expect(fake.moves).toHaveLength(4);
   });
 
   test('in 3D, flies down to where a line starts growing, facing it, then moves with its tip each frame', () => {
-    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
-    camera.setViewMode('3d');
+    const { fake, camera, view, animation, coordOf } = stepAfter('1905-01-01');
+    view('3d');
     expect(camera.focusStep(animation, new Set(), coordOf, 200)).toBe(MIN_MOVE_MS);
     const start = animation.startPoint()!;
     expect(fake.moves[1]).toMatchObject({ kind: 'ease', target: start, options: { pitch: VIEW_3D_PITCH, duration: MIN_MOVE_MS } });
@@ -82,12 +91,12 @@ describe('CameraDirector', () => {
   });
 
   test('follows nothing on the flat map, or when not following', () => {
-    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
+    const { fake, camera, view, settings, animation, coordOf } = stepAfter('1905-01-01');
     camera.focusStep(animation, new Set(), coordOf, 1000);
     camera.follow([coordOf('c')], 0.1);
     expect(fake.moves.map(move => move.kind)).toEqual(['fit']);
-    camera.setViewMode('3d');
-    camera.mode = 'overview';
+    view('3d');
+    settings.camera = 'overview';
     camera.focusStep(animation, new Set(['a']), coordOf, 1000);
     camera.follow([coordOf('c')], 0.1);
     expect(fake.moves.map(move => move.kind)).toEqual(['fit', 'ease', 'fit']);
@@ -122,22 +131,22 @@ describe('CameraDirector', () => {
   });
 
   test('frames a step with the network around it in overview, and leaves the camera to the user when free', () => {
-    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
-    camera.mode = 'overview';
+    const { fake, camera, settings, animation, coordOf } = stepAfter('1905-01-01');
+    settings.camera = 'overview';
     camera.focusStep(animation, new Set(['a', 'b']), coordOf, 1000);
     expect(fake.moves[0]?.options.maxZoom).toBe(OVERVIEW_MAX_ZOOM);
     // A, west of the step, is in the frame.
     expect((fake.moves[0]!.target as [[number, number]])[0][0]).toBe(coordOf('a')[0]);
-    camera.mode = 'free';
+    settings.camera = 'free';
     fake.view.zoom = 5;
     expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
     expect(fake.moves).toHaveLength(1);
   });
 
   test('fits a box whatever the mode, keeping room beside it beyond the panels', () => {
-    const { fake, camera } = stepAfter('1905-01-01');
-    camera.mode = 'free';
-    camera.padding = { top: 0, right: 0, bottom: 0, left: 0 };
+    const { fake, camera, settings } = stepAfter('1905-01-01');
+    settings.camera = 'free';
+    settings.padding = { top: 0, right: 0, bottom: 0, left: 0 };
     camera.fit(
       [
         [0, 0],

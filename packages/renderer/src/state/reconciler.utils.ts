@@ -1,4 +1,4 @@
-import type { MapState } from '../transitMap.types';
+import type { MapProps } from '../transitMap.types';
 
 /**
  * Whether two values of the map's state say the same: alike in every part, whatever the order of an
@@ -25,5 +25,5 @@ const sameValue = (first: unknown, second: unknown): boolean => {
  * @param next - The state it is given, whole or in part.
  * @returns The parts that change.
  */
-export const stateChanges = (current: MapState, next: Partial<MapState>): Partial<MapState> =>
-  Object.fromEntries(Object.entries(next).filter(([key, value]) => value !== undefined && !sameValue(current[key as keyof MapState], value)));
+export const stateChanges = (current: MapProps, next: Partial<MapProps>): Partial<MapProps> =>
+  Object.fromEntries(Object.entries(next).filter(([key, value]) => value !== undefined && !sameValue(current[key as keyof MapProps], value)));

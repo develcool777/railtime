@@ -38,7 +38,7 @@ const CITY: CityBoundary = {
 describe('CoverageMeasure', () => {
   test("measures the city on the network at a cursor, named by its outline, as the grid's helpers do", () => {
     const { index, timeline } = playbackOf(tinyNetwork());
-    const measure = new CoverageMeasure(CITY, index, timeline);
+    const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const grid = new CoverageGrid(CITY);
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
     const distances = grid.distances(servedStations(index, timeline, cursor), COVERAGE_BANDS.at(-1)!.upTo);
@@ -49,7 +49,7 @@ describe('CoverageMeasure', () => {
 
   test("draws the grid's picture where it lies, and every ring of the outline", () => {
     const { index, timeline } = playbackOf(tinyNetwork());
-    const measure = new CoverageMeasure(CITY, index, timeline);
+    const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const grid = new CoverageGrid(CITY);
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
     const drawing = measure.drawing(cursor);
@@ -61,11 +61,11 @@ describe('CoverageMeasure', () => {
 
   test('works out the history from the timeline’s first year to today’s once, and frames the city', () => {
     const { index, timeline } = playbackOf(tinyNetwork());
-    const measure = new CoverageMeasure(CITY, index, timeline);
-    const history = measure.history(toTimestamp('1925-06-01'));
+    const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
+    const history = measure.history();
     const first = new Date(timeline.start).getUTCFullYear();
     expect(history).toEqual(coverageHistory(index, timeline, new CoverageGrid(CITY), [first, 1925], COVERAGE_HEADLINE_METRES));
-    expect(measure.history(toTimestamp('1925-06-01'))).toBe(history);
+    expect(measure.history()).toBe(history);
     expect(measure.bounds).toEqual([
       [-2 * KM_EAST, 51.5 - 2 * KM_NORTH],
       [5 * KM_EAST, 51.5 + 2 * KM_NORTH],

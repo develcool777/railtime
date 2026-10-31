@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { overlaySubjectOf } from '../../../src/overlay/request.utils';
+import { overlaySubjectOf } from '../../../src/overlay/controller.utils';
 
-describe('RequestUtils', () => {
+describe('ControllerUtils', () => {
   describe('overlaySubjectOf', () => {
     test('tells overlays apart by what they are of: a route by its ends and preference, a reach by its start', () => {
       const subjects = [

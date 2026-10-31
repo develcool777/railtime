@@ -8,7 +8,7 @@ describe('NetworkSnapshotUtils', () => {
   describe('buildNetworkSnapshot', () => {
     test('counts what is on the map at a date, with shared track side by side', () => {
       const playback = playbackOf(tinyNetwork());
-      playback.player.seek(toTimestamp('1935-01-01'));
+      playback.player.seek({ time: toTimestamp('1935-01-01') });
       const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
       expect(snapshot.stats).toMatchObject({ stations: 4, lines: 2 });
       expect(snapshot.sideBySide.get(1)).toEqual(['red', 'blue']);
@@ -16,7 +16,7 @@ describe('NetworkSnapshotUtils', () => {
 
     test('tags each stretch of track with its line, so lines can be brought forward', () => {
       const playback = playbackOf(tinyNetwork());
-      playback.player.seek(toTimestamp('1935-01-01'));
+      playback.player.seek({ time: toTimestamp('1935-01-01') });
       const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
       expect(new Set(snapshot.lines.features.map(feature => feature.properties.line))).toEqual(new Set(['red', 'blue']));
       expect(snapshot.transfers.features.every(feature => feature.properties.line === '')).toBe(true);
@@ -24,7 +24,7 @@ describe('NetworkSnapshotUtils', () => {
 
     test("draws a plan's track as planned, and a station only it reaches", () => {
       const playback = playbackOf(tinyNetwork(), 'extension');
-      playback.player.seekEnd();
+      playback.player.seek('future');
       const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
       const extension = playback.index.segments.at(-1)!.coordinates;
       expect(snapshot.planned.features.map(feature => feature.geometry.coordinates)).toEqual([extension]);
@@ -37,7 +37,7 @@ describe('NetworkSnapshotUtils', () => {
     test('links a transfer once both its stations are on the map, and draws both as interchanges', () => {
       const playback = playbackOf(tinyNetwork());
       const snapshotOn = (date: string) => {
-        playback.player.seek(toTimestamp(date));
+        playback.player.seek({ time: toTimestamp(date) });
         return buildNetworkSnapshot(renderStateOf(playback), false);
       };
       expect(snapshotOn('1905-01-01').transfers.features).toHaveLength(0);
@@ -49,7 +49,7 @@ describe('NetworkSnapshotUtils', () => {
     test('draws a closed section as a ghost, but not while its line is back there', () => {
       const playback = playbackOf(tinyNetwork());
       const ghostsOn = (date: string) => {
-        playback.player.seek(toTimestamp(date));
+        playback.player.seek({ time: toTimestamp(date) });
         return buildNetworkSnapshot(renderStateOf(playback), false).ghosts.features.length;
       };
       expect(ghostsOn('1942-01-01')).toBe(1);

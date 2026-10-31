@@ -5,9 +5,8 @@ import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import { RouteLayer } from '../../../src/route/layer.service';
 import { routeStops, routeTrack } from '../../../src/route/layer.utils';
 import { toTimestamp } from '../../../src/core/date.utils';
-import { NetworkQueries } from '../../../src/network/queries.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { playbackOf } from '../../support/playback.utils';
+import { networkNow, playbackOf } from '../../support/playback.utils';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 
@@ -22,7 +21,7 @@ describe('RouteLayer', () => {
 
     const ride: RouteFeature = {
       type: 'Feature',
-      properties: { color: '#f00', walk: false },
+      properties: { color: '#ff0000', walk: false },
       geometry: {
         type: 'LineString',
         coordinates: [
@@ -31,7 +30,7 @@ describe('RouteLayer', () => {
         ],
       },
     };
-    const stop = pointFeature([0, 0], { kind: 'board' as const, color: '#f00', name: 'A' });
+    const stop = pointFeature([0, 0], { kind: 'board' as const, color: '#ff0000', name: 'A' });
     layer.update([ride], [stop]);
     expect(fake.data.get(SOURCES.route)).toEqual({ type: 'FeatureCollection', features: [ride] });
     expect(fake.data.get(SOURCES.routeStops)).toEqual({ type: 'FeatureCollection', features: [stop] });
@@ -42,10 +41,10 @@ describe('RouteLayer', () => {
   test('draws a route given before the basemap loaded once installed, and says whether one is shown', () => {
     const fake = fakeMap();
     const layer = new RouteLayer(fake.map);
-    const stop = pointFeature([0, 0], { kind: 'end' as const, color: '#f00', name: 'A' });
+    const stop = pointFeature([0, 0], { kind: 'end' as const, color: '#ff0000', name: 'A' });
     const ride: RouteFeature = {
       type: 'Feature',
-      properties: { color: '#f00', walk: false },
+      properties: { color: '#ff0000', walk: false },
       geometry: {
         type: 'LineString',
         coordinates: [
@@ -69,17 +68,15 @@ describe('RouteLayerUtils', () => {
   /** A route from A to D in 1935, along red, and the network it runs on. */
   const routeAtoD = () => {
     const playback = playbackOf(tinyNetwork());
-    playback.player.seek(toTimestamp('1935-01-01'));
-    const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
-    const moment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#f00' };
-    return { index: playback.index, route: queries.route('a', 'd', 'fastest', moment)! };
+    playback.player.seek({ time: toTimestamp('1935-01-01') });
+    return { index: playback.index, route: networkNow(playback).route('a', 'd', 'fastest')! };
   };
 
   describe('routeTrack', () => {
     test("draws each ride along its segments in its line's colour, a walk straight, and nothing without a route", () => {
       const { index, route } = routeAtoD();
       expect(routeTrack(index, route).map(feature => [feature.properties, feature.geometry.coordinates])).toEqual(
-        [0, 1, 2].map(segment => [{ color: '#f00', walk: false }, index.segments[segment]!.coordinates]),
+        [0, 1, 2].map(segment => [{ color: '#ff0000', walk: false }, index.segments[segment]!.coordinates]),
       );
       const walk = { ...route, legs: [{ kind: 'walk' as const, from: route.from, to: route.to, minutes: 5 }], segments: [[]] };
       expect(routeTrack(index, walk)).toEqual([

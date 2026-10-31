@@ -56,6 +56,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
   const moves: FakeMap['moves'] = [];
   const rendered: FakeMap['rendered'] = [];
+  const handlers = new Map<string, ((payload: unknown) => void)[]>();
+  const life = { removed: false };
   // MapLibre refuses a layer the style spec does not allow (an expression it cannot read, a value not
   // among its options): checked as each is added or changed. A basemap layer's own tiles are a stand-in.
   const assertValid = (layer: FakeLayer): void => {
@@ -156,6 +158,41 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
     jumpTo: (options: Record<string, unknown>) => moves.push({ kind: 'jump', target: options.center, options }),
     isMoving: () => view.moving,
+    // What the renderer needs of a whole map: its events, its canvas, and where it looks.
+    on: (event: string, ...rest: unknown[]) => {
+      const handler = rest.at(-1) as (payload: unknown) => void;
+      handlers.set(event, [...(handlers.get(event) ?? []), handler]);
+    },
+    getCanvas: () => ({ style: {} }),
+    getCenter: () => ({ lng: view.center[0], lat: view.center[1] }),
+    getBounds: () => ({
+      getWest: () => view.center[0] - 1,
+      getEast: () => view.center[0] + 1,
+      getSouth: () => view.center[1] - 1,
+      getNorth: () => view.center[1] + 1,
+    }),
+    unproject: ([x, y]: [number, number]) => {
+      const scale = PIXELS_PER_DEGREE * 2 ** view.zoom;
+      return [view.center[0] + (x - view.width / 2) / scale, view.center[1] - (y - view.height / 2) / (scale * LATITUDE_STRETCH)];
+    },
+    setPadding: (padding: FakeMap['view']['cover']) => (view.cover = padding),
+    zoomIn: () => (view.zoom += 1),
+    zoomOut: () => (view.zoom -= 1),
+    remove: () => (life.removed = true),
   };
-  return { map: map as unknown as MapLibreMap, data, images, sends, layers, moves, rendered, view };
+  const fire = (event: string, payload?: unknown) => {
+    for (const handler of handlers.get(event) ?? []) handler(payload);
+  };
+  return {
+    map: map as unknown as MapLibreMap,
+    data,
+    images,
+    sends,
+    layers,
+    moves,
+    rendered,
+    view,
+    fire,
+    isRemoved: () => life.removed,
+  };
 };

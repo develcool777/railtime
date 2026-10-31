@@ -25,7 +25,7 @@ describe('OpenStepAnimation', () => {
 
   test('grows more slowly in 3D, where the camera follows it at street level', () => {
     const playback = playbackOf(tinyNetwork(), undefined, '3d');
-    playback.player.seek(toTimestamp('1905-01-01'));
+    playback.player.seek({ time: toTimestamp('1905-01-01') });
     playback.player.skip();
     // 2 km at 0.8 km a second.
     expect(playback.player.active?.animation.drawSeconds).toBeCloseTo(2 / GROWTH_PACE['3d'].kmPerSecond, 1);

@@ -1,4 +1,7 @@
-import type { IsoDate, LngLat, Network } from '@railtime/schema/network.types';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { IsoDate, LngLat } from '@railtime/schema/network.types';
+import type { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
+import type { NetworkModel } from './model/network.service';
 import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from './network/history.types';
 import type { RoutePreference as ModelRoutePreference } from './route/finder.types';
 import type { Step } from './network/timeline.types';
@@ -19,11 +22,11 @@ export type Padding = { top: number; bottom: number; left: number; right: number
 export type MapView = { center: LngLat; zoom: number };
 
 /**
- * How the map is set: what the app decides and the map shows, as one object. The app keeps it and
- * gives it whole or in part to `apply`; the map acts on what changed. What it is asked to do once (zoom,
- * play, seek) is a method; what it says back, an event.
+ * How the map is set: everything the app decides and the map shows, as one object (`_ARCHITECTURE.md`,
+ * Props). The app owns it and gives it whole or in part to `update`, as often as it likes; the map
+ * acts on what changed and never changes it itself.
  */
-export type MapState = {
+export type MapProps = {
   theme: Theme;
   /** Flat from above, or tilted in 3D, the buildings standing; playback then follows from close by. */
   viewMode: ViewMode;
@@ -45,22 +48,40 @@ export type MapState = {
   padding: Padding;
   /** Panels the app lays over the map's edges, pixels: the map's centre and every frame stay clear of them, what is drawn stays put. */
   cover: Padding;
+  /** The city's outline, which coverage is measured within; `null` for none (yet). */
+  boundary: CityBoundary | null;
 };
 
-/** What a `TransitMap` is created with. */
+/** Where `play` starts: here, history's start, or a change (its position in the timeline, as `ChangeInfo.index`). */
+export type PlayFrom = 'here' | 'start' | { change: number };
+
+/** Where `seek` goes: the end of a day, just after a change, just before one (playing starts it), today, or the future (everything played). */
+export type SeekTarget = { time: number } | { change: number } | { beforeChange: number } | 'today' | 'future';
+
+/** Asks for the next frame, and cancels one asked for: `requestAnimationFrame` unless a test steps frames by hand. */
+export type FrameScheduler = {
+  request: (frame: (now: number) => void) => number;
+  cancel: (id: number) => void;
+};
+
+/** A listener for each event, given when the map is made so nothing it says while starting is missed. */
+export type TransitMapListeners = { [Name in keyof TransitMapEvents]?: (payload: TransitMapEvents[Name]) => void };
+
+/** What a `TransitMap` is made with. */
 export type TransitMapOptions = {
   container: HTMLElement;
-  network: Network;
-  /** How it is set at first; what is left out, the defaults (`DEFAULT_MAP_STATE`). */
-  state?: Partial<MapState>;
-  /** A MapLibre style URL using the OpenMapTiles schema. Defaults to OpenFreeMap's Positron. */
-  basemap?: string;
-  /** Where to draw the overview inset. Without one there is no minimap. */
-  minimapContainer?: HTMLElement;
+  /** The network to draw, and its history: one model, shared with the app. */
+  model: NetworkModel;
+  /** How it is set at first; what is left out, the defaults (`DEFAULT_MAP_PROPS`). */
+  props?: Partial<MapProps>;
+  /** Its listeners, from the start. */
+  on?: TransitMapListeners;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
-  /** One of the network's plans, built on top of it: its sections play after every dated change, one by one, drawn as planned (`showFuture`). */
-  plan?: string;
+  /** Where to draw the overview inset. Without one there is no minimap. */
+  minimapContainer?: HTMLElement;
+  /** A MapLibre style URL using the OpenMapTiles schema. Defaults to OpenFreeMap's Positron. */
+  basemap?: string;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.
@@ -68,6 +89,10 @@ export type TransitMapOptions = {
   workerUrl?: string;
   /** Whether MapLibre draws its credits on the map (the default). Without them the app must show `credits` itself, as the licences ask. */
   attributionControl?: boolean;
+  /** Makes the MapLibre map: MapLibre's own unless a test gives a stand-in. */
+  createMap?: (options: MapOptions) => MapLibreMap;
+  /** Asks for frames: `requestAnimationFrame` unless a test steps them by hand. */
+  scheduler?: FrameScheduler;
 };
 
 /** One credit the map owes: the basemap's or the data's. */
@@ -304,8 +329,8 @@ export type OverlayResult =
 
 /** Events a `TransitMap` emits, by name. */
 export type TransitMapEvents = {
-  /** The basemap and overlay are ready. */
-  ready: undefined;
+  /** The map is ready: its style loaded, its layers drawn as its props say. */
+  status: 'ready';
   /** The clock, cursor, playing state or stats changed. */
   time: TimeState;
   /** A step started (`StepInfo`), or its caption should go (`null`). */
@@ -314,10 +339,8 @@ export type TransitMapEvents = {
   stepProgress: number;
   /** A station was clicked (its id), or the map away from any (`null`). */
   stationClick: string | null;
-  /** The station selected is not on the map on the date now shown: its ring is gone. Its id. */
+  /** The selected station is not on the map at the moment shown: its ring is hidden while it is away. Its id: advice; the prop stays the app's. */
   selectionGone: string;
-  /** The theme changed: the colours of the lines and the changes are its now (`getLines`, `getChanges`). */
-  theme: Theme;
   /** The overlay drawn was worked out again, for a new request, date or theme; `null` once it is cleared. */
   overlay: OverlayResult | null;
   /** Playback reached today. */

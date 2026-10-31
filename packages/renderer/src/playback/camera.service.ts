@@ -4,7 +4,7 @@ import { clamp } from '../core/easing.utils';
 import { boundsOf, distanceKm } from '../core/geometry.utils';
 import type { Bounds } from '../core/geometry.types';
 import type { StepAnimation } from '../steps/animation.service';
-import type { CameraMode, Padding, ViewMode } from '../transitMap.types';
+import type { Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';
 import {
   FOLLOW_MAX_ZOOM,
@@ -17,7 +17,7 @@ import {
   VIEW_TILT_MS,
   ZOOM_SLACK,
 } from './camera.constants';
-import type { Chase } from './camera.types';
+import type { CameraSettings, Chase } from './camera.types';
 import { chaseStartOf, chaseZoomOf, followOf } from './camera.utils';
 
 /**
@@ -27,46 +27,65 @@ import { chaseStartOf, chaseZoomOf, followOf } from './camera.utils';
  * and then moves with it as it is drawn, frame by frame, as a drone following a new line.
  */
 export class CameraDirector {
-  /** How the camera follows playback. */
-  public mode: CameraMode = 'follow';
-  /** Room the app's panels take, kept clear when framing. */
-  public padding: Padding;
   /** The map whose camera this moves. */
   private readonly map: MapLibreMap;
-  /** How the map is seen: flat, or in 3D. */
-  private view: ViewMode = '2d';
+  /** How it is set: the map's props, read each time, never kept. */
+  private readonly settings: () => CameraSettings;
+  /** What the camera last tilted the map to: it tilts again when the settings' view differs. */
+  private tilted: ViewMode = '2d';
   /** In 3D, where the camera looks from as it follows the change playing; `null` between changes. */
   private chase: Chase | null = null;
 
-  public constructor(map: MapLibreMap, padding: Padding) {
+  public constructor(map: MapLibreMap, settings: () => CameraSettings) {
     this.map = map;
-    this.padding = padding;
+    this.settings = settings;
   }
 
   /**
-   * How the map is seen.
+   * How the map is seen, as the settings say.
    *
    * @returns Flat, or in 3D.
    */
   public get viewMode(): ViewMode {
-    return this.view;
+    return this.settings().viewMode;
+  }
+
+  /** Room the app's panels take, kept clear when framing. */
+  private get padding(): Padding {
+    return this.settings().padding;
+  }
+
+  /** How the camera follows playback. */
+  private get mode(): CameraSettings['camera'] {
+    return this.settings().camera;
   }
 
   /**
-   * Sees the map flat or in 3D: into 3D, the camera tilts and comes down to where the buildings stand;
-   * back, it lies flat and faces north, where it is.
-   *
-   * @param mode - Flat, or 3D.
+   * Tilts the map as the settings' view says, if it is not so already: into 3D, the camera tilts and
+   * comes down to where the buildings stand; back, it lies flat and faces north, where it is.
    */
-  public setViewMode(mode: ViewMode): void {
-    if (mode === this.view) return;
-    this.view = mode;
+  public tilt(): void {
+    const view = this.viewMode;
+    if (view === this.tilted) return;
+    this.tilted = view;
     this.chase = null;
     this.map.easeTo(
-      mode === '3d'
+      view === '3d'
         ? { pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: Math.max(this.map.getZoom(), VIEW_3D_ENTRY_ZOOM), duration: VIEW_TILT_MS }
         : { pitch: 0, bearing: 0, duration: VIEW_TILT_MS },
     );
+  }
+
+  /**
+   * Flies to a point, at least so close, keeping the view's tilt: for a station picked.
+   *
+   * @param center - Where to.
+   * @param minZoom - The farthest it stays.
+   * @param durationMs - How long the move takes.
+   */
+  public flyTo(center: LngLat, minZoom: number, durationMs: number): void {
+    const tilt = this.tilted === '3d' ? { pitch: VIEW_3D_PITCH } : { pitch: 0, bearing: 0 };
+    this.map.easeTo({ center, zoom: Math.max(this.map.getZoom(), minZoom), ...tilt, duration: durationMs });
   }
 
   /**
@@ -86,7 +105,7 @@ export class CameraDirector {
     if (this.mode === 'overview') for (const station of stationsOnMap) points.push(coordOf(station));
     const bounds = boundsOf(points);
     if (!bounds) return 0;
-    if (this.view === '3d' && this.mode === 'follow') return this.flyToStart(animation, bounds, Math.max(MIN_MOVE_MS, durationMs));
+    if (this.viewMode === '3d' && this.mode === 'follow') return this.flyToStart(animation, bounds, Math.max(MIN_MOVE_MS, durationMs));
     const maxZoom = this.closestZoom(points.length);
     if (this.frames(points, bounds, maxZoom)) return 0;
     const moveMs = Math.max(MIN_MOVE_MS, durationMs);
@@ -120,7 +139,7 @@ export class CameraDirector {
    * @param seconds - The time since the last frame.
    */
   public follow(tips: LngLat[], seconds: number): void {
-    if (this.view !== '3d' || this.mode !== 'follow' || !this.chase || tips.length === 0 || this.map.isMoving()) return;
+    if (this.viewMode !== '3d' || this.mode !== 'follow' || !this.chase || tips.length === 0 || this.map.isMoving()) return;
     this.chase = followOf(this.chase, tips, seconds);
     this.map.jumpTo({ center: this.chase.center, bearing: this.chase.bearing });
   }

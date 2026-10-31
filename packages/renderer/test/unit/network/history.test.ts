@@ -10,7 +10,7 @@ describe('HistoryUtils', () => {
     test('counts what the map counts, every line shown, on any date', () => {
       const playback = playbackOf(tinyNetwork());
       for (const date of ['1905-01-01', '1935-01-01', '1942-01-01', '1965-01-01', '2026-01-01'] as const) {
-        playback.player.seek(toTimestamp(date));
+        playback.player.seek({ time: toTimestamp(date) });
         const drawn = buildNetworkSnapshot(renderStateOf(playback), false).stats;
         const counted = statsAt(playback.index, playback.timeline, playback.player.cursor);
         expect(counted.stations).toBe(drawn.stations);

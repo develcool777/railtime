@@ -42,7 +42,7 @@ export type PlayedHistory = {
  */
 const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): PlayedHistory => {
   const { timeline, player } = playback;
-  player.playing = true;
+  player.play();
   const frameSeconds = 1 / 20;
   let seconds = 0;
   let started = 0;
@@ -70,7 +70,7 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
  */
 export const playWholeHistory = (network: Network, plan?: string): PlayedHistory => {
   const playback = playbackOf(network, plan);
-  playback.player.seek(playback.timeline.start);
+  playback.player.seek({ time: playback.timeline.start });
   return playOut(playback, 0);
 };
 

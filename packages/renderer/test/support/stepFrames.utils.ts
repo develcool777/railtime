@@ -15,7 +15,7 @@ import type { FrameOptions, StartedStep } from './stepFrames.types';
  */
 export const stepAfter = (network: Network, date: string): StartedStep => {
   const playback = playbackOf(network);
-  playback.player.seek(toTimestamp(date));
+  playback.player.seek({ time: toTimestamp(date) });
   playback.player.skip();
   const active = playback.player.active;
   if (!active) throw new Error(`No step after ${date}`);
