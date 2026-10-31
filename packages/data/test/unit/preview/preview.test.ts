@@ -1,12 +1,11 @@
-import { parseNetwork } from '@railtime/schema/network.schema';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { datasets } from '../../../src/dataset/city.utils.ts';
+import { cities, readNetwork } from '../../../src/city.utils.ts';
 import { PREVIEW_SIZE, PREVIEW_THEMES } from '../../../src/preview/preview.constants.ts';
 import { fitView, previewPathOf, previewRequestOf, previewTrackOf, socialPathOf } from '../../../src/preview/preview.utils.ts';
 
-/** Every city's dataset. */
-const DATASETS = datasets();
+/** Every city. */
+const CITIES = cities();
 
 /**
  * A city's network, by its id.
@@ -15,9 +14,9 @@ const DATASETS = datasets();
  * @returns Its network.
  */
 const networkOf = (id: string) => {
-  const found = DATASETS.find(dataset => dataset.city === id);
-  if (!found) throw new Error(`No dataset for ${id}`);
-  return parseNetwork(JSON.parse(readFileSync(found.path, 'utf8')));
+  const found = CITIES.find(city => city.id === id);
+  if (!found) throw new Error(`No city ${id}`);
+  return readNetwork(found);
 };
 
 describe('PreviewUtils', () => {
@@ -62,13 +61,12 @@ describe('PreviewUtils', () => {
   });
 
   describe('previewPathOf', () => {
-    test('keeps each theme, and the social card, beside the dataset', () => {
+    test('keeps each theme, and the social card, beside the network', () => {
       expect(previewPathOf('/cities/ukraine/kyiv/kyiv.json', 'dark')).toBe('/cities/ukraine/kyiv/kyiv.dark.webp');
       expect(socialPathOf('/cities/ukraine/kyiv/kyiv.json')).toBe('/cities/ukraine/kyiv/kyiv.social.jpg');
     });
 
-    test.each(DATASETS.map(dataset => dataset.city))('%s has a preview in every theme (pnpm data:previews <city>)', city => {
-      const { path } = DATASETS.find(dataset => dataset.city === city)!;
+    test.each(CITIES.map(city => ({ id: city.id, path: city.networkPath })))('$id has a preview in every theme (pnpm data:previews <city>)', ({ path }) => {
       for (const picture of [...PREVIEW_THEMES.map(theme => previewPathOf(path, theme)), socialPathOf(path)]) {
         expect(existsSync(picture), picture).toBe(true);
         expect(statSync(picture).size).toBeGreaterThan(2048);

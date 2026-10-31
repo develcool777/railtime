@@ -1,9 +1,12 @@
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat, Network, Station } from '@railtime/schema/network.types';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
+import { cities, readNetwork } from '../../../src/city.utils.ts';
+import { MIN_STATIONS_HELD } from '../../../src/boundary/boundary.constants.ts';
 import type { NominatimPlace } from '../../../src/boundary/boundary.types.ts';
-import { boundaryOf, formatBoundary, holds, lookupUrlOf, relationOf, stationsHeld } from '../../../src/boundary/boundary.utils.ts';
+import { boundaryArgsOf, boundaryOf, formatBoundary, holds, lookupUrlOf, relationOf, stationsHeld } from '../../../src/boundary/boundary.utils.ts';
 
 /**
  * A closed square ring.
@@ -159,5 +162,39 @@ describe('BoundaryUtils', () => {
       ]);
       expect(text.endsWith('  ]\n}\n')).toBe(true);
     });
+  });
+
+  describe('boundaryArgsOf', () => {
+    test('takes every city, a city, or a city and its relation', () => {
+      expect(boundaryArgsOf([])).toEqual({ city: undefined, relation: null });
+      expect(boundaryArgsOf(['london'])).toEqual({ city: 'london', relation: null });
+      expect(boundaryArgsOf(['london', '175342'])).toEqual({ city: 'london', relation: 175342 });
+    });
+
+    test('refuses a relation that is not a whole number above 0, and more than two arguments, with the usage', () => {
+      for (const args of [
+        ['london', 'x1'],
+        ['london', '0'],
+        ['london', '1.5'],
+        ['london', '1', 'more'],
+      ])
+        expect(() => boundaryArgsOf(args)).toThrow('usage: pnpm data:boundary [city [relation]]');
+    });
+  });
+
+  describe("every city's outline", () => {
+    test('is there for every city (pnpm data:boundary <city> <relation>)', () => {
+      expect(cities().filter(city => !existsSync(city.boundaryPath))).toEqual([]);
+    });
+
+    test.each(cities().map(city => ({ name: `${city.country}/${city.id}`, city })))(
+      "$name: valid, kept in its layout, and holding most of its stations: its own city's",
+      ({ city }) => {
+        const text = readFileSync(city.boundaryPath, 'utf8');
+        const boundary = parseBoundary(JSON.parse(text));
+        expect(formatBoundary(boundary)).toBe(text);
+        expect(stationsHeld(boundary, readNetwork(city))).toBeGreaterThan(MIN_STATIONS_HELD);
+      },
+    );
   });
 });

@@ -1,22 +1,23 @@
 import type { StillRequest } from '@railtime/renderer/basemapStill.types';
 import { build } from 'esbuild';
 import { type Browser, chromium, type Page } from 'playwright-core';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { PREVIEW_TIMEOUT_MS } from './preview.constants.ts';
-import type { PreviewTheme, PreviewWindow } from './preview.types.ts';
-
-/** What the preview page's server serves, by path. */
-type Served = Record<string, { type: string; body: string }>;
+import { citiesNamed, readNetwork } from '../city.utils.ts';
+import { PREVIEW_PAGE_SCRIPT, PREVIEW_SIZE, PREVIEW_THEMES, PREVIEW_TIMEOUT_MS, SOCIAL_SIZE, SOCIAL_THEME } from './preview.constants.ts';
+import type { PreviewTheme, PreviewWindow, Served } from './preview.types.ts';
+import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.ts';
 
 /**
- * Draws previews in Chrome: the renderer's `BasemapStill`, bundled for the browser, in a page of the
- * Chrome installed on this machine (Playwright drives it; it downloads no browser). A small local
- * server gives the page its script and MapLibre its worker. Each picture is the map's own basemap in a
- * theme's colours, with the track over it.
+ * Draws cities' pictures and writes them beside each city's network: its card's preview in each
+ * theme, the map's own basemap in the theme's colours with the track over it, as WebP; and its social
+ * card, the picture a link to its page shows, as JPEG. They are drawn by the renderer's
+ * `BasemapStill`, bundled for the browser, in a page of the Chrome installed on this machine
+ * (Playwright drives it; it downloads no browser); a small local server gives the page its script and
+ * MapLibre its worker.
  */
 export class PreviewRenderer {
   /** The local server the page loads from. */
@@ -26,8 +27,40 @@ export class PreviewRenderer {
   /** The page the previews are drawn in. */
   private page: Page | null = null;
 
+  /**
+   * Draws cities' pictures and writes them beside each one's network.
+   *
+   * @param cityId - The city's id; none for every city.
+   * @throws {Error} For no such city, or a picture Chrome did not draw; Chrome and the server are closed either way.
+   */
+  public async draw(cityId: string | undefined): Promise<void> {
+    const chosen = citiesNamed(cityId);
+    if (chosen.length === 0) throw new Error(`no city ${cityId}: usage: pnpm data:previews [city]`);
+    try {
+      await this.start();
+      for (const city of chosen) {
+        const network = readNetwork(city);
+        for (const theme of PREVIEW_THEMES) {
+          const request = previewRequestOf(network, theme, PREVIEW_SIZE);
+          if (!request) continue;
+          const picture = await this.render(theme, request);
+          writeFileSync(previewPathOf(city.networkPath, theme), picture);
+          console.log(`${city.id} ${theme}: ${Math.round(picture.length / 1024)} KB`);
+        }
+        const social = previewRequestOf(network, SOCIAL_THEME, SOCIAL_SIZE);
+        if (!social) continue;
+        const card = await this.render(SOCIAL_THEME, { ...social, format: 'image/jpeg' });
+        writeFileSync(socialPathOf(city.networkPath), card);
+        console.log(`${city.id} social: ${Math.round(card.length / 1024)} KB`);
+      }
+    } finally {
+      // Whatever started, Chrome or only the server, is closed, or the command would never end.
+      await this.close();
+    }
+  }
+
   /** Bundles the preview page, serves it, starts Chrome and loads it. */
-  public async start(): Promise<void> {
+  private async start(): Promise<void> {
     const origin = await this.serve(await this.pageFiles());
     this.browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
     this.page = await this.browser.newPage();
@@ -46,10 +79,10 @@ export class PreviewRenderer {
    *
    * @param theme - Its theme.
    * @param request - Where to look, its size, and the track to draw.
-   * @returns The picture, WebP.
+   * @returns The picture, WebP unless the request asks for another format.
    */
-  public async render(theme: PreviewTheme, request: StillRequest): Promise<Buffer> {
-    if (!this.page) throw new Error('PreviewRenderer.start() first');
+  private async render(theme: PreviewTheme, request: StillRequest): Promise<Buffer> {
+    if (!this.page) throw new Error('the preview page has not started');
     const dataUrl = await this.page.evaluate(
       async ([pictureTheme, pictureRequest]) => {
         const take = (window as PreviewWindow).takePreview;
@@ -62,7 +95,7 @@ export class PreviewRenderer {
   }
 
   /** Closes Chrome and the server. */
-  public async close(): Promise<void> {
+  private async close(): Promise<void> {
     await this.browser?.close();
     await new Promise(resolve => (this.server ? this.server.close(resolve) : resolve(undefined)));
     this.browser = null;
@@ -78,7 +111,7 @@ export class PreviewRenderer {
   private async pageFiles(): Promise<Served> {
     const bundled = await build({
       stdin: {
-        contents: "import { installPreviewPage } from './previewPage.utils.ts'; installPreviewPage(new URL('/worker.mjs', location.href).href);",
+        contents: PREVIEW_PAGE_SCRIPT,
         resolveDir: fileURLToPath(new URL('.', import.meta.url)),
         loader: 'ts',
       },

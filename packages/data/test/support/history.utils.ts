@@ -11,14 +11,14 @@ import { playbackOf, renderStateOf } from '../../../renderer/test/support/playba
 const DATA = fileURLToPath(new URL('../../cities/', import.meta.url));
 
 /**
- * A city's dataset, as the app serves it.
+ * A city's network, as the app serves it.
  *
  * @param city - The city's folder, under its country's in `cities/`.
  * @returns The network.
  */
 export const cityNetwork = (city: string): Network => {
   const [path] = globSync(`*/${city}/${city}.json`, { cwd: DATA });
-  if (!path) throw new Error(`No dataset for ${city} in ${DATA}`);
+  if (!path) throw new Error(`No network for ${city} in ${DATA}`);
   return JSON.parse(readFileSync(`${DATA}${path}`, 'utf8'));
 };
 

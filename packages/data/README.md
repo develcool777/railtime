@@ -1,47 +1,50 @@
 # @railtime/data
 
-Every city's dataset, grouped by country, the index of them, each city's preview pictures, the
-commands that keep them, and their tests.
+Every city's files, grouped by country, their summaries, the commands that keep them, and their
+tests. Each command is a folder, `src/<feature>/`: a `cli.ts` that hands its arguments to the
+feature, a function in its utils (or a service where it holds state: the previews' Chrome), and one
+types and one constants file. A city is a folder, `cities/<country>/<city>/`: its network (`<city>.json`, its lines,
+stations, track and history), its outline and its pictures.
 
 ```text
 packages/data/
   cities/
-    cities.json                          the index: what the landing page shows of each city
-    united-kingdom/london/london.json    a city's dataset, its source of truth
-    united-kingdom/london/london.dark.webp, london.light.webp   its card's picture, in each theme
+    cities.json                          every city's summary: what the landing page shows of each
+    united-kingdom/london/london.json    a city's network, its source of truth
+    united-kingdom/london/london.boundary.json   its outline, which Coverage measures within
+    united-kingdom/london/london.dark.webp, london.light.webp, london.social.jpg   its pictures
     ukraine/kyiv/kyiv.json
     …
-  src/cli.formatCity.ts                  pnpm data:format <city>
-  src/cli.renderPreviews.ts              pnpm data:previews [city]
-  src/cli.fetchBoundary.ts               pnpm data:boundary [city [relation]]
-  test/unit/dataset/                     the command's helpers, and the index kept up to date
-  test/unit/preview/                     the previews' helpers, and every city has its pictures
-  test/unit/boundary/                    the outlines' helpers (every city's outline is checked in dataset/)
+  src/city.utils.ts                      finding the cities and reading their networks
+  src/summary/                           pnpm data:summaries                    writeSummaries
+  src/boundary/                          pnpm data:boundary [city [relation]]   fetchBoundaries
+  src/preview/                           pnpm data:previews [city]              PreviewRenderer
+  test/unit/<feature>/                   mirrors src/<feature>/, and checks every city's files
   test/unit/cities/<country>/<city>.test.ts   plays a city's history; lists where its lines come apart
 ```
 
 The app serves `cities/` as it is, at `/data/`: `/data/united-kingdom/london/london.json`.
 
-## The index
+## The summaries
 
 `cities/cities.json` sums up each city (how many lines, stations and plans, when it opened), so the
-landing page needs one small file, not every dataset: it is built into the page, which is prerendered
-whole. `pnpm data:format` rewrites it; a test fails while it is out of date.
+landing page needs one small file, not every network: it is built into the page, which is prerendered
+whole. `pnpm data:summaries` rewrites it; a test fails while it is out of date.
 
 ## The previews
 
 Each city's card shows a picture of its network: the map's own basemap in the theme's colours, with
 today's track over it (a network never built: its first plan, dashed). `pnpm data:previews [city]`
-draws them, `<city>.dark.webp` and `<city>.light.webp` beside the dataset, in the Chrome installed on
+draws them, `<city>.dark.webp` and `<city>.light.webp` beside the network, in the Chrome installed on
 the machine (Playwright drives it) with the renderer's `BasemapStill`; it needs the network for the
 basemap's tiles. Run it after changing a city's track or its lines' colours. The pictures are
-committed, as the datasets are; a test fails while a city has none.
+committed, as the networks are; a test fails while a city has none.
 
-## A dataset
+## A city's network
 
 `cities/<country>/<city>/<city>.json` is the city's source of truth: one line per station and per
 segment of track, each segment listing its lines and the day each opened (and closed) there. Fix a
-date by editing it, then `pnpm data:format <city>`; a test fails while the file is invalid or untidy.
+date by editing it, keeping that layout; a test fails while the schema refuses the file.
 Track and stations come from OpenStreetMap.
 
 - `transfers`: pairs of stations, each its own stop with its own name, that passengers change
@@ -58,16 +61,16 @@ Track and stations come from OpenStreetMap.
   section by section from today.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
-- `<city>.boundary.json`, beside every dataset: its outline (`name`, `source`,
+- `<city>.boundary.json`, beside every network: its outline (`name`, `source`,
   `polygons` of closed rings, holes after each outer ring), the city's administrative limits from
   OpenStreetMap, simplified. The Coverage section shades how far each part of it is from a station.
   `pnpm data:boundary [city]` fetches it again from the relation its `source` names; for a new city,
   `pnpm data:boundary <city> <relation>`, the relation's number from its page on openstreetmap.org.
 - `infill` and `closed`: a station opening on a line already running through it, or a line no
   longer calling there, by line. Dated while the line runs there; an `infill` after the line has
-  left says it never called there. `data:format` refuses any other date.
+  left says it never called there. The schema refuses any other date.
 
-A new city is a new dataset in the same format, then `pnpm data:format <city>` to add it to the index
+A new city is a new network in the same format, then `pnpm data:summaries` to add it to the landing page's list
 and `pnpm data:previews <city>` to draw its card's pictures, `pnpm data:boundary <city> <relation>` for its outline, plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
 and its own page at `/<city>`. Its history gets a test of its own,
 `test/unit/cities/<country>/<city>.test.ts` (camelCase), which plays it through the renderer and
@@ -91,7 +94,7 @@ Manchester's lines are the lines as built (Bury, Altrincham, the city centre, �
 services, which share track and were reshuffled in 2018. Its one closed section is the 2012–2014 route
 over the old railway via Werneth to the temporary Oldham Mumps stop. Stops that closed while their
 track stayed (Mosley Street, High Street, Woodlands Road) and renamed ones (G-Mex, Barton Dock Road)
-are in the dataset.
+are in the network.
 
 Kryvyi Rih's Metrotram, a light metro partly underground, is drawn as its two metro routes, 1M
 (1986) and 2M (1999), on track from OpenStreetMap; its later hybrid routes, which run on as street
@@ -111,7 +114,7 @@ extension to Odeska (funded, its contract not yet signed) and its General Plan's
 every line extended, the Oleksiivska to the airport, and a fourth, Saltivsko-Zavodska line, whose
 station order is laid out by geography, as no source gives it.
 
-Some cities were never built: their dataset has no lines, stations or track, only plans, and the
+Some cities were never built: their network has no lines, stations or track, only plans, and the
 explorer opens on the first. Lviv has three: the 1980s underground tram, begun around 1990; the
 General Plan's light metro; and a mid-2000s proposal. Chernivtsi never planned a metro: its two plans
 are unofficial concepts, one of four lines within the city, the other running them on to the towns
@@ -148,4 +151,4 @@ Tyne and Wear's lines are the Green and Yellow, which swapped southern branches 
 until then Green ran to South Shields (from 1984) and Yellow to Sunderland and South Hylton (from
 2002). The Red (Pelaw–Benton) and Blue (St James–North Shields) routes of the 1980s and 1990s are left
 out: no source dates them. South Shields' move in 2019 and Meadow Well's former name (Smith's Park)
-are in the dataset.
+are in the network.

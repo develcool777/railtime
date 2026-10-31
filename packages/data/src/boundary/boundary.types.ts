@@ -14,3 +14,11 @@ export type NominatimPlace = {
   /** Its outline. */
   geojson: OutlineGeometry | { type: string };
 };
+
+/** What `pnpm data:boundary` was asked for. */
+export type BoundaryArgs = {
+  /** The city's id; none for every city. */
+  city: string | undefined;
+  /** The relation to fetch it from; none for the one its outline names. */
+  relation: number | null;
+};
