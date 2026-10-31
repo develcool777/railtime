@@ -47,13 +47,15 @@ export class InfillStepAnimation extends StepAnimation<InfillStep> {
   }
 
   /**
-   * Adds the station to its lines and highlights it.
+   * Adds the station to its lines and highlights it. Its lines call there once this step has played,
+   * so it is asked of the network as it stands after it.
    *
    * @param frame - The frame.
    * @param drawing - Filled in place.
    */
   public draw(frame: StepFrame, drawing: StepDrawing): void {
-    for (const line of this.step.lines) this.reach(frame, drawing, this.step.station, line);
+    const after = { ...frame, state: { ...frame.state, cursor: this.step.index + 1 } };
+    for (const line of this.step.lines) this.reach(after, drawing, this.step.station, line);
     if (drawing.reached.has(this.step.station)) drawing.highlighted.add(this.step.station);
   }
 }

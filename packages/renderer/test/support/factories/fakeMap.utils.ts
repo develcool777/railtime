@@ -11,14 +11,23 @@ const PROPERTY_PREFIXES: Record<string, string[]> = {
   circle: ['circle'],
 };
 
+/** Pixels per degree of longitude at zoom 0: MapLibre's 512-pixel world. */
+const PIXELS_PER_DEGREE = 512 / 360;
+
+/** How much taller a degree of latitude is drawn than one of longitude, about 51° north. */
+const LATITUDE_STRETCH = 1.6;
+
 /**
  * A stand-in for a MapLibre map: it keeps the sources' data, the layers and their properties, and the
- * camera's moves, so a layer group or the camera can be run in node and what it sent looked at.
+ * camera's moves, so a layer group or the camera can be run in node and what it sent looked at. Its
+ * camera is a flat projection of a `view` in a 1000 × 600 container; a fit lands on the box's middle
+ * at its `maxZoom`, as it does for a box smaller than the view.
  *
  * @param style - The basemap's layers, as a loaded style has them.
  * @returns The stand-in and what it keeps.
  */
 export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
+  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600 };
   const data = new Map<string, unknown>();
   const sends = new Map<string, number>();
   const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
@@ -61,8 +70,25 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       Object.assign(layerOf(id), { filter });
     },
     queryRenderedFeatures: () => rendered,
-    fitBounds: (target: unknown, options: Record<string, unknown>) => moves.push({ kind: 'fit', target, options }),
+    getZoom: () => view.zoom,
+    getContainer: () => ({ clientWidth: view.width, clientHeight: view.height }),
+    project: ([lng, lat]: [number, number]) => {
+      const scale = PIXELS_PER_DEGREE * 2 ** view.zoom;
+      return { x: view.width / 2 + (lng - view.center[0]) * scale, y: view.height / 2 - (lat - view.center[1]) * scale * LATITUDE_STRETCH };
+    },
+    cameraForBounds: (_bounds: unknown, options: { maxZoom: number }) => ({ zoom: options.maxZoom }),
+    fitBounds: ([[west, south], [east, north]]: [[number, number], [number, number]], options: Record<string, unknown>) => {
+      moves.push({
+        kind: 'fit',
+        target: [
+          [west, south],
+          [east, north],
+        ],
+        options,
+      });
+      Object.assign(view, { center: [(west + east) / 2, (south + north) / 2], zoom: options.maxZoom });
+    },
     easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
   };
-  return { map: map as unknown as MapLibreMap, data, sends, layers, moves, rendered };
+  return { map: map as unknown as MapLibreMap, data, sends, layers, moves, rendered, view };
 };

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/core/date.utils';
+import { FOLLOW_MAX_ZOOM, MIN_MOVE_MS, OVERVIEW_MAX_ZOOM, STATION_MIN_ZOOM } from '../../../src/playback/camera.constants';
 import { CameraDirector } from '../../../src/playback/camera.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -7,37 +8,59 @@ import { playbackOf } from '../../support/playback.utils';
 
 const PADDING = { top: 10, right: 20, bottom: 30, left: 40 };
 
-/** The camera on a stand-in map, and the step that opens B–C–D on red in 1910, about to play. */
-const stepAbout = () => {
+/**
+ * The camera on a stand-in map, and a step of the tiny network about to play.
+ *
+ * @param date - A date just before the step: 1905 for red opening B–C–D, 1915 for C opening on red.
+ * @returns The camera, the map, the step's animation and where each station is.
+ */
+const stepAfter = (date: string) => {
   const playback = playbackOf(tinyNetwork());
-  playback.player.seek(toTimestamp('1905-01-01'));
+  playback.player.seek(toTimestamp(date));
   playback.player.skip();
   const fake = fakeMap();
-  return { fake, camera: new CameraDirector(fake.map, PADDING), animation: playback.player.active!.animation, playback };
+  const coordOf = (station: string) => playback.index.coordOf(station);
+  return { fake, camera: new CameraDirector(fake.map, PADDING), animation: playback.player.active!.animation, coordOf };
 };
 
 describe('CameraDirector', () => {
-  test('follows a step closely, frames it with the network around it in overview, and leaves the camera be when free', () => {
-    const { fake, camera, animation, playback } = stepAbout();
-    const coordOf = (station: string) => playback.index.coordOf(station);
-    camera.focusStep(animation, new Set(['a', 'b']), coordOf, 500);
-    expect(fake.moves[0]).toMatchObject({ kind: 'fit', options: { padding: PADDING, maxZoom: 13.5, duration: 500 } });
-    const [[west], [east]] = fake.moves[0]!.target as [[number, number], [number, number]];
+  test('closes in on a stretch, at least as slowly as a calm move, and stays once it frames it', () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
+    expect(camera.focusStep(animation, new Set(), coordOf, 200)).toBe(MIN_MOVE_MS);
+    expect(fake.moves[0]).toMatchObject({ kind: 'fit', options: { padding: PADDING, maxZoom: FOLLOW_MAX_ZOOM, duration: MIN_MOVE_MS } });
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
+    expect(fake.moves).toHaveLength(1);
+  });
 
+  test('pans to a lone station without diving in, and leaves the camera be where it is already in view', () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1915-01-01');
+    // From the whole city: in close enough to see it, no closer.
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(1000);
+    expect(fake.moves[0]?.options.maxZoom).toBe(STATION_MIN_ZOOM);
+    // Already close and in view: nothing to do.
+    fake.view.zoom = 13;
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
+    // Close but looking elsewhere: a pan, at the same zoom.
+    fake.view.center = [1, 51.5];
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(1000);
+    expect(fake.moves[1]?.options.maxZoom).toBe(13);
+  });
+
+  test('frames a step with the network around it in overview, and leaves the camera to the user when free', () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
     camera.mode = 'overview';
-    camera.focusStep(animation, new Set(['a', 'b']), coordOf, 500);
-    expect(fake.moves[1]).toMatchObject({ options: { maxZoom: 12.5 } });
-    // A, the station west of the step, is in the frame now.
-    expect((fake.moves[1]!.target as [[number, number]])[0][0]).toBeLessThan(west);
-    expect((fake.moves[1]!.target as [[number, number], [number, number]])[1][0]).toBe(east);
-
+    camera.focusStep(animation, new Set(['a', 'b']), coordOf, 1000);
+    expect(fake.moves[0]?.options.maxZoom).toBe(OVERVIEW_MAX_ZOOM);
+    // A, west of the step, is in the frame.
+    expect((fake.moves[0]!.target as [[number, number]])[0][0]).toBe(coordOf('a')[0]);
     camera.mode = 'free';
-    camera.focusStep(animation, new Set(), coordOf, 500);
-    expect(fake.moves).toHaveLength(2);
+    fake.view.zoom = 5;
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
+    expect(fake.moves).toHaveLength(1);
   });
 
   test('fits a box whatever the mode, keeping room beside it beyond the panels', () => {
-    const { fake, camera } = stepAbout();
+    const { fake, camera } = stepAfter('1905-01-01');
     camera.mode = 'free';
     camera.padding = { top: 0, right: 0, bottom: 0, left: 0 };
     camera.fit(
