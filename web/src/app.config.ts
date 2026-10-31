@@ -12,6 +12,10 @@ export default defineAppConfig({
         { color: 'neutral', variant: 'pill', class: { indicator: 'bg-default dark:bg-accented', trigger: 'data-[state=active]:text-highlighted' } },
       ],
     },
+    // A card picked whole (a plan): the hand over all of it, not only its dot.
+    radioGroup: {
+      variants: { variant: { card: { item: 'cursor-pointer' } } },
+    },
     // A status beside a title (a plan's, a city's): small and quiet.
     badge: {
       defaultVariants: { variant: 'subtle', size: 'sm' },
