@@ -4,10 +4,6 @@ export default defineAppConfig({
       primary: 'brand',
       neutral: 'slate',
     },
-    // The brand green carries white text in either theme.
-    button: {
-      compoundVariants: [{ color: 'primary', variant: 'solid', class: 'text-white bg-brand-500 hover:bg-brand-600 active:bg-brand-600' }],
-    },
     // A choice of a few, side by side (Fastest | Fewer changes): small, the picked one a light pill on a muted track.
     tabs: {
       defaultVariants: { color: 'neutral', size: 'sm' },
