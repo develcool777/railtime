@@ -28,6 +28,7 @@ pnpm test-mutation packages/schema   # Stryker: which deliberate bugs the folder
 
 pnpm data:format london  # check a city's dataset against the schema, tidy it and rewrite the index
 pnpm data:previews london  # draw its card's pictures (needs Chrome)
+pnpm data:boundary london  # fetch its outline from OpenStreetMap again; add a relation id for a new city
 ```
 
 ## How it's built

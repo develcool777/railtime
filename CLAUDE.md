@@ -132,8 +132,11 @@ the same and fails the test: fix the date, or, if history really parted the line
 Each city has its outline beside its dataset, `<city>.boundary.json` (`CityBoundary`, from
 OpenStreetMap's administrative boundary, simplified): what the Coverage section measures within. It is
 the city's limits, or the county a network spans (Greater Manchester, Tyne and Wear), never a wider
-region: a plan running out to the next towns stays outside. `data:format` validates it, and a test
-checks it is there and holds more than half of the city's stations (its plans' where nothing is built).
+region: a plan running out to the next towns stays outside. `pnpm data:boundary <city> [relation]`
+fetches it (`src/boundary/`): again from the relation its `source` names, or from the OpenStreetMap
+relation given, for a new city; it writes nothing the schema refuses or that holds half the city's
+stations or fewer (its plans' where nothing is built). `data:format` keeps it tidy, and a test checks
+every city has one, in its layout, holding more than half its stations.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction
