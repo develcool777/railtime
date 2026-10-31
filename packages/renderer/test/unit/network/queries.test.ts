@@ -126,4 +126,55 @@ describe('NetworkQueries', () => {
     expect(records.busiest[0]).toMatchObject({ id: 'b', lines: [{ id: 'red' }, { id: 'blue' }] });
     expect(records.longest.map(line => line.id)).toEqual(['red', 'blue']);
   });
+
+  test('dates a line closed at a station when all its track there has, before 1970 too', () => {
+    // Blue left B – C in 1950, after a spell away in the 1940s.
+    const { queries, moment } = queriesOn('1955-01-01');
+    expect(queries.stationInfo('b', moment).lines).toEqual([
+      { id: 'red', name: 'Red line', color: '#ff0000', opened: '1900-01-01' },
+      { id: 'pink', name: 'Pink line', color: '#ff88cc', opened: '1900-01-01' },
+      { id: 'blue', name: 'Blue line', color: '#0000ff', opened: '1930-01-01', closed: '1950-01-01' },
+    ]);
+  });
+
+  test("lists a plan's undated line at a station of its own, and a former name from the day it was dropped", () => {
+    const playback = playbackOf(tinyNetwork(), 'extension');
+    playback.player.seekEnd();
+    const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
+    const moment: NetworkMoment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#ff0000' };
+    expect(queries.stationInfo('e', moment).lines).toEqual([{ id: 'red', name: 'Red line', color: '#ff0000', opened: null }]);
+    const renamed = queriesOn('1925-01-01');
+    expect(renamed.queries.stationInfo('d', renamed.moment).formerNames.map(former => former.name)).toEqual(['Old D']);
+  });
+
+  test("keeps a line's changes to its own", () => {
+    const { queries, moment, playback } = queriesOn('1935-01-01');
+    const blueOpens = playback.timeline.steps.find(step => step.kind === 'open' && step.line === 'blue')!.index;
+    expect(queries.lineDetails('red', moment).changes).not.toContain(blueOpens);
+    expect(queries.lineDetails('blue', moment).changes).toContain(blueOpens);
+  });
+
+  test('ranks the records: oldest by year then name, busiest by lines, longest by km, lines with no track left out', () => {
+    const { queries, moment } = queriesOn('1935-01-01');
+    const records = queries.records(10, moment);
+    expect(records.oldest.map(station => [station.id, station.year])).toEqual([
+      ['a', 1900],
+      ['b', 1900],
+      ['d', 1910],
+      ['c', 1920],
+    ]);
+    expect(records.busiest.map(station => station.id)).toEqual(['b', 'a', 'c', 'd']);
+    // Green has no track yet: it is not a line to rank.
+    expect(records.longest.map(line => line.id)).toEqual(['red', 'blue', 'pink']);
+  });
+
+  test('lists stations for a search by their names, not their ids', () => {
+    const network = tinyNetwork();
+    network.stations.a!.name = 'Zed';
+    const playback = playbackOf(network);
+    playback.player.seek(toTimestamp('1935-01-01'));
+    const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
+    const moment: NetworkMoment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#ff0000' };
+    expect(queries.stations(moment).map(station => station.name)).toEqual(['B', 'C', 'D', 'Zed']);
+  });
 });

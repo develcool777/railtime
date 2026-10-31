@@ -33,6 +33,14 @@
       "survived": 360,
       "noCoverage": 516,
       "fresh": true
+    },
+    {
+      "date": "2026-10-31",
+      "score": 76.1,
+      "killed": 2572,
+      "survived": 293,
+      "noCoverage": 514,
+      "fresh": true
     }
   ],
   "packages/renderer/src/core": [
@@ -42,6 +50,16 @@
       "killed": 140,
       "survived": 15,
       "noCoverage": 0,
+      "fresh": false
+    }
+  ],
+  "packages/renderer/src/network": [
+    {
+      "date": "2026-10-31",
+      "score": 87.7,
+      "killed": 793,
+      "survived": 97,
+      "noCoverage": 14,
       "fresh": false
     }
   ],

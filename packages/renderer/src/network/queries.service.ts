@@ -232,9 +232,10 @@ export class NetworkQueries {
     const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
     for (const lineSegment of this.index.lineSegmentsAt(station)) {
       if (!this.timeline.everServes(station, lineSegment.line)) continue;
-      const dates = byLine.get(lineSegment.line) ?? { opened: Infinity, lastClosed: 0, allClosed: true };
+      // Timestamps before 1970 are negative: the latest close starts below any of them.
+      const dates = byLine.get(lineSegment.line) ?? { opened: Infinity, lastClosed: -Infinity, allClosed: true };
       dates.opened = Math.min(dates.opened, lineSegment.opens);
-      dates.lastClosed = Math.max(dates.lastClosed, lineSegment.closes ?? 0);
+      dates.lastClosed = Math.max(dates.lastClosed, lineSegment.closes ?? -Infinity);
       // A line has closed at a station only when every one of its segments there has.
       dates.allClosed &&= lineSegment.closes !== null;
       byLine.set(lineSegment.line, dates);
