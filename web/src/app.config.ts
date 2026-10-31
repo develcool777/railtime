@@ -32,7 +32,7 @@ export default defineAppConfig({
     // A run of changes (the Changes list, a line's history): the line between them visible, those done
     // with their own dot on a green line, the current one ringed.
     timeline: {
-      slots: { separator: 'bg-accented' },
+      slots: { item: 'cursor-pointer', separator: 'bg-accented' },
       compoundVariants: [{ color: 'primary', class: { indicator: 'group-data-[state=completed]:bg-transparent' } }],
     },
     // The home page is a catalogue, not a landing page: its hero, sections and cards at that scale.

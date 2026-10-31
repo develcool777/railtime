@@ -5,12 +5,13 @@
     <template #indicator="{ item }">
       <span class="size-2.5 rounded-full border-2" :style="dotStyleOf(item.change)" />
     </template>
-    <template #date="{ item }">
-      <span class="tabular-nums">{{ item.date }}</span>
-    </template>
-    <!-- The title a button, so the keyboard reaches each change; its click is the item's. -->
-    <template #title="{ item }">
-      <UButton :label="item.title" color="neutral" variant="link" class="text-highlighted p-0 text-left text-sm leading-5 font-medium whitespace-normal" />
+    <!-- The whole change one button, so the pointer and the keyboard take all of it; its click is the item's. -->
+    <template #wrapper="{ item }">
+      <ListRow class="-mt-1 mb-2 flex-col items-start gap-0 px-2 py-1">
+        <span class="text-dimmed text-xs/5 tabular-nums">{{ item.date }}</span>
+        <span class="text-highlighted text-sm leading-5 font-medium">{{ item.title }}</span>
+        <span v-if="item.description" class="text-muted text-sm leading-5">{{ item.description }}</span>
+      </ListRow>
     </template>
   </UTimeline>
 </template>
