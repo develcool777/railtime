@@ -36,7 +36,8 @@ A pnpm workspace of TypeScript packages; every package keeps its tests beside it
 ```text
 railtime/
 ├── packages/
-│   ├── schema/      the Network format every dataset is in (types + Zod validator)
+│   ├── schema/      the Network format every dataset is in: format/ (its types), validation/ (the Zod
+│   │                shape and the checks between parts), plan/ (building a plan on a network), core/
 │   ├── renderer/    the engine, TransitMap: draws a network on MapLibre and plays its history; no UI
 │   └── data/        every city's dataset, by country (cities/<country>/<city>/), the index of them
 │                    (cities/cities.json), pnpm data:format, and a test per city

@@ -1,4 +1,4 @@
-import type { Network, Segment } from './network.types';
+import type { Network, Segment } from '../format/network.types';
 
 /** What one section of a plan builds. */
 export type BuiltSection = {

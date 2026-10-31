@@ -1,4 +1,4 @@
-import type { Network } from '../../../src/network.types';
+import type { Network } from '../../../src/format/network.types';
 
 /**
  * A line A–C open since 1900, with one plan, `extension`: a new station B between A and C, then the

@@ -1,4 +1,4 @@
-import type { LngLat } from './network.types';
+import type { LngLat } from '../format/network.types';
 
 /**
  * Where a point falls on a track: the nearest point on it, and the track either side of it.

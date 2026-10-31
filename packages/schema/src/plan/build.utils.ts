@@ -1,6 +1,6 @@
-import type { Network } from './network.types';
-import type { BuiltPlan } from './plan.types';
-import { PlanBuilder } from './planBuilder.service.ts';
+import type { Network } from '../format/network.types';
+import type { BuiltPlan } from './build.types';
+import { PlanBuilder } from './builder.service.ts';
 
 /**
  * Builds one of a network's plans on it, section by section.

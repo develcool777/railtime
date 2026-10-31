@@ -5,7 +5,8 @@ enforces them: `pnpm eslint-check` must pass.
 
 ## What this is
 
-A pnpm monorepo: `packages/schema` (the network format), `packages/renderer` (the MapLibre engine,
+A pnpm monorepo: `packages/schema` (the network format: `format/` its types, `validation/` the Zod
+shape and the checks between parts, `plan/` building a plan on a network), `packages/renderer` (the MapLibre engine,
 `TransitMap`), `packages/data` (every city's dataset in `cities/<country>/<city>/`, the index of them,
 `cities/cities.json`, and `pnpm data:format`, which validates and tidies a dataset and rewrites the
 index) and `web` (the Nuxt 4 + Nuxt UI explorer).
@@ -107,7 +108,7 @@ it directly (a date, a station name), never regenerate it. `pnpm data:format <ci
 against the schema, keeps its layout (one station or segment per line) and rewrites
 `cities/cities.json`, the index the landing page reads; a test fails otherwise.
 A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
-`packages/schema`), or `data:format` refuses it: the line would miss the station's dot. Where an
+`packages/schema/src/validation/checks.constants.ts`), or `data:format` refuses it: the line would miss the station's dot. Where an
 interchange's lines run apart underground, each line's track ends at the one station point.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
