@@ -2,7 +2,7 @@ export default defineAppConfig({
   ui: {
     colors: {
       primary: 'brand',
-      neutral: 'slate',
+      neutral: 'neutral',
     },
     // A choice of a few, side by side (Fastest | Fewer changes): small, the picked one a light pill on a muted track.
     tabs: {

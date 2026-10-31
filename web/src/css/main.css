@@ -33,23 +33,24 @@
   --color-brand-950: #052e16;
 }
 
-/* Text, surfaces and borders are Nuxt UI's own, on slate, as ui.nuxt.com has them. What is the site's
-   own is made from them: the page behind the cards, the hero's band, what is open or current. */
+/* Text, surfaces and borders are Nuxt UI's own, on its plain neutral grey, as ui.nuxt.com has them:
+   white and charcoal, no tint. What is the site's own is made from them: the page, the hero's band,
+   what is open or current. */
 :root {
   --ui-radius: 0.5rem;
 
-  --rt-page: var(--ui-color-neutral-50);
+  --rt-page: var(--ui-bg);
   --rt-hero-bg: color-mix(in oklab, var(--ui-primary) 7%, var(--ui-bg));
   --rt-selected-bg: color-mix(in oklab, var(--ui-primary) 10%, var(--ui-bg));
   --rt-selected-text: var(--ui-color-primary-700);
   --rt-selected-ring: color-mix(in oklab, var(--ui-primary) 35%, var(--ui-bg));
-  --rt-shadow-map: 0 8px 30px rgba(15, 23, 42, 0.1);
-  --rt-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --rt-shadow-map: 0 8px 30px rgba(0, 0, 0, 0.1);
+  --rt-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .dark {
-  --rt-page: var(--ui-color-neutral-950);
-  --rt-hero-bg: color-mix(in oklab, var(--ui-primary) 8%, var(--ui-color-neutral-950));
+  --rt-page: var(--ui-bg);
+  --rt-hero-bg: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg));
   --rt-selected-bg: color-mix(in oklab, var(--ui-primary) 14%, var(--ui-bg));
   --rt-selected-text: var(--ui-primary);
   --rt-selected-ring: color-mix(in oklab, var(--ui-primary) 35%, var(--ui-bg));
