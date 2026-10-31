@@ -1,5 +1,6 @@
 <template>
-  <div class="bg-page min-h-full">
+  <!-- At least the window's height, the list growing to fill it: the footer stays at the foot with few cities shown. -->
+  <div class="bg-page flex min-h-dvh flex-col">
     <SiteHeader />
 
     <UPageHero
@@ -32,7 +33,7 @@
       </UContainer>
     </div>
 
-    <main class="pb-12">
+    <main class="flex-1 pb-12">
       <UPageSection
         v-for="{ country, cities } in sections"
         :key="country"
