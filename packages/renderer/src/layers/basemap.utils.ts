@@ -1,6 +1,6 @@
-import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import type { FilterSpecification, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
 import { OVERLAY_PREFIX } from './layers.constants';
-import { FALLBACK_FONT } from './theme.constants';
+import { FALLBACK_FONT, MISSING_NUMBER } from './theme.constants';
 import type { Palette } from './theme.types';
 
 /**
@@ -101,7 +101,40 @@ const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Pale
  * @param options.labels - Keep place and street labels.
  */
 export const recolorBasemap = (map: MapLibreMap, palette: Palette, options: { labels: boolean }): void => {
-  for (const layer of map.getStyle().layers) if (!layer.id.startsWith(OVERLAY_PREFIX)) recolorLayer(map, layer, palette, options.labels);
+  for (const layer of map.getStyle().layers) {
+    if (layer.id.startsWith(OVERLAY_PREFIX)) continue;
+    recolorLayer(map, layer, palette, options.labels);
+    // A filter comparing a value some features lack (a road number's length) gets a stand-in for it.
+    const filter = 'filter' in layer ? layer.filter : undefined;
+    const guarded = filter === undefined ? undefined : guardMissingNumbers(filter);
+    if (guarded !== filter) map.setFilter(layer.id, guarded as FilterSpecification);
+  }
+};
+
+/** The comparisons a missing value fails: `<` and `<=` fail with a stand-in above any bound, `>` and `>=` with one below. */
+const COMPARISONS: Record<string, 1 | -1> = { '<': 1, '<=': 1, '>': -1, '>=': -1 };
+
+/**
+ * A filter whose comparisons of a feature's value with a number hold up when the feature lacks the
+ * value: `["<=", ["get", "ref_length"], 6]` becomes `["<=", ["coalesce", ["get", "ref_length"], 1e9], 6]`.
+ * Either way it fails for such a feature; MapLibre only warns of the first. The same filter comes
+ * back where nothing needs it, so it can be told apart.
+ *
+ * @param filter - A style layer's filter.
+ * @returns The filter, guarded where it needs to be.
+ */
+export const guardMissingNumbers = (filter: unknown): unknown => {
+  if (!Array.isArray(filter)) return filter;
+  const [operator, ...operands] = filter as unknown[];
+  const isGet = (operand: unknown) => Array.isArray(operand) && operand[0] === 'get';
+  const direction = typeof operator === 'string' ? COMPARISONS[operator] : undefined;
+  if (direction !== undefined && operands.length === 2) {
+    const [left, right] = operands;
+    if (isGet(left) && typeof right === 'number') return [operator, ['coalesce', left, direction * MISSING_NUMBER], right];
+    if (isGet(right) && typeof left === 'number') return [operator, left, ['coalesce', right, -direction * MISSING_NUMBER]];
+  }
+  const inner = operands.map(guardMissingNumbers);
+  return inner.every((operand, position) => operand === operands[position]) ? filter : [operator, ...inner];
 };
 
 /**

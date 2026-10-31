@@ -1,42 +1,36 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
-    <UInput
-      v-model="query"
-      icon="i-lucide-search"
-      placeholder="Search lines"
-      variant="none"
-      class="w-full"
-      :ui="{ base: 'bg-muted ring-muted focus-visible:ring-primary h-9 rounded-lg ring ring-inset focus-visible:ring-2' }"
-      aria-label="Search lines" />
-    <p v-if="groups.length === 0" class="text-muted text-sm">No line matches.</p>
+    <UInput v-model="query" icon="i-lucide-search" placeholder="Search lines" variant="soft" class="w-full" aria-label="Search lines" />
+    <UEmpty v-if="groups.length === 0" icon="i-lucide-search-x" title="No line matches" description="Try another name." />
     <section v-for="group in groups" :key="group.network">
       <div class="flex items-center justify-between gap-2 px-2 pb-1">
         <h3 class="eyebrow text-muted truncate">{{ group.name }}</h3>
         <span class="flex flex-none gap-2.5 text-xs font-semibold">
-          <button type="button" class="text-primary hover:underline" @click="showGroup(group.lines)">Show all</button>
-          <button type="button" class="text-muted hover:text-highlighted" @click="showOnly(group.lines)">Only these</button>
+          <UButton label="Show all" variant="link" size="xs" class="p-0" @click="showGroup(group.lines)" />
+          <UButton label="Only these" color="neutral" variant="link" size="xs" class="p-0" @click="showOnly(group.lines)" />
         </span>
       </div>
       <ul role="list">
         <li
           v-for="line in group.lines"
           :key="line.id"
-          class="hover:bg-elevated flex h-9 items-center rounded-md transition-colors duration-150"
+          class="flex items-center"
           :class="{ 'opacity-40': !visible.has(line.id), 'opacity-55': visible.has(line.id) && !isOpen(line) }">
-          <button
-            type="button"
-            class="text-dimmed hover:text-highlighted flex h-full w-8 flex-none items-center justify-center"
+          <UButton
+            :icon="visible.has(line.id) ? 'i-lucide-eye' : 'i-lucide-eye-off'"
+            color="neutral"
+            variant="link"
+            size="sm"
+            class="text-dimmed hover:text-highlighted w-8 flex-none justify-center"
             :aria-pressed="visible.has(line.id)"
             :aria-label="visible.has(line.id) ? `Hide ${line.name}` : `Show ${line.name}`"
-            @click="toggleLine(line.id)">
-            <UIcon :name="visible.has(line.id) ? 'i-lucide-eye' : 'i-lucide-eye-off'" class="size-4" />
-          </button>
-          <button type="button" class="flex h-full min-w-0 flex-1 items-center gap-2.5 pr-2 text-left" @click="emit('open', line.id)">
+            @click="toggleLine(line.id)" />
+          <ListRow class="min-w-0 flex-1 pl-0" @click="emit('open', line.id)">
             <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: line.color }" />
             <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ line.name }}</span>
             <span class="text-muted flex-none text-xs tabular-nums">{{ line.opened === null ? 'Planned' : yearOf(line.opened) }}</span>
             <UIcon name="i-lucide-chevron-right" class="text-dimmed size-4 flex-none" />
-          </button>
+          </ListRow>
         </li>
       </ul>
     </section>

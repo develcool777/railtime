@@ -5,7 +5,8 @@
         <CitySelect v-model:open="cityMenuOpen" :city @city="emit('city', $event)" />
       </template>
       <template #center>
-        <SearchButton @open="searchOpen = true" />
+        <!-- Opens the search, as ⌘K and / do. -->
+        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="searchOpen = true" />
       </template>
       <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="searchOpen = true" />
     </SiteHeader>
@@ -15,64 +16,49 @@
 
       <!-- The map keeps its size: the panel slides over its left edge, which resizing it every frame would make stutter. -->
       <div class="relative min-w-0 flex-1 overflow-hidden">
-        <!-- The panel: over the map's left, a column that folds and resizes; on a phone, a sheet over its foot. -->
-        <section
+        <!-- The panel: over the map's left, a column that folds and resizes; on a phone, a drawer over its foot. -->
+        <ExplorerPanel
           v-if="!mapOnly"
-          class="bg-default flex flex-col"
-          :class="
-            phone
-              ? 'absolute inset-x-0 bottom-0 z-20 overflow-hidden rounded-t-lg shadow-[0_-8px_30px_rgba(21,32,48,0.1)] transition-[height] duration-200 ease-out'
-              : [
-                  'border-default absolute inset-y-0 left-0 z-20 border-r',
-                  resizing ? '' : 'transition-transform duration-200 ease-out',
-                  panelOpen ? '' : '-translate-x-full',
-                ]
-          "
-          :style="phone ? { height: sheet === 'full' ? 'calc(100% - 8px)' : `${SHEET_HEIGHTS[sheet]}px` } : { width: `${panelWidth}px` }"
-          :inert="!phone && !panelOpen"
-          aria-label="Panel">
-          <ExplorerSheet v-if="phone" v-model:snap="sheet" :sections :open="sheet === 'peek' ? null : railSection" :marks @pick="pickSection" />
-          <div v-show="!phone || sheet !== 'peek'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <PanelTop
-              :title="panelTop.title"
-              :context="panelTop.context"
-              :dots="panelTop.dots"
-              :backLabel="panelTop.backLabel"
-              :foldable="!phone"
-              @back="goBack"
-              @fold="panelOpen = false" />
-            <div class="min-h-0 flex-1 overflow-y-auto">
-              <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="walkTo" @line="pushLine" />
-              <LineView v-else-if="lineDetails" :line="lineDetails" :changes="lineChanges" :stationColors @station="openStation" @change="showChange" />
-              <StationsSection v-else-if="section === 'stations'" :stations @open="openStation" />
-              <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="pushLine" />
-              <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="pickChange" />
-              <RouteSection
-                v-else-if="section === 'route'"
-                :stations
-                :ends="routeEnds"
-                :preference="routePreference"
-                :route="foundRoute"
-                @from="routeEnds.from = $event"
-                @to="routeEnds.to = $event"
-                @swap="swapEnds"
-                @preference="routePreference = $event"
-                @station="openStation" />
-              <ReachSection v-else-if="section === 'reach'" :stations :from="reachFrom" :reach="foundReach" @from="reachFrom = $event" @station="openStation" />
-              <InsightsSection v-else-if="section === 'insights'" :growth :records :year="shownYear" @year="showYear" @station="openStation" @line="pushLine" />
-              <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
-            </div>
+          v-model:snap="sheet"
+          :phone
+          :open="panelOpen"
+          :width="panelWidth"
+          :resizing
+          :sections
+          :section="railSection"
+          :marks
+          @pick="pickSection"
+          @resize="startResize">
+          <PanelTop
+            :title="panelTop.title"
+            :context="panelTop.context"
+            :dots="panelTop.dots"
+            :backLabel="panelTop.backLabel"
+            :foldable="!phone"
+            @back="goBack"
+            @fold="panelOpen = false" />
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="walkTo" @line="pushLine" />
+            <LineView v-else-if="lineDetails" :line="lineDetails" :changes="lineChanges" :stationColors @station="openStation" @change="showChange" />
+            <StationsSection v-else-if="section === 'stations'" :stations @open="openStation" />
+            <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="pushLine" />
+            <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="pickChange" />
+            <RouteSection
+              v-else-if="section === 'route'"
+              :stations
+              :ends="routeEnds"
+              :preference="routePreference"
+              :route="foundRoute"
+              @from="routeEnds.from = $event"
+              @to="routeEnds.to = $event"
+              @swap="swapEnds"
+              @preference="routePreference = $event"
+              @station="openStation" />
+            <ReachSection v-else-if="section === 'reach'" :stations :from="reachFrom" :reach="foundReach" @from="reachFrom = $event" @station="openStation" />
+            <InsightsSection v-else-if="section === 'insights'" :growth :records :year="shownYear" @year="showYear" @station="openStation" @line="pushLine" />
+            <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
           </div>
-          <!-- Drag to resize; the width is kept in a cookie. -->
-          <div
-            v-if="!phone && panelOpen"
-            class="hover:bg-brand-200 dark:hover:bg-brand-800 absolute top-0 -right-[3px] bottom-0 z-10 w-1.5 cursor-col-resize transition-colors duration-150"
-            :class="{ 'bg-brand-200 dark:bg-brand-800': resizing }"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize the panel"
-            @pointerdown="startResize" />
-        </section>
+        </ExplorerPanel>
 
         <main class="absolute inset-0">
           <!-- MapLibre sets `position: relative` on its container, unlayered, so it beats Tailwind's `absolute`: the wrapper positions, the container fills it. -->
@@ -97,15 +83,18 @@
             @fit="map?.fitNetwork()"
             @stationNames="setStationNames"
             @mapOnly="toggleMapOnly" />
-          <button
+          <UButton
             v-else
-            type="button"
-            class="map-card text-highlighted absolute top-4 right-4 flex h-10 items-center gap-1.5 px-3 text-sm font-semibold"
+            icon="i-lucide-minimize-2"
+            label="Exit map only"
+            color="neutral"
+            variant="outline"
+            class="map-card absolute top-4 right-4 h-10 px-3 font-semibold"
             @click="toggleMapOnly">
-            <UIcon name="i-lucide-minimize-2" class="size-4" />
-            Exit map only
-            <UKbd value="Esc" />
-          </button>
+            <template #trailing>
+              <UKbd value="Esc" />
+            </template>
+          </UButton>
 
           <!-- The time control, and above it while following playback the minimap; on a phone it rides above the sheet. -->
           <div

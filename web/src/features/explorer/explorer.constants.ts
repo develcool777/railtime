@@ -17,11 +17,8 @@ export const PANEL_WIDTH = { initial: 340, min: 280, max: 480 };
 /** How tall the phone's sheet stands at each snap, pixels; full stands 8 short of the map's top. */
 export const SHEET_HEIGHTS: Record<Exclude<SheetSnap, 'full'>, number> = { peek: 92, half: 420 };
 
-/** The phone's sheet, from lowest to highest. */
-export const SHEET_SNAPS: SheetSnap[] = ['peek', 'half', 'full'];
-
-/** How far a swipe on the sheet's handle goes before it steps to the next snap, pixels. */
-export const SHEET_SWIPE = 30;
+/** Room the phone's sheet leaves above it at full height: the header's, and a little more, pixels. */
+export const SHEET_TOP_GAP = 60;
 
 /** Below this width the explorer is the phone's: no rail, the panel a sheet over the map. */
 export const PHONE_QUERY = '(width < 64rem)';

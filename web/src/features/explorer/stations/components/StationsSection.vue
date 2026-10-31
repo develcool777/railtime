@@ -1,29 +1,19 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
-    <UInput
-      v-model="query"
-      icon="i-lucide-search"
-      placeholder="Search stations"
-      variant="none"
-      class="w-full"
-      :ui="{ base: 'bg-muted ring-muted focus-visible:ring-primary h-9 rounded-lg ring ring-inset focus-visible:ring-2' }"
-      aria-label="Search stations" />
-    <p v-if="stations.length === 0" class="text-muted text-sm">No station is open on the date shown.</p>
-    <p v-else-if="groups.length === 0" class="text-muted text-sm">No station matches.</p>
+    <UInput v-model="query" icon="i-lucide-search" placeholder="Search stations" variant="soft" class="w-full" aria-label="Search stations" />
+    <UEmpty v-if="stations.length === 0" icon="i-lucide-map-pin-off" title="No station open" description="None is open on the date shown." />
+    <UEmpty v-else-if="groups.length === 0" icon="i-lucide-search-x" title="No station matches" description="Try another name." />
     <section v-for="group in groups" :key="group.letter">
       <h3 v-if="group.letter" class="eyebrow text-muted px-2 pb-1">{{ group.letter }}</h3>
       <ul role="list" class="-mx-2">
         <li v-for="station in group.stations" :key="station.id">
-          <button
-            type="button"
-            class="hover:bg-elevated flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left transition-colors duration-150"
-            @click="emit('open', station.id)">
+          <ListRow @click="emit('open', station.id)">
             <span class="flex w-[22px] flex-none flex-wrap gap-0.5">
               <span v-for="color in station.colors" :key="color" class="size-1.5 rounded-full" :style="{ background: color }" />
             </span>
             <span class="text-highlighted min-w-0 flex-1 truncate text-sm font-medium">{{ station.name }}</span>
             <span v-if="station.otherNames[0]" class="text-muted max-w-[40%] flex-none truncate text-xs">{{ station.otherNames[0] }}</span>
-          </button>
+          </ListRow>
         </li>
       </ul>
     </section>

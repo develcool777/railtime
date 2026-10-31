@@ -1,17 +1,9 @@
 <template>
-  <div ref="list" class="px-2 pb-6">
-    <p v-if="changes.length === 0" class="text-muted p-4 text-sm">No changes yet.</p>
+  <div ref="list" class="px-4 pb-6">
+    <UEmpty v-if="changes.length === 0" icon="i-lucide-history" title="No changes yet" description="Nothing has opened or closed by the date shown." />
     <section v-for="group in groups" :key="group.decade">
-      <h3 class="eyebrow text-muted bg-default sticky top-0 z-1 px-2 pt-3 pb-1">{{ group.decade }}</h3>
-      <ul role="list">
-        <li v-for="change in group.changes" :key="change.index" :data-current="change.index === current || undefined">
-          <ChangeRow
-            :change
-            :current="change.index === current"
-            :past="playing && current !== null && change.index < current"
-            @select="emit('select', $event)" />
-        </li>
-      </ul>
+      <h3 class="eyebrow text-muted bg-default sticky top-0 z-1 pt-3 pb-2">{{ group.decade }}</h3>
+      <ChangeTimeline :changes="group.changes" :current @select="emit('select', $event)" />
     </section>
   </div>
 </template>
@@ -26,7 +18,7 @@
     changes: ChangeInfo[];
     /** The change the map is at, by its position; none before the first. */
     current: number | null;
-    /** History is playing: what has played fades, and the change playing stays in the middle. */
+    /** History is playing: the change playing stays in the middle. */
     playing: boolean;
   }>();
   const emit = defineEmits<{ select: [index: number] }>();
@@ -34,8 +26,8 @@
   const list = useTemplateRef<HTMLElement>('list');
   const groups = computed(() => changesByDecade(props.changes));
 
-  /** Brings the current change to the middle of the list. */
-  const centreCurrent = (behavior: 'instant' | 'smooth') => list.value?.querySelector('[data-current]')?.scrollIntoView({ block: 'center', behavior });
+  /** Brings the current change, the timeline's active item, to the middle of the list. */
+  const centreCurrent = (behavior: 'instant' | 'smooth') => list.value?.querySelector('[data-state="active"]')?.scrollIntoView({ block: 'center', behavior });
 
   // Opens on the change shown; while playing, follows each as it starts.
   onMounted(async () => {

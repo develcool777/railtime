@@ -7,7 +7,6 @@
     :placeholder
     variant="outline"
     class="w-full"
-    :ui="{ base: 'h-9 rounded-lg', leading: 'ps-3' }"
     :aria-label="placeholder"
     @update:modelValue="choose">
     <!-- Where the route starts, hollow; where it ends, filled. -->

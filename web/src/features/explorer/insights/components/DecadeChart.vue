@@ -1,21 +1,22 @@
 <template>
-  <div class="insight-chart" :aria-label="summary" role="img">
-    <VisXYContainer :data="decades" :height="120" :padding="{ top: 10, right: 6 }" :yDomain="[0, yTicks.at(-1) ?? 0]">
-      <VisGroupedBar :x="decadeOf" :y="countOf" color="var(--ui-primary)" :roundedCorners="4" :groupMaxWidth="24" :barPadding="0.15" :events />
-      <VisAxis type="x" :tickValues="xTicks" :tickFormat="(tick: number | Date) => `${tick}s`" :gridLine="false" :tickLine="false" />
-      <VisAxis type="y" :tickValues="yTicks" :gridLine="true" :domainLine="false" :tickLine="false" />
-      <VisTooltip :triggers />
-    </VisXYContainer>
-  </div>
+  <!-- A click on a decade shows the map at its end. -->
+  <UChart
+    type="bar"
+    :data="bars"
+    index="label"
+    :categories="[{ key: 'stations', label: 'Stations opened', color: 'primary' }]"
+    :format="formatNumber"
+    :height="120"
+    :ariaLabel="summary"
+    class="cursor-pointer"
+    @select="point => point && pick(String(point.datum.x))" />
 </template>
 
 <script setup lang="ts">
   import type { DecadeOpenings } from '@railtime/renderer/transitMap.types';
-  import { GroupedBar } from '@unovis/ts';
-  import { VisAxis, VisGroupedBar, VisTooltip, VisXYContainer } from '@unovis/vue';
   import { computed } from 'vue';
 
-  import { formatMetric, niceTicks, yearTicks } from '~/features/explorer/insights/insights.utils';
+  import { formatNumber } from '~/features/explorer/insights/insights.utils';
 
   const props = defineProps<{
     /** How many stations first opened in each decade. */
@@ -23,28 +24,16 @@
   }>();
   const emit = defineEmits<{ pick: [year: number] }>();
 
-  const decadeOf = (entry: DecadeOpenings) => entry.decade;
-  const countOf = (entry: DecadeOpenings) => entry.stations;
-
-  const yTicks = computed(() => niceTicks(Math.max(0, ...props.decades.map(countOf))));
-  // Every other decade's mark at most: the axis is narrow.
-  const xTicks = computed(() => {
-    const first = props.decades[0]?.decade ?? 0;
-    const last = props.decades.at(-1)?.decade ?? 0;
-    return yearTicks(first, last).filter(year => year % 10 === 0);
-  });
+  const bars = computed(() => props.decades.map(entry => ({ label: `${entry.decade}s`, decade: entry.decade, stations: entry.stations })));
 
   const summary = computed(() => {
     const busiest = [...props.decades].sort((first, second) => second.stations - first.stations)[0];
     return busiest ? `Stations opened by decade; the most, ${busiest.stations}, in the ${busiest.decade}s` : '';
   });
 
-  // Each bar's readout, and a click on it shows the map at its decade's end.
-  const triggers = {
-    [GroupedBar.selectors.bar]: (entry: DecadeOpenings) =>
-      `<strong>${formatMetric(entry.stations, 'stations')}</strong> <span class="insight-chart-muted">opened in the ${entry.decade}s</span>`,
-  };
-  const events = {
-    [GroupedBar.selectors.bar]: { click: (entry: DecadeOpenings) => emit('pick', entry.decade + 9) },
+  /** Shows the map at the end of the decade picked. */
+  const pick = (label: string) => {
+    const decade = bars.value.find(bar => bar.label === label)?.decade;
+    if (decade !== undefined) emit('pick', decade + 9);
   };
 </script>

@@ -23,15 +23,16 @@
       </UTooltip>
     </div>
 
-    <SegmentedControl
+    <UTabs
       :modelValue="preference"
       :items="PREFERENCES"
-      label="Route preference"
+      :content="false"
       class="self-start"
-      @update:modelValue="emit('preference', $event)" />
+      aria-label="Route preference"
+      @update:modelValue="emit('preference', $event as RoutePreference)" />
 
-    <p v-if="!ends.from || !ends.to" class="text-muted text-sm">Pick where the route starts and ends.</p>
-    <p v-else-if="!route" class="text-muted text-sm">No route between them on the date shown.</p>
+    <UEmpty v-if="!ends.from || !ends.to" icon="i-lucide-route" title="Plan a route" description="Pick where it starts and ends." />
+    <UEmpty v-else-if="!route" icon="i-lucide-route-off" title="No route" description="Nothing runs between them on the date shown." />
     <template v-else>
       <div class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-3">
@@ -56,35 +57,38 @@
             <span class="absolute top-2 -bottom-2 left-[5px] w-1 rounded-full" :style="{ background: leg.color }" />
             <span class="bg-default absolute top-0.5 left-0 size-3.5 rounded-full border-[3px]" :style="{ borderColor: leg.color }" />
             <div class="flex items-center justify-between gap-2">
-              <button
-                type="button"
-                class="text-highlighted truncate text-left text-sm leading-5 font-semibold hover:underline"
-                @click="emit('station', leg.stops[0]?.id ?? '')">
-                {{ leg.stops[0]?.name }}
-              </button>
+              <UButton
+                :label="leg.stops[0]?.name"
+                color="neutral"
+                variant="link"
+                class="text-highlighted p-0 text-sm leading-5 font-semibold"
+                @click="emit('station', leg.stops[0]?.id ?? '')" />
               <span v-if="position > 0" class="eyebrow text-muted flex-none">Change</span>
             </div>
             <p class="text-default mt-0.5 text-xs">
               <span class="font-semibold">{{ leg.lineName }}</span>
               <span class="text-muted"> to {{ leg.stops.at(-1)?.name }}</span>
             </p>
-            <button
-              v-if="leg.stops.length > 2"
-              type="button"
-              class="text-muted hover:text-highlighted mt-1 flex items-center gap-1 text-xs tabular-nums"
-              :aria-expanded="unfolded.has(position)"
-              @click="toggle(position)">
-              <UIcon name="i-lucide-chevron-right" class="size-3.5 transition-transform duration-150" :class="{ 'rotate-90': unfolded.has(position) }" />
-              {{ rideText(leg) }}
-            </button>
+            <!-- The stops it passes, on request, each a dot on its line. -->
+            <UCollapsible v-if="leg.stops.length > 2" :open="unfolded.has(position)" class="mt-1" @update:open="toggle(position)">
+              <UButton
+                :label="rideText(leg)"
+                icon="i-lucide-chevron-right"
+                color="neutral"
+                variant="link"
+                size="xs"
+                class="group text-muted gap-1 p-0 tabular-nums"
+                :ui="{ leadingIcon: 'size-3.5 transition-transform duration-150 group-data-[state=open]:rotate-90' }" />
+              <template #content>
+                <ul class="mt-1" role="list">
+                  <li v-for="stop in leg.stops.slice(1, -1)" :key="stop.id" class="relative flex h-6 items-center">
+                    <span class="bg-default absolute -left-[26px] size-2.5 rounded-full border-2" :style="{ borderColor: leg.color }" />
+                    <UButton :label="stop.name" color="neutral" variant="link" size="xs" class="text-default p-0" @click="emit('station', stop.id)" />
+                  </li>
+                </ul>
+              </template>
+            </UCollapsible>
             <p v-else class="text-muted mt-1 text-xs tabular-nums">{{ rideText(leg) }}</p>
-            <!-- The stops it passes, each a dot on its line. -->
-            <ul v-if="unfolded.has(position)" class="mt-1" role="list">
-              <li v-for="stop in leg.stops.slice(1, -1)" :key="stop.id" class="relative flex h-6 items-center">
-                <span class="bg-default absolute -left-[26px] size-2.5 rounded-full border-2" :style="{ borderColor: leg.color }" />
-                <button type="button" class="text-default truncate text-left text-xs hover:underline" @click="emit('station', stop.id)">{{ stop.name }}</button>
-              </li>
-            </ul>
           </template>
           <template v-else>
             <span class="border-accented absolute top-5 -bottom-1 left-[6px] border-l-2 border-dotted" />
@@ -97,9 +101,12 @@
         </li>
         <li class="relative pl-7">
           <span class="absolute top-0.5 left-0 size-3.5 rounded-full bg-(--ui-text-highlighted)" />
-          <button type="button" class="text-highlighted text-left text-sm leading-5 font-semibold hover:underline" @click="emit('station', route.to.id)">
-            {{ route.to.name }}
-          </button>
+          <UButton
+            :label="route.to.name"
+            color="neutral"
+            variant="link"
+            class="text-highlighted p-0 text-sm leading-5 font-semibold"
+            @click="emit('station', route.to.id)" />
         </li>
       </ol>
       <p class="text-dimmed text-xs">Times are estimates from an average train speed, a few minutes for each change.</p>

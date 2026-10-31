@@ -16,94 +16,46 @@
   }
 }
 
-/* The brand green, as a palette: Nuxt UI's `primary` (app.config.ts). */
+/* The brand green, as a palette: Nuxt UI's `primary` (app.config.ts), the green ui.nuxt.com itself uses. */
 @theme static {
   --font-sans: 'Inter', system-ui, sans-serif;
 
-  --color-brand-50: #f0faf5;
-  --color-brand-100: #e8f8f0;
-  --color-brand-200: #c5e8d8;
-  --color-brand-300: #8fd4b4;
-  --color-brand-400: #4dbb87;
-  --color-brand-500: #2a9d6f;
-  --color-brand-600: #248a60;
-  --color-brand-700: #1f704f;
-  --color-brand-800: #1b5a41;
-  --color-brand-900: #174a37;
-  --color-brand-950: #0c2e22;
+  --color-brand-50: #effdf5;
+  --color-brand-100: #d9fbe8;
+  --color-brand-200: #b3f5d1;
+  --color-brand-300: #75edae;
+  --color-brand-400: #00dc82;
+  --color-brand-500: #00c16a;
+  --color-brand-600: #00a155;
+  --color-brand-700: #007f45;
+  --color-brand-800: #016538;
+  --color-brand-900: #0a5331;
+  --color-brand-950: #052e16;
 }
 
-/* Nuxt UI's surfaces and text, set to the design's: navy text, hairline borders, solid cards. */
+/* Text, surfaces and borders are Nuxt UI's own, on its plain neutral grey, as ui.nuxt.com has them:
+   white and charcoal, no tint. What is the site's own is made from them: the page, the hero's band,
+   what is open or current. */
 :root {
-  --ui-bg: #ffffff;
-  --ui-bg-muted: #f8fafb;
-  --ui-bg-elevated: #eef2f5;
-  --ui-bg-accented: #e2e8f0;
-  --ui-border: #e2e8f0;
-  --ui-border-muted: #f1f3f6;
-  --ui-border-accented: #cbd5e1;
-  --ui-text-highlighted: #152030;
-  --ui-text: #2a3a30;
-  --ui-text-toned: #2a3a30;
-  --ui-text-muted: #5a7a70;
-  --ui-text-dimmed: #8ab3c5;
   --ui-radius: 0.5rem;
 
-  /* The page behind the cards, and the chips' colours. */
-  --rt-page: #fafbfa;
-  --rt-hero-bg: #e9f1f7;
-  --rt-tag-bg: #eef7f3;
-  --rt-tag-text: #2a6a4a;
-  --rt-tag-border: #c5ddd5;
-  --rt-ind-bg: #f0f4ff;
-  --rt-ind-text: #3b4faa;
-  --rt-ind-border: #c5cfee;
-  --rt-badge-bg: #fef3e2;
-  --rt-badge-text: #7a4f0a;
-  --rt-badge-border: #f0c87a;
-  --rt-selected-bg: #f0faf5;
-  --rt-selected-text: #1f704f;
-  --rt-selected-ring: #c5e8d8;
-  --rt-overlay: rgba(21, 32, 48, 0.28);
-  --rt-shadow-map: 0 8px 30px rgba(21, 32, 48, 0.1);
-  --rt-shadow-card: 0 1px 3px rgba(21, 32, 48, 0.04);
-  --rt-shadow-card-hover: 0 6px 20px rgba(42, 157, 111, 0.1);
-  --rt-shadow-soft: 0 8px 30px rgba(21, 32, 48, 0.06);
+  --rt-page: var(--ui-bg);
+  --rt-hero-bg: color-mix(in oklab, var(--ui-primary) 7%, var(--ui-bg));
+  --rt-selected-bg: color-mix(in oklab, var(--ui-primary) 10%, var(--ui-bg));
+  --rt-selected-text: var(--ui-color-primary-700);
+  --rt-selected-ring: color-mix(in oklab, var(--ui-primary) 35%, var(--ui-bg));
+  --rt-shadow-map: 0 8px 30px rgba(0, 0, 0, 0.1);
+  --rt-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .dark {
-  --ui-bg: #16202d;
-  --ui-bg-muted: #111a25;
-  --ui-bg-elevated: #182331;
-  --ui-bg-accented: #1f2d3d;
-  --ui-border: #1f2d3d;
-  --ui-border-muted: #1f2d3d;
-  --ui-border-accented: #2c3d50;
-  --ui-text-highlighted: #e6edf3;
-  --ui-text: #c8d4cf;
-  --ui-text-toned: #c8d4cf;
-  --ui-text-muted: #9bb1ab;
-  --ui-text-dimmed: #6b8595;
-
-  --rt-page: #0c1520;
-  --rt-hero-bg: #141a25;
-  --rt-tag-bg: #14302a;
-  --rt-tag-text: #7adcb0;
-  --rt-tag-border: #1f4438;
-  --rt-ind-bg: #1a2342;
-  --rt-ind-text: #a3b1ee;
-  --rt-ind-border: #2c3a6e;
-  --rt-badge-bg: #3a2a10;
-  --rt-badge-text: #f0c87a;
-  --rt-badge-border: #5a4218;
-  --rt-selected-bg: #18352d;
-  --rt-selected-text: #7adcb0;
-  --rt-selected-ring: #1f4438;
-  --rt-overlay: rgba(0, 0, 0, 0.5);
-  --rt-shadow-map: 0 8px 30px rgba(0, 0, 0, 0.35);
-  --rt-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --rt-shadow-card-hover: 0 6px 20px rgba(42, 157, 111, 0.12);
-  --rt-shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.3);
+  --rt-page: var(--ui-bg);
+  --rt-hero-bg: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg));
+  --rt-selected-bg: color-mix(in oklab, var(--ui-primary) 14%, var(--ui-bg));
+  --rt-selected-text: var(--ui-primary);
+  --rt-selected-ring: color-mix(in oklab, var(--ui-primary) 35%, var(--ui-bg));
+  --rt-shadow-map: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --rt-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 @utility bg-page {
@@ -112,21 +64,12 @@
 @utility shadow-card {
   box-shadow: var(--rt-shadow-card);
 }
-@utility shadow-card-hover {
-  box-shadow: var(--rt-shadow-card-hover);
-}
-@utility shadow-soft {
-  box-shadow: var(--rt-shadow-soft);
-}
 /* What is open or current: the open section, the change playing, the plan picked. */
 @utility bg-selected {
   background-color: var(--rt-selected-bg);
 }
 @utility text-selected {
   color: var(--rt-selected-text);
-}
-@utility border-selected {
-  border-color: var(--rt-selected-ring);
 }
 @utility ring-selected {
   box-shadow: inset 0 0 0 1px var(--rt-selected-ring);

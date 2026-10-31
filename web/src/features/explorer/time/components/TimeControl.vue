@@ -69,7 +69,7 @@
         <p class="text-highlighted truncate text-sm font-bold">{{ step?.title }}</p>
         <p class="text-muted truncate text-xs tabular-nums">{{ caption }}</p>
       </div>
-      <SegmentedControl :modelValue="speed" :items="SPEED_OPTIONS" label="Speed" @update:modelValue="emit('speed', $event)" />
+      <UTabs :modelValue="speed" :items="SPEED_OPTIONS" :content="false" aria-label="Speed" @update:modelValue="emit('speed', Number($event))" />
       <UDropdownMenu :items="cameraItems" :content="{ align: 'end', side: 'top' }">
         <UButton
           :label="cameraLabel"
