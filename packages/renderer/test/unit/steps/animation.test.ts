@@ -12,7 +12,7 @@ describe('StepAnimationUtils', () => {
       const kinds = new Set<string>();
       for (const step of timeline.steps) {
         playback.player.seek({ beforeChange: step.index });
-        const animation = createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index), view: '2d' as const });
+        const animation = createStepAnimation(step, { index, timeline, view: '2d' as const });
         kinds.add(step.kind);
         expect(animation.step).toBe(step);
         expect(animation.drawSeconds).toBeGreaterThan(0);

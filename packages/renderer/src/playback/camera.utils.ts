@@ -1,6 +1,6 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import { clamp } from '../core/easing.utils';
-import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/network/geometry.constants';
+import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/network/engine/geometry.constants';
 import { CHASE_ZOOM_AT_1KM, CHASE_ZOOM_PER_DOUBLING, CLOSE_UP_MAX_ZOOM, CLOSE_UP_MIN_ZOOM, FOLLOW_RATE, MIN_TURN_KM, TURN_RATE } from './camera.constants';
 import type { Chase } from './camera.types';
 

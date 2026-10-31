@@ -77,7 +77,7 @@
               @year="store.showYear"
               @station="store.pickStation"
               @line="store.pushLine" />
-            <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
+            <PlansSection v-else :plans :planOnly :plan :built="builtFacts" @choose="choosePlan" />
           </div>
         </ExplorerPanel>
 
@@ -189,9 +189,7 @@
 
 <script setup lang="ts">
   import { useRoute } from '#imports';
-  import { NetworkModel } from '@railtime/network/model.service';
   import type { Network } from '@railtime/schema/network.types';
-  import { isPlanOnly } from '@railtime/schema/plan.utils';
   import { storeToRefs } from 'pinia';
   import { computed, useTemplateRef } from 'vue';
 
@@ -218,16 +216,11 @@
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  // The network's model, made once for the page; the store opens on it and on what the address says.
-  const model = NetworkModel.create(props.network, props.plan ? { plan: props.plan } : {});
+  // The store makes the network's facts, once for the page, and opens on them and on what the address says.
   const opening = parseExplorerQuery(useRoute().query);
   const openingSection = openingSectionOf(props.plan);
   const store = useExplorerStore();
-  store.open(
-    { model, ...(props.plan ? { plan: props.plan } : {}), planOnly: isPlanOnly(props.network), planCount: Object.keys(props.network.plans ?? {}).length },
-    opening,
-    openingSection,
-  );
+  const { range } = store.open(props.network, props.plan, opening, openingSection);
   const {
     section,
     railSection,
@@ -248,20 +241,16 @@
     step,
     credits,
     planOnly,
+    plans,
   } = storeToRefs(store);
   const searchOpen = store.dialogOpen('search');
   const helpOpen = store.dialogOpen('help');
   const citiesOpen = store.dialogOpen('cities');
-  const range = model.range;
 
   const { resizing, startResize } = useExplorerLayout(explorer);
   useTransitMap({ container: mapElement, minimapContainer: minimapElement });
 
-  const { planSummary, planLegend, builtFacts, planMark, choosePlan } = useExplorerPlan({
-    network: props.network,
-    plan: props.plan,
-    onChoose: id => emit('plan', id),
-  });
+  const { planSummary, planLegend, builtFacts, planMark, choosePlan } = useExplorerPlan({ onChoose: id => emit('plan', id) });
   const {
     sections,
     lines,

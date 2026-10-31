@@ -14,7 +14,7 @@ const change = (index: number, time: number | null, kind: ChangeInfo['kind'] = '
   time,
   kind,
   title: `Change ${index}`,
-  color: '#ff0000',
+  color: { light: '#ff0000', dark: '#ff0000' },
   stations: [],
 });
 

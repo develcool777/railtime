@@ -4,7 +4,7 @@ import type { FeatureCollection, LineFeature } from '../layers/features.types';
 import { emptyCollection } from '../layers/features.utils';
 import type { Palette } from '../layers/theme.types';
 import type { NetworkSnapshot } from '../layers/snapshot.types';
-import type { Bounds } from '@railtime/network/geometry.types';
+import type { Bounds } from '@railtime/network/engine/geometry.types';
 import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES } from './map.constants';
 
 /**

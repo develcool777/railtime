@@ -3,14 +3,14 @@ import { toTimestamp } from '../../../src/core/date.utils';
 import { CoverageGrid } from '../../../src/coverage/grid.service';
 import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from '../../../src/coverage/measure.constants';
 import { CoverageMeasure } from '../../../src/coverage/measure.service';
-import { bandAt, coverageHistory, coverageOf, servedStations } from '../../../src/coverage/measure.utils';
+import { bandAt, cellBands, coverageHistory, coverageOf, servedStations } from '../../../src/coverage/measure.utils';
 import { AROUND_TINY, HOLED, KM_EAST, KM_NORTH, MIDDLE, SQUARE, TINY_WITH_HOLE as CITY } from '../../support/factories/boundaries.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { modelOf } from '../../support/model.utils';
+import { factsOf } from '../../support/facts.utils';
 
 describe('CoverageMeasure', () => {
   test("measures the city on the network at a cursor, named by its outline, as the grid's helpers do", () => {
-    const { index, timeline } = modelOf(tinyNetwork());
+    const { index, timeline } = factsOf(tinyNetwork());
     const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const grid = new CoverageGrid(CITY);
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
@@ -20,13 +20,22 @@ describe('CoverageMeasure', () => {
     expect(measure.info(0).share).toBe(0);
   });
 
-  test('works out the history from the timeline’s first year to today’s once, and frames the city', () => {
-    const { index, timeline } = modelOf(tinyNetwork());
+  test('works out the history from the timeline’s first year to today’s once, frames the city, and draws it cell by cell', () => {
+    const { index, timeline } = factsOf(tinyNetwork());
     const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const history = measure.history();
     const first = new Date(timeline.start).getUTCFullYear();
     expect(history).toEqual(coverageHistory(index, timeline, new CoverageGrid(CITY), [first, 1925], COVERAGE_HEADLINE_METRES));
     expect(measure.history()).toBe(history);
+    const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
+    const grid = new CoverageGrid(CITY);
+    expect(measure.cells(cursor)).toEqual({
+      columns: grid.columns,
+      rows: grid.rows,
+      corners: grid.corners,
+      bands: COVERAGE_BANDS,
+      cells: cellBands(grid, grid.distances(servedStations(index, timeline, cursor), COVERAGE_BANDS.at(-1)!.upTo), COVERAGE_BANDS),
+    });
     expect(measure.bounds).toEqual([
       [-2 * KM_EAST, 51.5 - 2 * KM_NORTH],
       [5 * KM_EAST, 51.5 + 2 * KM_NORTH],
@@ -38,6 +47,20 @@ describe('MeasureUtils', () => {
   describe('bandAt', () => {
     test('puts a distance in the first band it fits, its end included, and none beyond them', () => {
       expect([0, 400, 401, 800, 1200, 1201, Infinity].map(metres => bandAt(metres, COVERAGE_BANDS))).toEqual([0, 0, 1, 1, 2, -1, -1]);
+    });
+  });
+
+  describe('cellBands', () => {
+    test('gives each cell of the city its band, the city beyond every band one more, and outside it -1', () => {
+      const grid = new CoverageGrid(HOLED);
+      const cells = cellBands(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS);
+      const cellAt = (east: number, north: number) => cells[Math.floor((2 - north) / 0.1) * grid.columns + Math.floor(east / 0.1)];
+      expect(cellAt(1.05, 1.05)).toBe(0);
+      expect(cellAt(1.65, 1.05)).toBe(1);
+      // The north-east corner, 1.3 km from the middle: city, but beyond every band.
+      expect(cellAt(1.95, 1.95)).toBe(COVERAGE_BANDS.length);
+      // The hole in the south-west: not the city.
+      expect(cellAt(0.15, 0.15)).toBe(-1);
     });
   });
 
@@ -80,7 +103,7 @@ describe('MeasureUtils', () => {
 
   describe('servedStations', () => {
     test('places the stations a line calls at, not one it only passes', () => {
-      const { index, timeline } = modelOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork());
       // In 1915 red runs through C, which opens on it only in 1920.
       expect(servedStations(index, timeline, timeline.cursorAt(toTimestamp('1915-01-01')))).toEqual(['a', 'b', 'd'].map(station => index.coordOf(station)));
     });
@@ -88,7 +111,7 @@ describe('MeasureUtils', () => {
 
   describe('coverageHistory', () => {
     test('measures the covered share at the end of each year, growing with the network', () => {
-      const { index, timeline } = modelOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork());
       const history = coverageHistory(index, timeline, new CoverageGrid(AROUND_TINY), [1899, 1925], 800);
       expect(history.map(entry => entry.year)).toEqual(Array.from({ length: 27 }, (_, position) => 1899 + position));
       const share = (year: number) => history.find(entry => entry.year === year)!.share;
@@ -101,7 +124,7 @@ describe('MeasureUtils', () => {
     });
 
     test('gives each year the share coverageOf finds at its end, from any first year', () => {
-      const { index, timeline } = modelOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork());
       const grid = new CoverageGrid(AROUND_TINY);
       for (const first of [1899, 1900, 1901, 1905, 1915]) {
         const history = coverageHistory(index, timeline, grid, [first, 1925], 800);
@@ -114,7 +137,7 @@ describe('MeasureUtils', () => {
     });
 
     test('shares nothing out of a city with no area', () => {
-      const { index, timeline } = modelOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork());
       const history = coverageHistory(index, timeline, new CoverageGrid({ ...AROUND_TINY, polygons: [] }), [1899, 1925], 800);
       expect(history.every(entry => entry.share === 0)).toBe(true);
     });

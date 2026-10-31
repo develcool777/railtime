@@ -26,7 +26,7 @@
             :aria-label="visible.has(line.id) ? `Hide ${line.name}` : `Show ${line.name}`"
             @click="toggleLine(line.id)" />
           <ListRow class="min-w-0 flex-1 pl-0" @click="emit('open', line.id)">
-            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: line.color }" />
+            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(line.color) }" />
             <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ line.name }}</span>
             <span class="text-muted flex-none text-xs tabular-nums">{{ line.opened === null ? 'Planned' : yearOf(line.opened) }}</span>
             <UIcon name="i-lucide-chevron-right" class="text-dimmed size-4 flex-none" />
@@ -41,7 +41,7 @@
   import type { LineInfo } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
-  import { yearOf } from '~/features/explorer/format.utils';
+  import { lineColor, yearOf } from '~/features/explorer/format.utils';
   import { foldName } from '~/features/explorer/stations/station.utils';
 
   const props = defineProps<{

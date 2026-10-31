@@ -16,7 +16,7 @@ const line = (id: string, year: number | null): LineInfo => ({
   name: id,
   network: 'metro',
   networkName: 'Metro',
-  color: '#ff0000',
+  color: { light: '#ff0000', dark: '#ff0000' },
   opened: year === null ? null : Date.UTC(year, 0, 1),
 });
 
@@ -32,7 +32,7 @@ const change = (index: number, year: number | null): ChangeInfo => ({
   kind: 'open',
   time: year === null ? null : Date.UTC(year, 5, 1),
   title: `Change ${index}`,
-  color: '#000000',
+  color: { light: '#000000', dark: '#000000' },
   stations: [],
 });
 
@@ -62,8 +62,8 @@ const STATION: StationInfo = {
   name: 'Centre',
   otherNames: [],
   lines: [
-    { id: 'blue', name: 'Blue', color: '#0000ff', opened: '1950-03-01' },
-    { id: 'red', name: 'Red', color: '#ff0000', opened: '1900-06-01' },
+    { id: 'blue', name: 'Blue', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1950-03-01' },
+    { id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-06-01' },
   ],
   formerNames: [],
   transfers: [],
@@ -72,7 +72,12 @@ const STATION: StationInfo = {
 describe('PanelUtils', () => {
   describe('stationTop', () => {
     test('says when its first line called there, and its lines’ colours', () => {
-      expect(stationTop(STATION, 'Lines')).toEqual({ title: 'Centre', context: 'opened 1900', dots: ['#0000ff', '#ff0000'], backLabel: 'Lines' });
+      expect(stationTop(STATION, 'Lines')).toEqual({
+        title: 'Centre',
+        context: 'opened 1900',
+        dots: ['light-dark(#0000ff, #0000ff)', 'light-dark(#ff0000, #ff0000)'],
+        backLabel: 'Lines',
+      });
     });
 
     test('gives its names in other languages first', () => {
@@ -80,7 +85,7 @@ describe('PanelUtils', () => {
     });
 
     test('is planned when no line has called there yet', () => {
-      const planned = { ...STATION, lines: [{ id: 'green', name: 'Green', color: '#00ff00', opened: null }] };
+      const planned = { ...STATION, lines: [{ id: 'green', name: 'Green', color: { light: '#00ff00', dark: '#00ff00' }, opened: null }] };
       expect(stationTop(planned, 'Plans').context).toBe('planned');
     });
   });
@@ -89,7 +94,12 @@ describe('PanelUtils', () => {
     const details: LineDetails = { ...line('red', 1900), stations: 12, km: 9.6, branches: [[{ id: 'a', name: 'A' }]], changes: [] };
 
     test('gives its size while it is open', () => {
-      expect(lineTop(details, 'Lines')).toEqual({ title: 'red', context: 'opened 1900 · 12 stations · 10 km', dots: ['#ff0000'], backLabel: 'Lines' });
+      expect(lineTop(details, 'Lines')).toEqual({
+        title: 'red',
+        context: 'opened 1900 · 12 stations · 10 km',
+        dots: ['light-dark(#ff0000, #ff0000)'],
+        backLabel: 'Lines',
+      });
     });
 
     test('leaves the size out when it is not open, and a plan’s line is planned', () => {

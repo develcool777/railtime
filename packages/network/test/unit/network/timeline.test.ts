@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest';
+import { planGrowth } from '../../../src/changes/growth.utils';
 import { toTimestamp } from '../../../src/core/date.utils';
 import { NetworkIndex } from '../../../src/network/index.service';
 import { Timeline } from '../../../src/network/timeline.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { modelOf } from '../../support/model.utils';
+import { factsOf } from '../../support/facts.utils';
 
 const timelineOf = (network = tinyNetwork()) => {
   const index = new NetworkIndex(network);
@@ -95,7 +96,7 @@ describe('Timeline', () => {
   });
 
   test("follows every dated step with a plan's, undated, in the plan's order", () => {
-    const timeline = new Timeline(modelOf(tinyNetwork(), 'extension').index);
+    const timeline = new Timeline(factsOf(tinyNetwork(), 'extension').index);
     const planned = timeline.steps.slice(timeline.datedCount);
     expect(planned.map(step => [step.kind, step.planned, step.time])).toEqual([
       ['open', true, Infinity],
@@ -106,7 +107,7 @@ describe('Timeline', () => {
   });
 
   test("keeps a plan's station off its line until its section plays", () => {
-    const timeline = new Timeline(modelOf(tinyNetwork(), 'extension').index);
+    const timeline = new Timeline(factsOf(tinyNetwork(), 'extension').index);
     expect(timeline.servesStation('f', 'red', timeline.steps.length - 1)).toBe(false);
     expect(timeline.servesStation('f', 'red', timeline.steps.length)).toBe(true);
   });
@@ -124,7 +125,7 @@ describe('Timeline', () => {
   test("ends its dates on the last dated step, a plan's undated ones after it", () => {
     const { timeline } = timelineOf();
     expect(timeline.lastDate).toBe(toTimestamp('1990-01-01'));
-    const planned = modelOf(tinyNetwork(), 'extension').timeline;
+    const planned = factsOf(tinyNetwork(), 'extension').timeline;
     expect(planned.lastDate).toBe(toTimestamp('1990-01-01'));
   });
 
@@ -186,5 +187,15 @@ describe('Timeline', () => {
     const { timeline } = timelineOf(network);
     expect(timeline.stationsOnMap(timeline.cursorAt(toTimestamp('1935-01-01'))).has('e')).toBe(true);
     expect(timeline.stationsOnMap(timeline.cursorAt(toTimestamp('1955-01-01'))).has('e')).toBe(false);
+  });
+
+  test('grows an opening out of the stations on the map before it, worked out once', () => {
+    const { index, timeline } = timelineOf();
+    const extension = timeline.steps.find(step => step.kind === 'open' && step.segments.some(segment => segment.stationB === 'c' || segment.stationA === 'c'));
+    if (extension?.kind !== 'open') throw new Error('the tiny network extends red to C');
+    const growth = timeline.growthOf(extension);
+    expect(growth).toEqual(planGrowth(extension.segments, timeline.stationsOnMap(extension.index), station => index.coordOf(station), index.centre));
+    expect(growth.reach.some(reached => !reached.isNew)).toBe(true);
+    expect(timeline.growthOf(extension)).toBe(growth);
   });
 });

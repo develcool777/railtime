@@ -75,21 +75,21 @@ describe('RouteLayerUtils', () => {
   describe('routeTrack', () => {
     test("draws each ride along its segments in its line's colour, a walk straight, and nothing without a route", () => {
       const { index, route } = routeAtoD();
-      expect(routeTrack(index, route).map(feature => [feature.properties, feature.geometry.coordinates])).toEqual(
+      expect(routeTrack(index, route, 'light').map(feature => [feature.properties, feature.geometry.coordinates])).toEqual(
         [0, 1, 2].map(segment => [{ color: '#ff0000', walk: false }, index.segments[segment]!.coordinates]),
       );
       const walk = { ...route, legs: [{ kind: 'walk' as const, from: route.from, to: route.to, minutes: 5 }], segments: [[]] };
-      expect(routeTrack(index, walk)).toEqual([
+      expect(routeTrack(index, walk, 'light')).toEqual([
         { type: 'Feature', properties: { color: '', walk: true }, geometry: { type: 'LineString', coordinates: [index.coordOf('a'), index.coordOf('d')] } },
       ]);
-      expect(routeTrack(index, null)).toEqual([]);
+      expect(routeTrack(index, null, 'light')).toEqual([]);
     });
   });
 
   describe('routeStops', () => {
     test('marks each stop where it is, and none without a route', () => {
       const { index, route } = routeAtoD();
-      const stops = routeStops(index, route);
+      const stops = routeStops(index, route, 'light');
       expect(stops.map(stop => [stop.properties.name, stop.properties.kind])).toEqual([
         ['A', 'board'],
         ['B', 'pass'],
@@ -97,7 +97,7 @@ describe('RouteLayerUtils', () => {
         ['D', 'end'],
       ]);
       expect(stops[0]?.geometry.coordinates).toEqual(index.coordOf('a'));
-      expect(routeStops(index, null)).toEqual([]);
+      expect(routeStops(index, null, 'light')).toEqual([]);
     });
   });
 });

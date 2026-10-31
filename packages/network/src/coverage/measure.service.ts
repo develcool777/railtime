@@ -2,10 +2,10 @@ import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Bounds } from '../core/geometry.types';
 import type { NetworkIndex } from '../network/index.service';
 import type { Timeline } from '../network/timeline.service';
-import type { CoverageInfo, CoverageYear } from '../model/facts.types';
+import type { CoverageCells, CoverageInfo, CoverageYear } from '../facts/facts.types';
 import { CoverageGrid } from './grid.service';
 import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from './measure.constants';
-import { coverageHistory, coverageOf, servedStations } from './measure.utils';
+import { cellBands, coverageHistory, coverageOf, servedStations } from './measure.utils';
 
 /**
  * A city's coverage on its network: how much of its outline is within walking distance of a station
@@ -67,13 +67,23 @@ export class CoverageMeasure {
   }
 
   /**
-   * How far each cell is from the nearest station open at a cursor, up to the farthest band: for a
-   * picture of it.
+   * The city cell by cell at a cursor, each in its band: what a picture of its coverage is drawn from.
+   *
+   * @param cursor - The timeline's cursor.
+   * @returns The cells, where they lie, and the bands.
+   */
+  public cells(cursor: number): CoverageCells {
+    const { columns, rows, corners } = this.grid;
+    return { columns, rows, corners, bands: COVERAGE_BANDS, cells: cellBands(this.grid, this.distances(cursor), COVERAGE_BANDS) };
+  }
+
+  /**
+   * How far each cell is from the nearest station open at a cursor, up to the farthest band.
    *
    * @param cursor - The timeline's cursor.
    * @returns Metres, cell by cell.
    */
-  public distances(cursor: number): Float32Array {
+  private distances(cursor: number): Float32Array {
     const farthest = COVERAGE_BANDS.at(-1)?.upTo ?? COVERAGE_HEADLINE_METRES;
     return this.grid.distances(servedStations(this.index, this.timeline, cursor), farthest);
   }

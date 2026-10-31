@@ -1,7 +1,8 @@
+import { planGrowth } from '../changes/growth.utils';
 import { toTimestamp } from '../core/date.utils';
 import type { NetworkIndex } from './index.service';
 import type { LineSegment } from './index.types';
-import type { AliasEnd, DayChanges, LineIdentity, Step, StepDraft } from './timeline.types';
+import type { AliasEnd, DayChanges, Growth, LineIdentity, OpenStep, Step, StepDraft } from './timeline.types';
 import { connectedStretches, pushTo } from './timeline.utils';
 
 /**
@@ -36,6 +37,8 @@ export class Timeline {
   private readonly neverServed = new Set<string>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
+  /** Each opening's growth, worked out the first time it is asked for. */
+  private readonly growths = new WeakMap<OpenStep, Growth>();
 
   public constructor(index: NetworkIndex) {
     this.index = index;
@@ -186,6 +189,21 @@ export class Timeline {
       stations.add(lineSegment.segment.stationB);
     }
     return stations;
+  }
+
+  /**
+   * How an opening grows: from the stations on the map before it (else the end nearest the centre),
+   * segment by segment, and the order its stations come in. Its caption and its animation both read it.
+   *
+   * @param step - The opening.
+   * @returns Its growth, worked out once.
+   */
+  public growthOf(step: OpenStep): Growth {
+    const known = this.growths.get(step);
+    if (known) return known;
+    const growth = planGrowth(step.segments, this.stationsOnMap(step.index), station => this.index.coordOf(station), this.index.centre);
+    this.growths.set(step, growth);
+    return growth;
   }
 
   /**

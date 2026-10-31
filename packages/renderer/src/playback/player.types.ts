@@ -1,4 +1,4 @@
-import type { Step } from '@railtime/network/timeline.types';
+import type { Step } from '@railtime/network/engine/timeline.types';
 import type { StepAnimation } from '../steps/animation.service';
 
 /** The phases of a playing step: the camera moves, the change animates, the result stays highlighted. */

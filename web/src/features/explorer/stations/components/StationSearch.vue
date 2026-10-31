@@ -15,7 +15,7 @@
     </template>
     <template #item-leading="{ item }">
       <span class="flex w-[22px] flex-none items-center gap-0.5 self-center">
-        <span v-for="color in item.colors" :key="color" class="h-1.5 flex-1 rounded-full" :style="{ background: color }" />
+        <span v-for="color in item.colors" :key="`${color.light} ${color.dark}`" class="h-1.5 flex-1 rounded-full" :style="{ background: lineColor(color) }" />
       </span>
     </template>
     <template #empty>
@@ -29,6 +29,7 @@
   import { computed, ref } from 'vue';
 
   import { findStations } from '~/features/explorer/stations/station.utils';
+  import { lineColor } from '~/features/explorer/format.utils';
 
   /** How many matches the menu lists. */
   const MAX_MATCHES = 30;

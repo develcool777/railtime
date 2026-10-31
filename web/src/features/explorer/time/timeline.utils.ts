@@ -1,6 +1,6 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { FUTURE_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/explorer/time/time.constants';
-import { yearOf } from '~/features/explorer/format.utils';
+import { lineColor, yearOf } from '~/features/explorer/format.utils';
 import type { TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
 
 /**
@@ -54,7 +54,7 @@ export const timelineTicks = (scale: TimelineScale, changes: ChangeInfo[]): Time
       if (change.time === null) {
         const built = change.index - scale.datedCount + 1;
         const left = 1 - FUTURE_SHARE + (FUTURE_SHARE * built) / Math.max(1, scale.plannedCount);
-        return { index: change.index, left, level: 0, color: change.color, closure: false, label: `Future · ${change.title}` };
+        return { index: change.index, left, level: 0, color: lineColor(change.color), closure: false, label: `Future · ${change.title}` };
       }
       const year = yearOf(change.time);
       const level = perYear.get(year) ?? 0;
@@ -64,7 +64,7 @@ export const timelineTicks = (scale: TimelineScale, changes: ChangeInfo[]): Time
         index: change.index,
         left: positionOf(scale, change.time),
         level: Math.min(level, MAX_TICK_LEVEL),
-        color: change.color,
+        color: lineColor(change.color),
         closure,
         label: `${year} · ${change.title}`,
       };

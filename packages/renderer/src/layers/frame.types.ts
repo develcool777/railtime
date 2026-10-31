@@ -1,7 +1,7 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import type { Minimap } from '../minimap/map.service';
-import type { NetworkIndex } from '@railtime/network/index.service';
-import type { Timeline } from '@railtime/network/timeline.service';
+import type { NetworkIndex } from '@railtime/network/engine/index.service';
+import type { Timeline } from '@railtime/network/engine/timeline.service';
 import type { Player } from '../playback/player.service';
 import type { StationLayer } from '../stations/layer.service';
 import type { ActiveStepLayer } from './activeStep.service';

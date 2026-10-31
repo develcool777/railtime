@@ -1,5 +1,5 @@
 import { emptyCollection } from '../layers/features.utils';
-import type { Step } from '@railtime/network/timeline.types';
+import type { Step } from '@railtime/network/engine/timeline.types';
 import { CloseStepAnimation } from './close.service';
 import { IdentityStepAnimation } from './identity.service';
 import { InfillStepAnimation } from './infill.service';

@@ -1,7 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import { cumulativeDistances } from '../core/geometry.utils';
-import type { PlanFacts } from '../model/facts.types';
+import type { PlanFacts } from '../facts/facts.types';
 
 /**
  * The length of a network's track.
@@ -27,7 +27,7 @@ export const planFacts = (network: Network, planId: string): PlanFacts => {
     km: Math.max(0, trackKm(built.network) - trackKm(network)),
     lines: lineIds.flatMap(id => {
       const line = built.network.lines[id];
-      return line ? [{ id, name: line.name, color: line.color, darkColor: line.darkColor ?? line.color }] : [];
+      return line ? [{ id, name: line.name, color: { light: line.color, dark: line.darkColor ?? line.color } }] : [];
     }),
   };
 };

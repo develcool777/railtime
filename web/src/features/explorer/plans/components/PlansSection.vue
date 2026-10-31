@@ -25,17 +25,17 @@
 </template>
 
 <script setup lang="ts">
-  import { useColorMode } from '#imports';
-  import type { Network, PlanStatus } from '@railtime/schema/network.types';
-  import { isPlanOnly } from '@railtime/schema/plan.utils';
+  import type { PlanInfo } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
   import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
-  import { formatPlanFacts } from '~/features/explorer/format.utils';
-  import { planFacts } from '@railtime/network/plan.utils';
+  import { formatPlanFacts, lineColor } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
-    network: Network;
+    /** The city's plans, each with what it would add. */
+    plans: PlanInfo[];
+    /** The network was never built: there is no built card. */
+    planOnly: boolean;
     /** The plan shown, if any. */
     plan?: string;
     /** What is built today, in a line: the first card's facts. */
@@ -45,30 +45,22 @@
 
   /** The key of the card for the network as it is. */
   const BUILT = 'built';
-  const colorMode = useColorMode();
-
-  // Building every plan once, as the section opens: what each adds does not change.
-  const facts = Object.fromEntries(Object.keys(props.network.plans ?? {}).map(id => [id, planFacts(props.network, id)]));
 
   /** Shows the plan picked, or the network as built. */
   const choose = (value: unknown) => emit('choose', value === BUILT ? undefined : String(value));
 
   const cards = computed(() => {
-    const dark = colorMode.value !== 'light';
-    const plans = Object.entries(props.network.plans ?? {}).map(([id, plan]) => {
-      // Every plan has its facts: they were worked out for each id above.
-      const { stations, km, lines } = facts[id]!;
-      return {
-        value: id,
-        name: plan.name,
-        status: plan.status as PlanStatus | undefined,
-        description: plan.description,
-        colors: [...new Set(lines.map(line => (dark ? line.darkColor : line.color)))],
-        facts: formatPlanFacts(stations, km),
-      };
-    });
+    const plans = props.plans.map(plan => ({
+      value: plan.id,
+      name: plan.name,
+      status: plan.status,
+      description: plan.description,
+      // Lines sharing a colour show it once.
+      colors: [...new Set(plan.facts.lines.map(line => lineColor(line.color)))],
+      facts: formatPlanFacts(plan.facts.stations, plan.facts.km),
+    }));
     // A network never built has nothing to show without a plan.
-    if (isPlanOnly(props.network)) return plans;
+    if (props.planOnly) return plans;
     return [
       { value: BUILT, name: 'Built', status: undefined, description: 'The network as it is today, and its history.', colors: [], facts: props.built },
       ...plans,

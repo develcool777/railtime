@@ -1,5 +1,5 @@
 import type { LngLatBoundsLike, MapOptions } from 'maplibre-gl';
-import type { Bounds } from '@railtime/network/geometry.types';
+import type { Bounds } from '@railtime/network/engine/geometry.types';
 import { OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from './transitMap.constants';
 import type { MapView, Padding } from './transitMap.types';
 

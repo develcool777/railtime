@@ -1,4 +1,4 @@
-import type { CoverageBand } from '../model/facts.types';
+import type { CoverageBand } from '../facts/facts.types';
 
 /**
  * The bands coverage is shaded in, nearest first: a 5-, 10- and 15-minute walk, about, as the crow

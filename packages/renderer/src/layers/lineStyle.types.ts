@@ -1,5 +1,5 @@
-import type { NetworkIndex } from '@railtime/network/index.service';
-import type { Timeline } from '@railtime/network/timeline.service';
+import type { NetworkIndex } from '@railtime/network/engine/index.service';
+import type { Timeline } from '@railtime/network/engine/timeline.service';
 
 /** Everything that decides how a line looks in a frame. */
 export type RenderState = {

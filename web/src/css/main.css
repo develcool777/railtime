@@ -1,6 +1,17 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/* The page's colour scheme follows its theme, so a line's `light-dark()` colour (`lineColor`) shows the theme's. */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+  }
+}
+
 /* Tailwind 4 leaves buttons with the default cursor, as browsers do: anything clickable shows the hand. */
 @layer base {
   button:not(:disabled),

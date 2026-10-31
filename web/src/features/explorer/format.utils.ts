@@ -1,4 +1,4 @@
-import type { NetworkStats } from '@railtime/network/facts.types';
+import type { LineColor, NetworkStats } from '@railtime/network/facts.types';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -55,3 +55,12 @@ export const formatStats = (stats: NetworkStats, short = false): string => {
  * @returns "1930s", or "Future".
  */
 export const decadeOf = (time: number | null): string => (time === null ? 'Future' : `${Math.floor(yearOf(time) / 10) * 10}s`);
+
+/**
+ * A line's colour as CSS, in whichever theme the page is in: the browser picks by the page's
+ * `color-scheme` (`main.css`), so it changes with the theme without asking the network again.
+ *
+ * @param color - The line's colour in each theme.
+ * @returns A `light-dark()` colour.
+ */
+export const lineColor = (color: LineColor): string => `light-dark(${color.light}, ${color.dark})`;

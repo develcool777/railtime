@@ -1,9 +1,10 @@
 import { useColorMode, useCookie } from '#imports';
-import type { NetworkModel } from '@railtime/network/model.service';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { RoutePreference, RouteStop, StepInfo, Theme } from '@railtime/network/facts.types';
 import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, ref, shallowRef } from 'vue';
 import type { WritableComputedRef } from 'vue';
@@ -38,7 +39,7 @@ import { isAtRest } from '~/features/explorer/time/time.utils';
  *   tells the map how to look.
  * - **What the map says**: the time, the change playing, what the overlay came to, where it looks:
  *   written by the adapter's listeners, read by every part.
- * - **The network**: its model, for every question about it.
+ * - **The network**: its `NetworkFacts`, made here as the page opens, for every question about it.
  *
  * Kept by what each is: what is looked at in the address (`useExplorerAddress`), how the page is laid
  * out and how playback is set in cookies, the rest for the visit. The page mounts the explorer afresh
@@ -73,13 +74,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const step = shallowRef<StepInfo | null>(null);
   const overlayResult = shallowRef<OverlayResult | null>(null);
   const view = shallowRef<MapView | null>(null);
-  const model = shallowRef<NetworkModel | null>(null);
-  /** The plan shown, if any: its future is what plays, and its built network is "at rest". */
-  const plan = ref<string | undefined>(undefined);
-  /** A network never built: no history, only its plan to play. */
-  const planOnly = ref(false);
-  /** How many plans the city has. */
-  const planCount = ref(0);
+  const facts = shallowRef<NetworkFacts | null>(null);
   /** The map, once mounted: for its commands. */
   const map = shallowRef<TransitMap | null>(null);
   /** What the map owes credit to, once mounted. */
@@ -87,6 +82,12 @@ export const useExplorerStore = defineStore('explorer', () => {
   /** The day the address opened on, for the map once it is there. */
   let openingDate: number | undefined;
 
+  /** The plan shown, if any: its future is what plays, and its built network is "at rest". */
+  const plan = computed(() => facts.value?.plan ?? undefined);
+  /** A network never built: no history, only its plan to play. */
+  const planOnly = computed(() => facts.value?.planOnly ?? false);
+  /** The city's plans, each with what it would add. */
+  const plans = computed(() => facts.value?.plans() ?? []);
   const theme = computed((): Theme => (colorMode.value === 'light' ? 'light' : 'dark'));
   const openStation = computed(() => openOf(views.value, 'station'));
   const openLine = computed(() => openOf(views.value, 'line'));
@@ -118,25 +119,20 @@ export const useExplorerStore = defineStore('explorer', () => {
   );
 
   /**
-   * Sets everything for a page opening: the network's model, and what the address says; the rest as
+   * Sets everything for a page opening: the network's facts, and what the address says; the rest as
    * a page opens. A station or line the network does not have is a stale link, left out.
    *
-   * @param network - The network's model, the plan it was built with, whether it was ever built, its plans.
-   * @param network.model - The model.
-   * @param network.plan - The plan shown, if any.
-   * @param network.planOnly - Whether the network was never built.
-   * @param network.planCount - How many plans the city has.
+   * @param network - The city's network, as stored.
+   * @param shownPlan - The plan to show built on it, if any.
    * @param address - What the address asks for.
    * @param opening - The section to open on without one in the address: Plans for a plan, else Lines.
+   * @returns The network's facts.
    */
-  const open = (network: { model: NetworkModel; plan?: string; planOnly: boolean; planCount: number }, address: ExplorerUrlState, opening: Section) => {
-    model.value = markRaw(network.model);
-    plan.value = network.plan;
-    planOnly.value = network.planOnly;
-    planCount.value = network.planCount;
-    const known = network.model.index.network;
-    const line = address.line && known.lines[address.line] ? address.line : undefined;
-    const station = address.station && known.stations[address.station] ? address.station : undefined;
+  const open = (network: Network, shownPlan: string | undefined, address: ExplorerUrlState, opening: Section): NetworkFacts => {
+    const opened = markRaw(NetworkFacts.create(network, shownPlan ? { plan: shownPlan } : {}));
+    facts.value = opened;
+    const line = address.line && opened.find('line', address.line) ? address.line : undefined;
+    const station = address.station && opened.find('station', address.station) ? address.station : undefined;
     section.value = address.section ?? opening;
     views.value = [...(line ? [{ kind: 'line' as const, id: line }] : []), ...(station ? [{ kind: 'station' as const, id: station }] : [])];
     timeMode.value = 'rest';
@@ -155,6 +151,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     overlayResult.value = null;
     view.value = address.view ?? null;
     openingDate = address.date;
+    return opened;
   };
 
   /**
@@ -370,7 +367,7 @@ export const useExplorerStore = defineStore('explorer', () => {
    * @param year - The year.
    */
   const showYear = (year: number) => {
-    const today = model.value?.range.today ?? Date.now();
+    const today = facts.value?.range.today ?? Date.now();
     map.value?.seek({ time: Math.min(Date.UTC(year, 11, 31), today) });
     if (timeMode.value === 'rest') openTimeline();
   };
@@ -397,10 +394,10 @@ export const useExplorerStore = defineStore('explorer', () => {
     step,
     overlayResult,
     view,
-    model,
+    facts,
     plan,
     planOnly,
-    planCount,
+    plans,
     map,
     credits,
     theme,

@@ -1,4 +1,4 @@
-import type { RouteInfo } from '@railtime/network/facts.types';
+import type { RouteInfo, Theme } from '@railtime/network/facts.types';
 import type { RouteStopKind, RouteStopMark } from './stops.types';
 
 /** Which mark a stop keeps when two legs give it one: a change outranks a stop passed, the end both; of two alike, the later (at a change, the line boarded). */
@@ -9,9 +9,10 @@ const RANK: Record<RouteStopKind, number> = { pass: 0, board: 1, end: 2 };
  * begins or ends (its start, and every change, a walk's included), and the end.
  *
  * @param route - The route.
+ * @param theme - The theme, for its lines' colours.
  * @returns Each stop with its mark, in the order the route reaches them.
  */
-export const routeStopMarks = (route: RouteInfo): RouteStopMark[] => {
+export const routeStopMarks = (route: RouteInfo, theme: Theme): RouteStopMark[] => {
   const marks = new Map<string, RouteStopMark>();
   const mark = (station: string, name: string, kind: RouteStopKind, color: string) => {
     const known = marks.get(station);
@@ -20,9 +21,9 @@ export const routeStopMarks = (route: RouteInfo): RouteStopMark[] => {
   for (const leg of route.legs) {
     if (leg.kind !== 'ride') continue;
     // Where a ride begins or ends is a change, its start, or (marked below) its end.
-    leg.stops.forEach((stop, place) => mark(stop.id, stop.name, place === 0 || place === leg.stops.length - 1 ? 'board' : 'pass', leg.color));
+    leg.stops.forEach((stop, place) => mark(stop.id, stop.name, place === 0 || place === leg.stops.length - 1 ? 'board' : 'pass', leg.color[theme]));
   }
   const lastRide = route.legs.findLast(leg => leg.kind === 'ride');
-  mark(route.to.id, route.to.name, 'end', lastRide?.kind === 'ride' ? lastRide.color : '');
+  mark(route.to.id, route.to.name, 'end', lastRide?.kind === 'ride' ? lastRide.color[theme] : '');
   return [...marks.values()];
 };

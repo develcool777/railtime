@@ -8,7 +8,12 @@ import { findStations, foldName, stationsByLetter, stripAround } from '~/feature
  * @param otherNames - Its names in other languages.
  * @returns The station.
  */
-const station = (name: string, otherNames: string[] = []) => ({ id: foldName(name).replaceAll(' ', '-'), name, otherNames, colors: ['#ff0000'] });
+const station = (name: string, otherNames: string[] = []) => ({
+  id: foldName(name).replaceAll(' ', '-'),
+  name,
+  otherNames,
+  colors: [{ light: '#ff0000', dark: '#ff0000' }],
+});
 
 const STATIONS = [
   station("King's Cross St. Pancras"),

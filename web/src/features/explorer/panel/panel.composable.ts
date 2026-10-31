@@ -10,22 +10,22 @@ import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel
 
 /**
  * The panel's content: what the store has open (the section, the line or station views pushed over
- * it), answered by the network's model for the moment the map shows and the theme, and what its top
- * says. Each is a computed of the store: it changes when the date, the theme or what is open does.
+ * it), answered by the network's facts for the moment the map shows, and what its top says. Each is
+ * a computed of the store: it changes when the date or what is open does.
  *
  * @returns What the panel lists.
  */
 export const useExplorerPanel = (): ExplorerPanel => {
   const store = useExplorerStore();
-  const { section, views, openStation, openLine, timeMode, time, step, model, theme, plan, planCount, visibleLines } = storeToRefs(store);
+  const { section, views, openStation, openLine, timeMode, time, step, facts, plan, plans, visibleLines } = storeToRefs(store);
 
-  const lines = computed(() => model.value?.lines(theme.value) ?? []);
-  const changes = computed(() => model.value?.changes(theme.value) ?? []);
-  const sections = computed(() => SECTIONS.filter(entry => entry.id !== 'plans' || planCount.value > 0));
+  const lines = computed(() => facts.value?.lines() ?? []);
+  const changes = computed(() => facts.value?.changes() ?? []);
+  const sections = computed(() => SECTIONS.filter(entry => entry.id !== 'plans' || plans.value.length > 0));
   const sectionLabel = computed(() => SECTIONS.find(entry => entry.id === section.value)?.label ?? 'Lines');
 
-  /** The network at the moment the map shows, in the theme: every question answered for then. */
-  const now = computed(() => (model.value && time.value ? model.value.asOf(time.value, theme.value) : null));
+  /** The network at the moment the map shows: every question answered for then. */
+  const now = computed(() => (facts.value && time.value ? facts.value.asOf(time.value) : null));
 
   const visible = computed(() => new Set(visibleLines.value ?? lines.value.map(line => line.id)));
   const setVisible = (next: Set<string>) =>
@@ -55,10 +55,7 @@ export const useExplorerPanel = (): ExplorerPanel => {
    * @param view - The view.
    * @returns Its line's or station's name.
    */
-  const nameOf = (view: PanelView) => {
-    const network = model.value?.index.network;
-    return (view.kind === 'line' ? network?.lines[view.id]?.name : network?.stations[view.id]?.name) ?? view.id;
-  };
+  const nameOf = (view: PanelView) => facts.value?.find(view.kind, view.id)?.name ?? view.id;
   const backLabel = computed(() => {
     const under = views.value.at(-2);
     return under ? nameOf(under) : sectionLabel.value;
@@ -77,7 +74,7 @@ export const useExplorerPanel = (): ExplorerPanel => {
       changes: changes.value,
       currentChange: currentChange.value,
       time: time.value,
-      planCount: planCount.value,
+      planCount: plans.value.length,
       stationCount: stations.value.length,
     });
   });

@@ -46,7 +46,7 @@
             :key="position"
             class="rounded-full"
             :class="{ 'bg-accented': leg.kind === 'walk' }"
-            :style="{ flexGrow: leg.minutes, background: leg.kind === 'ride' ? leg.color : undefined }" />
+            :style="{ flexGrow: leg.minutes, background: leg.kind === 'ride' ? lineColor(leg.color) : undefined }" />
         </div>
       </div>
 
@@ -54,8 +54,8 @@
       <ol class="flex flex-col" role="list">
         <li v-for="(leg, position) in route.legs" :key="position" class="relative pb-4 pl-7">
           <template v-if="leg.kind === 'ride'">
-            <span class="absolute top-2 -bottom-2 left-[5px] w-1 rounded-full" :style="{ background: leg.color }" />
-            <span class="bg-default absolute top-0.5 left-0 size-3.5 rounded-full border-[3px]" :style="{ borderColor: leg.color }" />
+            <span class="absolute top-2 -bottom-2 left-[5px] w-1 rounded-full" :style="{ background: lineColor(leg.color) }" />
+            <span class="bg-default absolute top-0.5 left-0 size-3.5 rounded-full border-[3px]" :style="{ borderColor: lineColor(leg.color) }" />
             <div class="flex items-center justify-between gap-2">
               <UButton
                 :label="leg.stops[0]?.name"
@@ -82,7 +82,7 @@
               <template #content>
                 <ul class="mt-1" role="list">
                   <li v-for="stop in leg.stops.slice(1, -1)" :key="stop.id" class="relative flex h-6 items-center">
-                    <span class="bg-default absolute -left-[26px] size-2.5 rounded-full border-2" :style="{ borderColor: leg.color }" />
+                    <span class="bg-default absolute -left-[26px] size-2.5 rounded-full border-2" :style="{ borderColor: lineColor(leg.color) }" />
                     <UButton :label="stop.name" color="neutral" variant="link" size="xs" class="text-default p-0" @click="emit('station', stop.id)" />
                   </li>
                 </ul>
@@ -117,6 +117,7 @@
 <script setup lang="ts">
   import type { RouteInfo, RouteLegInfo, RoutePreference, RouteStop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref, watch } from 'vue';
+  import { lineColor } from '~/features/explorer/format.utils';
 
   const ENDS = [
     { key: 'from', label: 'from', placeholder: 'From' },

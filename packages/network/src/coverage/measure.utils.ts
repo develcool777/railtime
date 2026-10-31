@@ -1,5 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { CoverageBand, CoverageInfo, CoverageYear } from '../model/facts.types';
+import type { CoverageBand, CoverageInfo, CoverageYear } from '../facts/facts.types';
 import type { NetworkIndex } from '../network/index.service';
 import type { Timeline } from '../network/timeline.service';
 import type { CoverageGrid } from './grid.service';
@@ -28,6 +28,22 @@ export const servedStations = (index: NetworkIndex, timeline: Timeline, cursor: 
  * @returns Its place among them, or -1 beyond them all.
  */
 export const bandAt = (metres: number, bands: CoverageBand[]): number => bands.findIndex(band => metres <= band.upTo);
+
+/**
+ * Each cell's band, for a picture: its place among the bands, `bands.length` for the city beyond
+ * every band, -1 outside the city.
+ *
+ * @param grid - The city's grid.
+ * @param distances - Each cell's distance to the nearest station.
+ * @param bands - The bands, nearest first.
+ * @returns A band per cell, row by row from the north.
+ */
+export const cellBands = (grid: CoverageGrid, distances: Float32Array, bands: CoverageBand[]): Int8Array =>
+  Int8Array.from(distances, (metres, cell) => {
+    if (!grid.inside[cell]) return -1;
+    const band = bandAt(metres, bands);
+    return band === -1 ? bands.length : band;
+  });
 
 /**
  * How much of the city lies in each band, and within the headline distance.

@@ -10,14 +10,14 @@ import { NetworkLayer } from './layers/network.service';
 import { FrameRenderer } from './layers/frame.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/map.service';
-import type { NetworkModel } from '@railtime/network/model.service';
-import type { NetworkTime } from '@railtime/network/model.types';
+import type { NetworkFacts } from '@railtime/network/facts.service';
+import type { NetworkTime } from '@railtime/network/facts.types';
 import { OverlayController } from './overlay/controller.service';
 import { ReachLayer } from './reach/layer.service';
 import { RouteLayer } from './route/layer.service';
 import { StationLayer } from './stations/layer.service';
 import { PropsReconciler } from './state/reconciler.service';
-import type { Step } from '@railtime/network/timeline.types';
+import type { Step } from '@railtime/network/engine/timeline.types';
 import { CameraDirector } from './playback/camera.service';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
@@ -34,18 +34,18 @@ const BROWSER_FRAMES: FrameScheduler = {
 };
 
 /**
- * An interactive transit map with a history player: the renderer's one view (`_ARCHITECTURE.md`).
+ * An interactive transit map with a history player: the renderer's one view (`ARCHITECTURE.md`).
  *
- * It draws a `NetworkModel` at the player's moment, as its props say. Four channels, and no other:
- * props (`update`: how the map is set, the app's), commands (moving through time, camera moves),
- * events (what happened, delivered between frames, never inside a call), and the model's own
- * questions. Made with its props and listeners; `destroy` takes it all down.
+ * It draws a network's `NetworkFacts` at the player's moment, as its props say. Three channels, and
+ * no other: props (`update`: how the map is set, the app's), commands (moving through time, camera
+ * moves), and events (what happened, delivered between frames, never inside a call). A fact is asked
+ * of the `NetworkFacts` it was made with, never of the map. Made with its props and listeners; `destroy` takes it all down.
  */
 export class TransitMap extends EventEmitter<TransitMapEvents> {
   /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
   public readonly credits: Credit[];
   /** The network, its history and every question about it. */
-  private readonly model: NetworkModel;
+  private readonly facts: NetworkFacts;
   /** The clock and the step playing. */
   private readonly player: Player;
   /** The main map. */
@@ -92,14 +92,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     // Before the first map: MapLibre starts its workers with it.
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
     for (const [event, listener] of Object.entries(options.on ?? {})) this.on(event as keyof TransitMapEvents, listener as never);
-    this.model = options.model;
-    this.player = new Player(this.model, step => this.createAnimation(step));
+    this.facts = options.facts;
+    this.player = new Player(this.facts, step => this.createAnimation(step));
     this.scheduler = options.scheduler ?? BROWSER_FRAMES;
     const props: MapProps = { ...DEFAULT_MAP_PROPS, ...options.props };
     this.props = new PropsReconciler(props, this.effects);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
-    const { network, bounds } = this.model.index;
+    const { network, bounds } = this.facts.index;
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
     this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: network.meta.attribution }];
     const createMap = options.createMap ?? (mapOptions => new MapLibreMap(mapOptions));
@@ -121,12 +121,12 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.buildingsLayer = new BuildingsLayer(this.map);
     this.stationLayer = new StationLayer(
       this.map,
-      station => this.model.index.coordOf(station),
-      station => this.model.index.stationLabel(station, this.player.clock),
-      this.model.index.compareLines,
+      station => this.facts.index.coordOf(station),
+      station => this.facts.index.stationLabel(station, this.player.clock),
+      this.facts.index.compareLines,
     );
     this.overlay = new OverlayController({
-      model: this.model,
+      facts: this.facts,
       route: this.routeLayer,
       reach: this.reachLayer,
       coverage: this.coverageLayer,
@@ -137,14 +137,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     });
     this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, bounds, PALETTES[props.theme]) : null;
     this.frames = new FrameRenderer({
-      index: this.model.index,
-      timeline: this.model.timeline,
+      index: this.facts.index,
+      timeline: this.facts.timeline,
       player: this.player,
       network: this.networkLayer,
       activeStep: this.activeStepLayer,
       stations: this.stationLayer,
       minimap: this.minimap,
-      baseColor: line => this.model.colorOf(line, this.props.current.theme),
+      baseColor: line => this.facts.colorOf(line)[this.props.current.theme],
     });
 
     this.map.on('style.load', () => this.install());
@@ -247,7 +247,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param durationMs - How long the move takes.
    */
   public fitNetwork(durationMs = FIT_NETWORK_MS): void {
-    if (this.life !== 'destroyed') this.camera.fit(this.model.index.bounds, Infinity, durationMs);
+    if (this.life !== 'destroyed') this.camera.fit(this.facts.index.bounds, Infinity, durationMs);
   }
 
   /**
@@ -289,7 +289,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
       visibleLines: () => {
-        this.frames.visibleLines = new Set(this.props.current.visibleLines ?? this.model.index.lineIds);
+        this.frames.visibleLines = new Set(this.props.current.visibleLines ?? this.facts.index.lineIds);
         this.frames.redraw();
       },
       focusedLines: () => this.applyBackdrop(),
@@ -297,7 +297,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
         const station = this.props.current.selectedStation;
         this.selectionAway = false;
         this.stationLayer.select(station);
-        if (station) this.camera.flyTo(this.model.index.coordOf(station), SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+        if (station) this.camera.flyTo(this.facts.index.coordOf(station), SELECTED_STATION_ZOOM, SELECT_FLY_MS);
       },
       overlay: () => this.drawOverlay(),
       boundary: () => this.drawOverlay(),
@@ -342,7 +342,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * The moment the map shows, for the model's questions.
+   * The moment the map shows, for the network's questions.
    *
    * @returns The cursor and the clock.
    */
@@ -415,8 +415,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns Its animation.
    */
   private createAnimation(step: Step): ReturnType<typeof createStepAnimation> {
-    const { index, timeline } = this.model;
-    return createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index), view: this.props.current.viewMode });
+    const { index, timeline } = this.facts;
+    return createStepAnimation(step, { index, timeline, view: this.props.current.viewMode });
   }
 
   /** Redraws at once after a jump in time, nothing pulsing and no caption. */
@@ -445,7 +445,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     if (!active) return;
     this.frames.stepStarted();
     const speed = this.player.speed;
-    const { index, timeline } = this.model;
+    const { index, timeline } = this.facts;
     const moveMs = this.camera.focusStep(
       active.animation,
       timeline.stationsOnMap(this.player.cursor),
@@ -454,7 +454,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     );
     // At once, after a beat, where it stays.
     this.player.retimeLeadIn(moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed);
-    this.notify('step', this.model.change(active.animation.step.index, this.props.current.theme));
+    this.notify('step', this.facts.change(active.animation.step.index));
   }
 
   /**
@@ -464,7 +464,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   private onStepEnd(step: Step): void {
     this.frames.redraw();
-    const next = this.model.timeline.steps[step.index + 1];
+    const next = this.facts.timeline.steps[step.index + 1];
     if (!next || next.time !== step.time) this.notify('step', null);
   }
 

@@ -18,12 +18,12 @@ export const useTransitMap = (mount: TransitMapMount): void => {
   let map: TransitMap | null = null;
 
   onMounted(() => {
-    const model = store.model;
-    if (!model) return;
+    const facts = store.facts;
+    if (!facts) return;
     map = new TransitMap({
       container: mount.container.value!,
       minimapContainer: mount.minimapContainer.value ?? undefined,
-      model,
+      facts,
       props: store.mapProps,
       ...(store.view ? { view: store.view } : {}),
       // The page shows the credits itself, in a corner of the map.
