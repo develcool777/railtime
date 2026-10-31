@@ -84,14 +84,11 @@ export const useExplorerTime = (input: ExplorerTimeInput): ExplorerTime => {
     else if (timeMode.value === 'timeline') closeTimeline();
   };
 
+  // A seek: playing, the map plays on from there; the future is the end, where playback stops.
   const pick = (target: TimelineTarget) => {
-    const transitMap = map.value;
-    if (!transitMap) return;
-    const wasPlaying = timeMode.value === 'playing' && time.value?.playing === true;
     if (target.kind === 'future') showFuture();
-    else if (target.kind === 'change') transitMap.showChange(target.index);
-    else transitMap.setDate(target.time);
-    if (wasPlaying && target.kind !== 'future') transitMap.play();
+    else if (target.kind === 'change') map.value?.showChange(target.index);
+    else map.value?.setDate(target.time);
   };
 
   const stepTime = (direction: -1 | 1) => {

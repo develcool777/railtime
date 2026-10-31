@@ -191,12 +191,12 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * Shows the network as it was at the end of a day. Stops playback.
+   * Shows the network as it was at the end of a day. A seek, as a video player's: playing, it plays on
+   * from there; paused, it stays paused.
    *
    * @param time - A timestamp on that day.
    */
   public setDate(time: number): void {
-    this.player.playing = false;
     this.player.seek(time);
     this.jumped();
   }
@@ -209,12 +209,11 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * Shows the network just after a change, on its date. Stops playback.
+   * Shows the network just after a change, on its date. A seek, as `setDate`: playing, it plays on.
    *
    * @param index - The change's position, from `getChanges`.
    */
   public showChange(index: number): void {
-    this.player.playing = false;
     this.player.seekPast(index);
     this.jumped();
   }

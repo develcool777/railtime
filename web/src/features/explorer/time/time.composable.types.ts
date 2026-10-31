@@ -34,7 +34,7 @@ export type ExplorerTime = {
   showFuture: () => void;
   /** Shows today. */
   showToday: () => void;
-  /** Shows what the timeline was picked at; playing on from there if it was playing. */
+  /** Shows what the timeline was picked at; playing on from there if it was playing, but at the future, the end. */
   pick: (target: TimelineTarget) => void;
   /** A year back or forward; while playing, the change before or the next. */
   stepTime: (direction: -1 | 1) => void;
