@@ -79,6 +79,7 @@ src/
 │   ├── layer.service.ts       abstract MapLayer: owns its sources and layers
 │   ├── network.service.ts     NetworkLayer: the network on the map, closed track as ghosts
 │   ├── activeStep.service.ts  ActiveStepLayer: the playing step's track and growth heads
+│   ├── frame.service.ts       FrameRenderer: each frame on the layers; sends nothing when nothing changed
 │   ├── snapshot.utils.ts      what is on the map at a cursor; pure
 │   ├── ids.constants.ts       the overlay's source and layer ids
 │   └── basemap.utils.ts       recolouring an OpenMapTiles basemap per theme
@@ -124,7 +125,7 @@ animates `steps[k]`. On one date the order is:
 clock stops on the step's date for all three. Between dates it runs at 4 years/s through quiet
 periods and slows steadily to 1.2 years/s over the last years before the next change.
 
-A frame draws only what changed: with nothing playing, nothing popping in and the same snapshot, it
+A frame draws only what changed (`FrameRenderer`): with nothing playing, nothing popping in and the same snapshot, it
 sends MapLibre nothing, so an idle map costs no script time and panning stays smooth.
 
 ### Lines side by side

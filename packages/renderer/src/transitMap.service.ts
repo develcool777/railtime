@@ -3,41 +3,36 @@ import { EventEmitter } from './core/eventEmitter.service';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import { ActiveStepLayer } from './layers/activeStep.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
-import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties, StationLines } from './layers/features.types';
+import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties } from './layers/features.types';
 import { NetworkQueries } from './network/queries.service';
 import type { NetworkMoment } from './network/queries.types';
 import { reachStops, reachTrack } from './reach/layer.utils';
 import { routeStops, routeTrack } from './route/layer.utils';
-import type { RenderState } from './layers/lineStyle.types';
 import { LAYERS } from './layers/ids.constants';
 import type { MapLayer } from './layers/layer.service';
 import { NetworkLayer } from './layers/network.service';
 import { ReachLayer } from './reach/layer.service';
 import { RouteLayer } from './route/layer.service';
-import type { NetworkSnapshot } from './layers/snapshot.types';
-import { buildNetworkSnapshot } from './layers/snapshot.utils';
+import { FrameRenderer } from './layers/frame.service';
 import { StationLayer } from './stations/layer.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/map.service';
-import { DAY_MS, todayTimestamp } from './core/date.utils';
+import { todayTimestamp } from './core/date.utils';
 import { boundsOf } from './core/geometry.utils';
 import { NetworkIndex } from './network/index.service';
 import { Timeline } from './network/timeline.service';
 import type { Step } from './network/timeline.types';
 import { CameraDirector } from './playback/camera.service';
-import { clamp } from './core/easing.utils';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
 import type { ActivePlayback, PlayerEvent } from './playback/player.types';
-import type { StepDrawing } from './steps/animation.types';
-import { createStepAnimation, describeSteps, emptyDrawing } from './steps/animation.utils';
+import { createStepAnimation, describeSteps } from './steps/animation.utils';
 import {
   DEFAULT_PADDING,
   NO_COVER,
   END_OVERVIEW_MS,
   FIT_NETWORK_MS,
   MAX_FRAME_SECONDS,
-  NEW_LABEL_FADE_FRACTION,
   OPENING_MAX_ZOOM,
   OPENING_SIDE_PADDING,
   SELECTED_STATION_ZOOM,
@@ -60,7 +55,6 @@ import type {
   StationInfo,
   StationSummary,
   Theme,
-  TimeState,
   TransitMapEvents,
   TransitMapOptions,
 } from './transitMap.types';
@@ -107,30 +101,18 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private reachStops: PointFeature<ReachStopProperties>[] = [];
   /** The station the reach drawn starts at: the camera frames a reach when it changes. */
   private reachFrom: string | null = null;
+  /** Draws each frame on the layers. */
+  private readonly frames: FrameRenderer;
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
   /** The map's colour theme. */
   private theme: Theme;
-  /** Lines the user has toggled on. */
-  private visibleLines: Set<string>;
   /** The basemap has loaded and the overlay is installed. */
   private ready = false;
-  /** Everything already on the map at the cursor. */
-  private snapshot: NetworkSnapshot | null = null;
-  /** The snapshot needs rebuilding: the cursor, toggles or theme changed. */
-  private snapshotStale = true;
-  /** The next frame shows stations without their pop-in. */
-  private instant = true;
-  /** How many of the playing step's new stations have appeared. */
-  private revealedCount = 0;
   /** The station ringed on the map. */
   private selectedStation: string | null = null;
   /** The lines brought forward, the rest faded; `null` when every line is. */
   private focusedLines: string[] | null = null;
-  /** Clock day, cursor and playing state at the last `time` event, to emit only on change. */
-  private lastTimeKey = '';
-  /** The minimap was last sent a non-empty active drawing. */
-  private minimapShowsActive = false;
   /** The pending animation frame. */
   private frameRequest = 0;
   /** When the last frame ran. */
@@ -145,7 +127,6 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.timeline = new Timeline(this.index);
     this.player = new Player(this.timeline, todayTimestamp(), step => this.createAnimation(step));
     this.theme = options.theme ?? 'dark';
-    this.visibleLines = new Set(this.index.lineIds);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
@@ -189,6 +170,16 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       this.index.compareLines,
     );
     this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, this.index.bounds, PALETTES[this.theme]) : null;
+    this.frames = new FrameRenderer({
+      index: this.index,
+      timeline: this.timeline,
+      player: this.player,
+      network: this.networkLayer,
+      activeStep: this.activeStepLayer,
+      stations: this.stationLayer,
+      minimap: this.minimap,
+      baseColor: line => this.baseColor(line),
+    });
 
     this.map.on('style.load', () => this.installOverlay());
     this.map.on('click', event => this.onMapClick(event));
@@ -320,7 +311,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.theme = theme;
     this.minimap?.setPalette(PALETTES[theme]);
     if (this.ready) this.applyPalette();
-    this.snapshotStale = true;
+    this.frames.redraw();
   }
 
   /**
@@ -329,8 +320,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param lineIds - The lines to show.
    */
   public setVisibleLines(lineIds: string[]): void {
-    this.visibleLines = new Set(lineIds);
-    this.snapshotStale = true;
+    this.frames.visibleLines = new Set(lineIds);
+    this.frames.redraw();
   }
 
   /**
@@ -566,8 +557,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.reachLayer.update(this.reachTrack, this.reachStops);
     this.applyBackdrop();
     this.ready = true;
-    this.snapshotStale = true;
-    this.instant = true;
+    this.frames.redraw(true);
     this.updateMinimapViewport();
     this.emit('ready', undefined);
   }
@@ -613,27 +603,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   /** Redraws at once after the player jumped, nothing pulsing and no caption. */
   private jumped(): void {
     this.stationLayer.resetPulses();
-    this.snapshotStale = true;
-    this.instant = true;
+    this.frames.redraw(true);
     this.emit('step', null);
-  }
-
-  /**
-   * Everything that decides how lines look this frame.
-   *
-   * @returns The render state.
-   */
-  private renderState(): RenderState {
-    const active = this.player.active;
-    const identityPlaying = active?.animation.changesIdentity === true && this.player.phase !== 'pre';
-    return {
-      index: this.index,
-      timeline: this.timeline,
-      cursor: this.player.cursor,
-      identityProgress: identityPlaying ? this.player.progress : null,
-      visibleLines: this.visibleLines,
-      baseColor: line => this.baseColor(line),
-    };
   }
 
   /**
@@ -655,11 +626,10 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param playback - The step that started.
    */
   private onStepStart(playback: ActivePlayback): void {
-    this.snapshotStale = true;
-    this.revealedCount = 0;
+    this.frames.stepStarted();
     const durationMs = (playback.preSeconds * 1000) / this.player.speed;
     this.camera.focusStep(playback.animation, this.timeline.stationsOnMap(this.player.cursor), station => this.index.coordOf(station), durationMs);
-    this.emit('step', playback.animation.describe(this.renderState()));
+    this.emit('step', playback.animation.describe(this.frames.renderState()));
   }
 
   /**
@@ -668,7 +638,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param step - The step that ended.
    */
   private onStepEnd(step: Step): void {
-    this.snapshotStale = true;
+    this.frames.redraw();
     const next = this.timeline.steps[step.index + 1];
     if (!next || next.time !== step.time) this.emit('step', null);
   }
@@ -695,78 +665,18 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   };
 
   /**
-   * Draws the frame: the network snapshot when stale, then the playing step and the stations. A frame
-   * with nothing playing, nothing popping in and the same snapshot draws nothing: MapLibre is left to
-   * pan and zoom.
+   * Draws the frame, and tells the app of the playing step's stations, and of a selection the date
+   * took off the map.
    *
    * @param now - The frame time.
    */
   private draw(now: number): void {
-    const state = this.renderState();
-    const active = this.player.active;
-    const refreshed = this.snapshotStale || state.identityProgress !== null;
-    if (refreshed) this.refreshSnapshot(state);
-    const snapshot = this.snapshot!;
-    const drawing = emptyDrawing();
-    const drawingStep = active !== null && this.player.phase !== 'pre';
-    if (drawingStep) {
-      active.animation.draw({ state, snapshot, progress: this.player.progress, holdProgress: this.player.holdProgress }, drawing);
-    }
-    this.activeStepLayer.update(drawing);
-    this.updateMinimapActive(drawing);
-
-    if (refreshed || drawingStep || this.instant || this.stationLayer.animating) {
-      const stations = new Map<string, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
-      for (const [station, lines] of drawing.reached)
-        for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map()).set(lineId, color));
-      this.stationLayer.update({
-        now,
-        stations,
-        linked: snapshot.linked,
-        planned: snapshot.plannedStations,
-        highlighted: drawing.highlighted,
-        fading: drawing.fading,
-        newLabelOpacity: clamp((1 - this.player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
-        instant: this.instant,
-        stepPlaying: active !== null,
-      });
-      this.instant = false;
-    }
-
-    if (drawing.highlighted.size !== this.revealedCount) {
-      this.revealedCount = drawing.highlighted.size;
-      this.emit('stepProgress', this.revealedCount);
-    }
-    // The selected station is not on the map on this date (gone, or not yet open): let it go, and say so.
-    if (this.selectedStation && !snapshot.stations.has(this.selectedStation) && !drawing.reached.has(this.selectedStation)) {
+    const { revealed, selectionGone } = this.frames.draw(now, this.selectedStation);
+    if (revealed !== null) this.emit('stepProgress', revealed);
+    if (selectionGone) {
       this.selectStation(null);
       this.emit('stationClick', null);
     }
-  }
-
-  /**
-   * Rebuilds the snapshot of the network on the map and sends it to the layers.
-   *
-   * @param state - The render state.
-   */
-  private refreshSnapshot(state: RenderState): void {
-    this.snapshot = buildNetworkSnapshot(state, this.player.active !== null);
-    this.networkLayer.update(this.snapshot);
-    this.minimap?.setLines(this.snapshot.lines);
-    this.snapshotStale = false;
-    this.lastTimeKey = '';
-  }
-
-  /**
-   * Sends the playing step to the minimap, and clears it once after the step ends.
-   *
-   * @param drawing - What the step draws now.
-   */
-  private updateMinimapActive(drawing: StepDrawing): void {
-    const hasActive = drawing.lines.features.length > 0;
-    if (!this.minimap || (!hasActive && !this.minimapShowsActive)) return;
-    this.minimap.setActive(drawing.lines);
-    this.minimapShowsActive = hasActive;
   }
 
   /** Outlines the main camera's view on the minimap. */
@@ -781,19 +691,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** Emits `time` when the clock's day, the cursor, the playing state or the stats change. */
   private emitTime(): void {
-    const { clock, cursor, playing } = this.player;
-    const key = `${Math.floor(clock / DAY_MS)}|${cursor}|${playing}|${this.player.inFuture}`;
-    if (key === this.lastTimeKey) return;
-    this.lastTimeKey = key;
-    const state: TimeState = {
-      time: clock,
-      cursor,
-      stepCount: this.timeline.steps.length,
-      todayCursor: this.timeline.cursorAt(this.player.today),
-      future: this.player.inFuture,
-      playing,
-      stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },
-    };
-    this.emit('time', state);
+    const state = this.frames.timeState();
+    if (state) this.emit('time', state);
   }
 }
