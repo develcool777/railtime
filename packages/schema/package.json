@@ -9,11 +9,11 @@
     "test-unit-ci": "vitest run"
   },
   "exports": {
-    "./cityIndex.types": "./src/cityIndex.types.ts",
-    "./network.types": "./src/network.types.ts",
-    "./network.schema": "./src/network.schema.ts",
-    "./plan.types": "./src/plan.types.ts",
-    "./plan.utils": "./src/plan.utils.ts"
+    "./cityIndex.types": "./src/format/cities.types.ts",
+    "./network.types": "./src/format/network.types.ts",
+    "./network.schema": "./src/validation/network.schema.ts",
+    "./plan.types": "./src/plan/build.types.ts",
+    "./plan.utils": "./src/plan/build.utils.ts"
   },
   "dependencies": {
     "zod": "^4.1.0"

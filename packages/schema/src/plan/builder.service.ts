@@ -1,6 +1,6 @@
-import type { LngLat, Network, PlanSection, Segment } from './network.types';
-import type { SectionWorks } from './plan.types';
-import { splitTrack } from './geometry.utils.ts';
+import type { LngLat, Network, PlanSection, Segment } from '../format/network.types';
+import type { SectionWorks } from './build.types';
+import { splitTrack } from '../core/geometry.utils.ts';
 
 /**
  * Builds plan sections on a network, keeping track of segments as objects, so splitting one never
