@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { cityNetwork, playWholeHistory } from '../../../support/history.utils';
+import { cityNetwork, lineSplits, playWholeHistory } from '../../../support/history.utils';
 
 describe('Kraków', () => {
+  test('keeps each line in one piece, but where its history parts it', () => {
+    expect(lineSplits(cityNetwork('krakow'))).toEqual([]);
+  });
+
   test.each(['central-section-2025', 'metro-2025'])('plays its %s plan, section by section, drawing frames without errors', plan => {
     const played = playWholeHistory(cityNetwork('krakow'), plan);
     expect(played.steps).toBeGreaterThan(0);

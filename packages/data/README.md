@@ -15,7 +15,7 @@ packages/data/
   src/cli.renderPreviews.ts              pnpm data:previews [city]
   test/unit/dataset/                     the command's helpers, and the index kept up to date
   test/unit/preview/                     the previews' helpers, and every city has its pictures
-  test/unit/cities/<country>/<city>.test.ts   plays a city's history through the renderer
+  test/unit/cities/<country>/<city>.test.ts   plays a city's history; lists where its lines come apart
 ```
 
 The app serves `cities/` as it is, at `/data/`: `/data/united-kingdom/london/london.json`.
@@ -56,11 +56,17 @@ Track and stations come from OpenStreetMap.
   section by section from today.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
+- `infill` and `closed`: a station opening on a line already running through it, or a line no
+  longer calling there, by line. Dated while the line runs there; an `infill` after the line has
+  left says it never called there. `data:format` refuses any other date.
 
 A new city is a new dataset in the same format, then `pnpm data:format <city>` to add it to the index
 and `pnpm data:previews <city>` to draw its card's pictures, plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
 and its own page at `/<city>`. Its history gets a test of its own,
-`test/unit/cities/<country>/<city>.test.ts` (camelCase), which plays it through the renderer.
+`test/unit/cities/<country>/<city>.test.ts` (camelCase), which plays it through the renderer and
+lists each date a line comes apart, with why: a works closure or a stretch opening on its own is
+history, but a wrong date parts a line just the same, so a new one fails the test until it is
+fixed or explained.
 
 ## The cities
 

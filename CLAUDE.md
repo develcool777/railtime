@@ -110,6 +110,13 @@ against the schema, keeps its layout (one station or segment per line) and rewri
 A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
 `packages/schema/src/validation/checks.constants.ts`), or `data:format` refuses it: the line would miss the station's dot. Where an
 interchange's lines run apart underground, each line's track ends at the one station point.
+A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
+says the line never called there); its `closed` while the line runs there. `data:format` refuses
+any other.
+
+Each city's test lists every date a line comes apart (`lineSplits` in `test/support/history.utils.ts`),
+with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just
+the same and fails the test: fix the date, or, if history really parted the line, add it with its reason.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction

@@ -1,7 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { cityNetwork, playPlan, playWholeHistory } from '../../../support/history.utils';
+import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 describe('Budapest', () => {
+  test('keeps each line in one piece, but where its history parts it', () => {
+    expect(lineSplits(cityNetwork('budapest'))).toEqual([
+      // M3's renovation closed its middle from November 2020, its ends running on their own.
+      'm3 2020-11-07: 2 pieces',
+    ]);
+  });
+
   test('plays its whole history, every step, drawing frames without errors', () => {
     const played = playWholeHistory(cityNetwork('budapest'));
     expect(played.started).toBe(played.steps);

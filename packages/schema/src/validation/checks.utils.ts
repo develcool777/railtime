@@ -1,7 +1,54 @@
 import { metresBetween } from '../core/geometry.utils.ts';
-import type { Network, Plan, Segment } from '../format/network.types';
+import type { Network, Plan, Segment, SegmentLine, Station } from '../format/network.types';
 import { buildPlan } from '../plan/build.utils.ts';
 import { STATION_GAP_METRES } from './checks.constants.ts';
+
+/**
+ * A line's dates on each of its segments at a station.
+ *
+ * @param network - The network.
+ * @param station - The station id.
+ * @param line - The line id.
+ * @returns The dates; none if the line never runs there.
+ */
+const linePeriodsAt = (network: Network, station: string, line: string): SegmentLine[] =>
+  network.segments.flatMap(segment => {
+    const dates = segment.lines[line];
+    return dates && (segment.stationA === station || segment.stationB === station) ? [dates] : [];
+  });
+
+/**
+ * What is wrong with a station opening on a line later than the line came, if anything.
+ * Dated after the line has left, it says the line never called there: that is sound.
+ *
+ * @param periods - The line's dates at the station.
+ * @param date - The station's opening on it.
+ * @returns The problem, or `null`.
+ */
+const infillProblem = (periods: SegmentLine[], date: string): string | null => {
+  if (periods.length === 0) return "which doesn't run there";
+  return periods.some(dates => dates.open <= date) ? null : 'before the line runs there';
+};
+
+/**
+ * Checks each station's openings and closings on lines that already ran through it: on a line that
+ * is there then, or the date does nothing.
+ *
+ * @param network - The network.
+ * @param stationId - The station id.
+ * @param station - The station.
+ * @param problem - Reports one problem.
+ */
+const checkStationLines = (network: Network, stationId: string, station: Station, problem: (message: string) => void): void => {
+  for (const [lineId, date] of Object.entries(station.infill ?? {})) {
+    const wrong = infillProblem(linePeriodsAt(network, stationId, lineId), date);
+    if (wrong) problem(`station ${stationId}: opens on ${lineId} on ${date}, ${wrong}`);
+  }
+  for (const [lineId, date] of Object.entries(station.closed ?? {})) {
+    const running = linePeriodsAt(network, stationId, lineId).some(dates => dates.open < date && !(dates.close && dates.close <= date));
+    if (network.lines[lineId] && !running) problem(`station ${stationId}: closes on ${lineId} on ${date}, when it doesn't run there`);
+  }
+};
 
 /**
  * Checks the stations' references and dates, and the transfers between them.
@@ -16,6 +63,7 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
       const opened = station.infill?.[lineId];
       if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
     }
+    checkStationLines(network, stationId, station, problem);
     const until = (station.formerNames ?? []).map(former => former.until);
     if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
   }
