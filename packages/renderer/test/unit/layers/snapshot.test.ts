@@ -1,7 +1,8 @@
+import { statsAt } from '@railtime/network/history.utils';
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { toTimestamp } from '../../../src/core/date.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('NetworkSnapshotUtils', () => {
@@ -55,6 +56,20 @@ describe('NetworkSnapshotUtils', () => {
       expect(ghostsOn('1942-01-01')).toBe(1);
       expect(ghostsOn('1947-01-01')).toBe(0);
       expect(ghostsOn('1960-01-01')).toBe(1);
+    });
+  });
+
+  describe('stats', () => {
+    test("counts what the network's history counts, every line shown, on any date", () => {
+      const playback = playbackOf(tinyNetwork());
+      for (const date of ['1905-01-01', '1935-01-01', '1942-01-01', '1965-01-01', '2026-01-01'] as const) {
+        playback.player.seek({ time: toTimestamp(date) });
+        const drawn = buildNetworkSnapshot(renderStateOf(playback), false).stats;
+        const counted = statsAt(playback.index, playback.timeline, playback.player.cursor);
+        expect(counted.stations).toBe(drawn.stations);
+        expect(counted.lines).toBe(drawn.lines);
+        expect(counted.km).toBeCloseTo(drawn.km, 6);
+      }
     });
   });
 });

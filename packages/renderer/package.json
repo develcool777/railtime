@@ -12,13 +12,12 @@
     "./transitMap.service": "./src/transitMap.service.ts",
     "./transitMap.types": "./src/transitMap.types.ts",
     "./transitMap.css": "./src/transitMap.css",
-    "./networkModel.service": "./src/model/network.service.ts",
-    "./networkModel.types": "./src/model/network.types.ts",
     "./basemapStill.service": "./src/still/basemap.service.ts",
     "./basemapStill.types": "./src/still/basemap.types.ts",
     "./basemapStill.constants": "./src/still/basemap.constants.ts"
   },
   "dependencies": {
+    "@railtime/network": "workspace:*",
     "@railtime/schema": "workspace:*",
     "maplibre-gl": "^6.16.0"
   },

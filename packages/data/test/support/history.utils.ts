@@ -1,9 +1,9 @@
 import type { Network } from '@railtime/schema/network.types';
 import { globSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { toIsoDate } from '../../../renderer/src/core/date.utils';
+import { toIsoDate } from '@railtime/network/date.utils';
 import { buildNetworkSnapshot } from '../../../renderer/src/layers/snapshot.utils';
-import type { LineSegment } from '../../../renderer/src/network/index.types';
+import type { LineSegment } from '@railtime/network/index.types';
 import { emptyDrawing } from '../../../renderer/src/steps/animation.utils';
 import { playbackOf, renderStateOf } from '../../../renderer/test/support/playback.utils';
 

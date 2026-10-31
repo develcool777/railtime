@@ -1,7 +1,5 @@
 import { emptyCollection } from '../layers/features.utils';
-import type { RenderState } from '../layers/lineStyle.types';
-import type { Step } from '../network/timeline.types';
-import type { ChangeInfo } from '../transitMap.types';
+import type { Step } from '@railtime/network/timeline.types';
 import { CloseStepAnimation } from './close.service';
 import { IdentityStepAnimation } from './identity.service';
 import { InfillStepAnimation } from './infill.service';
@@ -47,18 +45,3 @@ export const emptyDrawing = (): StepDrawing => ({
   highlighted: new Set(),
   fading: new Map(),
 });
-
-/**
- * Every step, described as its caption will be when it plays: for a list of changes.
- *
- * @param state - How lines look: the cursor is set to each step's own.
- * @returns One change per step, in timeline order.
- */
-export const describeSteps = (state: Omit<RenderState, 'cursor' | 'identityProgress'>): ChangeInfo[] => {
-  const { index, timeline } = state;
-  return timeline.steps.map(step => {
-    // Captions: how the map is seen does not change a step's words.
-    const animation = createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index), view: '2d' });
-    return { index: step.index, ...animation.describe({ ...state, cursor: step.index, identityProgress: null }) };
-  });
-};

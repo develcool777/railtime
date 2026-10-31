@@ -1,10 +1,8 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import { lineFeature } from '../layers/features.utils';
-import type { RenderState } from '../layers/lineStyle.types';
 import { offsetFor, resolveLine } from '../layers/lineStyle.utils';
-import { sliceAlong } from '../core/geometry.utils';
-import type { CloseStep } from '../network/timeline.types';
-import type { StepInfo } from '../transitMap.types';
+import { sliceAlong } from '@railtime/network/geometry.utils';
+import type { CloseStep } from '@railtime/network/timeline.types';
 import { CLOSE_DRAW_SECONDS, CLOSE_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -27,26 +25,6 @@ export class CloseStepAnimation extends StepAnimation<CloseStep> {
    */
   public cameraPoints(): LngLat[] {
     return this.step.lineSegments.flatMap(lineSegment => lineSegment.segment.coordinates);
-  }
-
-  /**
-   * "<line>: section closes", or "… suspended" when the line will return, with the stations it
-   * ran between.
-   *
-   * @param state - The render state when the step starts.
-   * @returns The caption.
-   */
-  public describe(state: RenderState): StepInfo {
-    const ends = this.step.lineSegments.flatMap(({ segment }) => [this.nameOf(segment.stationA), this.nameOf(segment.stationB)]);
-    const returns = this.step.lineSegments.every(lineSegment => lineSegment.next !== null);
-    return {
-      kind: 'close',
-      time: this.date,
-      title: `${this.context.index.lineName(this.step.line)}: section ${returns ? 'suspended' : 'closes'}`,
-      subtitle: [...new Set(ends)].join(' – '),
-      color: state.baseColor(this.step.line),
-      stations: [],
-    };
   }
 
   /**

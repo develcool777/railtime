@@ -1,6 +1,7 @@
-import type { OverlayRequest, RoutePreference, RouteStop } from '@railtime/renderer/transitMap.types';
+import type { MapProps, OverlayRequest, Padding, RoutePreference, RouteStop, Theme, ViewMode } from '@railtime/renderer/transitMap.types';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
 
-import type { Chrome, MapOverlay, PanelView, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import type { Chrome, MapOverlay, PanelView, PlayerSettings, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**
  * Opens a station's view: over a line's view, if one is open, in place of any stations walked before.
@@ -126,3 +127,41 @@ export const chromeOf = (input: ChromeInput): Chrome => {
     credits,
   };
 };
+
+/** What the map's props are worked out from: the store's state, and the theme. */
+type MapPropsInput = {
+  theme: Theme;
+  viewMode: ViewMode;
+  stationNames: boolean;
+  visibleLines: string[] | null;
+  timeMode: TimeMode;
+  openStation: string | null;
+  openLine: string | null;
+  overlay: OverlayRequest | null;
+  boundary: CityBoundary | null;
+  player: PlayerSettings;
+  padding: Padding;
+  panelCover: number;
+};
+
+/**
+ * The map's props: everything the map shows, as the store has it, in one place. The line open is
+ * brought forward, but not under a station's view or while playing, when every line is alike.
+ *
+ * @param input - The store's state, and the theme.
+ * @returns The props.
+ */
+export const mapPropsOf = (input: MapPropsInput): MapProps => ({
+  theme: input.theme,
+  viewMode: input.viewMode,
+  stationLabels: input.stationNames,
+  visibleLines: input.visibleLines,
+  focusedLines: input.timeMode === 'playing' || input.openStation || !input.openLine ? null : [input.openLine],
+  selectedStation: input.openStation,
+  overlay: input.overlay,
+  boundary: input.boundary,
+  speed: input.player.speed,
+  camera: input.player.camera,
+  padding: input.padding,
+  cover: { top: 0, right: 0, bottom: 0, left: input.panelCover },
+});

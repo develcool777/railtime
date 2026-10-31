@@ -1,4 +1,4 @@
-import type { ReachBand } from '../transitMap.types';
+import type { ReachBand } from '../model/facts.types';
 
 /**
  * The bands a reach is coloured in, soonest first: each takes the stations reached within its

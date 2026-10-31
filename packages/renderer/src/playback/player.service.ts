@@ -1,7 +1,7 @@
-import { YEAR_MS } from '../core/date.utils';
-import type { NetworkModel } from '../model/network.service';
-import type { Timeline } from '../network/timeline.service';
-import type { Step } from '../network/timeline.types';
+import { YEAR_MS } from '@railtime/network/date.utils';
+import type { NetworkModel } from '@railtime/network/model.service';
+import type { Timeline } from '@railtime/network/timeline.service';
+import type { Step } from '@railtime/network/timeline.types';
 import { clamp, easeInOut } from '../core/easing.utils';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
 import type { PlayFrom, SeekTarget } from '../transitMap.types';

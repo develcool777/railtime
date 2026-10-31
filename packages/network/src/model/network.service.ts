@@ -3,8 +3,8 @@ import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import { required } from '../core/required.utils';
 import { toIsoDate, todayTimestamp, toTimestamp } from '../core/date.utils';
-import { REACH_BANDS } from '../reach/layer.constants';
-import { bandOf } from '../reach/layer.utils';
+import { REACH_BANDS } from '../route/reach.constants';
+import { bandOf } from '../route/reach.utils';
 import { RouteFinder } from '../route/finder.service';
 import type { NetworkHistory } from '../network/history.types';
 import { networkAt, networkHistory, openingsByDecade } from '../network/history.utils';
@@ -12,7 +12,7 @@ import { lineBranches, lineLengthKm, stepChangesLine } from '../network/lineDeta
 import { CoverageMeasure } from '../coverage/measure.service';
 import { NetworkIndex } from '../network/index.service';
 import { Timeline } from '../network/timeline.service';
-import { describeSteps } from '../steps/animation.utils';
+import { captionOf } from '../changes/caption.utils';
 import type {
   ChangeInfo,
   LineDetails,
@@ -26,7 +26,7 @@ import type {
   StationSummary,
   Theme,
   TransferInfo,
-} from '../transitMap.types';
+} from './facts.types';
 import type { NetworkAt, NetworkModelOptions, NetworkMoment, NetworkTime } from './network.types';
 
 /**
@@ -100,12 +100,19 @@ export class NetworkModel {
    * @returns The changes, in the order they play.
    */
   public changes(theme: Theme): ChangeInfo[] {
-    return describeSteps({
-      index: this.index,
-      timeline: this.timeline,
-      visibleLines: new Set(this.index.lineIds),
-      baseColor: line => this.colorOf(line, theme),
-    });
+    return this.timeline.steps.map(step => this.change(step.index, theme));
+  }
+
+  /**
+   * One change, described as its caption says it.
+   *
+   * @param index - Its place in the history (`ChangeInfo.index`).
+   * @param theme - The theme, for its colour.
+   * @returns The change.
+   */
+  public change(index: number, theme: Theme): ChangeInfo {
+    const step = required(this.timeline.steps[index], `change ${index}`);
+    return { index, ...captionOf(step, { index: this.index, timeline: this.timeline, colorOf: line => this.colorOf(line, theme) }) };
   }
 
   /**

@@ -10,14 +10,14 @@ import { NetworkLayer } from './layers/network.service';
 import { FrameRenderer } from './layers/frame.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/map.service';
-import type { NetworkModel } from './model/network.service';
-import type { NetworkTime } from './model/network.types';
+import type { NetworkModel } from '@railtime/network/model.service';
+import type { NetworkTime } from '@railtime/network/model.types';
 import { OverlayController } from './overlay/controller.service';
 import { ReachLayer } from './reach/layer.service';
 import { RouteLayer } from './route/layer.service';
 import { StationLayer } from './stations/layer.service';
 import { PropsReconciler } from './state/reconciler.service';
-import type { Step } from './network/timeline.types';
+import type { Step } from '@railtime/network/timeline.types';
 import { CameraDirector } from './playback/camera.service';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
@@ -454,7 +454,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     );
     // At once, after a beat, where it stays.
     this.player.retimeLeadIn(moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed);
-    this.notify('step', active.animation.describe(this.frames.renderState()));
+    this.notify('step', this.model.change(active.animation.step.index, this.props.current.theme));
   }
 
   /**

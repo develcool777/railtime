@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { MapView, Theme } from '../transitMap.types';
+import type { Theme } from '@railtime/network/facts.types';
+import type { MapView } from '../transitMap.types';
 
 /** What a `BasemapStill` is created with. */
 export type BasemapStillOptions = {

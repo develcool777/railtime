@@ -1,8 +1,8 @@
-import { required } from '../core/required.utils';
+import { required } from '@railtime/network/required.utils';
 import type { PointFeature, RouteFeature, RouteStopProperties } from '../layers/features.types';
 import { pointFeature } from '../layers/features.utils';
-import type { NetworkIndex } from '../network/index.service';
-import type { RouteInfo } from '../transitMap.types';
+import type { NetworkIndex } from '@railtime/network/index.service';
+import type { RouteInfo } from '@railtime/network/facts.types';
 import { routeStopMarks } from './stops.utils';
 
 /**

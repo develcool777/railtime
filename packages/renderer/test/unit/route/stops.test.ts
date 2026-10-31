@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { routeStopMarks } from '../../../src/route/stops.utils';
-import type { RouteInfo, RouteLegInfo } from '../../../src/transitMap.types';
+import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
 
 /**
  * A ride on a line through stops named by their ids.

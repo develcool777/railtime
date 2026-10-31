@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import type { TrackSegment } from '../../../src/network/index.types';
-import { planGrowth } from '../../../src/playback/growth.utils';
+import { planGrowth } from '../../../src/changes/growth.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { playbackOf } from '../../support/playback.utils';
+import { modelOf } from '../../support/model.utils';
 
 /**
  * A segment of a made-up stretch, as long as given: growth reads only its ends and length.
@@ -28,7 +28,7 @@ const track = (index: number, stationA: string, stationB: string, lengthKm: numb
 describe('GrowthUtils', () => {
   describe('planGrowth', () => {
     test('grows out of stations already on the map, reaching new ones in order', () => {
-      const { index } = playbackOf(tinyNetwork());
+      const { index } = modelOf(tinyNetwork());
       const growth = planGrowth(index.segments.slice(1), new Set(['a', 'b']), station => index.coordOf(station), index.centre);
       expect(growth.reach.map(reached => [reached.station, reached.isNew])).toEqual([
         ['b', false],
@@ -92,7 +92,7 @@ describe('GrowthUtils', () => {
     });
 
     test('starts a stretch that touches nothing from its end nearest the centre', () => {
-      const { index } = playbackOf(tinyNetwork());
+      const { index } = modelOf(tinyNetwork());
       const growth = planGrowth(index.segments, new Set(), station => index.coordOf(station), [0.05, 51.5]);
       expect(growth.reach[0]?.station).toBe('d');
     });

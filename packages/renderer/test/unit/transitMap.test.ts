@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import type { FeatureCollection } from '../../src/layers/features.types';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
-import { NetworkModel } from '../../src/model/network.service';
+import { NetworkModel } from '@railtime/network/model.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { TransitMap } from '../../src/transitMap.service';
 import { OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
 import type { MapProps, TransitMapListeners } from '../../src/transitMap.types';
 import { openingOf } from '../../src/transitMap.utils';
 import { fakeMap } from '../support/factories/fakeMap.utils';
-import { tinyNetwork } from '../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 
 /**
  * The tiny network's map on a stand-in, with frames stepped by hand, and every event it delivers.

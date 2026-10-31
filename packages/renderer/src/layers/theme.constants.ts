@@ -1,4 +1,5 @@
-import type { Credit, Theme } from '../transitMap.types';
+import type { Theme } from '@railtime/network/facts.types';
+import type { Credit } from '../transitMap.types';
 import type { Palette } from './theme.types';
 
 /** Each theme's palette. The basemap is recoloured in code so both themes match the overlay exactly. */

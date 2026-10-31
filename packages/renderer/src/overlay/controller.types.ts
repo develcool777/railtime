@@ -1,10 +1,11 @@
 import type { CoverageLayer } from '../coverage/layer.service';
-import type { NetworkModel } from '../model/network.service';
-import type { NetworkTime } from '../model/network.types';
+import type { NetworkModel } from '@railtime/network/model.service';
+import type { NetworkTime } from '@railtime/network/model.types';
 import type { CameraDirector } from '../playback/camera.service';
 import type { ReachLayer } from '../reach/layer.service';
 import type { RouteLayer } from '../route/layer.service';
-import type { OverlayResult, Theme } from '../transitMap.types';
+import type { Theme } from '@railtime/network/facts.types';
+import type { OverlayResult } from '../transitMap.types';
 
 /** What the overlay controller draws with, and where it reads the moment and theme. */
 export type OverlayParts = {

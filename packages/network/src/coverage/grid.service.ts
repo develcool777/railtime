@@ -6,7 +6,7 @@ import {
   RADIANS_PER_DEGREE as RADIANS_PER_DEGREE,
 } from '../core/geometry.constants';
 import { boundsOf, latitudeOf, mercatorY } from '../core/geometry.utils';
-import { MAX_CELLS, MIN_CELL_KM } from './layer.constants';
+import { MAX_CELLS, MIN_CELL_KM } from './measure.constants';
 import type { GridCorners } from './grid.types';
 
 /**

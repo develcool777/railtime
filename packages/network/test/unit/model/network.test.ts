@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/core/date.utils';
 import { NetworkModel } from '../../../src/model/network.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { networkNow, playbackOf } from '../../support/playback.utils';
+import { modelOf as plainModelOf, questionsOn } from '../../support/model.utils';
 
 /** Today, for every model here. */
 const TODAY = toTimestamp('2026-01-01');
@@ -68,7 +68,11 @@ describe('NetworkModel', () => {
     const plain = modelOf();
     const planned = modelOf('extension');
     expect(planned.changes('light').length).toBeGreaterThan(plain.changes('light').length);
-    expect(planned.changes('light').at(-1)?.time).toBeNull();
+    const changes = planned.changes('light');
+    expect(changes.map(change => change.index)).toEqual(planned.timeline.steps.map(step => step.index));
+    expect(changes[0]).toMatchObject({ kind: 'open', time: toTimestamp('1900-01-01'), title: 'Red line opens', color: '#ff0000' });
+    expect(changes.slice(-2).map(change => change.time)).toEqual([null, null]);
+    expect(changes.at(-2)).toMatchObject({ title: 'Red line extended', subtitle: 'D – E' });
   });
 });
 
@@ -76,12 +80,11 @@ describe('NetworkModel', () => {
  * The tiny network's model, and its questions answered on a date.
  *
  * @param date - The date shown.
- * @returns The questions on the date, the model and the playback.
+ * @returns The questions on the date, and the model.
  */
 const queriesOn = (date: string) => {
-  const playback = playbackOf(tinyNetwork());
-  playback.player.seek({ time: toTimestamp(date) });
-  return { queries: networkNow(playback), model: playback.model, playback };
+  const model = plainModelOf(tinyNetwork());
+  return { queries: questionsOn(model, toTimestamp(date)), model };
 };
 
 describe('NetworkModel questions, at a moment', () => {
@@ -96,7 +99,7 @@ describe('NetworkModel questions, at a moment', () => {
   });
 
   test("gives a line's stops in order under the names of the date, its length and the changes that made it", () => {
-    const { queries, playback } = queriesOn('1915-01-01');
+    const { queries, model } = queriesOn('1915-01-01');
     const red = queries.line('red');
     expect(red.branches).toEqual([
       [
@@ -107,7 +110,7 @@ describe('NetworkModel questions, at a moment', () => {
     ]);
     expect(red).toMatchObject({ stations: 3, color: '#ff0000' });
     expect(red.km).toBeCloseTo(3, 1);
-    expect(red.changes.map(change => playback.timeline.steps[change]?.kind)).toContain('open');
+    expect(red.changes.map(change => model.timeline.steps[change]?.kind)).toContain('open');
     expect(() => queries.line('purple')).toThrow('Missing line purple');
   });
 
@@ -204,17 +207,15 @@ describe('NetworkModel questions, at a moment', () => {
   });
 
   test("lists a plan's undated line at a station of its own, and a former name from the day it was dropped", () => {
-    const playback = playbackOf(tinyNetwork(), 'extension');
-    playback.player.seek('future');
-    const queries = networkNow(playback);
+    const queries = questionsOn(plainModelOf(tinyNetwork(), 'extension'), 'future');
     expect(queries.station('e').lines).toEqual([{ id: 'red', name: 'Red line', color: '#ff0000', opened: null }]);
     const renamed = queriesOn('1925-01-01');
     expect(renamed.queries.station('d').formerNames.map(former => former.name)).toEqual(['Old D']);
   });
 
   test("keeps a line's changes to its own", () => {
-    const { queries, playback } = queriesOn('1935-01-01');
-    const blueOpens = playback.timeline.steps.find(step => step.kind === 'open' && step.line === 'blue')!.index;
+    const { queries, model } = queriesOn('1935-01-01');
+    const blueOpens = model.timeline.steps.find(step => step.kind === 'open' && step.line === 'blue')!.index;
     expect(queries.line('red').changes).not.toContain(blueOpens);
     expect(queries.line('blue').changes).toContain(blueOpens);
   });
@@ -236,9 +237,7 @@ describe('NetworkModel questions, at a moment', () => {
   test('lists stations for a search by their names, not their ids', () => {
     const network = tinyNetwork();
     network.stations.a!.name = 'Zed';
-    const playback = playbackOf(network);
-    playback.player.seek({ time: toTimestamp('1935-01-01') });
-    const queries = networkNow(playback);
+    const queries = questionsOn(plainModelOf(network), toTimestamp('1935-01-01'));
     expect(queries.stations().map(station => station.name)).toEqual(['B', 'C', 'D', 'Zed']);
   });
 });

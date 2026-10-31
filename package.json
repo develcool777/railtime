@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --filter @railtime/web dev",
     "build": "pnpm --filter @railtime/web build",
-    "type-check": "tsc --noEmit -p packages/schema && tsc --noEmit -p packages/renderer && tsc --noEmit -p packages/data && tsc --noEmit -p packages/tooling && pnpm --filter @railtime/web type-check",
+    "type-check": "tsc --noEmit -p packages/schema && tsc --noEmit -p packages/network && tsc --noEmit -p packages/renderer && tsc --noEmit -p packages/data && tsc --noEmit -p packages/tooling && pnpm --filter @railtime/web type-check",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run",
     "eslint-check": "eslint",

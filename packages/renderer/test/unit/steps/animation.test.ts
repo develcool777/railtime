@@ -1,24 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { createStepAnimation, describeSteps, emptyDrawing } from '../../../src/steps/animation.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { createStepAnimation, emptyDrawing } from '../../../src/steps/animation.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('StepAnimationUtils', () => {
-  describe('describeSteps', () => {
-    test('describes every step as its caption, planned ones last and undated', () => {
-      const playback = playbackOf(tinyNetwork(), 'extension');
-      const changes = describeSteps(renderStateOf(playback));
-      expect(changes.map(change => change.index)).toEqual(playback.timeline.steps.map(step => step.index));
-      expect(changes[0]).toMatchObject({ kind: 'open', time: toTimestamp('1900-01-01'), title: 'Red line opens', color: '#ff0000' });
-      expect(changes.slice(-2).map(change => change.time)).toEqual([null, null]);
-      expect(changes.at(-2)).toMatchObject({ title: 'Red line extended', subtitle: 'D – E' });
-    });
-  });
-
   describe('createStepAnimation', () => {
-    test('gives every kind of step an animation that frames, describes and draws it from start to end', () => {
+    test('gives every kind of step an animation that frames and draws it from start to end', () => {
       const playback = playbackOf(tinyNetwork(), 'extension');
       const { index, timeline } = playback;
       const kinds = new Set<string>();
@@ -31,7 +19,6 @@ describe('StepAnimationUtils', () => {
         expect(animation.holdSeconds).toBeGreaterThan(0);
         expect(animation.cameraPoints().length).toBeGreaterThan(0);
         const state = { ...renderStateOf(playback), identityProgress: animation.changesIdentity ? 0.5 : null };
-        expect(animation.describe(state)).toMatchObject({ kind: step.kind, time: step.planned ? null : step.time });
         const snapshot = buildNetworkSnapshot(state, true);
         for (const [progress, holdProgress] of [
           [0, 0],

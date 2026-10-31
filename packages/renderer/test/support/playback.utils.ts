@@ -1,7 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import type { RenderState } from '../../src/layers/lineStyle.types';
-import { NetworkModel } from '../../src/model/network.service';
-import type { NetworkAt } from '../../src/model/network.types';
+import { NetworkModel } from '@railtime/network/model.service';
+import type { NetworkAt } from '@railtime/network/model.types';
 import { Player } from '../../src/playback/player.service';
 import { createStepAnimation } from '../../src/steps/animation.utils';
 import type { ViewMode } from '../../src/transitMap.types';

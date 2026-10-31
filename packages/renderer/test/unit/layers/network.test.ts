@@ -3,9 +3,9 @@ import { LAYERS, SOURCES, UNFOCUSED_OPACITY } from '../../../src/layers/ids.cons
 import { NetworkLayer } from '../../../src/layers/network.service';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
 import { PALETTES } from '../../../src/layers/theme.constants';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('NetworkLayer', () => {

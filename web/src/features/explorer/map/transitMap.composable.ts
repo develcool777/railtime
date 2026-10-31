@@ -1,72 +1,56 @@
-import { useColorMode } from '#imports';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { ChangeInfo, LineInfo, MapView, OverlayResult, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
-import type { TransitMapBinding, TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
+import { onBeforeUnmount, onMounted, watch } from 'vue';
+
+import { useExplorerStore } from '~/features/explorer/explorer.store';
+import type { TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
 
 /**
- * Mounts a `TransitMap` and mirrors its events as reactive state; follows the site's colour mode.
- * Commands go straight to `map.value`. Client only: call it inside `<ClientOnly>`.
+ * The map, and the only code that touches it. It is made on mount with the store's props and
+ * listeners that write what it says into the store; each change of the props is given to it; it is
+ * taken down on unmount. Every other part reads the store, and moves through time with the store's
+ * actions. Client only: call it inside `<ClientOnly>`.
  *
- * @param mount - Where to mount the map and minimap, and the network to draw.
- * @returns The map and its state.
+ * @param mount - Where the map and the minimap go.
  */
-export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
-  const colorMode = useColorMode();
-  const theme = (): Theme => (colorMode.value === 'light' ? 'light' : 'dark');
-  const map = shallowRef<TransitMap | null>(null);
-  const time = ref<TimeState | null>(null);
-  const step = ref<StepInfo | null>(null);
-  const lines = ref<LineInfo[]>([]);
-  const changes = ref<ChangeInfo[]>([]);
-  const overlay = shallowRef<OverlayResult | null>(null);
-  // Where it opens, until it first moves: a linked view stays in the address.
-  const view = ref<MapView | null>(mount.view ?? null);
-  const onResize = () => map.value?.setPadding(mount.padding());
+export const useTransitMap = (mount: TransitMapMount): void => {
+  const store = useExplorerStore();
+  let map: TransitMap | null = null;
 
   onMounted(() => {
-    const transitMap = new TransitMap({
+    const model = store.model;
+    if (!model) return;
+    map = new TransitMap({
       container: mount.container.value!,
       minimapContainer: mount.minimapContainer.value ?? undefined,
-      network: mount.network,
-      theme: theme(),
-      padding: mount.padding(),
-      cover: { left: mount.cover() },
+      model,
+      props: store.mapProps,
+      ...(store.view ? { view: store.view } : {}),
       // The page shows the credits itself, in a corner of the map.
       attributionControl: false,
       workerUrl,
-      ...(mount.view ? { view: mount.view } : {}),
-      ...(mount.plan ? { plan: mount.plan } : {}),
+      on: {
+        time: time => store.timeChanged(time),
+        step: step => (store.step = step),
+        overlay: result => (store.overlayResult = result),
+        view: view => (store.view = view),
+        stationClick: id => (id ? store.pickStation(id) : store.closeStation()),
+        // The station open left the map on another date: its view closes.
+        selectionGone: () => store.closeStation(),
+        end: () => store.playbackEnded(),
+      },
     });
-    transitMap.on('time', state => (time.value = state));
-    transitMap.on('step', info => (step.value = info));
-    transitMap.on('view', where => (view.value = where));
-    transitMap.on('overlay', result => (overlay.value = result));
-    // What the panel opens is the store's: the map says what was clicked, and when the station open left it.
-    transitMap.on('stationClick', id => mount.onStationClick(id));
-    transitMap.on('selectionGone', () => mount.onSelectionGone());
-    lines.value = transitMap.getLines();
-    changes.value = transitMap.getChanges();
-    map.value = transitMap;
-    window.addEventListener('resize', onResize);
-  });
-
-  onBeforeUnmount(() => {
-    window.removeEventListener('resize', onResize);
-    map.value?.destroy();
+    store.attach(map);
   });
 
   watch(
-    () => colorMode.value,
-    () => {
-      const transitMap = map.value;
-      if (!transitMap) return;
-      transitMap.setTheme(theme());
-      lines.value = transitMap.getLines();
-      changes.value = transitMap.getChanges();
-    },
+    () => store.mapProps,
+    props => map?.update(props),
   );
 
-  return { map, time, step, lines, changes, view, overlay };
+  onBeforeUnmount(() => {
+    store.detach();
+    map?.destroy();
+    map = null;
+  });
 };

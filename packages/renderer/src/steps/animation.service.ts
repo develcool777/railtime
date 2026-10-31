@@ -1,12 +1,10 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { RenderState } from '../layers/lineStyle.types';
 import { resolveLine } from '../layers/lineStyle.utils';
-import type { Step } from '../network/timeline.types';
-import type { StepInfo } from '../transitMap.types';
+import type { Step } from '@railtime/network/timeline.types';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
 
 /**
- * How one kind of step plays: how long it takes, what the camera frames, how it is described, and
+ * How one kind of step plays: how long it takes, what the camera frames, and
  * what it draws each frame. One subclass per kind of step; the player and the map only ever talk
  * to this base class.
  */
@@ -46,14 +44,6 @@ export abstract class StepAnimation<Kind extends Step = Step> {
   public startPoint(): LngLat | null {
     return this.cameraPoints()[0] ?? null;
   }
-
-  /**
-   * The step for a caption.
-   *
-   * @param state - The render state when the step starts.
-   * @returns Its title, subtitle, colour and stations.
-   */
-  public abstract describe(state: RenderState): StepInfo;
 
   /**
    * Adds this frame of the step to the drawing.

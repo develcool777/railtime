@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import { ActiveStepLayer } from '../../../src/layers/activeStep.service';
 import type { FeatureCollection, LineFeature } from '../../../src/layers/features.types';
 import { FrameRenderer } from '../../../src/layers/frame.service';
@@ -8,7 +8,7 @@ import { NetworkLayer } from '../../../src/layers/network.service';
 import type { NetworkSnapshot } from '../../../src/layers/snapshot.types';
 import { StationLayer } from '../../../src/stations/layer.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 /**

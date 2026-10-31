@@ -1,4 +1,4 @@
-import type { NetworkStats } from '../transitMap.types';
+import type { NetworkStats } from '../model/facts.types.ts';
 import type { DecadeOpenings, NetworkHistory, OpenNetwork, YearStats } from './history.types';
 import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';

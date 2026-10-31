@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS } from '../../../src/steps/animation.constants';
 import { OpenStepAnimation } from '../../../src/steps/open.service';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 import { stepAfter } from '../../support/stepFrames.utils';
 
@@ -14,13 +14,12 @@ describe('OpenStepAnimation', () => {
   const extension = () => stepAfter(tinyNetwork(), '1905-01-01');
 
   test('highlights the stations a stretch opens as the growth front passes them', () => {
-    const { animation, draw, state } = extension();
+    const { animation, draw } = extension();
     expect(animation).toBeInstanceOf(OpenStepAnimation);
     // Half-way the front has passed C, but C is an infill station: it does not open on red until 1920.
     expect([...draw(0.5).highlighted]).toEqual([]);
     expect([...draw(1).highlighted]).toEqual(['d']);
     // D opened in 1910 under its name then, Old D.
-    expect(animation.describe(state)).toMatchObject({ title: 'Red line extended', subtitle: 'B – Old D', stations: ['C', 'Old D'] });
   });
 
   test('grows more slowly in 3D, where the camera follows it at street level', () => {
@@ -65,13 +64,5 @@ describe('OpenStepAnimation', () => {
     expect(drawing.heads.features).toEqual([]);
     expect(drawing.reached.size).toBe(0);
     expect(drawing.highlighted.size).toBe(0);
-  });
-
-  test('says a line opens though another already runs there, and one back on track it left reopens', () => {
-    // B and C are both on the map: the stretch grows one way, from C, nearer the centre, and is named as it grows.
-    const opens = stepAfter(tinyNetwork(), '1929-01-01');
-    expect(opens.animation.describe(opens.state)).toMatchObject({ title: 'Blue line opens', subtitle: 'C – B' });
-    const reopens = stepAfter(tinyNetwork(), '1944-01-01');
-    expect(reopens.animation.describe(reopens.state)).toMatchObject({ title: 'Blue line reopens', subtitle: 'C – B' });
   });
 });

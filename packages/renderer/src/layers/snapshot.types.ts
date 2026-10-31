@@ -1,4 +1,4 @@
-import type { NetworkStats } from '../transitMap.types';
+import type { NetworkStats } from '@railtime/network/facts.types';
 import type { FeatureCollection, LineFeature, StationLines } from './features.types';
 import type { SideBySide } from './lineStyle.types';
 

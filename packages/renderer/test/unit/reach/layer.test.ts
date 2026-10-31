@@ -5,10 +5,11 @@ import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import { ReachLayer } from '../../../src/reach/layer.service';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { REACH_BANDS } from '../../../src/reach/layer.constants';
-import { bandOf, reachStops, reachTrack, reachedSegments } from '../../../src/reach/layer.utils';
-import { toTimestamp } from '../../../src/core/date.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { REACH_BANDS } from '@railtime/network/reach.constants';
+import { bandOf } from '@railtime/network/reach.utils';
+import { reachStops, reachTrack, reachedSegments } from '../../../src/reach/layer.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { networkNow, playbackOf } from '../../support/playback.utils';
 
 /** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */

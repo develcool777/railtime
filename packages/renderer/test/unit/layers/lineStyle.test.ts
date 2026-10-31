@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { offsetFor, resolveLine } from '../../../src/layers/lineStyle.utils';
-import { toTimestamp } from '../../../src/core/date.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('LineStyleUtils', () => {

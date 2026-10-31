@@ -1,5 +1,6 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import { boundsOf } from '../core/geometry.utils';
+import { coverageDrawing } from '../coverage/layer.utils';
+import { boundsOf } from '@railtime/network/geometry.utils';
 import { reachStops, reachTrack } from '../reach/layer.utils';
 import { routeStops, routeTrack } from '../route/layer.utils';
 import { OPENING_MAX_ZOOM, ROUTE_NAME_ROOM, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from '../transitMap.constants';
@@ -52,7 +53,7 @@ export class OverlayController {
     const reachStations = reachStops(model.index, reach);
     routeLayer.update(routeLine, routeStops(model.index, route));
     reachLayer.update(reachTrack(model.index, model.timeline, moment.cursor, reach), reachStations);
-    coverageLayer.update(coverage ? coverage.drawing(moment.cursor) : null);
+    coverageLayer.update(coverage ? coverageDrawing(coverage, moment.cursor) : null);
 
     const subject = overlaySubjectOf(request);
     if (subject !== this.framed) {

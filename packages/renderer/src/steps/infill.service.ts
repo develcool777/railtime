@@ -1,9 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import { required } from '../core/required.utils';
-import type { RenderState } from '../layers/lineStyle.types';
-import { resolveLine } from '../layers/lineStyle.utils';
-import type { InfillStep } from '../network/timeline.types';
-import type { StepInfo } from '../transitMap.types';
+import type { InfillStep } from '@railtime/network/timeline.types';
 import { INFILL_DRAW_SECONDS, INFILL_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -26,24 +22,6 @@ export class InfillStepAnimation extends StepAnimation<InfillStep> {
    */
   public cameraPoints(): LngLat[] {
     return [this.context.index.coordOf(this.step.station)];
-  }
-
-  /**
-   * "<station> opens", on which lines.
-   *
-   * @param state - The render state when the step starts.
-   * @returns The caption.
-   */
-  public describe(state: RenderState): StepInfo {
-    const lines = this.step.lines.map(line => resolveLine(state, line));
-    return {
-      kind: 'infill',
-      time: this.date,
-      title: `${this.nameOf(this.step.station)} opens`,
-      subtitle: `on the ${lines.map(line => this.context.index.lineName(line.id)).join(' and ')}`,
-      color: required(lines[0], 'line of an infill step').color,
-      stations: [this.nameOf(this.step.station)],
-    };
   }
 
   /**

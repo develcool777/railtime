@@ -21,8 +21,8 @@ export type MapOverlay = 'route' | 'reach' | 'coverage';
 /** A route's ends, once picked. */
 export type RouteEnds = { from: RouteStop | null; to: RouteStop | null };
 
-/** What opens over the whole page, one at a time: the search, the help, or the city picker. */
-export type Overlay = 'search' | 'help' | 'cities';
+/** A dialog over the whole page, one at a time: the search, the help, or the city picker. */
+export type Dialog = 'search' | 'help' | 'cities';
 
 /** What the page shows around the map, worked out in one place from the store. */
 export type Chrome = {

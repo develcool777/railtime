@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { YEAR_MS, toTimestamp } from '../../../src/core/date.utils';
+import { YEAR_MS, toTimestamp } from '@railtime/network/date.utils';
 import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 describe('Player', () => {

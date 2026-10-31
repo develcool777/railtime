@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import {
   CLOSE_UP_MAX_ZOOM,
   CLOSE_UP_MIN_ZOOM,
@@ -18,7 +18,7 @@ import type { ViewMode } from '../../../src/transitMap.types';
 import { chaseStartOf, chaseZoomOf, followOf } from '../../../src/playback/camera.utils';
 import type { StepAnimation } from '../../../src/steps/animation.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 const PADDING = { top: 10, right: 20, bottom: 30, left: 40 };

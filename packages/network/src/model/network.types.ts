@@ -1,7 +1,12 @@
-import type { LineDetails, NetworkRecords, ReachInfo, RouteInfo, RoutePreference, StationInfo, StationSummary, TimeState } from '../transitMap.types';
+import type { LineDetails, NetworkRecords, ReachInfo, RouteInfo, RoutePreference, StationInfo, StationSummary } from './facts.types';
 
 /** A moment in the network's history, as the map's `time` event gives it: the steps happened, and the day. */
-export type NetworkTime = Pick<TimeState, 'cursor' | 'time'>;
+export type NetworkTime = {
+  /** Steps that have happened. */
+  cursor: number;
+  /** The day, as a UTC timestamp. */
+  time: number;
+};
 
 /** What a `NetworkModel` is made with besides the network. */
 export type NetworkModelOptions = {

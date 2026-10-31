@@ -2,11 +2,10 @@ import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Bounds } from '../core/geometry.types';
 import type { NetworkIndex } from '../network/index.service';
 import type { Timeline } from '../network/timeline.service';
-import type { CoverageInfo, CoverageYear } from '../transitMap.types';
+import type { CoverageInfo, CoverageYear } from '../model/facts.types';
 import { CoverageGrid } from './grid.service';
-import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from './layer.constants';
-import type { CoverageDrawing } from './layer.types';
-import { coverageHistory, coverageImage, coverageOf, servedStations } from './layer.utils';
+import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from './measure.constants';
+import { coverageHistory, coverageOf, servedStations } from './measure.utils';
 
 /**
  * A city's coverage on its network: how much of its outline is within walking distance of a station
@@ -14,9 +13,9 @@ import { coverageHistory, coverageImage, coverageOf, servedStations } from './la
  */
 export class CoverageMeasure {
   /** The city's outline. */
-  private readonly boundary: CityBoundary;
+  public readonly boundary: CityBoundary;
   /** The outline, cut into cells. */
-  private readonly grid: CoverageGrid;
+  public readonly grid: CoverageGrid;
   /** The network. */
   private readonly index: NetworkIndex;
   /** Its timeline. */
@@ -46,21 +45,6 @@ export class CoverageMeasure {
   }
 
   /**
-   * What the map draws at a cursor: the city shaded by the distance to the nearest station, and its outline.
-   *
-   * @param cursor - The timeline's cursor.
-   * @returns The drawing.
-   */
-  public drawing(cursor: number): NonNullable<CoverageDrawing> {
-    const { grid } = this;
-    return {
-      image: { width: grid.columns, height: grid.rows, pixels: coverageImage(grid, this.distances(cursor), COVERAGE_BANDS) },
-      corners: grid.corners,
-      outline: this.boundary.polygons.flat().map(ring => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ring } })),
-    };
-  }
-
-  /**
    * The share of the city within the headline distance of a station at the end of each year, from
    * the timeline's start to today's.
    *
@@ -83,12 +67,13 @@ export class CoverageMeasure {
   }
 
   /**
-   * How far each cell is from the nearest station open at a cursor, up to the farthest band.
+   * How far each cell is from the nearest station open at a cursor, up to the farthest band: for a
+   * picture of it.
    *
    * @param cursor - The timeline's cursor.
    * @returns Metres, cell by cell.
    */
-  private distances(cursor: number): Float32Array {
+  public distances(cursor: number): Float32Array {
     const farthest = COVERAGE_BANDS.at(-1)?.upTo ?? COVERAGE_HEADLINE_METRES;
     return this.grid.distances(servedStations(this.index, this.timeline, cursor), farthest);
   }

@@ -1,7 +1,7 @@
 import type { MapProps, Padding } from './transitMap.types';
 
 /** Room kept clear around the map's edges when no padding is given. */
-export const DEFAULT_PADDING: Padding = { top: 140, bottom: 120, left: 60, right: 60 };
+const DEFAULT_PADDING: Padding = { top: 140, bottom: 120, left: 60, right: 60 };
 
 /** No panel over the map's edges. */
 export const NO_COVER: Padding = { top: 0, bottom: 0, left: 0, right: 0 };
