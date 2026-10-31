@@ -18,19 +18,45 @@ export type Padding = { top: number; bottom: number; left: number; right: number
 /** Where the map looks. */
 export type MapView = { center: LngLat; zoom: number };
 
+/**
+ * How the map is set: what the app decides and the map shows, as one object. The app keeps it and
+ * gives it whole or in part to `apply`; the map acts on what changed. What it is asked to do once (zoom,
+ * play, seek) is a method; what it says back, an event.
+ */
+export type MapState = {
+  theme: Theme;
+  /** Flat from above, or tilted in 3D, the buildings standing; playback then follows from close by. */
+  viewMode: ViewMode;
+  /** Whether the stations are named, or only their dots shown. */
+  stationLabels: boolean;
+  /** The lines shown; `null` for every line. */
+  visibleLines: string[] | null;
+  /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
+  focusedLines: string[] | null;
+  /** The station ringed, flown to when it changes; `null` for none. */
+  selectedStation: string | null;
+  /** What is drawn over the network, worked out again on each date and theme; `null` for nothing. */
+  overlay: OverlayRequest | null;
+  /** The playback speed: 1 is normal. */
+  speed: number;
+  /** How the camera follows playback. */
+  camera: CameraMode;
+  /** Room the app's own panels take up, kept clear when the camera frames something. */
+  padding: Padding;
+  /** Panels the app lays over the map's edges, pixels: the map's centre and every frame stay clear of them, what is drawn stays put. */
+  cover: Padding;
+};
+
 /** What a `TransitMap` is created with. */
 export type TransitMapOptions = {
   container: HTMLElement;
   network: Network;
-  theme?: Theme;
+  /** How it is set at first; what is left out, the defaults (`DEFAULT_MAP_STATE`). */
+  state?: Partial<MapState>;
   /** A MapLibre style URL using the OpenMapTiles schema. Defaults to OpenFreeMap's Positron. */
   basemap?: string;
   /** Where to draw the overview inset. Without one there is no minimap. */
   minimapContainer?: HTMLElement;
-  /** Room the app's own panels take up, kept clear when the camera frames something. */
-  padding?: Padding;
-  /** A panel the app lays over an edge of the map, pixels: the map's centre and every frame stay clear of it (`setCover`). */
-  cover?: Partial<Padding>;
   /** Where the map opens. Without one it fits the whole network. */
   view?: MapView;
   /** One of the network's plans, built on top of it: its sections play after every dated change, one by one, drawn as planned (`showFuture`). */
@@ -185,7 +211,7 @@ export type RouteInfo = {
   km: number;
   /** How many times it changes line. */
   changes: number;
-  /** The track it rides, by segment: what `showRoute` draws. */
+  /** The track it rides, by segment: what a route overlay draws. */
   segments: number[][];
 };
 
@@ -266,6 +292,16 @@ export type NetworkRecords = {
   longest: { id: string; name: string; color: string; km: number }[];
 };
 
+/**
+ * What the map draws over the network, worked out again on each date and theme: a route between two
+ * stations, how far one gets from a station, or how much of the city is near one.
+ */
+export type OverlayRequest = { kind: 'route'; from: string; to: string; preference: RoutePreference } | { kind: 'reach'; from: string } | { kind: 'coverage' };
+
+/** What the overlay drawn came to on the date shown, for the app to list: `null` where there is none on the date. */
+export type OverlayResult =
+  { kind: 'route'; route: RouteInfo | null } | { kind: 'reach'; reach: ReachInfo | null } | { kind: 'coverage'; coverage: CoverageInfo | null };
+
 /** Events a `TransitMap` emits, by name. */
 export type TransitMapEvents = {
   /** The basemap and overlay are ready. */
@@ -280,6 +316,10 @@ export type TransitMapEvents = {
   stationClick: string | null;
   /** The station selected is not on the map on the date now shown: its ring is gone. Its id. */
   selectionGone: string;
+  /** The theme changed: the colours of the lines and the changes are its now (`getLines`, `getChanges`). */
+  theme: Theme;
+  /** The overlay drawn was worked out again, for a new request, date or theme; `null` once it is cleared. */
+  overlay: OverlayResult | null;
   /** Playback reached today. */
   end: undefined;
   /** The map stopped moving, by the user's hand or the camera's: where it looks now. */

@@ -49,9 +49,9 @@
               :ends="routeEnds"
               :preference="routePreference"
               :route="foundRoute"
-              @from="routeEnds.from = $event"
-              @to="routeEnds.to = $event"
-              @swap="swapEnds"
+              @from="routeEnds = { ...routeEnds, from: $event }"
+              @to="routeEnds = { ...routeEnds, to: $event }"
+              @swap="store.swapEnds"
               @preference="routePreference = $event"
               @station="store.pickStation" />
             <ReachSection
@@ -193,6 +193,7 @@
   import type { Section } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useMapLook } from '~/features/explorer/map/mapLook.composable';
+  import { useMapOverlay } from '~/features/explorer/map/mapOverlay.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
@@ -213,7 +214,23 @@
 
   // What is open and how it is set is the store's; the parts below read it, and the buttons call its actions.
   const store = useExplorerStore();
-  const { section, railSection, openStation, timeMode, phone, sheet, panelOpen, panelWidth, viewMode, stationNames, player, chrome } = storeToRefs(store);
+  const {
+    section,
+    railSection,
+    openStation,
+    timeMode,
+    phone,
+    sheet,
+    panelOpen,
+    panelWidth,
+    viewMode,
+    stationNames,
+    player,
+    chrome,
+    routeEnds,
+    routePreference,
+    reachFrom,
+  } = storeToRefs(store);
   const searchOpen = store.overlayOpen('search');
   const helpOpen = store.overlayOpen('help');
   const citiesOpen = store.overlayOpen('cities');
@@ -272,8 +289,9 @@
     currentChange,
   });
 
-  const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding });
-  const { reachFrom, foundReach, reachMark } = useReachFinder({ binding });
+  useMapOverlay(map);
+  const { foundRoute, routeMark } = useRouteFinder({ binding });
+  const { foundReach, reachMark } = useReachFinder({ binding });
   const { boundaryState, coverage, history: coverageHistory } = useCoverage({ binding, city: props.city });
 
   const { growth, records, shownYear } = useInsights({ binding });

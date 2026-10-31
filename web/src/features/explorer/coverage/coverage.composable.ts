@@ -9,8 +9,7 @@ import { boundaryUrlOf } from '~/utils/city.utils';
 
 /**
  * How much of the city is within walking distance of a station: its outline loaded the first time the
- * Coverage section opens, the coverage found again for the date shown, and drawn on the map while the
- * section is open, playing too.
+ * map is to draw it, and given to the map, which works the coverage out on each date it shows.
  *
  * @param input - The map, and the city.
  * @returns Where the outline is, the coverage, and its history.
@@ -18,7 +17,7 @@ import { boundaryUrlOf } from '~/utils/city.utils';
 export const useCoverage = (input: CoverageInput): Coverage => {
   const { binding, city } = input;
   const { mapOverlay } = storeToRefs(useExplorerStore());
-  const { map, time } = binding;
+  const { map, overlay } = binding;
   const baseURL = useRuntimeConfig().app.baseURL;
 
   const boundary = shallowRef<CityBoundary | null>(null);
@@ -45,12 +44,9 @@ export const useCoverage = (input: CoverageInput): Coverage => {
   // The map takes the outline once both are there, whichever comes first.
   watch([map, boundary], () => map.value?.setBoundary(boundary.value), { immediate: true });
 
-  const coverage = computed(() => {
-    const shownCursor = time.value?.cursor;
-    return boundaryState.value === 'ready' && map.value && shownCursor !== undefined ? map.value.findCoverage() : null;
-  });
+  // Drawn as the store asks, and worked out again on each date by the map.
+  const coverage = computed(() => (overlay.value?.kind === 'coverage' ? overlay.value.coverage : null));
   const history = computed(() => (boundaryState.value === 'ready' && map.value ? map.value.getCoverageHistory() : []));
-  watch([shown, coverage], () => map.value?.showCoverage(shown.value && coverage.value !== null));
 
   return { boundaryState, coverage, history };
 };

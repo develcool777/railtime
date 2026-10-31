@@ -1,5 +1,5 @@
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { ChangeInfo, LineInfo, MapView, Padding, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineInfo, MapView, OverlayResult, Padding, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
 import type { Ref, ShallowRef } from 'vue';
 
@@ -38,4 +38,6 @@ export type TransitMapBinding = {
   changes: Ref<ChangeInfo[]>;
   /** Where the map looks, once it stops moving. */
   view: Ref<MapView | null>;
+  /** What the overlay drawn came to on the date shown: a route, a reach, the coverage; `null` with none. */
+  overlay: Readonly<ShallowRef<OverlayResult | null>>;
 };

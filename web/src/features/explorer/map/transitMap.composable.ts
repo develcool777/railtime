@@ -1,6 +1,6 @@
 import { useColorMode } from '#imports';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { ChangeInfo, LineInfo, MapView, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineInfo, MapView, OverlayResult, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { TransitMapBinding, TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
@@ -20,6 +20,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
   const step = ref<StepInfo | null>(null);
   const lines = ref<LineInfo[]>([]);
   const changes = ref<ChangeInfo[]>([]);
+  const overlay = shallowRef<OverlayResult | null>(null);
   // Where it opens, until it first moves: a linked view stays in the address.
   const view = ref<MapView | null>(mount.view ?? null);
   const onResize = () => map.value?.setPadding(mount.padding());
@@ -41,6 +42,7 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
     transitMap.on('time', state => (time.value = state));
     transitMap.on('step', info => (step.value = info));
     transitMap.on('view', where => (view.value = where));
+    transitMap.on('overlay', result => (overlay.value = result));
     // What the panel opens is the store's: the map says what was clicked, and when the station open left it.
     transitMap.on('stationClick', id => mount.onStationClick(id));
     transitMap.on('selectionGone', () => mount.onSelectionGone());
@@ -66,5 +68,5 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
     },
   );
 
-  return { map, time, step, lines, changes, view };
+  return { map, time, step, lines, changes, view, overlay };
 };

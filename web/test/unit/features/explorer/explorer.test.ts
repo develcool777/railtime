@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { PanelView } from '~/features/explorer/explorer.types';
-import { chromeOf, mapOverlayOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import { chromeOf, mapOverlayOf, openOf, overlayRequestOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
 
 const line = (id: string): PanelView => ({ kind: 'line', id });
 const station = (id: string): PanelView => ({ kind: 'station', id });
@@ -62,6 +62,24 @@ describe('ExplorerUtils', () => {
       expect(mapOverlayOf('route', 'playing')).toBeNull();
       expect(mapOverlayOf('reach', 'playing')).toBeNull();
       expect(mapOverlayOf('coverage', 'playing')).toBe('coverage');
+    });
+  });
+
+  describe('overlayRequestOf', () => {
+    const bank = { id: 'bank', name: 'Bank' };
+    const oval = { id: 'oval', name: 'Oval' };
+    const none = { overlay: null, routeEnds: { from: bank, to: oval }, routePreference: 'fastest' as const, reachFrom: bank };
+
+    test("asks for the section's overlay once it has what it needs", () => {
+      expect(overlayRequestOf({ ...none, overlay: 'route' })).toEqual({ kind: 'route', from: 'bank', to: 'oval', preference: 'fastest' });
+      expect(overlayRequestOf({ ...none, overlay: 'reach' })).toEqual({ kind: 'reach', from: 'bank' });
+      expect(overlayRequestOf({ ...none, overlay: 'coverage' })).toEqual({ kind: 'coverage' });
+    });
+
+    test('asks for nothing before a route has both ends or a reach its start, nor with no overlay', () => {
+      expect(overlayRequestOf({ ...none, overlay: 'route', routeEnds: { from: bank, to: null } })).toBeNull();
+      expect(overlayRequestOf({ ...none, overlay: 'reach', reachFrom: null })).toBeNull();
+      expect(overlayRequestOf(none)).toBeNull();
     });
   });
 

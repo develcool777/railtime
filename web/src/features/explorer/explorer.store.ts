@@ -1,20 +1,20 @@
 import { useCookie } from '#imports';
-import type { ViewMode } from '@railtime/renderer/transitMap.types';
+import type { RoutePreference, RouteStop, ViewMode } from '@railtime/renderer/transitMap.types';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { WritableComputedRef } from 'vue';
 
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { PANEL_WIDTH } from '~/features/explorer/explorer.constants';
-import type { Overlay, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
-import { chromeOf, mapOverlayOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import type { Overlay, PanelView, PlayerSettings, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import { chromeOf, mapOverlayOf, openOf, overlayRequestOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
 import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
 
 /**
  * What the explorer has open and how it is set: the one place a button changes, so no click can leave
  * two parts disagreeing. The panel's section and the views pushed over it; the time control's mode;
- * the panel, the phone's sheet, map only; the one overlay open; how the map is seen; how playback is
- * set. What is on the map (the date, the camera, the station's details) is the map's: the composables
+ * the panel, the phone's sheet, map only; the one overlay open; a route's ends and a reach's start,
+ * and what the map draws over the network from them; how the map is seen; how playback is set. What is on the map (the date, the camera, the station's details) is the map's: the composables
  * read the store and send it commands.
  *
  * Kept three ways, by what each is: what is looked at goes in the address (`useExplorerAddress`
@@ -33,6 +33,10 @@ export const useExplorerStore = defineStore('explorer', () => {
   const mapOnly = ref(false);
   const overlay = ref<Overlay | null>(null);
 
+  const routeEnds = ref<RouteEnds>({ from: null, to: null });
+  const routePreference = ref<RoutePreference>('fastest');
+  const reachFrom = ref<RouteStop | null>(null);
+
   const viewMode = ref<ViewMode>('2d');
   const stationNames = ref(true);
   const player = useCookie<PlayerSettings>('railtime-player', { default: () => ({ speed: DEFAULT_SPEED, camera: 'follow', minimap: true }) });
@@ -42,6 +46,9 @@ export const useExplorerStore = defineStore('explorer', () => {
   const railSection = computed(() => railSectionOf(section.value, views.value));
   const playing = computed(() => timeMode.value === 'playing');
   const mapOverlay = computed(() => mapOverlayOf(section.value, timeMode.value));
+  const overlayRequest = computed(() =>
+    overlayRequestOf({ overlay: mapOverlay.value, routeEnds: routeEnds.value, routePreference: routePreference.value, reachFrom: reachFrom.value }),
+  );
   const chrome = computed(() =>
     chromeOf({ phone: phone.value, mapOnly: mapOnly.value, sheet: sheet.value, timeMode: timeMode.value, minimap: player.value.minimap }),
   );
@@ -62,6 +69,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     sheet.value = 'peek';
     mapOnly.value = address.mapOnly ?? false;
     overlay.value = null;
+    routeEnds.value = { from: null, to: null };
+    routePreference.value = 'fastest';
+    reachFrom.value = null;
     viewMode.value = address.viewMode ?? '2d';
     stationNames.value = address.stationNames ?? true;
   };
@@ -131,6 +141,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     views.value = [];
   };
 
+  /** Swaps where the route starts and ends. */
+  const swapEnds = () => (routeEnds.value = { from: routeEnds.value.to, to: routeEnds.value.from });
+
   /**
    * Enters or leaves map only; the layout takes the page full screen with it.
    *
@@ -180,6 +193,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     sheet,
     mapOnly,
     overlay,
+    routeEnds,
+    routePreference,
+    reachFrom,
     viewMode,
     stationNames,
     player,
@@ -188,6 +204,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     railSection,
     playing,
     mapOverlay,
+    overlayRequest,
     chrome,
     open,
     revealPanel,
@@ -200,6 +217,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     closeStation,
     goBack,
     followPlayback,
+    swapEnds,
     setMapOnly,
     setOverlay,
     overlayOpen,

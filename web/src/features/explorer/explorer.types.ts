@@ -1,4 +1,4 @@
-import type { CameraMode } from '@railtime/renderer/transitMap.types';
+import type { CameraMode, RouteStop } from '@railtime/renderer/transitMap.types';
 
 /** One of the panel's sections, as the rail lists them. */
 export type Section = 'lines' | 'stations' | 'changes' | 'route' | 'reach' | 'coverage' | 'insights' | 'plans';
@@ -17,6 +17,9 @@ export type PanelView = { kind: 'line'; id: string } | { kind: 'station'; id: st
 
 /** What the map draws over the network for the panel's section: a route, a reach, or the city's coverage. */
 export type MapOverlay = 'route' | 'reach' | 'coverage';
+
+/** A route's ends, once picked. */
+export type RouteEnds = { from: RouteStop | null; to: RouteStop | null };
 
 /** What opens over the whole page, one at a time: the search, the help, or the city picker. */
 export type Overlay = 'search' | 'help' | 'cities';

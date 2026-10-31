@@ -1,4 +1,6 @@
-import type { Chrome, MapOverlay, PanelView, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import type { OverlayRequest, RoutePreference, RouteStop } from '@railtime/renderer/transitMap.types';
+
+import type { Chrome, MapOverlay, PanelView, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**
  * Opens a station's view: over a line's view, if one is open, in place of any stations walked before.
@@ -65,6 +67,30 @@ export const mapOverlayOf = (section: Section, timeMode: TimeMode): MapOverlay |
   if (section === 'coverage') return 'coverage';
   if (timeMode === 'playing') return null;
   return section === 'route' || section === 'reach' ? section : null;
+};
+
+/** What the map's overlay is worked out from: which one, and what each is of. */
+type OverlayInput = {
+  overlay: MapOverlay | null;
+  routeEnds: RouteEnds;
+  routePreference: RoutePreference;
+  reachFrom: RouteStop | null;
+};
+
+/**
+ * What to ask the map to draw over the network: the overlay of the section open, once it has what it
+ * needs (a route both its ends, a reach its start).
+ *
+ * @param input - The overlay, the route's ends and preference, the reach's start.
+ * @returns The request, or `null` for nothing to draw.
+ */
+export const overlayRequestOf = (input: OverlayInput): OverlayRequest | null => {
+  const { overlay, routeEnds, routePreference, reachFrom } = input;
+  if (overlay === 'coverage') return { kind: 'coverage' };
+  if (overlay === 'route' && routeEnds.from && routeEnds.to)
+    return { kind: 'route', from: routeEnds.from.id, to: routeEnds.to.id, preference: routePreference };
+  if (overlay === 'reach' && reachFrom) return { kind: 'reach', from: reachFrom.id };
+  return null;
 };
 
 /** What the page's chrome is worked out from. */
