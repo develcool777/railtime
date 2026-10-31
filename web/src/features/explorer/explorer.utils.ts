@@ -1,4 +1,4 @@
-import type { Chrome, PanelView, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import type { Chrome, MapOverlay, PanelView, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**
  * Opens a station's view: over a line's view, if one is open, in place of any stations walked before.
@@ -50,6 +50,21 @@ export const railSectionOf = (section: Section, views: PanelView[]): Section => 
   const top = views.at(-1);
   if (!top) return section;
   return top.kind === 'station' ? 'stations' : 'lines';
+};
+
+/**
+ * What the map draws over the network for the section open. Playback hides a route and a reach, which
+ * would cover the line growing and fade the network it is drawn over; coverage, which grows with the
+ * network, stays.
+ *
+ * @param section - The section open.
+ * @param timeMode - What the time control shows.
+ * @returns The overlay, or `null` for none.
+ */
+export const mapOverlayOf = (section: Section, timeMode: TimeMode): MapOverlay | null => {
+  if (section === 'coverage') return 'coverage';
+  if (timeMode === 'playing') return null;
+  return section === 'route' || section === 'reach' ? section : null;
 };
 
 /** What the page's chrome is worked out from. */

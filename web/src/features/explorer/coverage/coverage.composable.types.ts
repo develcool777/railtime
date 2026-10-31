@@ -1,14 +1,11 @@
 import type { CoverageInfo, CoverageYear } from '@railtime/renderer/transitMap.types';
 import type { ComputedRef, Ref } from 'vue';
 
-import type { Section } from '~/features/explorer/explorer.types';
 import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
 
 /** What `useCoverage` reads. */
 export type CoverageInput = {
   binding: TransitMapBinding;
-  /** The panel's open section: coverage is drawn while it is Coverage, its outline loaded the first time. */
-  section: Ref<Section>;
   /** The city, whose outline is loaded. */
   city: string;
 };

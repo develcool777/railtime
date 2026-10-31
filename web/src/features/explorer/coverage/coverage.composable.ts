@@ -1,8 +1,10 @@
 import { useRuntimeConfig } from '#imports';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { storeToRefs } from 'pinia';
 import { computed, ref, shallowRef, watch } from 'vue';
 
 import type { BoundaryState, Coverage, CoverageInput } from '~/features/explorer/coverage/coverage.composable.types';
+import { useExplorerStore } from '~/features/explorer/explorer.store';
 import { boundaryUrlOf } from '~/utils/city.utils';
 
 /**
@@ -10,17 +12,18 @@ import { boundaryUrlOf } from '~/utils/city.utils';
  * Coverage section opens, the coverage found again for the date shown, and drawn on the map while the
  * section is open, playing too.
  *
- * @param input - The map, the panel's section, and the city.
+ * @param input - The map, and the city.
  * @returns Where the outline is, the coverage, and its history.
  */
 export const useCoverage = (input: CoverageInput): Coverage => {
-  const { binding, section, city } = input;
+  const { binding, city } = input;
+  const { mapOverlay } = storeToRefs(useExplorerStore());
   const { map, time } = binding;
   const baseURL = useRuntimeConfig().app.baseURL;
 
   const boundary = shallowRef<CityBoundary | null>(null);
   const boundaryState = ref<BoundaryState>('idle');
-  const shown = computed(() => section.value === 'coverage');
+  const shown = computed(() => mapOverlay.value === 'coverage');
 
   watch(
     shown,

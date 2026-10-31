@@ -1,15 +1,11 @@
 import type { RouteInfo, RoutePreference, RouteStop } from '@railtime/renderer/transitMap.types';
 import type { ComputedRef, Ref } from 'vue';
 
-import type { Section, TimeMode } from '~/features/explorer/explorer.types';
 import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
 
 /** What `useRouteFinder` reads. */
 export type RouteFinderInput = {
   binding: TransitMapBinding;
-  /** The panel's open section: the route is drawn while it is Route. */
-  section: Ref<Section>;
-  timeMode: Ref<TimeMode>;
 };
 
 /** A route between two stations, on the date shown. */

@@ -1,15 +1,11 @@
 import type { ReachInfo, RouteStop } from '@railtime/renderer/transitMap.types';
 import type { ComputedRef, Ref } from 'vue';
 
-import type { Section, TimeMode } from '~/features/explorer/explorer.types';
 import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
 
 /** What `useReachFinder` reads. */
 export type ReachFinderInput = {
   binding: TransitMapBinding;
-  /** The panel's open section: the reach is drawn while it is Reach. */
-  section: Ref<Section>;
-  timeMode: Ref<TimeMode>;
 };
 
 /** How far one gets from a station, on the date shown. */

@@ -271,9 +271,9 @@
     currentChange,
   });
 
-  const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding, section, timeMode });
-  const { reachFrom, foundReach, reachMark } = useReachFinder({ binding, section, timeMode });
-  const { boundaryState, coverage, history: coverageHistory } = useCoverage({ binding, section, city: props.city });
+  const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding });
+  const { reachFrom, foundReach, reachMark } = useReachFinder({ binding });
+  const { boundaryState, coverage, history: coverageHistory } = useCoverage({ binding, city: props.city });
 
   const { growth, records, shownYear } = useInsights({ binding });
   // A year picked on a chart: the map as it was at its end (today, for this year), the timeline open to say so.

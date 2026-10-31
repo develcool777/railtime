@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { PanelView } from '~/features/explorer/explorer.types';
-import { chromeOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import { chromeOf, mapOverlayOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
 
 const line = (id: string): PanelView => ({ kind: 'line', id });
 const station = (id: string): PanelView => ({ kind: 'station', id });
@@ -47,6 +47,21 @@ describe('ExplorerUtils', () => {
       expect(railSectionOf('route', [])).toBe('route');
       expect(railSectionOf('route', [line('central')])).toBe('lines');
       expect(railSectionOf('route', [line('central'), station('bank')])).toBe('stations');
+    });
+  });
+
+  describe('mapOverlayOf', () => {
+    test("draws the section's own overlay, and none for a section without one", () => {
+      expect(mapOverlayOf('route', 'rest')).toBe('route');
+      expect(mapOverlayOf('reach', 'timeline')).toBe('reach');
+      expect(mapOverlayOf('coverage', 'rest')).toBe('coverage');
+      expect(mapOverlayOf('lines', 'rest')).toBeNull();
+    });
+
+    test('hides a route and a reach while playing, and keeps coverage, which grows with the network', () => {
+      expect(mapOverlayOf('route', 'playing')).toBeNull();
+      expect(mapOverlayOf('reach', 'playing')).toBeNull();
+      expect(mapOverlayOf('coverage', 'playing')).toBe('coverage');
     });
   });
 

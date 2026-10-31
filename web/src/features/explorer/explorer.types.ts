@@ -15,6 +15,9 @@ export type TimeMode = 'rest' | 'timeline' | 'playing';
 /** A view pushed over the panel's section: a line's, or a station's. Back pops the last one. */
 export type PanelView = { kind: 'line'; id: string } | { kind: 'station'; id: string };
 
+/** What the map draws over the network for the panel's section: a route, a reach, or the city's coverage. */
+export type MapOverlay = 'route' | 'reach' | 'coverage';
+
 /** What opens over the whole page, one at a time: the search, the help, or the city picker. */
 export type Overlay = 'search' | 'help' | 'cities';
 

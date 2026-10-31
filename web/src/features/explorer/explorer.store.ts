@@ -7,7 +7,7 @@ import type { WritableComputedRef } from 'vue';
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { PANEL_WIDTH } from '~/features/explorer/explorer.constants';
 import type { Overlay, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
-import { chromeOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import { chromeOf, mapOverlayOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
 import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
 
 /**
@@ -41,6 +41,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const openLine = computed(() => openOf(views.value, 'line'));
   const railSection = computed(() => railSectionOf(section.value, views.value));
   const playing = computed(() => timeMode.value === 'playing');
+  const mapOverlay = computed(() => mapOverlayOf(section.value, timeMode.value));
   const chrome = computed(() =>
     chromeOf({ phone: phone.value, mapOnly: mapOnly.value, sheet: sheet.value, timeMode: timeMode.value, minimap: player.value.minimap }),
   );
@@ -186,6 +187,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     openLine,
     railSection,
     playing,
+    mapOverlay,
     chrome,
     open,
     revealPanel,
