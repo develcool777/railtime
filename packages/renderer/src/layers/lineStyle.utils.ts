@@ -1,4 +1,4 @@
-import type { TrackSegment } from '../model/networkIndex.types';
+import type { TrackSegment } from '../network/index.types';
 import type { RenderState, ResolvedLine, SideBySide } from './lineStyle.types';
 
 /**

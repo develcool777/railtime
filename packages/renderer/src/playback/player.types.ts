@@ -1,5 +1,5 @@
-import type { Step } from '../model/timeline.types';
-import type { StepAnimation } from '../steps/stepAnimation.service';
+import type { Step } from '../network/timeline.types';
+import type { StepAnimation } from '../steps/animation.service';
 
 /** The phases of a playing step: the camera moves, the change animates, the result stays highlighted. */
 export type Phase = 'pre' | 'draw' | 'hold';

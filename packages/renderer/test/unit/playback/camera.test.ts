@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/model/date.utils';
+import { toTimestamp } from '../../../src/core/date.utils';
 import { CameraDirector } from '../../../src/playback/camera.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';

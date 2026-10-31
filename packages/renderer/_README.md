@@ -46,35 +46,49 @@ the dates. A different plan is a new `TransitMap`.
 
 ## Structure
 
+A folder per subject; inside it, files are named for what they are, not for the folder again
+(`reach/layer.service.ts` holds `ReachLayer`, `reach/layer.utils.ts` its helpers). Classes keep their
+full names. Whatever takes no map (`*.utils.ts`, `network/`, `route/finder`, `playback/player`,
+`steps/`) runs in the unit tests as it is; the layers run there on a stand-in map
+(`test/support/factories/fakeMap.utils.ts`).
+
 ```text
 src/
-├── transitMap.service.ts        TransitMap extends EventEmitter: the one public entry, composes the rest
-├── core/                        EventEmitter base class, `required` lookup helper
-├── model/                       pure: no map
-│   ├── networkIndex.service.ts  NetworkIndex: segments prepared for drawing, a LineSegment per (segment, line, period)
-│   ├── timeline.service.ts      Timeline: the history as ordered steps; the state at any cursor
-│   └── orientation.utils.ts     a consistent direction of travel per segment
-├── steps/                       one class per kind of step
-│   ├── stepAnimation.service.ts abstract StepAnimation: drawSeconds, holdSeconds, cameraPoints(), describe(), draw()
-│   ├── openStep.service.ts      OpenStepAnimation: a stretch grows out of the network
-│   ├── closeStep.service.ts     CloseStepAnimation: track retracts, leaving a ghost
-│   ├── infillStep.service.ts    InfillStepAnimation: a station opens on existing track
-│   ├── stationCloseStep.service.ts StationCloseStepAnimation: lines stop calling at a station, the track stays
-│   ├── renameStep.service.ts    RenameStepAnimation: a station takes a new name
-│   └── identityStep.service.ts  IdentityStepAnimation: lines take their own colour
+├── transitMap.service.ts      TransitMap extends EventEmitter: the one public entry, composes the rest
+├── core/                      nothing about rail: EventEmitter, `required`, dates, geometry, easing, a priority queue
+├── network/                   the network and its history; pure
+│   ├── index.service.ts       NetworkIndex: segments prepared for drawing, a LineSegment per (segment, line, period)
+│   ├── timeline.service.ts    Timeline: the history as ordered steps; the state at any cursor
+│   ├── orientation.utils.ts   a consistent direction of travel per segment
+│   ├── history.utils.ts       the network year by year, openings by decade
+│   └── lineDetails.utils.ts   a line's branches and length at a cursor
+├── steps/                     one class per kind of step
+│   ├── animation.service.ts   abstract StepAnimation: drawSeconds, holdSeconds, cameraPoints(), describe(), draw()
+│   ├── open.service.ts        OpenStepAnimation: a stretch grows out of the network
+│   ├── close.service.ts       CloseStepAnimation: track retracts, leaving a ghost
+│   ├── infill.service.ts      InfillStepAnimation: a station opens on existing track
+│   ├── stationClose.service.ts StationCloseStepAnimation: lines stop calling at a station, the track stays
+│   ├── rename.service.ts      RenameStepAnimation: a station takes a new name
+│   └── identity.service.ts    IdentityStepAnimation: lines take their own colour
 ├── playback/
-│   ├── player.service.ts        Player: the clock and each step's phases; pure
-│   ├── growth.utils.ts          where a stretch grows from, and the order its stations appear in
-│   └── camera.service.ts        CameraDirector: framing a step
-├── layers/
-│   ├── mapLayer.service.ts      abstract MapLayer: owns its sources and layers
-│   ├── networkLayer.service.ts  NetworkLayer: the network on the map, closed track as ghosts
-│   ├── activeStepLayer.service.ts ActiveStepLayer: the playing step's track and growth heads
-│   ├── stationLayer.service.ts  StationLayer: dots, labels, pop-in, pulses, selection
-│   ├── networkSnapshot.utils.ts what is on the map at a cursor; pure
-│   └── basemap.utils.ts         recolouring an OpenMapTiles basemap per theme
-├── minimap/minimap.service.ts   Minimap: the overview inset
-└── still/basemapStill.service.ts BasemapStill: pictures of the basemap, with a track over it, for previews
+│   ├── player.service.ts      Player: the clock and each step's phases; pure
+│   ├── growth.utils.ts        where a stretch grows from, and the order its stations appear in
+│   └── camera.service.ts      CameraDirector: framing a step
+├── layers/                    what every group of map layers shares, and the network's own
+│   ├── layer.service.ts       abstract MapLayer: owns its sources and layers
+│   ├── network.service.ts     NetworkLayer: the network on the map, closed track as ghosts
+│   ├── activeStep.service.ts  ActiveStepLayer: the playing step's track and growth heads
+│   ├── snapshot.utils.ts      what is on the map at a cursor; pure
+│   ├── ids.constants.ts       the overlay's source and layer ids
+│   └── basemap.utils.ts       recolouring an OpenMapTiles basemap per theme
+├── stations/layer.service.ts  StationLayer: dots, labels, pop-in, pulses, selection
+├── route/
+│   ├── finder.service.ts      RouteFinder: Dijkstra over the network at a cursor; a reach too
+│   ├── stops.utils.ts         how a route's stops are marked
+│   └── layer.service.ts       RouteLayer: a route over the faded network
+├── reach/layer.service.ts     ReachLayer: how far one gets from a station; its bands in layer.constants.ts
+├── minimap/map.service.ts     Minimap: the overview inset
+└── still/basemap.service.ts   BasemapStill: pictures of the basemap, with a track over it, for previews
 ```
 
 The player and the map only ever talk to the abstract `StepAnimation`; `createStepAnimation` is the

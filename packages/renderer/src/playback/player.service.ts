@@ -1,7 +1,7 @@
-import { YEAR_MS } from '../model/date.utils';
-import type { Timeline } from '../model/timeline.service';
-import type { Step } from '../model/timeline.types';
-import { clamp, easeInOut } from './easing.utils';
+import { YEAR_MS } from '../core/date.utils';
+import type { Timeline } from '../network/timeline.service';
+import type { Step } from '../network/timeline.types';
+import { clamp, easeInOut } from '../core/easing.utils';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
 import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './player.types';
 

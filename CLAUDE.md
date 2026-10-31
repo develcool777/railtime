@@ -38,8 +38,11 @@ colours, `pnpm data:previews <city>` too (it draws the landing page's pictures i
 
 - **The renderer has no UI.** Controls, captions and panels are Nuxt UI components in `web`;
   the renderer exposes methods and events (`transitMap.types.ts`) and never imports Vue.
-- **Pure first.** `model/`, `playback/` (but `camera.service.ts`), `steps/` and
-  `layers/networkSnapshot.utils.ts` take no map: keep new logic there and test it (see Tests).
+- **Pure first.** `core/`, `network/`, `route/finder.service.ts`, `playback/` (but `camera.service.ts`),
+  `steps/` and every `*.utils.ts` take no map: keep new logic there and test it (see Tests). A layer
+  group is tested on the stand-in map (`test/support/factories/fakeMap.utils.ts`).
+- **A folder per subject; files named for what they are, not the folder again**: `reach/layer.service.ts`
+  (`ReachLayer`), `reach/layer.utils.ts`, `reach/layer.constants.ts`. Classes keep their full names.
 - **A new kind of step** is a `StepAnimation` subclass plus one line in `createStepAnimation`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
 - **The web app** follows the investors site's layout, in `web/src/`:
@@ -73,7 +76,7 @@ Each package keeps its tests beside its code, as dataroom-ui does inside its one
 ```text
 packages/renderer/
   vitest.config.ts          the package's project (`pnpm --filter @railtime/renderer test-unit`)
-  test/unit/                mirrors src/: test/unit/model/timeline.test.ts tests src/model/timeline.*.ts
+  test/unit/                mirrors src/: test/unit/network/timeline.test.ts tests src/network/timeline.*.ts
   test/support/             what tests share: factories/ (tinyNetwork), playback.utils.ts
 packages/data/
   test/unit/dataset/        mirrors src/dataset/

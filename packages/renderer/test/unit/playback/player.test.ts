@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { YEAR_MS, toTimestamp } from '../../../src/model/date.utils';
+import { YEAR_MS, toTimestamp } from '../../../src/core/date.utils';
 import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { playbackOf } from '../../support/playback.utils';

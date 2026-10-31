@@ -1,4 +1,4 @@
-import type { TrackSegment } from '../model/networkIndex.types';
+import type { TrackSegment } from '../network/index.types';
 
 /** How one segment of a growing stretch draws. */
 export type SegmentPlan = {

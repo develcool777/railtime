@@ -12,9 +12,9 @@
     "./transitMap.service": "./src/transitMap.service.ts",
     "./transitMap.types": "./src/transitMap.types.ts",
     "./transitMap.css": "./src/transitMap.css",
-    "./basemapStill.service": "./src/still/basemapStill.service.ts",
-    "./basemapStill.types": "./src/still/basemapStill.types.ts",
-    "./basemapStill.constants": "./src/still/basemapStill.constants.ts"
+    "./basemapStill.service": "./src/still/basemap.service.ts",
+    "./basemapStill.types": "./src/still/basemap.types.ts",
+    "./basemapStill.constants": "./src/still/basemap.constants.ts"
   },
   "dependencies": {
     "@railtime/schema": "workspace:*",
