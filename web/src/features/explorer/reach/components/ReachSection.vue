@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { ReachInfo, RouteStop, StationSummary } from '@railtime/renderer/transitMap.types';
+  import type { ReachInfo, RouteStop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref, watch } from 'vue';
 
   import { formatMinutes, reachGroups } from '~/features/explorer/reach/reach.utils';

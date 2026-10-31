@@ -1,12 +1,5 @@
-import type { ReachInfo } from '@railtime/renderer/transitMap.types';
+import type { ReachInfo } from '@railtime/network/facts.types';
 import type { ComputedRef } from 'vue';
-
-import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
-
-/** What `useReachFinder` reads. */
-export type ReachFinderInput = {
-  binding: TransitMapBinding;
-};
 
 /** How far one gets from a station, on the date shown. */
 export type ReachFinder = {

@@ -1,12 +1,5 @@
-import type { RouteInfo } from '@railtime/renderer/transitMap.types';
+import type { RouteInfo } from '@railtime/network/facts.types';
 import type { ComputedRef } from 'vue';
-
-import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
-
-/** What `useRouteFinder` reads. */
-export type RouteFinderInput = {
-  binding: TransitMapBinding;
-};
 
 /** A route between two stations, on the date shown. */
 export type RouteFinder = {

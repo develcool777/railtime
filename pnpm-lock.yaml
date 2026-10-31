@@ -153,6 +153,9 @@ importers:
       '@railtime/data':
         specifier: workspace:*
         version: link:../packages/data
+      '@railtime/network':
+        specifier: workspace:*
+        version: link:../packages/network
       '@railtime/renderer':
         specifier: workspace:*
         version: link:../packages/renderer

@@ -1,4 +1,4 @@
-import type { NetworkGrowth, YearStats } from '@railtime/renderer/transitMap.types';
+import type { YearStats } from '@railtime/network/facts.types';
 
 import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
 

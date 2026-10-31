@@ -32,7 +32,7 @@
 
   import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
   import { formatPlanFacts } from '~/features/explorer/format.utils';
-  import { planFacts } from '~/features/explorer/plans/plan.utils';
+  import { planFacts } from '@railtime/network/plan.utils';
 
   const props = defineProps<{
     network: Network;

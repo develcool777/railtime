@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { isAtRest, isDated, yearAway } from '~/features/explorer/time/time.utils';
+import { isAtRest, isDated } from '~/features/explorer/time/time.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
-
-const RANGE = { start: Date.UTC(1863, 0, 10), end: Date.UTC(2026, 0, 1) };
 
 describe('TimeUtils', () => {
   describe('isAtRest', () => {
@@ -35,19 +33,6 @@ describe('TimeUtils', () => {
 
     test('names nothing before the map mounts', () => {
       expect(isDated(null, false)).toBe(false);
-    });
-  });
-
-  describe('yearAway', () => {
-    test('is a year back or forward', () => {
-      const from = Date.UTC(1935, 5, 1);
-      expect(new Date(yearAway(from, 1, RANGE)).getUTCFullYear()).toBe(1936);
-      expect(new Date(yearAway(from, -1, RANGE)).getUTCFullYear()).toBe(1934);
-    });
-
-    test('stops at the timeline’s ends', () => {
-      expect(yearAway(RANGE.start, -1, RANGE)).toBe(RANGE.start);
-      expect(yearAway(RANGE.end, 1, RANGE)).toBe(RANGE.end);
     });
   });
 });

@@ -1,4 +1,4 @@
-import type { NetworkStats } from '@railtime/renderer/transitMap.types';
+import type { NetworkStats } from '@railtime/network/facts.types';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 

@@ -6,20 +6,25 @@ const DEFAULT_PADDING: Padding = { top: 140, bottom: 120, left: 60, right: 60 };
 /** No panel over the map's edges. */
 export const NO_COVER: Padding = { top: 0, bottom: 0, left: 0, right: 0 };
 
-/** How a map is set unless told otherwise: dark, flat, named, every line alike, nothing selected or drawn over it. */
+/**
+ * How a map is set unless told otherwise: dark, flat, named, every line alike, nothing selected or
+ * drawn over it. Its order is the order the props are drawn in once the map is ready: the room the
+ * camera keeps first, then how it looks, then what it frames (the station selected, the overlay), so
+ * no later prop cancels the camera's move to it.
+ */
 export const DEFAULT_MAP_PROPS: MapProps = {
+  padding: DEFAULT_PADDING,
+  cover: NO_COVER,
   theme: 'dark',
   viewMode: '2d',
   stationLabels: true,
   visibleLines: null,
   focusedLines: null,
-  selectedStation: null,
-  overlay: null,
   speed: 1,
   camera: 'follow',
-  padding: DEFAULT_PADDING,
-  cover: NO_COVER,
   boundary: null,
+  selectedStation: null,
+  overlay: null,
 };
 
 /** Room kept clear at the map's sides when it first opens, pixels. */

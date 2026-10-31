@@ -35,6 +35,14 @@ describe('PropsReconciler', () => {
     reconciler.update({ ...reconciler.current });
     expect(ran).toEqual(['viewMode']);
   });
+
+  test("runs the effects in the props' own order, whatever the order given: what the camera frames last", () => {
+    const { reconciler, ran } = recording();
+    reconciler.start();
+    ran.length = 0;
+    reconciler.update({ selectedStation: 'a', cover: { top: 0, right: 0, bottom: 0, left: 300 } });
+    expect(ran).toEqual(['cover', 'selectedStation']);
+  });
 });
 
 describe('ReconcilerUtils', () => {

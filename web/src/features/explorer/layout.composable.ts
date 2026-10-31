@@ -1,28 +1,26 @@
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ShallowRef } from 'vue';
 
 import { PHONE_QUERY } from '~/features/explorer/explorer.constants';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { ExplorerLayout } from '~/features/explorer/layout.composable.types';
-import { draggedPanelWidth, mapPaddingFor } from '~/features/explorer/layout.utils';
+import { draggedPanelWidth } from '~/features/explorer/layout.utils';
 
 /**
  * What the layout takes from the browser: whether it is the phone's, the panel's edge dragged, and
  * full screen kept with map only. The layout's state is the store's. Client only, as the map is.
  *
  * @param root - The explorer's element, which map only takes full screen.
- * @returns What the store does not hold: the room the panel and the cards take, and the drag.
+ * @returns Whether the panel's edge is being dragged, and what starts a drag.
  */
 export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>): ExplorerLayout => {
   const store = useExplorerStore();
-  const { phone, sheet, panelOpen, panelWidth, mapOnly, timeMode } = storeToRefs(store);
+  const { phone, panelWidth, mapOnly } = storeToRefs(store);
 
   const phoneQuery = window.matchMedia(PHONE_QUERY);
   phone.value = phoneQuery.matches;
   const onPhoneChange = (event: MediaQueryListEvent) => (phone.value = event.matches);
-
-  const panelCover = computed(() => (phone.value || mapOnly.value || !panelOpen.value ? 0 : panelWidth.value));
 
   const resizing = ref(false);
   const startResize = (event: PointerEvent) => {
@@ -59,10 +57,5 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
     phoneQuery.removeEventListener('change', onPhoneChange);
   });
 
-  return {
-    panelCover,
-    resizing,
-    startResize,
-    mapPadding: () => mapPaddingFor(timeMode.value, phone.value, sheet.value),
-  };
+  return { resizing, startResize };
 };

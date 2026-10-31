@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-6 px-4 pt-3 pb-6">
     <!-- A network never built has only plans: no years, no records worth reading. -->
     <UEmpty
-      v-if="!growth || !hasHistory(growth)"
+      v-if="!growth || !hasHistory"
       icon="i-lucide-chart-no-axes-column"
       title="Never built"
       description="This metro exists only on paper, so it has no history to chart yet. See what was planned under Plans." />
@@ -55,11 +55,11 @@
 </template>
 
 <script setup lang="ts">
-  import type { NetworkGrowth, NetworkRecords } from '@railtime/renderer/transitMap.types';
+  import type { NetworkGrowth, NetworkRecords } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
-  import { formatMetric, growthSeries, hasHistory } from '~/features/explorer/insights/insights.utils';
+  import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
 
   const METRICS: { label: string; value: GrowthMetric }[] = [
     { label: 'Stations', value: 'stations' },
@@ -70,6 +70,8 @@
   const props = defineProps<{
     /** The network year by year; `null` until the map is mounted. */
     growth: NetworkGrowth | null;
+    /** Whether some year has a station on the map: one never built has only its plans. */
+    hasHistory: boolean;
     /** Its records on the date shown. */
     records: NetworkRecords | null;
     /** The year shown on the map; `null` in a plan's future. */

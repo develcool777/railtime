@@ -1,14 +1,5 @@
-import type { CoverageInfo, CoverageYear } from '@railtime/renderer/transitMap.types';
+import type { CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
 import type { ComputedRef, Ref } from 'vue';
-
-import type { TransitMapBinding } from '~/features/explorer/map/transitMap.composable.types';
-
-/** What `useCoverage` reads. */
-export type CoverageInput = {
-  binding: TransitMapBinding;
-  /** The city, whose outline is loaded. */
-  city: string;
-};
 
 /** Where the city's outline is: not asked for yet, on its way, there, or none kept for the city. */
 export type BoundaryState = 'idle' | 'loading' | 'ready' | 'missing';

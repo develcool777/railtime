@@ -1,4 +1,4 @@
-import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo } from '@railtime/network/facts.types';
 import { FUTURE_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/explorer/time/time.constants';
 import { yearOf } from '~/features/explorer/format.utils';
 import type { TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';

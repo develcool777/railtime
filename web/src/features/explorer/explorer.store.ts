@@ -1,7 +1,8 @@
 import { useColorMode, useCookie } from '#imports';
-import type { NetworkModel } from '@railtime/renderer/networkModel.service';
+import type { NetworkModel } from '@railtime/network/model.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { Credit, MapView, OverlayResult, RoutePreference, RouteStop, StepInfo, Theme, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
+import type { RoutePreference, RouteStop, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, ref, shallowRef } from 'vue';
@@ -77,6 +78,8 @@ export const useExplorerStore = defineStore('explorer', () => {
   const plan = ref<string | undefined>(undefined);
   /** A network never built: no history, only its plan to play. */
   const planOnly = ref(false);
+  /** How many plans the city has. */
+  const planCount = ref(0);
   /** The map, once mounted: for its commands. */
   const map = shallowRef<TransitMap | null>(null);
   /** What the map owes credit to, once mounted. */
@@ -118,17 +121,19 @@ export const useExplorerStore = defineStore('explorer', () => {
    * Sets everything for a page opening: the network's model, and what the address says; the rest as
    * a page opens. A station or line the network does not have is a stale link, left out.
    *
-   * @param network - The network's model, the plan it was built with, and whether it was ever built.
+   * @param network - The network's model, the plan it was built with, whether it was ever built, its plans.
    * @param network.model - The model.
    * @param network.plan - The plan shown, if any.
    * @param network.planOnly - Whether the network was never built.
+   * @param network.planCount - How many plans the city has.
    * @param address - What the address asks for.
    * @param opening - The section to open on without one in the address: Plans for a plan, else Lines.
    */
-  const open = (network: { model: NetworkModel; plan?: string; planOnly: boolean }, address: ExplorerUrlState, opening: Section) => {
+  const open = (network: { model: NetworkModel; plan?: string; planOnly: boolean; planCount: number }, address: ExplorerUrlState, opening: Section) => {
     model.value = markRaw(network.model);
     plan.value = network.plan;
     planOnly.value = network.planOnly;
+    planCount.value = network.planCount;
     const known = network.model.index.network;
     const line = address.line && known.lines[address.line] ? address.line : undefined;
     const station = address.station && known.stations[address.station] ? address.station : undefined;
@@ -395,6 +400,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     model,
     plan,
     planOnly,
+    planCount,
     map,
     credits,
     theme,

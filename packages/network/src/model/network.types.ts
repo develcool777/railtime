@@ -1,4 +1,14 @@
-import type { LineDetails, LineDirection, NetworkRecords, ReachInfo, RouteInfo, RoutePreference, StationInfo, StationSummary } from './facts.types';
+import type {
+  LineDetails,
+  LineDirection,
+  NetworkStats,
+  NetworkRecords,
+  ReachInfo,
+  RouteInfo,
+  RoutePreference,
+  StationInfo,
+  StationSummary,
+} from './facts.types';
 
 /** A moment in the network's history, as the map's `time` event gives it: the steps happened, and the day. */
 export type NetworkTime = {
@@ -30,6 +40,8 @@ export type NetworkAt = {
   route: (from: string, to: string, preference: RoutePreference) => RouteInfo | null;
   /** How long it takes from a station to every other; `null` if no line calls there at this moment. */
   reach: (from: string) => ReachInfo | null;
+  /** How many stations, km of track and lines are open. */
+  stats: () => NetworkStats;
   /** The stops either side of a station, on each of its lines that calls there, by line. */
   directions: (station: string) => Map<string, LineDirection[]>;
 };

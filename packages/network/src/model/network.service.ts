@@ -7,7 +7,7 @@ import { REACH_BANDS } from '../route/reach.constants';
 import { bandOf } from '../route/reach.utils';
 import { RouteFinder } from '../route/finder.service';
 import type { NetworkHistory } from '../network/history.types';
-import { networkAt, networkHistory, openingsByDecade } from '../network/history.utils';
+import { networkAt, networkHistory, openingsByDecade, statsAt } from '../network/history.utils';
 import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../network/lineDetails.utils';
 import { CoverageMeasure } from '../coverage/measure.service';
 import { NetworkIndex } from '../network/index.service';
@@ -126,6 +126,16 @@ export class NetworkModel {
   }
 
   /**
+   * The moment at the end of a day: every change on it or before has happened.
+   *
+   * @param day - A timestamp on that day.
+   * @returns The moment.
+   */
+  public momentOn(day: number): NetworkTime {
+    return { cursor: this.timeline.cursorAt(day), time: day };
+  }
+
+  /**
    * Whether the network has a history to show: some year with a station on the map. One never built
    * has only its plans.
    *
@@ -151,6 +161,7 @@ export class NetworkModel {
       records: count => this.recordsAt(count, then),
       route: (from, to, preference) => this.routeAt(from, to, preference, then),
       reach: from => this.reachAt(from, then),
+      stats: () => statsAt(this.index, this.timeline, moment.cursor),
       directions: station => new Map(this.stationAt(station, then).lines.map(line => [line.id, directionsAt(station, this.lineAt(line.id, then))] as const)),
     };
   }

@@ -115,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { RouteInfo, RouteLegInfo, RoutePreference, RouteStop, StationSummary } from '@railtime/renderer/transitMap.types';
+  import type { RouteInfo, RouteLegInfo, RoutePreference, RouteStop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref, watch } from 'vue';
 
   const ENDS = [

@@ -19,6 +19,7 @@
     "@nuxtjs/sitemap": "^9.1.0",
     "@pinia/nuxt": "^1.0.3",
     "@railtime/data": "workspace:*",
+    "@railtime/network": "workspace:*",
     "@railtime/renderer": "workspace:*",
     "@railtime/schema": "workspace:*",
     "@tanstack/charts": "1.1.0",

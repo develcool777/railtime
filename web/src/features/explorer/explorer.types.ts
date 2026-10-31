@@ -1,4 +1,5 @@
-import type { CameraMode, RouteStop } from '@railtime/renderer/transitMap.types';
+import type { RouteStop } from '@railtime/network/facts.types';
+import type { CameraMode } from '@railtime/renderer/transitMap.types';
 
 /** One of the panel's sections, as the rail lists them. */
 export type Section = 'lines' | 'stations' | 'changes' | 'route' | 'reach' | 'coverage' | 'insights' | 'plans';

@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { LineInfo, StationSummary } from '@railtime/renderer/transitMap.types';
+  import type { LineInfo, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
   import { CITIES } from '~/constants/city.constants';

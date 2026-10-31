@@ -1,26 +1,24 @@
 import { useRuntimeConfig } from '#imports';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { storeToRefs } from 'pinia';
-import { computed, ref, shallowRef, watch } from 'vue';
+import { computed, markRaw, ref, watch } from 'vue';
 
-import type { BoundaryState, Coverage, CoverageInput } from '~/features/explorer/coverage/coverage.composable.types';
+import type { BoundaryState, Coverage } from '~/features/explorer/coverage/coverage.composable.types';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import { boundaryUrlOf } from '~/utils/city.utils';
 
 /**
  * How much of the city is within walking distance of a station: its outline loaded the first time the
- * map is to draw it, and given to the map, which works the coverage out on each date it shows.
+ * map is to draw it, and kept in the store, whose props give it to the map. What it comes to on the
+ * date shown is what the map reports; its history, the model's.
  *
- * @param input - The map, and the city.
+ * @param city - The city, whose outline is loaded.
  * @returns Where the outline is, the coverage, and its history.
  */
-export const useCoverage = (input: CoverageInput): Coverage => {
-  const { binding, city } = input;
-  const { mapOverlay } = storeToRefs(useExplorerStore());
-  const { map, overlay } = binding;
+export const useCoverage = (city: string): Coverage => {
+  const { mapOverlay, overlayResult, boundary, model } = storeToRefs(useExplorerStore());
   const baseURL = useRuntimeConfig().app.baseURL;
 
-  const boundary = shallowRef<CityBoundary | null>(null);
   const boundaryState = ref<BoundaryState>('idle');
   const shown = computed(() => mapOverlay.value === 'coverage');
 
@@ -31,7 +29,7 @@ export const useCoverage = (input: CoverageInput): Coverage => {
       boundaryState.value = 'loading';
       try {
         // The base URL is joined here, as for the network: see the city page.
-        boundary.value = await $fetch<CityBoundary>(`${baseURL}${boundaryUrlOf(city)}`);
+        boundary.value = markRaw(await $fetch<CityBoundary>(`${baseURL}${boundaryUrlOf(city)}`));
         boundaryState.value = 'ready';
       } catch {
         // Not every city has an outline yet.
@@ -41,12 +39,8 @@ export const useCoverage = (input: CoverageInput): Coverage => {
     { immediate: true },
   );
 
-  // The map takes the outline once both are there, whichever comes first.
-  watch([map, boundary], () => map.value?.setBoundary(boundary.value), { immediate: true });
-
-  // Drawn as the store asks, and worked out again on each date by the map.
-  const coverage = computed(() => (overlay.value?.kind === 'coverage' ? overlay.value.coverage : null));
-  const history = computed(() => (boundaryState.value === 'ready' && map.value ? map.value.getCoverageHistory() : []));
+  const coverage = computed(() => (overlayResult.value?.kind === 'coverage' ? overlayResult.value.coverage : null));
+  const history = computed(() => (boundary.value && model.value ? model.value.coverage(boundary.value).history() : []));
 
   return { boundaryState, coverage, history };
 };

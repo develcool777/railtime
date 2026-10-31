@@ -1,4 +1,4 @@
-import type { StationSummary } from '@railtime/renderer/transitMap.types';
+import type { StationSummary } from '@railtime/network/facts.types';
 
 /** The stations whose names begin with one letter. */
 export type StationGroup = { letter: string; stations: StationSummary[] };

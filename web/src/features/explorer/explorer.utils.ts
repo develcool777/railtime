@@ -1,4 +1,5 @@
-import type { MapProps, OverlayRequest, Padding, RoutePreference, RouteStop, Theme, ViewMode } from '@railtime/renderer/transitMap.types';
+import type { RoutePreference, RouteStop, Theme } from '@railtime/network/facts.types';
+import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 
 import type { Chrome, MapOverlay, PanelView, PlayerSettings, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';

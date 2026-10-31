@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import type { LineDetails } from '@railtime/renderer/transitMap.types';
 import { findStations, foldName, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
 
 /**

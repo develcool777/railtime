@@ -1,4 +1,5 @@
-import type { ChangeInfo, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo } from '@railtime/network/facts.types';
+import type { TimeState } from '@railtime/renderer/transitMap.types';
 
 import { decadeOf, yearOf } from '~/features/explorer/format.utils';
 import type { ChangeGroup } from '~/features/explorer/changes/changes.types';

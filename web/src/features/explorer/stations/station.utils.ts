@@ -1,4 +1,4 @@
-import type { LineDetails, StationSummary } from '@railtime/renderer/transitMap.types';
+import type { LineDirection, StationSummary, StopToward } from '@railtime/network/facts.types';
 
 import type { StationGroup, StripStop } from '~/features/explorer/stations/station.types';
 

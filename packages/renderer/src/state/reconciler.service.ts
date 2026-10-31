@@ -25,14 +25,16 @@ export class PropsReconciler {
   }
 
   /**
-   * Takes the props, whole or in part, and runs the effect of each that changed, if the map is ready.
+   * Takes the props, whole or in part, and runs the effect of each that changed, if the map is ready:
+   * in the props' own order, whatever the order given.
    *
    * @param next - The props.
    */
   public update(next: Partial<MapProps>): void {
     const changes = stateChanges(this.props, next);
     this.props = { ...this.props, ...changes };
-    if (this.live) for (const key of Object.keys(changes) as (keyof MapProps)[]) this.effects[key]();
+    if (!this.live) return;
+    for (const key of Object.keys(this.props) as (keyof MapProps)[]) if (key in changes) this.effects[key]();
   }
 
   /** The map is ready: runs every effect once, in the props' order, and each again as its prop changes. */

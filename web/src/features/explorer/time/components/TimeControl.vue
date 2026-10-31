@@ -105,7 +105,8 @@
 </template>
 
 <script setup lang="ts">
-  import type { ChangeInfo, StepInfo, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo, StepInfo } from '@railtime/network/facts.types';
+  import type { TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
 
   import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';

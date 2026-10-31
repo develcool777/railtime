@@ -6,9 +6,9 @@
       </template>
       <template #center>
         <!-- Opens the search, as ⌘K and / do. -->
-        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.setOverlay('search')" />
+        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.setDialog('search')" />
       </template>
-      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.setOverlay('search')" />
+      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.setDialog('search')" />
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
@@ -39,10 +39,16 @@
             @fold="panelOpen = false" />
           <div class="min-h-0 flex-1 overflow-y-auto">
             <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="store.walkTo" @line="store.pushLine" />
-            <LineView v-else-if="lineDetails" :line="lineDetails" :changes="lineChanges" :stationColors @station="store.pickStation" @change="showChange" />
+            <LineView
+              v-else-if="lineDetails"
+              :line="lineDetails"
+              :changes="lineChanges"
+              :stationColors
+              @station="store.pickStation"
+              @change="store.pick({ kind: 'change', index: $event })" />
             <StationsSection v-else-if="section === 'stations'" :stations @open="store.pickStation" />
             <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="store.pushLine" />
-            <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="pickChange" />
+            <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="store.pickChange" />
             <RouteSection
               v-else-if="section === 'route'"
               :stations
@@ -61,13 +67,14 @@
               :reach="foundReach"
               @from="reachFrom = $event"
               @station="store.pickStation" />
-            <CoverageSection v-else-if="section === 'coverage'" :state="boundaryState" :coverage :history="coverageHistory" @year="showYear" />
+            <CoverageSection v-else-if="section === 'coverage'" :state="boundaryState" :coverage :history="coverageHistory" @year="store.showYear" />
             <InsightsSection
               v-else-if="section === 'insights'"
               :growth
+              :hasHistory
               :records
               :year="shownYear"
-              @year="showYear"
+              @year="store.showYear"
               @station="store.pickStation"
               @line="store.pushLine" />
             <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
@@ -93,13 +100,13 @@
             class="absolute top-4 right-4 max-lg:top-3 max-lg:right-3"
             :stationNames
             :viewMode
-            @zoomIn="map?.zoomIn()"
-            @zoomOut="map?.zoomOut()"
-            @fit="map?.fitNetwork()"
+            @zoomIn="store.map?.zoomIn()"
+            @zoomOut="store.map?.zoomOut()"
+            @fit="store.map?.fitNetwork()"
             @stationNames="stationNames = $event"
             @viewMode="viewMode = $event"
             @mapOnly="store.setMapOnly(true)"
-            @help="store.setOverlay('help')" />
+            @help="store.setDialog('help')" />
           <UButton
             v-else
             icon="i-lucide-minimize-2"
@@ -142,18 +149,18 @@
               :viewMode
               :plan="planSummary"
               :planOnly
-              @open="openTimeline"
-              @close="closeTimeline"
-              @today="showToday"
-              @future="showFuture"
-              @play="play"
-              @pause="map?.pause()"
-              @previous="stepTime(-1)"
-              @skip="map?.skip()"
-              @pick="pick"
+              @open="store.openTimeline"
+              @close="store.closeTimeline"
+              @today="store.pick({ kind: 'date', time: range.today })"
+              @future="store.pick({ kind: 'future' })"
+              @play="store.play"
+              @pause="store.map?.pause()"
+              @previous="store.stepTime(-1)"
+              @skip="store.map?.skip()"
+              @pick="store.pick"
               @settings="store.setPlayer"
               @viewMode="viewMode = $event"
-              @exit="exitHistory" />
+              @exit="store.exitHistory" />
           </div>
 
           <!-- The map's credits stay on it: its licence asks for them. On a phone they fold into a button. -->
@@ -182,9 +189,11 @@
 
 <script setup lang="ts">
   import { useRoute } from '#imports';
+  import { NetworkModel } from '@railtime/network/model.service';
   import type { Network } from '@railtime/schema/network.types';
+  import { isPlanOnly } from '@railtime/schema/plan.utils';
   import { storeToRefs } from 'pinia';
-  import { computed, useTemplateRef, watch } from 'vue';
+  import { computed, useTemplateRef } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
@@ -192,8 +201,6 @@
   import { useExplorerStore } from '~/features/explorer/explorer.store';
   import type { Section } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
-  import { useMapLook } from '~/features/explorer/map/mapLook.composable';
-  import { useMapOverlay } from '~/features/explorer/map/mapOverlay.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
@@ -203,7 +210,6 @@
   import { useCoverage } from '~/features/explorer/coverage/coverage.composable';
   import { useRouteFinder } from '~/features/explorer/route/route.composable';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
-  import { useExplorerTime } from '~/features/explorer/time/time.composable';
 
   const props = defineProps<{ network: Network; city: string; plan?: string }>();
   const emit = defineEmits<{ city: [city: string]; plan: [plan: string | undefined] }>();
@@ -212,17 +218,25 @@
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  // What is open and how it is set is the store's; the parts below read it, and the buttons call its actions.
+  // The network's model, made once for the page; the store opens on it and on what the address says.
+  const model = NetworkModel.create(props.network, props.plan ? { plan: props.plan } : {});
+  const opening = parseExplorerQuery(useRoute().query);
+  const openingSection = openingSectionOf(props.plan);
   const store = useExplorerStore();
+  store.open(
+    { model, ...(props.plan ? { plan: props.plan } : {}), planOnly: isPlanOnly(props.network), planCount: Object.keys(props.network.plans ?? {}).length },
+    opening,
+    openingSection,
+  );
   const {
     section,
     railSection,
-    openStation,
     timeMode,
     phone,
     sheet,
     panelOpen,
     panelWidth,
+    panelCover,
     viewMode,
     stationNames,
     player,
@@ -230,43 +244,28 @@
     routeEnds,
     routePreference,
     reachFrom,
+    time,
+    step,
+    credits,
+    planOnly,
   } = storeToRefs(store);
-  const searchOpen = store.overlayOpen('search');
-  const helpOpen = store.overlayOpen('help');
-  const citiesOpen = store.overlayOpen('cities');
+  const searchOpen = store.dialogOpen('search');
+  const helpOpen = store.dialogOpen('help');
+  const citiesOpen = store.dialogOpen('cities');
+  const range = model.range;
 
-  // The address says what to open on: a day, a view, a tab, a station's view, 3D, map only.
-  const opening = parseExplorerQuery(useRoute().query);
-  const openingSection = openingSectionOf(props.plan);
-  store.open(opening, openingSection);
+  const { resizing, startResize } = useExplorerLayout(explorer);
+  useTransitMap({ container: mapElement, minimapContainer: minimapElement });
 
-  const { panelCover, resizing, startResize, mapPadding } = useExplorerLayout(explorer);
-
-  const binding = useTransitMap({
-    container: mapElement,
-    minimapContainer: minimapElement,
-    network: props.network,
-    padding: mapPadding,
-    cover: () => panelCover.value,
-    onStationClick: id => (id ? store.pickStation(id) : store.closeStation()),
-    onSelectionGone: store.closeStation,
-    ...(opening.view ? { view: opening.view } : {}),
-    ...(props.plan ? { plan: props.plan } : {}),
-  });
-  const { map, time, step, lines, changes } = binding;
-  watch([timeMode, sheet, phone], () => map.value?.setPadding(mapPadding()));
-  watch(panelCover, left => map.value?.setCover({ left }));
-  useMapLook(map);
-
-  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, planMark, choosePlan } = useExplorerPlan({
+  const { planSummary, planLegend, builtFacts, planMark, choosePlan } = useExplorerPlan({
     network: props.network,
     plan: props.plan,
-    time,
     onChoose: id => emit('plan', id),
   });
-
   const {
     sections,
+    lines,
+    changes,
     lineDetails,
     lineChanges,
     station,
@@ -278,28 +277,11 @@
     currentChange,
     panelTop,
     shownDate,
-    pickChange,
-    showChange,
-  } = useExplorerPanel({ network: props.network, plan: props.plan, chosenPlan, planCount, binding });
-
-  const { range, openTimeline, closeTimeline, toggleTimeline, play, togglePlay, exitHistory, showFuture, showToday, pick, stepTime } = useExplorerTime({
-    binding,
-    plan: props.plan,
-    planOnly,
-    currentChange,
-  });
-
-  useMapOverlay(map);
-  const { foundRoute, routeMark } = useRouteFinder({ binding });
-  const { foundReach, reachMark } = useReachFinder({ binding });
-  const { boundaryState, coverage, history: coverageHistory } = useCoverage({ binding, city: props.city });
-
-  const { growth, records, shownYear } = useInsights({ binding });
-  // A year picked on a chart: the map as it was at its end (today, for this year), the timeline open to say so.
-  const showYear = (year: number) => {
-    pick({ kind: 'date', time: Math.min(Date.UTC(year, 11, 31), range.value.today) });
-    if (timeMode.value === 'rest') openTimeline();
-  };
+  } = useExplorerPanel();
+  const { foundRoute, routeMark } = useRouteFinder();
+  const { foundReach, reachMark } = useReachFinder();
+  const { boundaryState, coverage, history: coverageHistory } = useCoverage(props.city);
+  const { growth, hasHistory, records, shownYear } = useInsights();
 
   // A dot on each section whose choice is in force while another is open: a plan shown, a route or a reach set.
   const marks = computed(() => {
@@ -310,18 +292,6 @@
     return shown;
   });
 
-  useExplorerAddress({ plan: props.plan, binding, opening, openingSection });
-
-  /** The lines the map brings forward: a line's own in its view; every line otherwise. A route shown fades them all itself. */
-  const focusedLines = computed(() => {
-    if (timeMode.value === 'playing' || openStation.value) return null;
-    return lineDetails.value ? [lineDetails.value.id] : null;
-  });
-  watch(focusedLines, (next, previous) => {
-    if (JSON.stringify(next) !== JSON.stringify(previous)) map.value?.focusLines(next);
-  });
-
-  const credits = computed(() => map.value?.credits ?? []);
-
-  useExplorerShortcuts({ sections, toggleTimeline, togglePlay, stepTime });
+  useExplorerAddress(opening, openingSection);
+  useExplorerShortcuts(sections);
 </script>

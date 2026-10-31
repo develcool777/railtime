@@ -100,6 +100,12 @@ describe('TransitMap', () => {
     expect(fake.moves.some(move => move.kind === 'ease' && move.options.pitch === VIEW_3D_PITCH)).toBe(true);
   });
 
+  test('flies to a station selected from the start, and no later prop moves the camera off it', () => {
+    const { fake, ready } = mapOf({ selectedStation: 'c', cover: { top: 0, right: 0, bottom: 0, left: 340 } });
+    ready();
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'ease', target: [2 * 0.0144, 51.5] });
+  });
+
   test('says nothing inside a call: what happens is delivered at the end of the frame, to listeners given at the start', () => {
     const { map, fake, frame, events } = mapOf({ overlay: { kind: 'reach', from: 'b' } });
     fake.fire('style.load');

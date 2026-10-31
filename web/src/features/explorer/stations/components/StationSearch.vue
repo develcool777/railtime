@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { StationSummary } from '@railtime/renderer/transitMap.types';
+  import type { StationSummary } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
   import { findStations } from '~/features/explorer/stations/station.utils';
