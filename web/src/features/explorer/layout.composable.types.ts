@@ -13,6 +13,8 @@ export type ExplorerLayout = {
   panelOpen: Ref<boolean>;
   /** The panel's width beside the map, pixels; kept in a cookie. */
   panelWidth: Ref<number>;
+  /** Whether the minimap shows while history plays; kept in a cookie. */
+  minimapOn: Ref<boolean>;
   /** How much of the map's left the panel covers, pixels: its width while open beside the map, else none. */
   panelCover: ComputedRef<number>;
   /** The panel's edge is being dragged. */

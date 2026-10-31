@@ -5,6 +5,7 @@ import { boundsOf } from '../core/geometry.utils';
 import type { Bounds } from '../core/geometry.types';
 import type { StepAnimation } from '../steps/animation.service';
 import type { CameraMode, Padding } from '../transitMap.types';
+import { NO_COVER } from '../transitMap.constants';
 import { FOLLOW_MAX_ZOOM, MIN_MOVE_MS, OVERVIEW_MAX_ZOOM, STATION_MIN_ZOOM, ZOOM_SLACK } from './camera.constants';
 
 /**
@@ -68,7 +69,7 @@ export class CameraDirector {
   }
 
   /**
-   * Whether the camera already frames some points: each inside the view, clear of the panels, at
+   * Whether the camera already frames some points: each inside the view, clear of the panels over it, at
    * about the zoom they would be framed at.
    *
    * @param points - The points.
@@ -78,9 +79,17 @@ export class CameraDirector {
    */
   private frames(points: LngLat[], bounds: Bounds, maxZoom: number): boolean {
     const { clientWidth, clientHeight } = this.map.getContainer();
+    // Clear of the app's panels over the map (its padding) as well as the room kept round a change.
+    const cover = { ...NO_COVER, ...this.map.getPadding() };
+    const [left, right, top, bottom] = [
+      cover.left + this.padding.left,
+      cover.right + this.padding.right,
+      cover.top + this.padding.top,
+      cover.bottom + this.padding.bottom,
+    ];
     const inView = points.every(point => {
       const { x, y } = this.map.project(point);
-      return x >= this.padding.left && x <= clientWidth - this.padding.right && y >= this.padding.top && y <= clientHeight - this.padding.bottom;
+      return x >= left && x <= clientWidth - right && y >= top && y <= clientHeight - bottom;
     });
     const framing = this.map.cameraForBounds(bounds as LngLatBoundsLike, { padding: this.padding, maxZoom });
     return inView && framing?.zoom !== undefined && Math.abs(this.map.getZoom() - framing.zoom) < ZOOM_SLACK;

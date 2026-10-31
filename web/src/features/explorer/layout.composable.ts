@@ -22,6 +22,7 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
 
   const panelOpen = useCookie<boolean>('railtime-panel-open', { default: () => true });
   const panelWidth = useCookie<number>('railtime-panel-width', { default: () => PANEL_WIDTH.initial });
+  const minimapOn = useCookie<boolean>('railtime-minimap', { default: () => true });
 
   const mapOnly = ref(false);
   const panelCover = computed(() => (phone.value || mapOnly.value || !panelOpen.value ? 0 : panelWidth.value));
@@ -74,6 +75,7 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
     sheet,
     panelOpen,
     panelWidth,
+    minimapOn,
     panelCover,
     resizing,
     startResize,

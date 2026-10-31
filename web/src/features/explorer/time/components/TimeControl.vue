@@ -70,6 +70,20 @@
         <p class="text-muted truncate text-xs tabular-nums">{{ caption }}</p>
       </div>
       <UTabs :modelValue="speed" :items="SPEED_OPTIONS" :content="false" aria-label="Speed" @update:modelValue="emit('speed', Number($event))" />
+      <UTooltip :text="minimap ? 'Hide the minimap' : 'Show the minimap'">
+        <UButton
+          icon="i-lucide-map"
+          color="neutral"
+          variant="outline"
+          :active="minimap"
+          activeColor="primary"
+          activeVariant="soft"
+          square
+          class="size-9 justify-center"
+          aria-label="Minimap"
+          :aria-pressed="minimap"
+          @click="emit('minimap', !minimap)" />
+      </UTooltip>
       <UDropdownMenu :items="cameraItems" :content="{ align: 'end', side: 'top' }">
         <UButton
           :label="cameraLabel"
@@ -124,6 +138,8 @@
     step: StepInfo | null;
     speed: number;
     camera: CameraMode;
+    /** Whether the minimap shows above the player. */
+    minimap: boolean;
     /** The plan shown, if any: its name, and what it adds. */
     plan?: { name: string; facts: string };
     /** A network never built: no history, only its plan to play. */
@@ -140,6 +156,7 @@
     pick: [target: TimelineTarget];
     speed: [speed: number];
     camera: [mode: CameraMode];
+    minimap: [shown: boolean];
     exit: [];
   }>();
 

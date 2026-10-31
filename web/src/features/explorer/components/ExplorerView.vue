@@ -96,7 +96,7 @@
             </template>
           </UButton>
 
-          <!-- The time control, and above it while following playback the minimap; on a phone it rides above the sheet. -->
+          <!-- The time control, and above it while history plays the minimap, unless turned off; on a phone it rides above the sheet. -->
           <div
             v-show="!mapOnly && !(phone && sheet === 'full')"
             class="pointer-events-none absolute z-10 flex -translate-x-1/2 flex-col gap-3"
@@ -123,6 +123,7 @@
               :step
               :speed
               :camera
+              :minimap="minimapOn"
               :plan="planSummary"
               :planOnly
               @open="openTimeline"
@@ -135,6 +136,7 @@
               @pick="pick"
               @speed="setSpeed"
               @camera="setCamera"
+              @minimap="minimapOn = $event"
               @exit="exitHistory" />
           </div>
 
@@ -190,7 +192,7 @@
 
   /** What the time control shows: driven by the time control, read by the panel and the layout too. */
   const timeMode = ref<TimeMode>('rest');
-  const { phone, sheet, panelOpen, panelWidth, panelCover, resizing, startResize, revealPanel, togglePanel, mapOnly, toggleMapOnly, mapPadding } =
+  const { phone, sheet, panelOpen, panelWidth, minimapOn, panelCover, resizing, startResize, revealPanel, togglePanel, mapOnly, toggleMapOnly, mapPadding } =
     useExplorerLayout(explorer);
 
   // The address says what to open on: a day, a view, a station's view.
@@ -302,8 +304,8 @@
   });
 
   const credits = computed(() => map.value?.credits ?? []);
-  /** The minimap shows where the camera is while it follows playback, beside the map. */
-  const minimapShown = computed(() => timeMode.value === 'playing' && camera.value === 'follow' && !phone.value);
+  /** The minimap shows where the camera is while history plays beside the map, unless it is turned off. */
+  const minimapShown = computed(() => timeMode.value === 'playing' && minimapOn.value && !phone.value);
 
   const searchOpen = ref(false);
   const cityMenuOpen = ref(false);

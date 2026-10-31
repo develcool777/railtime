@@ -27,7 +27,7 @@ const LATITUDE_STRETCH = 1.6;
  * @returns The stand-in and what it keeps.
  */
 export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
-  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600 };
+  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 } };
   const data = new Map<string, unknown>();
   const sends = new Map<string, number>();
   const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
@@ -71,6 +71,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     queryRenderedFeatures: () => rendered,
     getZoom: () => view.zoom,
+    getPadding: () => view.cover,
     getContainer: () => ({ clientWidth: view.width, clientHeight: view.height }),
     project: ([lng, lat]: [number, number]) => {
       const scale = PIXELS_PER_DEGREE * 2 ** view.zoom;

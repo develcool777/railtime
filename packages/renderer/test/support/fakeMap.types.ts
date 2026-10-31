@@ -15,8 +15,8 @@ export type FakeMap = {
   layers: Map<string, FakeLayer>;
   /** Every `fitBounds` and `easeTo` asked of the camera, in order. */
   moves: { kind: 'fit' | 'ease'; target: unknown; options: Record<string, unknown> }[];
-  /** The camera: where it looks, how close, and the container's size, pixels. Set it to place the camera. */
-  view: { center: [number, number]; zoom: number; width: number; height: number };
+  /** The camera: where it looks, how close, the container's size and the panels over it (its padding), pixels. Set it to place the camera. */
+  view: { center: [number, number]; zoom: number; width: number; height: number; cover: { top: number; right: number; bottom: number; left: number } };
   /** What `queryRenderedFeatures` answers. */
   rendered: { properties: Record<string, unknown> }[];
 };
