@@ -1,0 +1,42 @@
+{
+  "packages/data/src": [
+    {
+      "date": "2026-10-31",
+      "score": 59.7,
+      "killed": 222,
+      "survived": 45,
+      "noCoverage": 105,
+      "fresh": false
+    }
+  ],
+  "packages/renderer/src": [
+    {
+      "date": "2026-10-31",
+      "score": 62,
+      "killed": 2096,
+      "survived": 767,
+      "noCoverage": 519,
+      "fresh": false
+    }
+  ],
+  "packages/schema/src": [
+    {
+      "date": "2026-10-31",
+      "score": 88.5,
+      "killed": 408,
+      "survived": 53,
+      "noCoverage": 0,
+      "fresh": false
+    }
+  ],
+  "packages/tooling/src": [
+    {
+      "date": "2026-10-31",
+      "score": 100,
+      "killed": 121,
+      "survived": 0,
+      "noCoverage": 0,
+      "fresh": false
+    }
+  ]
+}

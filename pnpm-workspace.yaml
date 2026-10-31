@@ -16,3 +16,8 @@ overrides:
   # TypeScript 7 (the native compiler) has no JavaScript API, which vue-tsc and `nuxt typecheck` need:
   # every package stays on 6 until vue-tsc supports 7. Dependabot skips its major versions too.
   typescript: ^6.0.3
+
+patchedDependencies:
+  # Static mutants switched on before any test imports their module, also when a run names its tests
+  # (stryker-js#6144), as in dataroom-ui.
+  '@stryker-mutator/core@10.1.1': patches/@stryker-mutator__core@10.1.1.patch
