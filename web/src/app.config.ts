@@ -29,6 +29,10 @@ export default defineAppConfig({
     commandPalette: {
       slots: { item: 'items-center' },
     },
+    // Nothing to show yet (no station picked, no match): plain on the panel, small.
+    empty: {
+      defaultVariants: { variant: 'naked', size: 'sm' },
+    },
     // A run of changes (the Changes list, a line's history): the line between them visible, those done
     // with their own dot on a green line, the current one ringed.
     timeline: {

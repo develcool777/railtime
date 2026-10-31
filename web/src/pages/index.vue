@@ -49,7 +49,7 @@
         title="No city matches"
         description="Try another name, or clear the filters."
         :actions="[{ label: 'Clear filters', color: 'neutral', variant: 'outline', onClick: clearFilters }]"
-        variant="naked"
+        size="md"
         class="py-16" />
     </UMain>
 

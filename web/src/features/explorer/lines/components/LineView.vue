@@ -4,7 +4,7 @@
     <UTabs v-if="changes.length > 0" v-model="shown" :items="TABS" :content="false" class="w-full" :ui="{ trigger: 'grow' }" aria-label="Show" />
 
     <template v-if="shown === 'stops'">
-      <p v-if="line.branches.length === 0" class="text-muted text-sm">Not open on the date shown.</p>
+      <UEmpty v-if="line.branches.length === 0" icon="i-lucide-calendar-x" title="Not open yet" description="The line is not open on the date shown." />
       <section v-for="(run, position) in line.branches" :key="position">
         <h3 v-if="position > 0" class="eyebrow text-muted pb-1">Branch from {{ run[0]?.name }}</h3>
         <!-- A line diagram: the line down the side, a stop at each station. -->

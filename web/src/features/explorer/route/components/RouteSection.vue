@@ -31,8 +31,8 @@
       aria-label="Route preference"
       @update:modelValue="emit('preference', $event as RoutePreference)" />
 
-    <p v-if="!ends.from || !ends.to" class="text-muted text-sm">Pick where the route starts and ends.</p>
-    <p v-else-if="!route" class="text-muted text-sm">No route between them on the date shown.</p>
+    <UEmpty v-if="!ends.from || !ends.to" icon="i-lucide-route" title="Plan a route" description="Pick where it starts and ends." />
+    <UEmpty v-else-if="!route" icon="i-lucide-route-off" title="No route" description="Nothing runs between them on the date shown." />
     <template v-else>
       <div class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-3">

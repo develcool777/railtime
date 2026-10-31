@@ -5,8 +5,7 @@
       v-if="!growth || !hasHistory(growth)"
       icon="i-lucide-chart-no-axes-column"
       title="Never built"
-      description="This metro exists only on paper, so it has no history to chart yet. See what was planned under Plans."
-      variant="naked" />
+      description="This metro exists only on paper, so it has no history to chart yet. See what was planned under Plans." />
     <template v-else>
       <section class="flex flex-col gap-2">
         <div class="flex items-center justify-between gap-2">

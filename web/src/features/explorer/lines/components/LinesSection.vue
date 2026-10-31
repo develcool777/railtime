@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <UInput v-model="query" icon="i-lucide-search" placeholder="Search lines" variant="soft" class="w-full" aria-label="Search lines" />
-    <p v-if="groups.length === 0" class="text-muted text-sm">No line matches.</p>
+    <UEmpty v-if="groups.length === 0" icon="i-lucide-search-x" title="No line matches" description="Try another name." />
     <section v-for="group in groups" :key="group.network">
       <div class="flex items-center justify-between gap-2 px-2 pb-1">
         <h3 class="eyebrow text-muted truncate">{{ group.name }}</h3>

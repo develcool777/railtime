@@ -1,8 +1,8 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <UInput v-model="query" icon="i-lucide-search" placeholder="Search stations" variant="soft" class="w-full" aria-label="Search stations" />
-    <p v-if="stations.length === 0" class="text-muted text-sm">No station is open on the date shown.</p>
-    <p v-else-if="groups.length === 0" class="text-muted text-sm">No station matches.</p>
+    <UEmpty v-if="stations.length === 0" icon="i-lucide-map-pin-off" title="No station open" description="None is open on the date shown." />
+    <UEmpty v-else-if="groups.length === 0" icon="i-lucide-search-x" title="No station matches" description="Try another name." />
     <section v-for="group in groups" :key="group.letter">
       <h3 v-if="group.letter" class="eyebrow text-muted px-2 pb-1">{{ group.letter }}</h3>
       <ul role="list" class="-mx-2">

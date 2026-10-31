@@ -1,6 +1,6 @@
 <template>
   <div ref="list" class="px-4 pb-6">
-    <p v-if="changes.length === 0" class="text-muted p-4 text-sm">No changes yet.</p>
+    <UEmpty v-if="changes.length === 0" icon="i-lucide-history" title="No changes yet" description="Nothing has opened or closed by the date shown." />
     <section v-for="group in groups" :key="group.decade">
       <h3 class="eyebrow text-muted bg-default sticky top-0 z-1 pt-3 pb-2">{{ group.decade }}</h3>
       <ChangeTimeline :changes="group.changes" :current @select="emit('select', $event)" />

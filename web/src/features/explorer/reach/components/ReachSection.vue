@@ -7,8 +7,12 @@
     </div>
     <StationSearch v-else :stations placeholder="From" end="from" @select="choose" />
 
-    <p v-if="!from" class="text-muted text-sm">Pick a station to see how far you get from it, and how long it takes.</p>
-    <p v-else-if="!reach" class="text-muted text-sm">No line calls there on the date shown.</p>
+    <UEmpty
+      v-if="!from"
+      icon="i-lucide-radar"
+      title="How far can you get?"
+      description="Pick a station to see how far you get from it, and how long it takes." />
+    <UEmpty v-else-if="!reach" icon="i-lucide-train-front" title="No line calls there" description="Not on the date shown." />
     <template v-else>
       <div class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-3">
