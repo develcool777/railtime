@@ -1,5 +1,4 @@
-import type { NetworkIndex } from '@railtime/network/engine/index.service';
-import type { Timeline } from '@railtime/network/engine/timeline.service';
+import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { FeatureCollection, HeadProperties, LineFeature, PointFeature, StationLines } from '../layers/features.types';
 import type { RenderState } from '../layers/lineStyle.types';
 import type { NetworkSnapshot } from '../layers/snapshot.types';
@@ -7,8 +6,8 @@ import type { ViewMode } from '../transitMap.types';
 
 /** What a step animation knows about the network, fixed when it starts. */
 export type StepContext = {
-  index: NetworkIndex;
-  timeline: Timeline;
+  index: NetworkEngine['index'];
+  timeline: NetworkEngine['timeline'];
   /** How the map is seen as the step plays: a stretch grows more slowly followed up close in 3D. */
   view: ViewMode;
 };

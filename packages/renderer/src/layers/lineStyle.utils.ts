@@ -1,4 +1,5 @@
-import type { TrackSegment } from '@railtime/network/engine/index.types';
+import type { TrackSegment } from '@railtime/network/engine.types';
+import { channelsOf } from '../core/color.utils';
 import type { RenderState, ResolvedLine, SideBySide } from './lineStyle.types';
 
 /**
@@ -10,9 +11,8 @@ import type { RenderState, ResolvedLine, SideBySide } from './lineStyle.types';
  * @returns The blended `#rrggbb`.
  */
 const mixColors = (from: string, to: string, fraction: number): string => {
-  const channels = (hex: string) => [1, 3, 5].map(start => parseInt(hex.slice(start, start + 2), 16));
-  const fromChannels = channels(from);
-  const toChannels = channels(to);
+  const fromChannels = channelsOf(from);
+  const toChannels = channelsOf(to);
   return `#${fromChannels
     .map((value, channel) =>
       Math.round(value + ((toChannels[channel] ?? value) - value) * fraction)

@@ -1,3 +1,4 @@
+import { yearOf } from '@railtime/core/date.utils';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
@@ -18,7 +19,7 @@ export const useInsights = (): Insights => {
   const hasHistory = computed(() => facts.value?.hasHistory() ?? false);
   const records = computed(() => (facts.value && time.value ? facts.value.asOf(time.value).records(5) : null));
   // A plan's future has no year.
-  const shownYear = computed(() => (time.value && !time.value.future ? new Date(time.value.time).getUTCFullYear() : null));
+  const shownYear = computed(() => (time.value && !time.value.future ? yearOf(time.value.time) : null));
 
   return { growth, hasHistory, records, shownYear };
 };

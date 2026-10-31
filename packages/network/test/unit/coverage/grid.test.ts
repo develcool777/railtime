@@ -1,7 +1,7 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { describe, expect, test } from 'vitest';
-import { distanceKm, latitudeOf, mercatorY } from '../../../src/core/geometry.utils';
+import { distanceKm, latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
 import { CoverageGrid } from '../../../src/coverage/grid.service';
 
 /** Degrees of longitude and latitude in a km, at 51.5° north. */

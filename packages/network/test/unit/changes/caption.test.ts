@@ -1,7 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import { describe, expect, test } from 'vitest';
 import { captionOf } from '../../../src/changes/caption.utils';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 
@@ -14,8 +14,8 @@ import { factsOf } from '../../support/facts.utils';
  */
 const captionAfter = (network: Network, date: string) => {
   const facts = factsOf(network);
-  const step = facts.timeline.steps[facts.timeline.cursorAt(toTimestamp(date))]!;
-  return captionOf(step, { index: facts.index, timeline: facts.timeline, colorOf: line => facts.colorOf(line) });
+  const step = facts.engine.timeline.steps[facts.engine.timeline.cursorAt(toTimestamp(date))]!;
+  return captionOf(step, { index: facts.engine.index, timeline: facts.engine.timeline, colorOf: line => facts.colorOf(line) });
 };
 
 describe('CaptionUtils', () => {

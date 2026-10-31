@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { toTimestamp } from '@railtime/network/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { networkNow, playbackOf, renderStateOf } from '../../support/playback.utils';
 

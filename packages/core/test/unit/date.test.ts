@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { DAY_MS, YEAR_MS, toIsoDate, toTimestamp, todayTimestamp } from '../../../src/core/date.utils';
+import { DAY_MS, YEAR_MS, decadeOf, endOfYear, toIsoDate, toTimestamp, todayTimestamp, yearOf } from '../../src/date.utils';
 
 describe('DateUtils', () => {
   describe('toTimestamp', () => {
@@ -28,6 +28,25 @@ describe('DateUtils', () => {
     test('are a day and an average year, leap days included', () => {
       expect(toTimestamp('2000-01-02') - toTimestamp('2000-01-01')).toBe(DAY_MS);
       expect(toTimestamp('2004-01-01') - toTimestamp('2000-01-01')).toBe(4 * YEAR_MS);
+    });
+  });
+
+  describe('yearOf', () => {
+    test("gives a timestamp's year in UTC, whatever the hour", () => {
+      expect(yearOf(Date.UTC(1999, 11, 31, 23, 59))).toBe(1999);
+      expect(yearOf(Date.UTC(2000, 0, 1))).toBe(2000);
+    });
+  });
+
+  describe('endOfYear', () => {
+    test("is the year's 31 December", () => {
+      expect(toIsoDate(endOfYear(1935))).toBe('1935-12-31');
+    });
+  });
+
+  describe('decadeOf', () => {
+    test('gives the first year of its decade', () => {
+      expect([1960, 1969, 1970, 2026].map(decadeOf)).toEqual([1960, 1960, 1970, 2020]);
     });
   });
 });

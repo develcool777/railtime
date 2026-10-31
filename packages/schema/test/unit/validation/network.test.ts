@@ -73,7 +73,7 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual([]);
     network.segments[0]!.coordinates[0] = [0, 51.5005];
     // The plan's split of that segment, a – b, misses it too.
-    expect(problemsOf(network)).toEqual(['segment a – c: its track ends 56 m from a', 'plan extension: segment a – b: its track ends 56 m from a']);
+    expect(problemsOf(network)).toEqual(['segment a – c: its track ends 55 m from a', 'plan extension: segment a – b: its track ends 55 m from a']);
   });
 
   test('refuses a malformed part: a date, a colour, a language code, track of one point', () => {

@@ -18,6 +18,7 @@
     "./plan.utils": "./src/plan/build.utils.ts"
   },
   "dependencies": {
+    "@railtime/core": "workspace:*",
     "zod": "^4.1.0"
   },
   "devDependencies": {

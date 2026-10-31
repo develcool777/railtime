@@ -1,5 +1,5 @@
-import { clamp } from '../core/easing.utils';
-import { DAY_MS } from '@railtime/network/date.utils';
+import { clamp } from '@railtime/core/number.utils';
+import { DAY_MS } from '@railtime/core/date.utils';
 import type { StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';

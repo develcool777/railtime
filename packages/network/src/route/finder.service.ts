@@ -1,5 +1,5 @@
 import type { NetworkIndex } from '../network/index.service';
-import { PriorityQueue } from '../core/priorityQueue.service';
+import { PriorityQueue } from '@railtime/core/priorityQueue.service';
 import { CHANGE_MINUTES, FEWER_CHANGES_PENALTY, RIDE_KMH, WALK_MINUTES } from './finder.constants';
 import type { Edge, Move, Place, RideLeg, Route, RouteLeg, RoutePreference } from './finder.types';
 import type { Timeline } from '../network/timeline.service';

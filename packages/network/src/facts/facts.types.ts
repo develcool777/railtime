@@ -1,8 +1,9 @@
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
-import type { IsoDate, PlanStatus } from '@railtime/schema/network.types';
+import type { PlanStatus } from '@railtime/schema/network.types';
+import type { IsoDate } from '@railtime/core/date.types';
 import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from '../network/history.types';
 import type { GridCorners } from '../coverage/grid.types';
-import type { Step } from '../network/timeline.types';
+import type { Step } from '../network/engine.types';
 import type { RoutePreference as ModelRoutePreference } from '../route/finder.types';
 
 /** The map's colour theme. */

@@ -22,7 +22,7 @@
           </span>
         </template>
         <UPageGrid>
-          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="summaryOf(city.value)" :eager="EAGER_CITIES.has(city.value)" />
+          <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="citySummaryOf(city.value)" :eager="EAGER_CITIES.has(city.value)" />
         </UPageGrid>
       </UPageSection>
       <UEmpty
@@ -45,14 +45,12 @@
 
 <script setup lang="ts">
   import { navigateTo, useRoute } from '#imports';
-  import CITY_INDEX from '@railtime/data/cities.json';
   import { STILL_CREDITS } from '@railtime/renderer/basemapStill.constants';
-  import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed, ref } from 'vue';
 
   import type { CityFilter } from '~/features/landing/cityFilter.types';
   import { NO_FILTER, matchesFilter } from '~/features/landing/cityFilter.utils';
-  import { citiesByCountry, isCity } from '~/utils/city.utils';
+  import { citiesByCountry, citySummaryOf, isCity } from '~/utils/city.utils';
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
   import { CITIES } from '~/constants/city.constants';
   import { landingSeo } from '~/features/seo/seo.utils';
@@ -63,14 +61,6 @@
   const route = useRoute();
   if (isCity(route.query.city)) await navigateTo(`/${route.query.city}`, { replace: true });
 
-  // What every card shows, built into the page: it is prerendered whole, its pictures already drawn.
-  const INDEX: CityIndex = CITY_INDEX;
-  const summaryOf = (city: string): CityIndexEntry => {
-    const entry = INDEX[city];
-    // A test keeps the index and the menu's cities the same.
-    if (!entry) throw new Error(`${city} is not in cities.json`);
-    return entry;
-  };
   /** The first row's cards: their pictures load at once, the rest as they are scrolled to. */
   const EAGER_CITIES = new Set(CITIES.slice(0, 4).map(city => city.value));
 
@@ -81,7 +71,7 @@
     citiesByCountry()
       .map(({ country, cities }) => ({
         country,
-        cities: cities.filter(city => matchesFilter(city, summaryOf(city.value), filter.value)),
+        cities: cities.filter(city => matchesFilter(city, citySummaryOf(city.value), filter.value)),
       }))
       .filter(section => section.cities.length > 0),
   );

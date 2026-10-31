@@ -18,6 +18,7 @@
     "@nuxtjs/robots": "^7.0.2",
     "@nuxtjs/sitemap": "^9.1.0",
     "@pinia/nuxt": "^1.0.3",
+    "@railtime/core": "workspace:*",
     "@railtime/data": "workspace:*",
     "@railtime/network": "workspace:*",
     "@railtime/renderer": "workspace:*",

@@ -1,15 +1,12 @@
+import type { IsoDate } from '@railtime/core/date.types';
+import type { LngLat } from '@railtime/core/geometry.types';
+
 /**
  * The normalized network format: what importers produce and the renderer reads.
  * The renderer never sees OSM, Wikidata or GTFS, only this.
  *
  * Dates are ISO `YYYY-MM-DD` strings. Coordinates are `[longitude, latitude]`.
  */
-
-/** A `YYYY-MM-DD` date. */
-export type IsoDate = string;
-
-/** A `[longitude, latitude]` coordinate. */
-export type LngLat = [number, number];
 
 /**
  * Names in languages other than English, by BCP 47 language code (`uk`, `pt-BR`). The English name

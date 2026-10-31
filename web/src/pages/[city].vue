@@ -27,13 +27,11 @@
 
 <script setup lang="ts">
   import { definePageMeta, navigateTo, useFetch, useRoute, useRuntimeConfig } from '#imports';
-  import CITY_INDEX from '@railtime/data/cities.json';
-  import type { CityIndex } from '@railtime/schema/cityIndex.types';
   import type { Network } from '@railtime/schema/network.types';
   import { computed } from 'vue';
 
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
-  import { cityNameOf, isCity, networkUrlOf, planToOpen, previewUrlOf } from '~/utils/city.utils';
+  import { cityNameOf, citySummaryOf, isCity, networkUrlOf, planToOpen, previewUrlOf } from '~/utils/city.utils';
   import { citySeo } from '~/features/seo/seo.utils';
 
   // Only cities with a dataset have a page: any other address is a 404. Each city is a page of its
@@ -44,9 +42,7 @@
   const city = computed(() => String(route.params.city));
   const cityName = computed(() => cityNameOf(city.value));
   const baseURL = useRuntimeConfig().app.baseURL;
-  const INDEX: CityIndex = CITY_INDEX;
-  const entry = INDEX[city.value];
-  if (!entry) throw new Error(`${city.value} is not in cities.json`);
+  const entry = citySummaryOf(city.value);
   const seo = citySeo(city.value, entry);
   usePageSeo(seo);
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatMetric, formatNumber, growthSeries } from '~/features/explorer/insights/insights.utils';
+import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
 
 describe('InsightsUtils', () => {
   describe('growthSeries', () => {
@@ -20,12 +20,6 @@ describe('InsightsUtils', () => {
       expect(formatMetric(1284, 'stations')).toBe('1,284 stations');
       expect(formatMetric(1, 'lines')).toBe('1 line');
       expect(formatMetric(744.6, 'km')).toBe('745 km');
-    });
-  });
-
-  describe('formatNumber', () => {
-    test('writes a value whole, thousands marked', () => {
-      expect(formatNumber(1284.4)).toBe('1,284');
     });
   });
 });

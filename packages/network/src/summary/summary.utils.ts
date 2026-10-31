@@ -1,5 +1,6 @@
+import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import type { Network } from '@railtime/schema/network.types';
-import { buildPlan, isPlanOnly } from '@railtime/schema/plan.utils';
+import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import type { NetworkSummary } from '../facts/facts.types';
 
 /**
@@ -11,11 +12,11 @@ import type { NetworkSummary } from '../facts/facts.types';
  */
 export const networkSummary = (network: Network): NetworkSummary => {
   const planOnly = isPlanOnly(network);
-  const shown = planOnly ? buildPlan(network, Object.keys(network.plans ?? {})[0] ?? '').network : network;
+  const shown = planOnly ? buildPlan(network, firstPlanOf(network) ?? '').network : network;
   const opened = network.segments.flatMap(segment => Object.values(segment.lines).map(dates => dates.open)).sort()[0];
   return {
     networks: Object.values(network.networks).map(brand => brand.name),
-    openedYear: opened ? Number(opened.slice(0, 4)) : null,
+    openedYear: opened ? yearOf(toTimestamp(opened)) : null,
     planOnly,
     plans: Object.keys(network.plans ?? {}).length,
     lines: Object.values(shown.lines).filter(line => !line.pseudo).length,

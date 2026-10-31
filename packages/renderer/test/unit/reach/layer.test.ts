@@ -6,7 +6,7 @@ import { ReachLayer } from '../../../src/reach/layer.service';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { reachStops, reachTrack } from '../../../src/reach/layer.utils';
-import { toTimestamp } from '@railtime/network/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { networkNow, playbackOf } from '../../support/playback.utils';
 

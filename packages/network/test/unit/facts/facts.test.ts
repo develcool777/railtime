@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkFacts } from '../../../src/facts/facts.service';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -27,7 +27,7 @@ const factsOf = (plan?: string) => {
  * @param date - The date.
  * @returns The moment.
  */
-const momentOf = (facts: NetworkFacts, date: string) => ({ cursor: facts.timeline.cursorAt(toTimestamp(date)), time: toTimestamp(date) });
+const momentOf = (facts: NetworkFacts, date: string) => ({ cursor: facts.engine.timeline.cursorAt(toTimestamp(date)), time: toTimestamp(date) });
 
 describe('NetworkFacts', () => {
   test('runs from its first date to today, or to its last dated change after it', () => {
@@ -110,7 +110,7 @@ describe('NetworkFacts', () => {
     expect(planned.plan).toBe('extension');
     expect(planned.changes().length).toBeGreaterThan(plain.changes().length);
     const changes = planned.changes();
-    expect(changes.map(change => change.index)).toEqual(planned.timeline.steps.map(step => step.index));
+    expect(changes.map(change => change.index)).toEqual(planned.engine.timeline.steps.map(step => step.index));
     expect(changes[0]).toMatchObject({ kind: 'open', time: toTimestamp('1900-01-01'), title: 'Red line opens', color: { light: '#ff0000' } });
     expect(changes.slice(-2).map(change => change.time)).toEqual([null, null]);
     expect(changes.at(-2)).toMatchObject({ title: 'Red line extended', subtitle: 'D – E' });
@@ -151,7 +151,7 @@ describe('NetworkFacts questions, at a moment', () => {
     ]);
     expect(red).toMatchObject({ stations: 3, color: { light: '#ff0000', dark: '#ff0000' } });
     expect(red.km).toBeCloseTo(3, 1);
-    expect(red.changes.map(change => facts.timeline.steps[change]?.kind)).toContain('open');
+    expect(red.changes.map(change => facts.engine.timeline.steps[change]?.kind)).toContain('open');
     expect(() => queries.line('purple')).toThrow('Missing line purple');
   });
 
@@ -277,7 +277,7 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test("keeps a line's changes to its own", () => {
     const { queries, facts } = queriesOn('1935-01-01');
-    const blueOpens = facts.timeline.steps.find(step => step.kind === 'open' && step.line === 'blue')!.index;
+    const blueOpens = facts.engine.timeline.steps.find(step => step.kind === 'open' && step.line === 'blue')!.index;
     expect(queries.line('red').changes).not.toContain(blueOpens);
     expect(queries.line('blue').changes).toContain(blueOpens);
   });

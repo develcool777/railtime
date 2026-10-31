@@ -1,4 +1,5 @@
-import type { LngLat, Network, Segment } from '@railtime/schema/network.types';
+import type { Network, Segment } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 
 /**
  * A point `east` km east and `north` km north of A.

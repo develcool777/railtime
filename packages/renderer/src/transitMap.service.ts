@@ -10,6 +10,7 @@ import { NetworkLayer } from './layers/network.service';
 import { FrameRenderer } from './layers/frame.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/map.service';
+import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { NetworkTime } from '@railtime/network/facts.types';
 import { OverlayController } from './overlay/controller.service';
@@ -17,7 +18,7 @@ import { ReachLayer } from './reach/layer.service';
 import { RouteLayer } from './route/layer.service';
 import { StationLayer } from './stations/layer.service';
 import { PropsReconciler } from './state/reconciler.service';
-import type { Step } from '@railtime/network/engine/timeline.types';
+import type { Step } from '@railtime/network/engine.types';
 import { CameraDirector } from './playback/camera.service';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
@@ -46,6 +47,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   public readonly credits: Credit[];
   /** The network, its history and every question about it. */
   private readonly facts: NetworkFacts;
+  /** The raw network the facts come from: what it plays and draws. */
+  private readonly engine: NetworkEngine;
   /** The clock and the step playing. */
   private readonly player: Player;
   /** The main map. */
@@ -93,13 +96,14 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
     for (const [event, listener] of Object.entries(options.on ?? {})) this.on(event as keyof TransitMapEvents, listener as never);
     this.facts = options.facts;
-    this.player = new Player(this.facts, step => this.createAnimation(step));
+    this.engine = options.facts.engine;
+    this.player = new Player(this.engine, step => this.createAnimation(step));
     this.scheduler = options.scheduler ?? BROWSER_FRAMES;
     const props: MapProps = { ...DEFAULT_MAP_PROPS, ...options.props };
     this.props = new PropsReconciler(props, this.effects);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
-    const { network, bounds } = this.facts.index;
+    const { network, bounds } = this.engine.index;
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
     this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: network.meta.attribution }];
     const createMap = options.createMap ?? (mapOptions => new MapLibreMap(mapOptions));
@@ -121,9 +125,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.buildingsLayer = new BuildingsLayer(this.map);
     this.stationLayer = new StationLayer(
       this.map,
-      station => this.facts.index.coordOf(station),
-      station => this.facts.index.stationLabel(station, this.player.clock),
-      this.facts.index.compareLines,
+      station => this.engine.index.coordOf(station),
+      station => this.engine.index.stationLabel(station, this.player.clock),
+      this.engine.index.compareLines,
     );
     this.overlay = new OverlayController({
       facts: this.facts,
@@ -137,8 +141,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     });
     this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, bounds, PALETTES[props.theme]) : null;
     this.frames = new FrameRenderer({
-      index: this.facts.index,
-      timeline: this.facts.timeline,
+      index: this.engine.index,
+      timeline: this.engine.timeline,
       player: this.player,
       network: this.networkLayer,
       activeStep: this.activeStepLayer,
@@ -247,7 +251,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param durationMs - How long the move takes.
    */
   public fitNetwork(durationMs = FIT_NETWORK_MS): void {
-    if (this.life !== 'destroyed') this.camera.fit(this.facts.index.bounds, Infinity, durationMs);
+    if (this.life !== 'destroyed') this.camera.fit(this.engine.index.bounds, Infinity, durationMs);
   }
 
   /**
@@ -289,7 +293,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
       visibleLines: () => {
-        this.frames.visibleLines = new Set(this.props.current.visibleLines ?? this.facts.index.lineIds);
+        this.frames.visibleLines = new Set(this.props.current.visibleLines ?? this.engine.index.lineIds);
         this.frames.redraw();
       },
       focusedLines: () => this.applyBackdrop(),
@@ -297,7 +301,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
         const station = this.props.current.selectedStation;
         this.selectionAway = false;
         this.stationLayer.select(station);
-        if (station) this.camera.flyTo(this.facts.index.coordOf(station), SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+        if (station) this.camera.flyTo(this.engine.index.coordOf(station), SELECTED_STATION_ZOOM, SELECT_FLY_MS);
       },
       overlay: () => this.drawOverlay(),
       boundary: () => this.drawOverlay(),
@@ -415,7 +419,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns Its animation.
    */
   private createAnimation(step: Step): ReturnType<typeof createStepAnimation> {
-    const { index, timeline } = this.facts;
+    const { index, timeline } = this.engine;
     return createStepAnimation(step, { index, timeline, view: this.props.current.viewMode });
   }
 
@@ -445,7 +449,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     if (!active) return;
     this.frames.stepStarted();
     const speed = this.player.speed;
-    const { index, timeline } = this.facts;
+    const { index, timeline } = this.engine;
     const moveMs = this.camera.focusStep(
       active.animation,
       timeline.stationsOnMap(this.player.cursor),
@@ -464,7 +468,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   private onStepEnd(step: Step): void {
     this.frames.redraw();
-    const next = this.facts.timeline.steps[step.index + 1];
+    const next = this.engine.timeline.steps[step.index + 1];
     if (!next || next.time !== step.time) this.notify('step', null);
   }
 

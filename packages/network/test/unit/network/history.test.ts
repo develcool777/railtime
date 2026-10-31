@@ -6,7 +6,7 @@ import { factsOf } from '../../support/facts.utils';
 describe('HistoryUtils', () => {
   describe('networkHistory', () => {
     test('takes every year from the start, each as at its end', () => {
-      const { index, timeline } = factsOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork()).engine;
       const { years } = networkHistory(index, timeline, 2026);
       expect(years[0]?.year).toBe(1899);
       expect(years.at(-1)?.year).toBe(2026);
@@ -15,7 +15,7 @@ describe('HistoryUtils', () => {
     });
 
     test('keeps the year each station was first on the map, a closed one too', () => {
-      const { index, timeline } = factsOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork()).engine;
       const { firstYears } = networkHistory(index, timeline, 2026);
       expect(firstYears.get('a')).toBe(1900);
       expect(firstYears.get('d')).toBe(1910);

@@ -54,7 +54,8 @@
   import { computed, ref, useTemplateRef } from 'vue';
 
   import { FUTURE_SHARE } from '~/features/explorer/time/time.constants';
-  import { yearOf } from '~/features/explorer/format.utils';
+  import { YEAR_MS, yearOf } from '@railtime/core/date.utils';
+  import { clamp } from '@railtime/core/number.utils';
   import type { TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
   import { targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 
@@ -122,14 +123,13 @@
   /** Arrow keys step a year; Home and End go to the first date and the last. */
   const onKey = (event: KeyboardEvent) => {
     const now = props.time?.time ?? scale.value.end;
-    const year = 365.25 * 864e5;
-    const moves: Record<string, number> = { ArrowLeft: now - year, ArrowRight: now + year, Home: scale.value.start, End: scale.value.end };
+    const moves: Record<string, number> = { ArrowLeft: now - YEAR_MS, ArrowRight: now + YEAR_MS, Home: scale.value.start, End: scale.value.end };
     const next = moves[event.key];
     if (next === undefined) return;
     // The page's own arrow keys would step again.
     event.preventDefault();
     event.stopPropagation();
-    emit('pick', { kind: 'date', time: Math.min(Math.max(next, scale.value.start), scale.value.end) });
+    emit('pick', { kind: 'date', time: clamp(next, scale.value.start, scale.value.end) });
   };
 </script>
 

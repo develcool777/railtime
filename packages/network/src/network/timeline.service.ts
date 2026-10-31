@@ -1,9 +1,10 @@
 import { planGrowth } from '../changes/growth.utils';
-import { toTimestamp } from '../core/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import type { NetworkIndex } from './index.service';
-import type { LineSegment } from './index.types';
-import type { AliasEnd, DayChanges, Growth, LineIdentity, OpenStep, Step, StepDraft } from './timeline.types';
-import { connectedStretches, pushTo } from './timeline.utils';
+import type { Growth, LineSegment, OpenStep, Step } from './engine.types';
+import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
+import { pushTo } from '@railtime/core/collection.utils';
+import { connectedStretches } from './timeline.utils';
 
 /**
  * The network's history as an ordered list of steps.

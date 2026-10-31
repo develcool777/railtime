@@ -11,21 +11,15 @@
   "exports": {
     "./facts.service": "./src/facts/facts.service.ts",
     "./facts.types": "./src/facts/facts.types.ts",
-    "./date.utils": "./src/core/date.utils.ts",
-    "./engine/index.service": "./src/network/index.service.ts",
-    "./engine/index.types": "./src/network/index.types.ts",
-    "./engine/timeline.service": "./src/network/timeline.service.ts",
-    "./engine/timeline.types": "./src/network/timeline.types.ts",
-    "./engine/geometry.utils": "./src/core/geometry.utils.ts",
-    "./engine/geometry.types": "./src/core/geometry.types.ts",
-    "./engine/geometry.constants": "./src/core/geometry.constants.ts",
-    "./engine/required.utils": "./src/core/required.utils.ts",
+    "./engine.service": "./src/network/engine.service.ts",
+    "./engine.types": "./src/network/engine.types.ts",
     "./testing/tinyNetwork": "./test/support/factories/tinyNetwork.utils.ts",
     "./testing/routeNetwork": "./test/support/factories/routeNetwork.utils.ts",
     "./testing/boundaries": "./test/support/factories/boundaries.utils.ts",
     "./testing/planOnlyNetwork": "./test/support/factories/planOnlyNetwork.utils.ts"
   },
   "dependencies": {
+    "@railtime/core": "workspace:*",
     "@railtime/schema": "workspace:*"
   },
   "devDependencies": {

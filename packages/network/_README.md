@@ -28,8 +28,10 @@ facts.coverage(boundary).info(cursor); // how much of the city is within a walk 
 facts.coverage(boundary).cells(cursor); // the same, cell by cell in its bands, for a picture
 ```
 
-Nothing else is for the app or `data`: `engine/*` (the index, the timeline and each opening's
-`growthOf`, geometry, `required`) is the raw network the renderer plays and draws. A line's colour is a `LineColor`,
+Behind it is `NetworkEngine` (`facts.engine`; `engine.service`, `engine.types`): the index, the
+timeline and each opening's `growthOf`, the range. It is the raw network the renderer plays and draws,
+and nothing else's: `web` and `data` cannot import it (ESLint). Dates, geometry and `required` are
+`@railtime/core`'s. A line's colour is a `LineColor`,
 `{ light, dark }`: no question takes a theme. `testing/*` exports the networks and outlines the tests
 share.
 
@@ -50,6 +52,7 @@ are of the network as stored, whichever plan is built.
 src/
 ├── facts/facts.service.ts     NetworkFacts: every question, for a moment given; facts.types.ts, the answers' types
 ├── network/                   the network and its history
+│   ├── engine.service.ts      NetworkEngine: the index, the timeline, the range; engine.types.ts, the shapes the renderer sees
 │   ├── index.service.ts       NetworkIndex: segments prepared, a LineSegment per (segment, line, period)
 │   ├── timeline.service.ts    Timeline: the history as ordered steps; the state at any cursor
 │   ├── orientation.utils.ts   a consistent direction of travel per segment
@@ -61,8 +64,7 @@ src/
 ├── route/                     RouteFinder (Dijkstra at a cursor; a reach too), the reach's bands and track
 ├── coverage/                  CoverageGrid and CoverageMeasure: a city's outline in cells, its share near a station
 ├── plan/facts.utils.ts        what a plan adds (`plans()`)
-├── summary/summary.utils.ts   a network summed up, for a list of cities (`summary()`)
-└── core/                      nothing about rail: dates, geometry, `required`, a priority queue
+└── summary/summary.utils.ts   a network summed up, for a list of cities (`summary()`)
 ```
 
 ## Steps and cursors

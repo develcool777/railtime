@@ -1,8 +1,8 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
-import { buildPlan, isPlanOnly } from '@railtime/schema/plan.utils';
-import { required } from '../core/required.utils';
-import { toIsoDate, todayTimestamp, toTimestamp } from '../core/date.utils';
+import { isPlanOnly } from '@railtime/schema/plan.utils';
+import { required } from '@railtime/core/required.utils';
+import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { REACH_BANDS } from '../route/reach.constants';
 import { bandOf, reachedSegments } from '../route/reach.utils';
 import { RouteFinder } from '../route/finder.service';
@@ -10,8 +10,9 @@ import type { NetworkHistory } from '../network/history.types';
 import { networkAt, networkHistory, openingsByDecade, statsAt } from '../network/history.utils';
 import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../network/lineDetails.utils';
 import { CoverageMeasure } from '../coverage/measure.service';
-import { NetworkIndex } from '../network/index.service';
-import { Timeline } from '../network/timeline.service';
+import type { NetworkIndex } from '../network/index.service';
+import { NetworkEngine } from '../network/engine.service';
+import type { Timeline } from '../network/timeline.service';
 import { captionOf } from '../changes/caption.utils';
 import { planFacts } from '../plan/facts.utils';
 import { networkSummary } from '../summary/summary.utils';
@@ -47,12 +48,14 @@ export class NetworkFacts {
   public readonly plan: string | null;
   /** Whether the network was never built: it has only its plans. */
   public readonly planOnly: boolean;
-  /** The network, indexed: its plan built on it, if one was asked for. */
-  public readonly index: NetworkIndex;
-  /** Its history as steps, planned ones last. */
-  public readonly timeline: Timeline;
+  /** The raw network through time, which every answer comes from: what the renderer plays and draws. */
+  public readonly engine: NetworkEngine;
   /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's future plays at `end`. */
   public readonly range: { start: number; end: number; today: number };
+  /** The network, indexed. */
+  private readonly index: NetworkIndex;
+  /** Its history as steps. */
+  private readonly timeline: Timeline;
   /** Finds routes, and how far one gets, between its stations. */
   private readonly routes: RouteFinder;
   /** The year the history runs to. */
@@ -65,15 +68,15 @@ export class NetworkFacts {
   private readonly source: Network;
 
   private constructor(source: Network, plan: string | null, today: number) {
-    const built = plan ? buildPlan(source, plan) : null;
     this.source = source;
     this.plan = plan;
     this.planOnly = isPlanOnly(source);
-    this.index = new NetworkIndex(built?.network ?? source, built?.sections);
-    this.timeline = new Timeline(this.index);
-    this.range = { start: this.timeline.start, end: Math.max(today, this.timeline.lastDate), today };
+    this.engine = new NetworkEngine(source, plan, today);
+    this.index = this.engine.index;
+    this.timeline = this.engine.timeline;
+    this.range = this.engine.range;
     this.routes = new RouteFinder(this.index, this.timeline);
-    this.thisYear = new Date(today).getUTCFullYear();
+    this.thisYear = yearOf(today);
   }
 
   /**

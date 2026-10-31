@@ -1,3 +1,4 @@
+import { toIsoDate } from '@railtime/core/date.utils';
 import type { ExplorerQuery, ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
 import type { Section } from '~/features/explorer/explorer.types';
@@ -99,7 +100,7 @@ export const sameQuery = (first: ExplorerQuery, second: ExplorerQuery): boolean 
 export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
   const { date, view, station, plan, section, line, viewMode, stationNames, mapOnly } = state;
   return {
-    ...(date === undefined ? {} : { date: new Date(date).toISOString().slice(0, 10) }),
+    ...(date === undefined ? {} : { date: toIsoDate(date) }),
     ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
     ...(station ? { station } : {}),
     ...(plan ? { plan } : {}),

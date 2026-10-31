@@ -1,6 +1,8 @@
+import { clamp } from '@railtime/core/number.utils';
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { FUTURE_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/explorer/time/time.constants';
-import { lineColor, yearOf } from '~/features/explorer/format.utils';
+import { yearOf } from '@railtime/core/date.utils';
+import { lineColor } from '~/features/explorer/format.utils';
 import type { TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
 
 /**
@@ -107,5 +109,5 @@ export const targetAt = (scale: TimelineScale, fraction: number): TimelineTarget
     if (built > 0) return { kind: 'change', index: scale.datedCount + built - 1 };
     return { kind: 'date', time: scale.end };
   }
-  return { kind: 'date', time: scale.start + (Math.min(Math.max(fraction, 0), share) / share) * (scale.end - scale.start) };
+  return { kind: 'date', time: scale.start + (clamp(fraction, 0, share) / share) * (scale.end - scale.start) };
 };

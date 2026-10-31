@@ -16,7 +16,7 @@
   import type { DecadeOpenings } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
-  import { formatNumber } from '~/features/explorer/insights/insights.utils';
+  import { formatNumber } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** How many stations first opened in each decade. */

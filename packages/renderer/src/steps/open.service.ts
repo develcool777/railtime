@@ -1,9 +1,10 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import { pushTo } from '@railtime/core/collection.utils';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { lineFeature, pointFeature } from '../layers/features.utils';
 import { offsetFor, resolveLine } from '../layers/lineStyle.utils';
-import { sliceAlong } from '@railtime/network/engine/geometry.utils';
-import type { Growth, OpenStep, SegmentPlan } from '@railtime/network/engine/timeline.types';
-import { clamp } from '../core/easing.utils';
+import { sliceAlong } from '@railtime/core/geometry.utils';
+import type { Growth, OpenStep, SegmentPlan } from '@railtime/network/engine.types';
+import { clamp } from '@railtime/core/number.utils';
 import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MAX_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -32,8 +33,8 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
     this.drawSeconds = clamp(this.growth.totalKm / pace.kmPerSecond, pace.minSeconds, pace.maxSeconds);
     this.holdSeconds = Math.min(MAX_HOLD_SECONDS, HOLD_BASE_SECONDS + HOLD_PER_STATION_SECONDS * newStations);
     for (const { segment, line } of step.lineSegments) {
-      this.linesBySegment.set(segment.index, [...(this.linesBySegment.get(segment.index) ?? []), line]);
-      for (const station of [segment.stationA, segment.stationB]) this.linesByStation.set(station, [...(this.linesByStation.get(station) ?? []), line]);
+      pushTo(this.linesBySegment, segment.index, line);
+      for (const station of [segment.stationA, segment.stationB]) pushTo(this.linesByStation, station, line);
     }
   }
 

@@ -1,5 +1,5 @@
-import { required } from '@railtime/network/engine/required.utils';
-import type { NetworkIndex } from '@railtime/network/engine/index.service';
+import type { NetworkEngine } from '@railtime/network/engine.service';
+import { required } from '@railtime/core/required.utils';
 import type { ReachInfo } from '@railtime/network/facts.types';
 import type { PointFeature, ReachStopProperties, ReachTrackFeature } from '../layers/features.types';
 import { pointFeature } from '../layers/features.utils';
@@ -20,7 +20,7 @@ const bandColor = (reach: ReachInfo, band: number): string => required(reach.ban
  * @param reach - The reach, or `null`.
  * @returns The track; none without a reach.
  */
-export const reachTrack = (index: NetworkIndex, reach: ReachInfo | null): ReachTrackFeature[] => {
+export const reachTrack = (index: NetworkEngine['index'], reach: ReachInfo | null): ReachTrackFeature[] => {
   if (!reach) return [];
   return reach.track.map(({ segment, band }) => ({
     type: 'Feature',
@@ -36,7 +36,7 @@ export const reachTrack = (index: NetworkIndex, reach: ReachInfo | null): ReachT
  * @param reach - The reach, or `null`.
  * @returns The stations; none without a reach.
  */
-export const reachStops = (index: NetworkIndex, reach: ReachInfo | null): PointFeature<ReachStopProperties>[] =>
+export const reachStops = (index: NetworkEngine['index'], reach: ReachInfo | null): PointFeature<ReachStopProperties>[] =>
   reach
     ? [
         pointFeature(index.coordOf(reach.from.id), { color: bandColor(reach, 0), label: reach.from.name, minutes: 0, origin: true }),

@@ -1,4 +1,4 @@
-import { metresBetween } from '../core/geometry.utils.ts';
+import { distanceKm } from '@railtime/core/geometry.utils';
 import type { Network, Plan, Segment, SegmentLine, Station } from '../format/network.types';
 import { buildPlan } from '../plan/build.utils.ts';
 import { STATION_GAP_METRES } from './checks.constants.ts';
@@ -91,7 +91,7 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
   ] as const;
   for (const [station, end] of ends) {
     const place = network.stations[station]?.coordinate;
-    const gap = place && end ? metresBetween(place, end) : 0;
+    const gap = place && end ? distanceKm(place, end) * 1000 : 0;
     if (gap > STATION_GAP_METRES) problem(`${name}: its track ends ${Math.round(gap)} m from ${station}`);
   }
   for (const [lineId, dates] of Object.entries(segment.lines)) {

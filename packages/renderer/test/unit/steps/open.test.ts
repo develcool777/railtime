@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '@railtime/network/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS } from '../../../src/steps/animation.constants';
 import { OpenStepAnimation } from '../../../src/steps/open.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';

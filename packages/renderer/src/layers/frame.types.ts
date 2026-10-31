@@ -1,7 +1,6 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import type { NetworkEngine } from '@railtime/network/engine.service';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { Minimap } from '../minimap/map.service';
-import type { NetworkIndex } from '@railtime/network/engine/index.service';
-import type { Timeline } from '@railtime/network/engine/timeline.service';
 import type { Player } from '../playback/player.service';
 import type { StationLayer } from '../stations/layer.service';
 import type { ActiveStepLayer } from './activeStep.service';
@@ -9,8 +8,8 @@ import type { NetworkLayer } from './network.service';
 
 /** What draws each frame: the network, its history and the player, and the layers drawn on. */
 export type FrameParts = {
-  index: NetworkIndex;
-  timeline: Timeline;
+  index: NetworkEngine['index'];
+  timeline: NetworkEngine['timeline'];
   player: Player;
   network: NetworkLayer;
   activeStep: ActiveStepLayer;

@@ -1,6 +1,6 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
-import { cumulativeDistances } from '../core/geometry.utils';
+import { cumulativeDistances } from '@railtime/core/geometry.utils';
 import type { PlanFacts } from '../facts/facts.types';
 
 /**
