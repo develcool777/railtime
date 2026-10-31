@@ -52,3 +52,10 @@ export const DEFAULT_BASEMAP_CREDITS: Credit[] = [
 
 /** Used when the basemap has no font of its own to offer. */
 export const FALLBACK_FONT = ['Noto Sans Regular'];
+
+/**
+ * What a basemap filter compares in place of a value a feature lacks: a number past any bound, on
+ * whichever side the comparison needs, so it fails as the missing value made it fail, without the
+ * warning MapLibre prints for each such feature.
+ */
+export const MISSING_NUMBER = 1e9;
