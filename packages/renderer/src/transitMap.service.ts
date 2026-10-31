@@ -627,8 +627,15 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   private onStepStart(playback: ActivePlayback): void {
     this.frames.stepStarted();
-    const durationMs = (playback.preSeconds * 1000) / this.player.speed;
-    this.camera.focusStep(playback.animation, this.timeline.stationsOnMap(this.player.cursor), station => this.index.coordOf(station), durationMs);
+    const speed = this.player.speed;
+    const moveMs = this.camera.focusStep(
+      playback.animation,
+      this.timeline.stationsOnMap(this.player.cursor),
+      station => this.index.coordOf(station),
+      (playback.preSeconds * 1000) / speed,
+    );
+    // The change starts as the camera arrives: at once, after a beat, where it stays.
+    playback.preSeconds = moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed;
     this.emit('step', playback.animation.describe(this.frames.renderState()));
   }
 

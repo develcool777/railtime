@@ -120,7 +120,7 @@ animates `steps[k]`. On one date the order is:
 
 ### A step, frame by frame
 
-`Player` gives each step three phases, in seconds at 1×: **pre** (the camera moves, 1 s), **draw**
+`Player` gives each step three phases, in seconds at 1×: **pre** (the camera moves, up to 1 s, and never quicker than 0.7 s of real time; a beat where what the change touches is already in view, so the camera stays), **draw**
 (the change animates, 1–6 s by length) and **hold** (new stations stay highlighted, ~1–2.5 s). The
 clock stops on the step's date for all three. Between dates it runs at 4 years/s through quiet
 periods and slows steadily to 1.2 years/s over the last years before the next change.
