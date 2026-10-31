@@ -38,6 +38,31 @@ describe('RouteLayer', () => {
     layer.update([], []);
     expect(fake.data.get(SOURCES.route)).toEqual({ type: 'FeatureCollection', features: [] });
   });
+
+  test('draws a route given before the basemap loaded once installed, and says whether one is shown', () => {
+    const fake = fakeMap();
+    const layer = new RouteLayer(fake.map);
+    const stop = pointFeature([0, 0], { kind: 'end' as const, color: '#f00', name: 'A' });
+    const ride: RouteFeature = {
+      type: 'Feature',
+      properties: { color: '#f00', walk: false },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [0, 0],
+          [1, 0],
+        ],
+      },
+    };
+    expect(layer.shown).toBe(false);
+    layer.update([ride], [stop]);
+    expect(layer.shown).toBe(true);
+    layer.install(['Font']);
+    expect(fake.data.get(SOURCES.route)).toEqual({ type: 'FeatureCollection', features: [ride] });
+    expect(fake.data.get(SOURCES.routeStops)).toEqual({ type: 'FeatureCollection', features: [stop] });
+    layer.update([], []);
+    expect(layer.shown).toBe(false);
+  });
 });
 
 describe('RouteLayerUtils', () => {

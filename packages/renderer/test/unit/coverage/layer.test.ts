@@ -57,6 +57,18 @@ const AROUND_TINY: CityBoundary = {
 };
 
 describe('CoverageLayer', () => {
+  test('draws coverage given before the basemap loaded once installed', () => {
+    const fake = fakeMap();
+    const layer = new CoverageLayer(fake.map, () => 'data:image/png;base64,drawn');
+    const grid = new CoverageGrid(SQUARE);
+    const pixels = coverageImage(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS);
+    layer.update({ image: { width: grid.columns, height: grid.rows, pixels }, corners: grid.corners, outline: [] });
+    expect(fake.layers.size).toBe(0);
+    layer.install(['Font']);
+    expect([LAYERS.coverageHeat, LAYERS.coverageOutline].map(id => fake.layers.get(id)?.layout.visibility)).toEqual(['visible', 'visible']);
+    expect(fake.images.get(SOURCES.coverageHeat)).toEqual({ url: 'data:image/png;base64,drawn', coordinates: grid.corners });
+  });
+
   test('adds the heatmap and the outline hidden, draws them, and hides them again', () => {
     const fake = fakeMap();
     const pictures: number[] = [];

@@ -28,6 +28,10 @@ const canvasUrl = (image: CoverageImage): string => {
 export class CoverageLayer extends MapLayer {
   /** Turns pixels into a picture the map loads. */
   private readonly toUrl: (image: CoverageImage) => string;
+  /** What is drawn: kept, so installing draws coverage shown before the basemap loaded. */
+  private drawing: CoverageDrawing = null;
+  /** The layers are on the map. */
+  private installed = false;
 
   public constructor(map: MapLibreMap, toUrl: (image: CoverageImage) => string = canvasUrl) {
     super(map);
@@ -67,6 +71,8 @@ export class CoverageLayer extends MapLayer {
       layout: { ...LINE_LAYOUT, visibility: 'none' },
       paint: { 'line-width': 1.5, 'line-dasharray': [3, 2] },
     });
+    this.installed = true;
+    this.draw();
   }
 
   /**
@@ -84,6 +90,14 @@ export class CoverageLayer extends MapLayer {
    * @param drawing - The heatmap, where it lies, and the outline; `null` to hide them.
    */
   public update(drawing: CoverageDrawing): void {
+    this.drawing = drawing;
+    this.draw();
+  }
+
+  /** Shows the drawing kept, or hides the layers without one; before they are installed, nothing. */
+  private draw(): void {
+    const { drawing } = this;
+    if (!this.installed) return;
     const visibility = drawing ? 'visible' : 'none';
     for (const layer of [LAYERS.coverageHeat, LAYERS.coverageOutline]) this.map.setLayoutProperty(layer, 'visibility', visibility);
     if (!drawing) return;
