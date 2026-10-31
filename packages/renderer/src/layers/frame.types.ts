@@ -16,7 +16,7 @@ export type FrameParts = {
   activeStep: ActiveStepLayer;
   stations: StationLayer;
   /** The overview inset, if there is one: it shows the network and the change playing. */
-  minimap: Pick<Minimap, 'setLines' | 'setActive'> | null;
+  minimap: Pick<Minimap, 'setNetwork' | 'setActive'> | null;
   /** A line's own colour in the current theme. */
   baseColor: (line: string) => string;
 };

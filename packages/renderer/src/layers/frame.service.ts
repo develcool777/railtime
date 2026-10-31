@@ -144,7 +144,7 @@ export class FrameRenderer {
   private refreshSnapshot(state: RenderState): void {
     this.snapshot = buildNetworkSnapshot(state, this.parts.player.active !== null);
     this.parts.network.update(this.snapshot);
-    this.parts.minimap?.setLines(this.snapshot.lines);
+    this.parts.minimap?.setNetwork(this.snapshot);
     this.stale = false;
     this.lastTimeKey = '';
   }
