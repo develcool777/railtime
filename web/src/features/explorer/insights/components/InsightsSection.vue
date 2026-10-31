@@ -13,7 +13,7 @@
           <h3 class="eyebrow text-muted">Growth</h3>
           <UTabs v-model="metric" :items="METRICS" :content="false" aria-label="What the chart measures" />
         </div>
-        <GrowthChart :points :metric :marked="year" @pick="emit('year', $event)" />
+        <GrowthChart :points :metric @pick="emit('year', $event)" />
         <p class="text-dimmed text-xs">Pick a year on the chart to see the map then.</p>
       </section>
 
@@ -81,26 +81,3 @@
   const metric = ref<GrowthMetric>('stations');
   const points = computed(() => (props.growth ? growthSeries(props.growth.years, metric.value) : []));
 </script>
-
-<style>
-  /* Unovis reads its colours from these: the site's tokens, so the charts follow the theme. */
-  .insight-chart {
-    --vis-font-family: var(--font-sans);
-    --vis-axis-tick-label-color: var(--ui-text-muted);
-    --vis-axis-tick-label-font-size: 11px;
-    --vis-axis-grid-color: var(--ui-border);
-    --vis-axis-domain-color: var(--ui-border);
-    --vis-crosshair-line-stroke-color: var(--ui-text-dimmed);
-    --vis-crosshair-circle-stroke-color: var(--ui-bg);
-    --vis-tooltip-background-color: var(--ui-bg);
-    --vis-tooltip-border-color: var(--ui-border);
-    --vis-tooltip-text-color: var(--ui-text-highlighted);
-    --vis-tooltip-padding: 6px 8px;
-    --vis-tooltip-border-radius: 6px;
-    --vis-tooltip-font-size: 12px;
-  }
-
-  .insight-chart-muted {
-    color: var(--ui-text-muted);
-  }
-</style>
