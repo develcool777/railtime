@@ -118,6 +118,25 @@ describe('NetworkSchema', () => {
     ]);
   });
 
+  test("refuses a station opening on a line before it runs there or on one that never does, and closing when it doesn't run there", () => {
+    const network = plannedNetwork();
+    network.segments[0]!.lines.red!.close = '1950-01-01';
+    network.stations.a = { ...network.stations.a!, infill: { red: '1890-01-01' } };
+    network.stations.c = { ...network.stations.c!, infill: { blue: '1920-01-01' }, closed: { red: '1950-01-01' } };
+    expect(problemsOf(network)).toEqual([
+      'station a: opens on red on 1890-01-01, before the line runs there',
+      "station c: opens on blue on 1920-01-01, which doesn't run there",
+      "station c: closes on red on 1950-01-01, when it doesn't run there",
+    ]);
+  });
+
+  test('accepts a station opening on a line after the line has left: the line never called there', () => {
+    const network = plannedNetwork();
+    network.segments[0]!.lines.red!.close = '1950-01-01';
+    network.stations.a = { ...network.stations.a!, infill: { red: '1960-01-01' } };
+    expect(problemsOf(network)).toEqual([]);
+  });
+
   test("refuses a transfer to a station that isn't, or to itself", () => {
     const network = plannedNetwork();
     network.transfers = [

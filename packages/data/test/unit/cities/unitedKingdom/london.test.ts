@@ -5,7 +5,7 @@ import { NetworkIndex } from '../../../../../renderer/src/network/index.service'
 import type { TrackSegment } from '../../../../../renderer/src/network/index.types';
 import { Timeline } from '../../../../../renderer/src/network/timeline.service';
 import { playbackOf, renderStateOf } from '../../../../../renderer/test/support/playback.utils';
-import { cityNetwork, playPlan, playWholeHistory } from '../../../support/history.utils';
+import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 const london = cityNetwork('london');
 const index = new NetworkIndex(london);
@@ -15,6 +15,27 @@ const startOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stati
 const endOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationB : segment.stationA);
 
 describe('London', () => {
+  test('keeps each line in one piece, but where its history parts it', () => {
+    expect(lineSplits(cityNetwork('london'))).toEqual([
+      // Metropolitan and District trains onto the East London from 1 October 1884, the link through Aldgate East from the 6th.
+      'metropolitan 1884-10-01: 2 pieces',
+      'district 1884-10-01: 2 pieces',
+      // The Metropolitan took over the Aylesbury & Buckingham a year before its own line reached Aylesbury.
+      'metropolitan 1891-07-01: 3 pieces',
+      // The City & South London's north end closed for rebuilding while its south ran on.
+      'northern 1922-08-08: 2 pieces',
+      // The Piccadilly took Ealing–South Harrow; an isolated District service ran on to Uxbridge until 1933.
+      'district 1932-07-04: 2 pieces',
+      // The Jubilee extension opened from Stratford first, joined to the rest that autumn.
+      'jubilee 1999-05-14: 2 pieces',
+      // The East London line reopened before it joined the North London; then the West Anglia lines and Romford–Upminster joined, apart.
+      'london-overground 2010-04-27: 2 pieces',
+      'london-overground 2015-05-31: 3 pieces',
+      // TfL Rail took over Paddington–Heathrow, apart from Liverpool Street–Shenfield until the tunnel opened.
+      'tfl-rail 2018-05-20: 2 pieces',
+    ]);
+  });
+
   test('reaches Rickmansworth on the Metropolitan in 1887, not with the 1925 Watford branch', () => {
     const reached = stepsOn('1887-09-01').find(step => step.kind === 'open' && step.line === 'metropolitan');
     const stations = reached?.kind === 'open' ? reached.segments.flatMap(segment => [segment.stationA, segment.stationB]) : [];

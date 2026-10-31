@@ -1,7 +1,9 @@
 import type { Network } from '@railtime/schema/network.types';
 import { globSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { toIsoDate } from '../../../renderer/src/core/date.utils';
 import { buildNetworkSnapshot } from '../../../renderer/src/layers/snapshot.utils';
+import type { LineSegment } from '../../../renderer/src/network/index.types';
 import { emptyDrawing } from '../../../renderer/src/steps/animation.utils';
 import { playbackOf, renderStateOf } from '../../../renderer/test/support/playback.utils';
 
@@ -83,4 +85,52 @@ export const playPlan = (network: Network, plan: string): PlayedHistory => {
   const playback = playbackOf(network, plan);
   // The player opens at today: whatever is dated after it plays first, as in the app.
   return playOut(playback, playback.player.cursor);
+};
+
+/**
+ * How many pieces some line segments make: stretches that share no station.
+ *
+ * @param lineSegments - The line segments.
+ * @returns The count.
+ */
+const piecesOf = (lineSegments: LineSegment[]): number => {
+  const parent = new Map<string, string>();
+  const root = (station: string): string => {
+    const above = parent.get(station) ?? station;
+    return above === station ? station : root(above);
+  };
+  for (const { segment } of lineSegments) parent.set(root(segment.stationA), root(segment.stationB));
+  return new Set(lineSegments.map(({ segment }) => root(segment.stationA))).size;
+};
+
+/**
+ * Where a network's history leaves a line in more pieces than before: each date a line, as it is
+ * drawn then, comes apart. A line opening as a stretch of its own, or a works closure in its middle,
+ * is history; a segment dated wrong is a bug that looks just the same, so a city lists each one.
+ *
+ * @param network - The network.
+ * @returns `<line> <date>: <n> pieces`, in date order.
+ */
+export const lineSplits = (network: Network): string[] => {
+  const { index, timeline } = playbackOf(network);
+  const dated = timeline.steps.slice(0, timeline.datedCount);
+  const pieces = new Map<string, number>();
+  const splits: string[] = [];
+  for (const [position, step] of dated.entries()) {
+    // Counted once a day's steps have all played.
+    if (dated[position + 1]?.time === step.time) continue;
+    const cursor = position + 1;
+    const byLine = new Map<string, LineSegment[]>();
+    for (const lineSegment of index.lineSegments) {
+      if (!timeline.isOpen(lineSegment, cursor)) continue;
+      const line = timeline.identityOf(lineSegment.line, cursor).id;
+      byLine.set(line, [...(byLine.get(line) ?? []), lineSegment]);
+    }
+    for (const line of new Set([...pieces.keys(), ...byLine.keys()])) {
+      const count = piecesOf(byLine.get(line) ?? []);
+      if (count > Math.max(pieces.get(line) ?? 1, 1)) splits.push(`${line} ${toIsoDate(step.time)}: ${count} pieces`);
+      pieces.set(line, count);
+    }
+  }
+  return splits;
 };

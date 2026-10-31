@@ -10,7 +10,7 @@
     "m4": {"name":"M4","names":{"hu":"M4-es metróvonal"},"network":"metro","mode":"metro","color":"#4CA22F"}
   },
   "stations": {
-    "allatkert": {"name":"Állatkert","coordinate":[19.0789,47.5179],"closed":{"m1":"1973-12-30"}},
+    "allatkert": {"name":"Állatkert","coordinate":[19.0789,47.5179]},
     "arany-janos-utca": {"name":"Arany János utca","coordinate":[19.05473,47.50463]},
     "astoria": {"name":"Astoria","coordinate":[19.06267,47.49479]},
     "bajcsy-zsilinszky-ut": {"name":"Bajcsy-Zsilinszky út","coordinate":[19.05538,47.49992],"formerNames":[{"name":"Váczi körút","until":"1915-01-01"},{"name":"Vilmos császár út","until":"1945-01-01"}]},
