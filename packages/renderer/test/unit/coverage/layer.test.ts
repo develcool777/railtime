@@ -33,6 +33,12 @@ const SQUARE: CityBoundary = {
 };
 const MIDDLE: [number, number] = [KM_EAST, 51.5 + KM_NORTH];
 
+/** The square with a 500 m square hole at its south-west corner. */
+const HOLED: CityBoundary = {
+  ...SQUARE,
+  polygons: [[...SQUARE.polygons[0]!, SQUARE.polygons[0]![0]!.map(([east, north]) => [east / 4, 51.5 + (north - 51.5) / 4] as [number, number])]],
+};
+
 /** A city round the tiny network: A to D, 0 to 3 km east, with 2 km to spare all round. */
 const AROUND_TINY: CityBoundary = {
   name: 'Tiny',
@@ -109,15 +115,26 @@ describe('CoverageLayerUtils', () => {
       const coverage = coverageOf(grid, grid.distances([], 1200), COVERAGE_BANDS, 800);
       expect([coverage.share, coverage.beyond.share]).toEqual([0, 1]);
     });
+
+    test("counts only the city's cells, not a hole's", () => {
+      const grid = new CoverageGrid(HOLED);
+      const coverage = coverageOf(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS, 800);
+      const areas = [...coverage.bands.map(band => band.km2), coverage.beyond.km2];
+      expect(areas.reduce((total, km2) => total + km2, 0)).toBeCloseTo(grid.km2, 9);
+      // The square's 4 km² less the hole's quarter of a km².
+      expect(grid.km2).toBeCloseTo(3.75, 1);
+    });
+
+    test('shares nothing out of a city with no area', () => {
+      const grid = new CoverageGrid({ ...SQUARE, polygons: [] });
+      const coverage = coverageOf(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS, 800);
+      expect([coverage.share, coverage.beyond.share, ...coverage.bands.map(band => band.share)]).toEqual([0, 0, 0, 0, 0]);
+    });
   });
 
   describe('coverageImage', () => {
     test("colours each cell in its band's colour, tints the rest of the city, and leaves outside it clear", () => {
-      const holed: CityBoundary = {
-        ...SQUARE,
-        polygons: [[...SQUARE.polygons[0]!, SQUARE.polygons[0]![0]!.map(([east, north]) => [east / 4, 51.5 + (north - 51.5) / 4] as [number, number])]],
-      };
-      const grid = new CoverageGrid(holed);
+      const grid = new CoverageGrid(HOLED);
       const pixels = coverageImage(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS);
       const pixelAt = (east: number, north: number) => {
         const cell = Math.floor((2 - north) / 0.1) * grid.columns + Math.floor(east / 0.1);
@@ -152,6 +169,25 @@ describe('CoverageLayerUtils', () => {
       expect(share(1910)).toBeGreaterThan(share(1909));
       expect(share(1920)).toBeGreaterThan(share(1919));
       expect(share(1915)).toBe(share(1910));
+    });
+
+    test('gives each year the share coverageOf finds at its end, from any first year', () => {
+      const { index, timeline } = playbackOf(tinyNetwork());
+      const grid = new CoverageGrid(AROUND_TINY);
+      for (const first of [1899, 1900, 1901, 1905, 1915]) {
+        const history = coverageHistory(index, timeline, grid, [first, 1925], 800);
+        const expected = history.map(({ year }) => {
+          const cursor = timeline.cursorAt(Date.UTC(year, 11, 31));
+          return coverageOf(grid, grid.distances(servedStations(index, timeline, cursor), 1200), COVERAGE_BANDS, 800).share;
+        });
+        history.forEach(({ share }, position) => expect(share).toBeCloseTo(expected[position]!, 9));
+      }
+    });
+
+    test('shares nothing out of a city with no area', () => {
+      const { index, timeline } = playbackOf(tinyNetwork());
+      const history = coverageHistory(index, timeline, new CoverageGrid({ ...AROUND_TINY, polygons: [] }), [1899, 1925], 800);
+      expect(history.every(entry => entry.share === 0)).toBe(true);
     });
   });
 });
