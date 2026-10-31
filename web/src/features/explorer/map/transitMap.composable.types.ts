@@ -18,8 +18,10 @@ export type TransitMapMount = {
   padding: () => Padding;
   /** How much of the map's left a panel covers, pixels: the map opens clear of it. */
   cover: () => number;
-  /** A station clicked on the map, or `null` for none: the map clicked away from one, or the station gone on the date shown. */
-  onStation: (id: string | null) => void;
+  /** A station clicked on the map, or `null` for a click away from any. */
+  onStationClick: (id: string | null) => void;
+  /** The station open is not on the map on the date now shown. */
+  onSelectionGone: () => void;
 };
 
 /** The mounted map, and its events as reactive state. */

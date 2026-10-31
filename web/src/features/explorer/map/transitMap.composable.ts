@@ -41,8 +41,9 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
     transitMap.on('time', state => (time.value = state));
     transitMap.on('step', info => (step.value = info));
     transitMap.on('view', where => (view.value = where));
-    // A station clicked, or gone from the map on another date: what the panel opens is the store's.
-    transitMap.on('stationClick', info => mount.onStation(info?.id ?? null));
+    // What the panel opens is the store's: the map says what was clicked, and when the station open left it.
+    transitMap.on('stationClick', id => mount.onStationClick(id));
+    transitMap.on('selectionGone', () => mount.onSelectionGone());
     lines.value = transitMap.getLines();
     changes.value = transitMap.getChanges();
     map.value = transitMap;

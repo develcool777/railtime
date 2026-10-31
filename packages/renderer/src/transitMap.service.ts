@@ -623,8 +623,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param event - The map click.
    */
   private onMapClick(event: MapMouseEvent): void {
-    const station = this.stationLayer.stationAt(event.point);
-    this.emit('stationClick', station ? this.getStationInfo(station) : null);
+    this.emit('stationClick', this.stationLayer.stationAt(event.point));
   }
 
   /**
@@ -735,9 +734,10 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     const { revealed, selectionGone, tips } = this.frames.draw(now, this.selectedStation);
     this.camera.follow(tips, seconds);
     if (revealed !== null) this.emit('stepProgress', revealed);
-    if (selectionGone) {
+    if (selectionGone && this.selectedStation) {
+      const gone = this.selectedStation;
       this.selectStation(null);
-      this.emit('stationClick', null);
+      this.emit('selectionGone', gone);
     }
   }
 

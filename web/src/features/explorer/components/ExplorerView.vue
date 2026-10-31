@@ -231,7 +231,8 @@
     network: props.network,
     padding: mapPadding,
     cover: () => panelCover.value,
-    onStation: id => (id ? store.pickStation(id) : store.closeStation()),
+    onStationClick: id => (id ? store.pickStation(id) : store.closeStation()),
+    onSelectionGone: store.closeStation,
     ...(opening.view ? { view: opening.view } : {}),
     ...(props.plan ? { plan: props.plan } : {}),
   });

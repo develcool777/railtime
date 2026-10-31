@@ -12,10 +12,11 @@ const map = new TransitMap({ container, network, theme: 'dark', minimapContainer
 map.on('time', state => …); // clock, cursor, stats: for a date display
 map.on('step', info => …); // the change playing now: for a caption (null = hide)
 map.on('stepProgress', count => …); // how many of the step's stations have appeared
-map.on('stationClick', info => …); // a station's lines and dates, or null
+map.on('stationClick', id => …); // a station clicked, or null for the map away from any: getStationInfo(id) for its lines and dates
+map.on('selectionGone', id => …); // the station selected left the map on the date now shown
 map.on('view', view => …); // where the map looks once it stops moving: { center, zoom }
 
-map.setDate(Date.UTC(1950, 0, 1)); // explore: the network as of a date
+map.setDate(Date.UTC(1950, 0, 1)); // explore: the network as of a date; a seek, playing on if playing
 map.play(); // history: from the current date onwards
 map.pause();
 map.skip(); // finish this change, or jump to the next

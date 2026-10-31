@@ -276,8 +276,10 @@ export type TransitMapEvents = {
   step: StepInfo | null;
   /** How many of the current step's stations have appeared. */
   stepProgress: number;
-  /** A station was clicked; or the map away from any station, or the selected one left the map (`null`). */
-  stationClick: StationInfo | null;
+  /** A station was clicked (its id), or the map away from any (`null`). */
+  stationClick: string | null;
+  /** The station selected is not on the map on the date now shown: its ring is gone. Its id. */
+  selectionGone: string;
   /** Playback reached today. */
   end: undefined;
   /** The map stopped moving, by the user's hand or the camera's: where it looks now. */
