@@ -1,5 +1,5 @@
-import type { NetworkIndex } from '../model/networkIndex.service';
-import type { Timeline } from '../model/timeline.service';
+import type { NetworkIndex } from '../network/index.service';
+import type { Timeline } from '../network/timeline.service';
 
 /** Everything that decides how a line looks in a frame. */
 export type RenderState = {

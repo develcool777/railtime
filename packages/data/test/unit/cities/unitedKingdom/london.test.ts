@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { buildNetworkSnapshot } from '../../../../../renderer/src/layers/networkSnapshot.utils';
-import { toTimestamp } from '../../../../../renderer/src/model/date.utils';
-import { NetworkIndex } from '../../../../../renderer/src/model/networkIndex.service';
-import type { TrackSegment } from '../../../../../renderer/src/model/networkIndex.types';
-import { Timeline } from '../../../../../renderer/src/model/timeline.service';
+import { buildNetworkSnapshot } from '../../../../../renderer/src/layers/snapshot.utils';
+import { toTimestamp } from '../../../../../renderer/src/core/date.utils';
+import { NetworkIndex } from '../../../../../renderer/src/network/index.service';
+import type { TrackSegment } from '../../../../../renderer/src/network/index.types';
+import { Timeline } from '../../../../../renderer/src/network/timeline.service';
 import { playbackOf, renderStateOf } from '../../../../../renderer/test/support/playback.utils';
 import { cityNetwork, playPlan, playWholeHistory } from '../../../support/history.utils';
 

@@ -1,8 +1,8 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
-import { boundsOf } from '../model/geometry.utils';
-import type { Bounds } from '../model/geometry.types';
-import type { StepAnimation } from '../steps/stepAnimation.service';
+import { boundsOf } from '../core/geometry.utils';
+import type { Bounds } from '../core/geometry.types';
+import type { StepAnimation } from '../steps/animation.service';
 import type { CameraMode, Padding } from '../transitMap.types';
 
 /** Closest zoom when following one change, and when framing the network around it. */

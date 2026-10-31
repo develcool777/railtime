@@ -1,10 +1,10 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import type { RenderState } from '../../src/layers/lineStyle.types';
-import { NetworkIndex } from '../../src/model/networkIndex.service';
-import { Timeline } from '../../src/model/timeline.service';
+import { NetworkIndex } from '../../src/network/index.service';
+import { Timeline } from '../../src/network/timeline.service';
 import { Player } from '../../src/playback/player.service';
-import { createStepAnimation } from '../../src/steps/stepAnimation.utils';
+import { createStepAnimation } from '../../src/steps/animation.utils';
 import type { Playback } from './playback.types';
 
 /**

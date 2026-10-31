@@ -1,5 +1,5 @@
 import type { FilterSpecification, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
-import { OVERLAY_PREFIX } from './layers.constants';
+import { OVERLAY_PREFIX } from './ids.constants';
 import { FALLBACK_FONT, MISSING_NUMBER } from './theme.constants';
 import type { Palette } from './theme.types';
 

@@ -1,7 +1,7 @@
 /** Years per second while nothing happens for a while. */
 export const FAST_YEARS_PER_SECOND = 4;
 
-/** Years per second approaching the next change. */
+/** Years per second at the slowest, the last stretch before a change; the clock eases down to it from the fast speed. */
 export const SLOW_YEARS_PER_SECOND = 1.2;
 
 /** Seconds at 1× the camera gets to move before each change. */

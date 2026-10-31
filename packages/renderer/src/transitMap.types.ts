@@ -1,7 +1,7 @@
 import type { IsoDate, LngLat, Network } from '@railtime/schema/network.types';
-import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from './model/history.types';
-import type { RoutePreference as ModelRoutePreference } from './model/routeFinder.types';
-import type { Step } from './model/timeline.types';
+import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from './network/history.types';
+import type { RoutePreference as ModelRoutePreference } from './route/finder.types';
+import type { Step } from './network/timeline.types';
 
 /** The map's colour theme. */
 export type Theme = 'dark' | 'light';

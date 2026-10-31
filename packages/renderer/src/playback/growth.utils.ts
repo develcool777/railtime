@@ -1,7 +1,7 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import { distanceKm } from '../model/geometry.utils';
-import type { TrackSegment } from '../model/networkIndex.types';
-import { pushTo } from '../model/timeline.utils';
+import { distanceKm } from '../core/geometry.utils';
+import type { TrackSegment } from '../network/index.types';
+import { pushTo } from '../network/timeline.utils';
 import type { Growth } from './growth.types';
 
 /**

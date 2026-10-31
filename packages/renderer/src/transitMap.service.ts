@@ -1,49 +1,38 @@
 import { type LngLatBoundsLike, Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
 import { EventEmitter } from './core/eventEmitter.service';
 import { buildPlan } from '@railtime/schema/plan.utils';
-import { required } from './core/required.utils';
-import { ActiveStepLayer } from './layers/activeStepLayer.service';
+import { ActiveStepLayer } from './layers/activeStep.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
-import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties, StationLines } from './layers/features.types';
-import { pointFeature } from './layers/features.utils';
-import { routeStopMarks } from './layers/routeStops.utils';
-import type { RenderState } from './layers/lineStyle.types';
-import { LAYERS } from './layers/layers.constants';
-import type { MapLayer } from './layers/mapLayer.service';
-import { NetworkLayer } from './layers/networkLayer.service';
-import { REACH_BANDS } from './layers/reach.constants';
-import { bandOf, reachedSegments } from './layers/reach.utils';
-import { ReachLayer } from './layers/reachLayer.service';
-import { RouteLayer } from './layers/routeLayer.service';
-import type { NetworkSnapshot } from './layers/networkSnapshot.types';
-import { buildNetworkSnapshot } from './layers/networkSnapshot.utils';
-import { StationLayer } from './layers/stationLayer.service';
+import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties } from './layers/features.types';
+import { NetworkQueries } from './network/queries.service';
+import type { NetworkMoment } from './network/queries.types';
+import { reachStops, reachTrack } from './reach/layer.utils';
+import { routeStops, routeTrack } from './route/layer.utils';
+import { LAYERS } from './layers/ids.constants';
+import type { MapLayer } from './layers/layer.service';
+import { NetworkLayer } from './layers/network.service';
+import { ReachLayer } from './reach/layer.service';
+import { RouteLayer } from './route/layer.service';
+import { FrameRenderer } from './layers/frame.service';
+import { StationLayer } from './stations/layer.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
-import { Minimap } from './minimap/minimap.service';
-import { DAY_MS, toIsoDate, toTimestamp, todayTimestamp } from './model/date.utils';
-import { lineBranches, lineLengthKm, stepChangesLine } from './model/lineDetails.utils';
-import { boundsOf } from './model/geometry.utils';
-import type { NetworkHistory } from './model/history.types';
-import { networkAt, networkHistory, openingsByDecade } from './model/history.utils';
-import { NetworkIndex } from './model/networkIndex.service';
-import type { TrackSegment } from './model/networkIndex.types';
-import { RouteFinder } from './model/routeFinder.service';
-import { Timeline } from './model/timeline.service';
-import type { Step } from './model/timeline.types';
+import { Minimap } from './minimap/map.service';
+import { todayTimestamp } from './core/date.utils';
+import { boundsOf } from './core/geometry.utils';
+import { NetworkIndex } from './network/index.service';
+import { Timeline } from './network/timeline.service';
+import type { Step } from './network/timeline.types';
 import { CameraDirector } from './playback/camera.service';
-import { clamp } from './playback/easing.utils';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
 import type { ActivePlayback, PlayerEvent } from './playback/player.types';
-import type { StepDrawing } from './steps/stepAnimation.types';
-import { createStepAnimation, describeSteps, emptyDrawing } from './steps/stepAnimation.utils';
+import { createStepAnimation, describeSteps } from './steps/animation.utils';
 import {
   DEFAULT_PADDING,
   NO_COVER,
   END_OVERVIEW_MS,
   FIT_NETWORK_MS,
   MAX_FRAME_SECONDS,
-  NEW_LABEL_FADE_FRACTION,
   OPENING_MAX_ZOOM,
   OPENING_SIDE_PADDING,
   SELECTED_STATION_ZOOM,
@@ -66,8 +55,6 @@ import type {
   StationInfo,
   StationSummary,
   Theme,
-  TimeState,
-  TransferInfo,
   TransitMapEvents,
   TransitMapOptions,
 } from './transitMap.types';
@@ -100,8 +87,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private readonly stationLayer: StationLayer;
   /** A route over the network, when one is shown. */
   private readonly routeLayer: RouteLayer;
-  /** Finds routes between stations. */
-  private readonly routeFinder: RouteFinder;
+  /** Answers the app's questions about the network: lines, stations, routes, reach, records. */
+  private readonly queries: NetworkQueries;
   /** The route drawn, kept so the overlay can draw it again once installed. */
   private route: RouteFeature[] = [];
   /** Its stops, marked. */
@@ -112,34 +99,20 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private reachTrack: ReachTrackFeature[] = [];
   /** The stations the reach drawn gets to, its start among them. */
   private reachStops: PointFeature<ReachStopProperties>[] = [];
-  /** The network year by year, worked out the first time it is asked for: it does not change. */
-  private history: NetworkHistory | null = null;
   /** The station the reach drawn starts at: the camera frames a reach when it changes. */
   private reachFrom: string | null = null;
+  /** Draws each frame on the layers. */
+  private readonly frames: FrameRenderer;
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
   /** The map's colour theme. */
   private theme: Theme;
-  /** Lines the user has toggled on. */
-  private visibleLines: Set<string>;
   /** The basemap has loaded and the overlay is installed. */
   private ready = false;
-  /** Everything already on the map at the cursor. */
-  private snapshot: NetworkSnapshot | null = null;
-  /** The snapshot needs rebuilding: the cursor, toggles or theme changed. */
-  private snapshotStale = true;
-  /** The next frame shows stations without their pop-in. */
-  private instant = true;
-  /** How many of the playing step's new stations have appeared. */
-  private revealedCount = 0;
   /** The station ringed on the map. */
   private selectedStation: string | null = null;
   /** The lines brought forward, the rest faded; `null` when every line is. */
   private focusedLines: string[] | null = null;
-  /** Clock day, cursor and playing state at the last `time` event, to emit only on change. */
-  private lastTimeKey = '';
-  /** The minimap was last sent a non-empty active drawing. */
-  private minimapShowsActive = false;
   /** The pending animation frame. */
   private frameRequest = 0;
   /** When the last frame ran. */
@@ -154,7 +127,6 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.timeline = new Timeline(this.index);
     this.player = new Player(this.timeline, todayTimestamp(), step => this.createAnimation(step));
     this.theme = options.theme ?? 'dark';
-    this.visibleLines = new Set(this.index.lineIds);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
@@ -190,7 +162,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.activeStepLayer = new ActiveStepLayer(this.map);
     this.routeLayer = new RouteLayer(this.map);
     this.reachLayer = new ReachLayer(this.map);
-    this.routeFinder = new RouteFinder(this.index, this.timeline);
+    this.queries = new NetworkQueries(this.index, this.timeline, this.player.today);
     this.stationLayer = new StationLayer(
       this.map,
       station => this.index.coordOf(station),
@@ -198,6 +170,16 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       this.index.compareLines,
     );
     this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, this.index.bounds, PALETTES[this.theme]) : null;
+    this.frames = new FrameRenderer({
+      index: this.index,
+      timeline: this.timeline,
+      player: this.player,
+      network: this.networkLayer,
+      activeStep: this.activeStepLayer,
+      stations: this.stationLayer,
+      minimap: this.minimap,
+      baseColor: line => this.baseColor(line),
+    });
 
     this.map.on('style.load', () => this.installOverlay());
     this.map.on('click', event => this.onMapClick(event));
@@ -329,7 +311,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.theme = theme;
     this.minimap?.setPalette(PALETTES[theme]);
     if (this.ready) this.applyPalette();
-    this.snapshotStale = true;
+    this.frames.redraw();
   }
 
   /**
@@ -338,8 +320,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param lineIds - The lines to show.
    */
   public setVisibleLines(lineIds: string[]): void {
-    this.visibleLines = new Set(lineIds);
-    this.snapshotStale = true;
+    this.frames.visibleLines = new Set(lineIds);
+    this.frames.redraw();
   }
 
   /**
@@ -418,17 +400,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The lines, in the network's order.
    */
   public getLines(): LineInfo[] {
-    return this.index.lineIds.map(id => {
-      const line = this.index.lineOf(id);
-      return {
-        id,
-        name: line.name,
-        network: line.network,
-        networkName: required(this.index.network.networks[line.network], `network ${line.network}`).name,
-        color: this.baseColor(id),
-        opened: Number.isFinite(this.index.lineOpens(id)) ? this.index.lineOpens(id) : null,
-      };
-    });
+    return this.queries.lines(line => this.baseColor(line));
   }
 
   /**
@@ -439,21 +411,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The line's details.
    */
   public getLineDetails(line: string): LineDetails {
-    const info = required(
-      this.getLines().find(candidate => candidate.id === line),
-      `line ${line}`,
-    );
-    const cursor = this.player.cursor;
-    const branches = lineBranches(this.index, this.timeline, line, cursor).map(run =>
-      run.map(station => ({ id: station, name: this.index.stationName(station, this.player.clock) })),
-    );
-    return {
-      ...info,
-      stations: new Set(branches.flatMap((run, position) => (position === 0 ? run : run.slice(1))).map(stop => stop.id)).size,
-      km: lineLengthKm(this.index, this.timeline, line, cursor),
-      branches,
-      changes: this.timeline.steps.filter(step => stepChangesLine(step, line)).map(step => step.index),
-    };
+    return this.queries.lineDetails(line, this.moment());
   }
 
   /**
@@ -466,30 +424,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The route, or `null` if the network of the date has none.
    */
   public findRoute(from: string, to: string, preference: RoutePreference = 'fastest'): RouteInfo | null {
-    const route = this.routeFinder.find(from, to, this.player.cursor, preference);
-    if (!route) return null;
-    const stop = (station: string) => ({ id: station, name: this.index.stationName(station, this.player.clock) });
-    return {
-      from: stop(from),
-      to: stop(to),
-      legs: route.legs.map(leg =>
-        leg.kind === 'walk'
-          ? { kind: 'walk', from: stop(leg.from), to: stop(leg.to), minutes: leg.minutes }
-          : {
-              kind: 'ride',
-              line: leg.line,
-              lineName: this.index.lineName(leg.line),
-              color: this.baseColor(leg.line),
-              stops: leg.stops.map(stop),
-              minutes: leg.minutes,
-              km: leg.km,
-            },
-      ),
-      minutes: route.minutes,
-      km: route.km,
-      changes: route.changes,
-      segments: route.legs.map(leg => (leg.kind === 'ride' ? leg.segments : [])),
-    };
+    return this.queries.route(from, to, preference, this.moment());
   }
 
   /**
@@ -500,25 +435,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param route - A route `findRoute` gave, or `null`.
    */
   public showRoute(route: RouteInfo | null): void {
-    this.route = (route?.legs ?? []).flatMap((leg, position): RouteFeature[] => {
-      if (leg.kind === 'walk') {
-        return [
-          {
-            type: 'Feature',
-            properties: { color: '', walk: true },
-            geometry: { type: 'LineString', coordinates: [this.index.coordOf(leg.from.id), this.index.coordOf(leg.to.id)] },
-          },
-        ];
-      }
-      return (route?.segments[position] ?? []).map(segment => ({
-        type: 'Feature',
-        properties: { color: leg.color, walk: false },
-        geometry: { type: 'LineString', coordinates: required(this.index.segments[segment], `segment ${segment}`).coordinates },
-      }));
-    });
-    this.routeStops = route
-      ? routeStopMarks(route).map(mark => pointFeature(this.index.coordOf(mark.station), { kind: mark.kind, color: mark.color, name: mark.name }))
-      : [];
+    this.route = routeTrack(this.index, route);
+    this.routeStops = routeStops(this.index, route);
     if (this.ready) {
       this.routeLayer.update(this.route, this.routeStops);
       this.applyBackdrop();
@@ -533,8 +451,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns Its growth.
    */
   public getGrowth(): NetworkGrowth {
-    const { years, firstYears } = this.networkHistory();
-    return { years, decades: openingsByDecade(firstYears) };
+    return this.queries.growth();
   }
 
   /**
@@ -545,31 +462,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The records.
    */
   public getRecords(count = 5): NetworkRecords {
-    const cursor = this.player.cursor;
-    const { firstYears } = this.networkHistory();
-    const { stations } = networkAt(this.index, this.timeline, cursor);
-    const name = (station: string) => this.index.stationName(station, this.player.clock);
-    const oldest = [...stations.keys()]
-      .flatMap(station => {
-        const year = firstYears.get(station);
-        return year === undefined ? [] : [{ id: station, name: name(station), year }];
-      })
-      .sort((first, second) => first.year - second.year || first.name.localeCompare(second.name))
-      .slice(0, count);
-    const busiest = [...stations]
-      .map(([station, lines]) => ({
-        id: station,
-        name: name(station),
-        lines: [...lines].sort(this.index.compareLines).map(line => ({ id: line, name: this.index.lineName(line), color: this.baseColor(line) })),
-      }))
-      .sort((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
-      .slice(0, count);
-    const longest = this.index.lineIds
-      .map(line => ({ id: line, name: this.index.lineName(line), color: this.baseColor(line), km: lineLengthKm(this.index, this.timeline, line, cursor) }))
-      .filter(line => line.km > 0)
-      .sort((first, second) => second.km - first.km)
-      .slice(0, count);
-    return { oldest, busiest, longest };
+    return this.queries.records(count, this.moment());
   }
 
   /**
@@ -579,12 +472,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The stations it gets to, soonest first, and the bands they are coloured in; `null` if no line calls there on the date.
    */
   public findReach(from: string): ReachInfo | null {
-    const minutes = this.routeFinder.reach(from, this.player.cursor);
-    if (minutes.size === 0) return null;
-    const name = (station: string) => this.index.stationName(station, this.player.clock);
-    // The search reaches stations soonest first, so they come in that order.
-    const stations = [...minutes].filter(([station]) => station !== from).map(([id, time]) => ({ id, name: name(id), minutes: time, band: bandOf(time) }));
-    return { from: { id: from, name: name(from) }, stations, bands: REACH_BANDS };
+    return this.queries.reach(from, this.moment());
   }
 
   /**
@@ -595,34 +483,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param reach - A reach `findReach` gave, or `null`.
    */
   public showReach(reach: ReachInfo | null): void {
-    const minutes = new Map<string, number>(reach ? [[reach.from.id, 0], ...reach.stations.map(station => [station.id, station.minutes] as const)] : []);
-    const open = new Map<number, TrackSegment>();
-    for (const lineSegment of this.index.lineSegments) {
-      if (this.timeline.isOpen(lineSegment, this.player.cursor)) open.set(lineSegment.segment.index, lineSegment.segment);
-    }
-    this.reachTrack = reachedSegments(minutes, open.values()).map(({ segment, minutes: time }) => ({
-      type: 'Feature',
-      properties: { color: required(REACH_BANDS[bandOf(time)], 'reach band').color },
-      geometry: { type: 'LineString', coordinates: required(this.index.segments[segment], `segment ${segment}`).coordinates },
-    }));
-    this.reachStops = reach
-      ? [
-          pointFeature(this.index.coordOf(reach.from.id), {
-            color: required(REACH_BANDS[0], 'reach band').color,
-            label: reach.from.name,
-            minutes: 0,
-            origin: true,
-          }),
-          ...reach.stations.map(station =>
-            pointFeature(this.index.coordOf(station.id), {
-              color: required(REACH_BANDS[station.band], 'reach band').color,
-              label: `${station.name} · ${Math.round(station.minutes)} min`,
-              minutes: station.minutes,
-              origin: false,
-            }),
-          ),
-        ]
-      : [];
+    this.reachTrack = reachTrack(this.index, this.timeline, this.player.cursor, reach);
+    this.reachStops = reachStops(this.index, reach);
     if (this.ready) {
       this.reachLayer.update(this.reachTrack, this.reachStops);
       this.applyBackdrop();
@@ -641,31 +503,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The stations, by name.
    */
   public getStations(): StationSummary[] {
-    const cursor = this.player.cursor;
-    return (
-      [...this.timeline.stationsOnMap(cursor)]
-        .map(station => {
-          const lines = [
-            ...new Set(
-              this.index
-                .lineSegmentsAt(station)
-                .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(station, lineSegment.line, cursor))
-                .map(lineSegment => lineSegment.line),
-            ),
-          ].sort(this.index.compareLines);
-          return {
-            id: station,
-            name: this.index.stationName(station, this.player.clock),
-            otherNames: this.index.otherNames(this.index.namedAt(station, this.player.clock)),
-            colors: [...new Set(lines.map(line => this.baseColor(line)))],
-            served: lines.length > 0,
-          };
-        })
-        // A station the track passes but no line calls at is not one to look for.
-        .filter(({ served }) => served)
-        .map(({ served: _served, ...station }) => station)
-        .sort((first, second) => first.name.localeCompare(second.name))
-    );
+    return this.queries.stations(this.moment());
   }
 
   /**
@@ -676,43 +514,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns The station's details.
    */
   public getStationInfo(station: string): StationInfo {
-    const info = this.index.stationOf(station);
-    const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
-    for (const lineSegment of this.index.lineSegmentsAt(station)) {
-      if (!this.timeline.everServes(station, lineSegment.line)) continue;
-      const dates = byLine.get(lineSegment.line) ?? { opened: Infinity, lastClosed: 0, allClosed: true };
-      dates.opened = Math.min(dates.opened, lineSegment.opens);
-      dates.lastClosed = Math.max(dates.lastClosed, lineSegment.closes ?? 0);
-      // A line has closed at a station only when every one of its segments there has.
-      dates.allClosed &&= lineSegment.closes !== null;
-      byLine.set(lineSegment.line, dates);
-    }
-    const lines = [...byLine.entries()].map(([line, dates]) => {
-      // The line stopped calling here, or its track here closed.
-      const closed = info.closed?.[line] ?? (dates.allClosed ? toIsoDate(dates.lastClosed) : undefined);
-      return {
-        id: line,
-        name: this.index.lineName(line),
-        color: this.baseColor(line),
-        // A plan's line has no date: Infinity, from its undated line segments.
-        opened: info.infill?.[line] ?? (dates.opened === Infinity ? null : toIsoDate(dates.opened)),
-        ...(closed ? { closed } : {}),
-      };
-    });
-    return {
-      id: station,
-      name: this.index.stationName(station, this.player.clock),
-      otherNames: this.index.otherNames(this.index.namedAt(station, this.player.clock)),
-      // By opening, a plan's undated lines last.
-      lines: lines.sort(
-        (first, second) => (first.opened === null ? 1 : 0) - (second.opened === null ? 1 : 0) || (first.opened ?? '').localeCompare(second.opened ?? ''),
-      ),
-      // Only the names it had dropped by the date shown.
-      formerNames: (info.formerNames ?? [])
-        .filter(former => toTimestamp(former.until) <= this.player.clock)
-        .map(former => ({ name: former.name, otherNames: this.index.otherNames(former), until: former.until })),
-      transfers: this.transfersFrom(station),
-    };
+    return this.queries.stationInfo(station, this.moment());
   }
 
   /** Stops rendering and removes the map, the minimap and every listener. */
@@ -724,39 +526,12 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
-   * The stations a station changes to on the date shown, with their lines then.
+   * Where the map stands, for a question about the network.
    *
-   * @param station - The station id.
-   * @returns Each one on the map now.
+   * @returns The cursor, the clock and the theme's colours.
    */
-  private transfersFrom(station: string): TransferInfo[] {
-    const cursor = this.player.cursor;
-    return this.index.transfersAt(station).flatMap(other => {
-      // The lines calling there now, each as it is drawn then (a branch still shown as its parent).
-      const calling = this.index
-        .lineSegmentsAt(other)
-        .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(other, lineSegment.line, cursor))
-        .map(lineSegment => this.timeline.identityOf(lineSegment.line, cursor).id);
-      if (calling.length === 0) return [];
-      const ordered = [...new Set(calling)].sort(this.index.compareLines);
-      return [
-        {
-          id: other,
-          name: this.index.stationName(other, this.player.clock),
-          lines: ordered.map(line => ({ id: line, name: this.index.lineName(line), color: this.baseColor(line) })),
-        },
-      ];
-    });
-  }
-
-  /**
-   * The network year by year, worked out once.
-   *
-   * @returns Its history up to this year.
-   */
-  private networkHistory(): NetworkHistory {
-    this.history ??= networkHistory(this.index, this.timeline, new Date(this.player.today).getUTCFullYear());
-    return this.history;
+  private moment(): NetworkMoment {
+    return { cursor: this.player.cursor, clock: this.player.clock, colorOf: line => this.baseColor(line) };
   }
 
   /** The overlay's layer groups, bottom to top. */
@@ -782,8 +557,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.reachLayer.update(this.reachTrack, this.reachStops);
     this.applyBackdrop();
     this.ready = true;
-    this.snapshotStale = true;
-    this.instant = true;
+    this.frames.redraw(true);
     this.updateMinimapViewport();
     this.emit('ready', undefined);
   }
@@ -829,27 +603,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   /** Redraws at once after the player jumped, nothing pulsing and no caption. */
   private jumped(): void {
     this.stationLayer.resetPulses();
-    this.snapshotStale = true;
-    this.instant = true;
+    this.frames.redraw(true);
     this.emit('step', null);
-  }
-
-  /**
-   * Everything that decides how lines look this frame.
-   *
-   * @returns The render state.
-   */
-  private renderState(): RenderState {
-    const active = this.player.active;
-    const identityPlaying = active?.animation.changesIdentity === true && this.player.phase !== 'pre';
-    return {
-      index: this.index,
-      timeline: this.timeline,
-      cursor: this.player.cursor,
-      identityProgress: identityPlaying ? this.player.progress : null,
-      visibleLines: this.visibleLines,
-      baseColor: line => this.baseColor(line),
-    };
   }
 
   /**
@@ -871,11 +626,10 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param playback - The step that started.
    */
   private onStepStart(playback: ActivePlayback): void {
-    this.snapshotStale = true;
-    this.revealedCount = 0;
+    this.frames.stepStarted();
     const durationMs = (playback.preSeconds * 1000) / this.player.speed;
     this.camera.focusStep(playback.animation, this.timeline.stationsOnMap(this.player.cursor), station => this.index.coordOf(station), durationMs);
-    this.emit('step', playback.animation.describe(this.renderState()));
+    this.emit('step', playback.animation.describe(this.frames.renderState()));
   }
 
   /**
@@ -884,7 +638,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param step - The step that ended.
    */
   private onStepEnd(step: Step): void {
-    this.snapshotStale = true;
+    this.frames.redraw();
     const next = this.timeline.steps[step.index + 1];
     if (!next || next.time !== step.time) this.emit('step', null);
   }
@@ -911,73 +665,18 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   };
 
   /**
-   * Draws the frame: the network snapshot when stale, then the playing step and the stations.
+   * Draws the frame, and tells the app of the playing step's stations, and of a selection the date
+   * took off the map.
    *
    * @param now - The frame time.
    */
   private draw(now: number): void {
-    const state = this.renderState();
-    const active = this.player.active;
-    if (this.snapshotStale || state.identityProgress !== null) this.refreshSnapshot(state);
-    const snapshot = this.snapshot!;
-    const drawing = emptyDrawing();
-    const phase = this.player.phase;
-    if (active && phase !== 'pre') {
-      active.animation.draw({ state, snapshot, progress: this.player.progress, holdProgress: this.player.holdProgress }, drawing);
-    }
-    this.activeStepLayer.update(drawing);
-    this.updateMinimapActive(drawing);
-
-    const stations = new Map<string, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
-    for (const [station, lines] of drawing.reached)
-      for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map()).set(lineId, color));
-    this.stationLayer.update({
-      now,
-      stations,
-      linked: snapshot.linked,
-      planned: snapshot.plannedStations,
-      highlighted: drawing.highlighted,
-      fading: drawing.fading,
-      newLabelOpacity: clamp((1 - this.player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
-      instant: this.instant,
-      stepPlaying: active !== null,
-    });
-    this.instant = false;
-
-    if (drawing.highlighted.size !== this.revealedCount) {
-      this.revealedCount = drawing.highlighted.size;
-      this.emit('stepProgress', this.revealedCount);
-    }
-    // The selected station is not on the map on this date (gone, or not yet open): let it go, and say so.
-    if (this.selectedStation && !stations.has(this.selectedStation)) {
+    const { revealed, selectionGone } = this.frames.draw(now, this.selectedStation);
+    if (revealed !== null) this.emit('stepProgress', revealed);
+    if (selectionGone) {
       this.selectStation(null);
       this.emit('stationClick', null);
     }
-  }
-
-  /**
-   * Rebuilds the snapshot of the network on the map and sends it to the layers.
-   *
-   * @param state - The render state.
-   */
-  private refreshSnapshot(state: RenderState): void {
-    this.snapshot = buildNetworkSnapshot(state, this.player.active !== null);
-    this.networkLayer.update(this.snapshot);
-    this.minimap?.setLines(this.snapshot.lines);
-    this.snapshotStale = false;
-    this.lastTimeKey = '';
-  }
-
-  /**
-   * Sends the playing step to the minimap, and clears it once after the step ends.
-   *
-   * @param drawing - What the step draws now.
-   */
-  private updateMinimapActive(drawing: StepDrawing): void {
-    const hasActive = drawing.lines.features.length > 0;
-    if (!this.minimap || (!hasActive && !this.minimapShowsActive)) return;
-    this.minimap.setActive(drawing.lines);
-    this.minimapShowsActive = hasActive;
   }
 
   /** Outlines the main camera's view on the minimap. */
@@ -992,19 +691,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** Emits `time` when the clock's day, the cursor, the playing state or the stats change. */
   private emitTime(): void {
-    const { clock, cursor, playing } = this.player;
-    const key = `${Math.floor(clock / DAY_MS)}|${cursor}|${playing}|${this.player.inFuture}`;
-    if (key === this.lastTimeKey) return;
-    this.lastTimeKey = key;
-    const state: TimeState = {
-      time: clock,
-      cursor,
-      stepCount: this.timeline.steps.length,
-      todayCursor: this.timeline.cursorAt(this.player.today),
-      future: this.player.inFuture,
-      playing,
-      stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },
-    };
-    this.emit('time', state);
+    const state = this.frames.timeState();
+    if (state) this.emit('time', state);
   }
 }
