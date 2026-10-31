@@ -106,6 +106,9 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 it directly (a date, a station name), never regenerate it. `pnpm data:format <city>` validates it
 against the schema, keeps its layout (one station or segment per line) and rewrites
 `cities/cities.json`, the index the landing page reads; a test fails otherwise.
+A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
+`packages/schema`), or `data:format` refuses it: the line would miss the station's dot. Where an
+interchange's lines run apart underground, each line's track ends at the one station point.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction

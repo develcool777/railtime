@@ -40,4 +40,13 @@ describe('NetworkSchema', () => {
     network.transfers = [{ stationA: 'a', stationB: 'nowhere' }];
     expect(problemsOf(network)).toEqual(['transfer a – nowhere: unknown station nowhere']);
   });
+
+  test("refuses track that misses its stations' dots, a few metres of rounding allowed", () => {
+    const network = plannedNetwork();
+    network.segments[0]!.coordinates[0] = [0.0001, 51.5];
+    expect(problemsOf(network)).toEqual([]);
+    network.segments[0]!.coordinates[0] = [0, 51.5005];
+    // The plan's split of that segment, a – b, misses it too.
+    expect(problemsOf(network)).toEqual(['segment 0 (a – c): its track ends 56 m from a', 'plan extension: segment 0 (a – b): its track ends 56 m from a']);
+  });
 });

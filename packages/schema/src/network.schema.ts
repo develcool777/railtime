@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { Network, Plan } from './network.types';
+import { metresBetween } from './geometry.utils.ts';
+import { STATION_GAP_METRES } from './network.constants.ts';
 import { buildPlan } from './plan.utils.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
@@ -98,6 +100,17 @@ const checkNetwork = (network: Network, problem: (message: string) => void): voi
   checkStations(network, problem);
   network.segments.forEach((segment, position) => {
     for (const station of [segment.stationA, segment.stationB]) if (!network.stations[station]) problem(`segment ${position}: unknown station ${station}`);
+    // Its track starts at station A and ends at station B, or the line misses their dots.
+    const ends = [
+      [segment.stationA, segment.coordinates[0]],
+      [segment.stationB, segment.coordinates.at(-1)],
+    ] as const;
+    for (const [station, end] of ends) {
+      const place = network.stations[station]?.coordinate;
+      const gap = place && end ? metresBetween(place, end) : 0;
+      if (gap > STATION_GAP_METRES)
+        problem(`segment ${position} (${segment.stationA} – ${segment.stationB}): its track ends ${Math.round(gap)} m from ${station}`);
+    }
     for (const [lineId, dates] of Object.entries(segment.lines)) {
       if (!network.lines[lineId]) problem(`segment ${position}: unknown line ${lineId}`);
       if (dates.close && dates.close <= dates.open) problem(`segment ${position}: ${lineId} closes before it opens`);

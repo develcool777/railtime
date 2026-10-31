@@ -24,3 +24,18 @@ export const splitTrack = (coordinates: LngLat[], point: LngLat): [LngLat[], Lng
     [best.on, ...coordinates.slice(best.after + 1)],
   ];
 };
+
+/** Metres in a degree of latitude, and of longitude at the equator. */
+const METRES_PER_DEGREE = 111_320;
+
+/**
+ * About how far apart two nearby points are: flat, which is close enough within a city.
+ *
+ * @param first - One point.
+ * @param second - The other.
+ * @returns The distance, metres.
+ */
+export const metresBetween = (first: LngLat, second: LngLat): number => {
+  const latitude = (((first[1] + second[1]) / 2) * Math.PI) / 180;
+  return Math.hypot((first[0] - second[0]) * METRES_PER_DEGREE * Math.cos(latitude), (first[1] - second[1]) * METRES_PER_DEGREE);
+};
