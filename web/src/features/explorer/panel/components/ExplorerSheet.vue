@@ -20,7 +20,8 @@
         :active="section.id === open"
         activeColor="primary"
         activeVariant="soft"
-        class="text-muted h-13 min-w-0 flex-1 flex-col justify-center gap-0.5 px-0"
+        class="h-13 min-w-0 flex-1 flex-col justify-center gap-0.5 px-0"
+        :class="{ 'text-muted': section.id !== open }"
         :aria-pressed="section.id === open"
         :aria-description="marks[section.id]"
         @click="emit('pick', section.id)">

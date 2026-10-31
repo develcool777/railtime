@@ -7,7 +7,8 @@
         :active="section.id === open"
         activeColor="primary"
         activeVariant="soft"
-        class="text-muted h-14 w-15 flex-col justify-center gap-1"
+        class="h-14 w-15 flex-col justify-center gap-1"
+        :class="{ 'text-muted': section.id !== open }"
         :aria-pressed="section.id === open"
         :aria-description="marks[section.id]"
         @click="emit('pick', section.id)">
