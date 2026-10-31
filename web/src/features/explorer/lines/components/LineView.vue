@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <!-- One list at a time: its stops, or the changes that made it. -->
-    <UTabs v-if="changes.length > 0" v-model="shown" :items="TABS" :content="false" class="self-start" aria-label="Show" />
+    <UTabs v-if="changes.length > 0" v-model="shown" :items="TABS" :content="false" class="w-full" :ui="{ trigger: 'grow' }" aria-label="Show" />
 
     <template v-if="shown === 'stops'">
       <p v-if="line.branches.length === 0" class="text-muted text-sm">Not open on the date shown.</p>
