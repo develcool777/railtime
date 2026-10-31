@@ -60,8 +60,9 @@
   const plan = computed(() => (network.value ? planToOpen(network.value, route.query.plan) : undefined));
 
   const selectCity = (next: string) => navigateTo(`/${next}`);
+  // A plan is chosen on Plans: the explorer, mounted afresh for it, opens there again.
   const selectPlan = (next: string | undefined) => {
-    const query = Object.fromEntries(Object.entries(route.query).filter(([key]) => key !== 'plan'));
-    return navigateTo({ query: next ? { ...query, plan: next } : query, replace: true });
+    const query = Object.fromEntries(Object.entries(route.query).filter(([key]) => key !== 'plan' && key !== 'tab'));
+    return navigateTo({ query: { ...query, ...(next ? { plan: next } : {}), tab: 'plans' }, replace: true });
   };
 </script>

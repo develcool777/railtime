@@ -1,25 +1,24 @@
+import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
-import type { Insights, InsightsInput } from '~/features/explorer/insights/insights.composable.types';
+import { useExplorerStore } from '~/features/explorer/explorer.store';
+import type { Insights } from '~/features/explorer/insights/insights.composable.types';
 
 /**
- * How the network grew, year by year, and its records on the date shown. Both are read only while
- * the Insights section reads them.
+ * How the network grew, and its records at the moment the map shows: the network's model asked, as
+ * the date and the theme change.
  *
- * @param input - The map.
- * @returns The growth and the records.
+ * @returns The growth, the records and the year shown.
  */
-export const useInsights = (input: InsightsInput): Insights => {
-  const { map, time } = input.binding;
+export const useInsights = (): Insights => {
+  const { model, time, theme } = storeToRefs(useExplorerStore());
 
-  // The renderer works the years out once.
-  const growth = computed(() => map.value?.getGrowth() ?? null);
-  const records = computed(() => {
-    const shown = time.value?.cursor;
-    return map.value && shown !== undefined ? map.value.getRecords() : null;
-  });
+  // The model works the years out once.
+  const growth = computed(() => model.value?.growth() ?? null);
+  const hasHistory = computed(() => model.value?.hasHistory() ?? false);
+  const records = computed(() => (model.value && time.value ? model.value.asOf(time.value, theme.value).records(5) : null));
   // A plan's future has no year.
   const shownYear = computed(() => (time.value && !time.value.future ? new Date(time.value.time).getUTCFullYear() : null));
 
-  return { growth, records, shownYear };
+  return { growth, hasHistory, records, shownYear };
 };

@@ -48,9 +48,9 @@
 </template>
 
 <script setup lang="ts">
-  import type { StationInfo, StationLineInfo } from '@railtime/renderer/transitMap.types';
+  import type { StationInfo, StationLineInfo } from '@railtime/network/facts.types';
 
-  import type { LineDirection } from '~/features/explorer/stations/station.types';
+  import type { LineDirection } from '@railtime/network/facts.types';
   import { stripAround } from '~/features/explorer/stations/station.utils';
 
   const props = defineProps<{

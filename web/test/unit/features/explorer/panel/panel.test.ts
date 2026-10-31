@@ -1,4 +1,4 @@
-import type { ChangeInfo, LineDetails, LineInfo, StationInfo } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineDetails, LineInfo, StationInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
 import type { SectionTopInput } from '~/features/explorer/panel/panel.types';
 import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel.utils';

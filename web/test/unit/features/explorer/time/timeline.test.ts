@@ -1,4 +1,4 @@
-import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
 import { positionOf, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 import type { TimelineScale } from '~/features/explorer/time/timeline.types';

@@ -1,4 +1,4 @@
-import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo } from '@railtime/network/facts.types';
 
 /** The changes of one decade, under its heading. */
 export type ChangeGroup = {

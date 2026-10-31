@@ -1,4 +1,4 @@
-import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
 import { changesByDecade, currentChangeIndex, timelinePosition } from '~/features/explorer/changes/changes.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';

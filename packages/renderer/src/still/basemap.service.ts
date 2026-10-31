@@ -2,7 +2,8 @@ import { type GeoJSONSource, type LineLayerSpecification, Map as MapLibreMap, se
 import { recolorBasemap } from '../layers/basemap.utils';
 import { LINE_LAYOUT } from '../layers/ids.constants';
 import { DEFAULT_BASEMAP, PALETTES } from '../layers/theme.constants';
-import type { Credit, Theme } from '../transitMap.types';
+import type { Theme } from '@railtime/network/facts.types';
+import type { Credit } from '../transitMap.types';
 import { STILL_CREDITS, STILL_FORMAT, STILL_LINE_WIDTH, STILL_PIXEL_RATIO, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from './basemap.constants';
 import type { BasemapStillOptions, StillRequest, StillTrack } from './basemap.types';
 

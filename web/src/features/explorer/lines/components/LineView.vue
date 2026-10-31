@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { ChangeInfo, LineDetails } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo, LineDetails } from '@railtime/network/facts.types';
   import { ref } from 'vue';
 
   import { titleInLine } from '~/features/explorer/lines/line.utils';

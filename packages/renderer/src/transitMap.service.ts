@@ -1,89 +1,60 @@
 import { Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
 import { EventEmitter } from './core/eventEmitter.service';
-import { buildPlan } from '@railtime/schema/plan.utils';
-import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { BuildingsLayer } from './buildings/layer.service';
 import { CoverageLayer } from './coverage/layer.service';
-import { CoverageMeasure } from './coverage/measure.service';
 import { ActiveStepLayer } from './layers/activeStep.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
-import { NetworkQueries } from './network/queries.service';
-import type { NetworkMoment } from './network/queries.types';
-import { reachStops, reachTrack } from './reach/layer.utils';
-import { routeStops, routeTrack } from './route/layer.utils';
 import { LAYERS } from './layers/ids.constants';
 import type { MapLayer } from './layers/layer.service';
 import { NetworkLayer } from './layers/network.service';
-import { ReachLayer } from './reach/layer.service';
-import { RouteLayer } from './route/layer.service';
 import { FrameRenderer } from './layers/frame.service';
-import { StationLayer } from './stations/layer.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap/map.service';
-import { todayTimestamp } from './core/date.utils';
-import { boundsOf } from './core/geometry.utils';
-import { NetworkIndex } from './network/index.service';
-import { Timeline } from './network/timeline.service';
-import type { Step } from './network/timeline.types';
+import type { NetworkModel } from '@railtime/network/model.service';
+import type { NetworkTime } from '@railtime/network/model.types';
+import { OverlayController } from './overlay/controller.service';
+import { ReachLayer } from './reach/layer.service';
+import { RouteLayer } from './route/layer.service';
+import { StationLayer } from './stations/layer.service';
+import { PropsReconciler } from './state/reconciler.service';
+import type { Step } from '@railtime/network/timeline.types';
 import { CameraDirector } from './playback/camera.service';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
-import type { ActivePlayback, PlayerEvent } from './playback/player.types';
-import { createStepAnimation, describeSteps } from './steps/animation.utils';
-import {
-  DEFAULT_PADDING,
-  NO_COVER,
-  END_OVERVIEW_MS,
-  FIT_NETWORK_MS,
-  MAX_FRAME_SECONDS,
-  OPENING_MAX_ZOOM,
-  SELECTED_STATION_ZOOM,
-  SELECT_FLY_MS,
-  ROUTE_NAME_ROOM,
-} from './transitMap.constants';
-import type {
-  CameraMode,
-  ChangeInfo,
-  CoverageInfo,
-  CoverageYear,
-  Credit,
-  LineDetails,
-  LineInfo,
-  MapView,
-  Padding,
-  NetworkGrowth,
-  NetworkRecords,
-  ReachInfo,
-  RouteInfo,
-  RoutePreference,
-  StationInfo,
-  StationSummary,
-  Theme,
-  TransitMapEvents,
-  TransitMapOptions,
-  ViewMode,
-} from './transitMap.types';
+import type { PlayerEvent } from './playback/player.types';
+import { createStepAnimation } from './steps/animation.utils';
+import { DEFAULT_MAP_PROPS, END_OVERVIEW_MS, FIT_NETWORK_MS, MAX_FRAME_SECONDS, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from './transitMap.constants';
+import type { Credit, FrameScheduler, MapProps, MapView, Padding, PlayFrom, SeekTarget, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
 
+/** Frames from the browser, unless a test steps them by hand. */
+const BROWSER_FRAMES: FrameScheduler = {
+  request: frame => requestAnimationFrame(frame),
+  cancel: id => cancelAnimationFrame(id),
+};
+
 /**
- * An interactive transit map with a history player: the renderer's one public entry.
+ * An interactive transit map with a history player: the renderer's one view (`_ARCHITECTURE.md`).
  *
- * Give it a normalized `Network`. It draws the network on a MapLibre basemap as of any date
- * (`setDate`), or plays its history step by step (`play`). It owns the map and nothing else: the app
- * around it owns every control and caption, calling methods here and listening to events.
+ * It draws a `NetworkModel` at the player's moment, as its props say. Four channels, and no other:
+ * props (`update`: how the map is set, the app's), commands (moving through time, camera moves),
+ * events (what happened, delivered between frames, never inside a call), and the model's own
+ * questions. Made with its props and listeners; `destroy` takes it all down.
  */
 export class TransitMap extends EventEmitter<TransitMapEvents> {
   /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
   public readonly credits: Credit[];
-  /** The network, indexed for drawing. */
-  private readonly index: NetworkIndex;
-  /** The network's history as steps. */
-  private readonly timeline: Timeline;
+  /** The network, its history and every question about it. */
+  private readonly model: NetworkModel;
   /** The clock and the step playing. */
   private readonly player: Player;
   /** The main map. */
   private readonly map: MapLibreMap;
-  /** Moves the main map's camera during playback. */
+  /** Asks for frames. */
+  private readonly scheduler: FrameScheduler;
+  /** The props, and what each does once changed. */
+  private readonly props: PropsReconciler;
+  /** Moves the main map's camera. */
   private readonly camera: CameraDirector;
   /** The network already on the map. */
   private readonly networkLayer: NetworkLayer;
@@ -91,37 +62,27 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private readonly activeStepLayer: ActiveStepLayer;
   /** Stations, labels, pulses and the selection ring. */
   private readonly stationLayer: StationLayer;
-  /** A route over the network, when one is shown. */
+  /** A route over the network. */
   private readonly routeLayer: RouteLayer;
-  /** Answers the app's questions about the network: lines, stations, routes, reach, records. */
-  private readonly queries: NetworkQueries;
-  /** How far one gets from a station, when it is shown. */
+  /** How far one gets from a station. */
   private readonly reachLayer: ReachLayer;
-  /** The station the reach drawn starts at: the camera frames a reach when it changes. */
-  private reachFrom: string | null = null;
-  /** How much of the city is within walking distance of a station, when it is shown. */
+  /** How much of the city is near a station. */
   private readonly coverageLayer: CoverageLayer;
-  /** The city's coverage on the network; `null` until the app gives the city's outline. */
-  private coverage: CoverageMeasure | null = null;
-  /** Whether the coverage is drawn. */
-  private coverageShown = false;
-  /** The camera has framed the city for its coverage: once, so a later date leaves the view be. */
-  private coverageFramed = false;
-  /** The basemap's buildings, standing when the map is seen in 3D. */
+  /** The basemap's buildings, standing in 3D. */
   private readonly buildingsLayer: BuildingsLayer;
+  /** A route, a reach or coverage over the network. */
+  private readonly overlay: OverlayController;
   /** Draws each frame on the layers. */
   private readonly frames: FrameRenderer;
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
-  /** The map's colour theme. */
-  private theme: Theme;
-  /** The basemap has loaded and the overlay is installed. */
-  private ready = false;
-  /** The station ringed on the map. */
-  private selectedStation: string | null = null;
-  /** The lines brought forward, the rest faded; `null` when every line is. */
-  private focusedLines: string[] | null = null;
-  /** The pending animation frame. */
+  /** Events raised since the last frame, delivered at its end. */
+  private queue: (() => void)[] = [];
+  /** Where the map is in its life. */
+  private life: 'loading' | 'ready' | 'destroyed' = 'loading';
+  /** The selected station is off the map at the moment shown: its ring hidden until it is back. */
+  private selectionAway = false;
+  /** The pending frame. */
   private frameRequest = 0;
   /** When the last frame ran. */
   private lastFrameAt = 0;
@@ -130,266 +91,154 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     super();
     // Before the first map: MapLibre starts its workers with it.
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
-    const plan = options.plan ? buildPlan(options.network, options.plan) : null;
-    this.index = new NetworkIndex(plan?.network ?? options.network, plan?.sections);
-    this.timeline = new Timeline(this.index);
-    this.player = new Player(this.timeline, todayTimestamp(), step => this.createAnimation(step));
-    this.theme = options.theme ?? 'dark';
+    for (const [event, listener] of Object.entries(options.on ?? {})) this.on(event as keyof TransitMapEvents, listener as never);
+    this.model = options.model;
+    this.player = new Player(this.model, step => this.createAnimation(step));
+    this.scheduler = options.scheduler ?? BROWSER_FRAMES;
+    const props: MapProps = { ...DEFAULT_MAP_PROPS, ...options.props };
+    this.props = new PropsReconciler(props, this.effects);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
+    const { network, bounds } = this.model.index;
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
-    this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: options.network.meta.attribution }];
-    const padding = options.padding ?? DEFAULT_PADDING;
-    const cover = { ...NO_COVER, ...options.cover };
-    this.map = new MapLibreMap({
+    this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: network.meta.attribution }];
+    const createMap = options.createMap ?? (mapOptions => new MapLibreMap(mapOptions));
+    this.map = createMap({
       container: options.container,
       style: basemap,
-      ...openingOf(options.view, this.index.bounds, padding, cover),
-      attributionControl: options.attributionControl === false ? false : { compact: true, customAttribution: options.network.meta.attribution },
+      ...openingOf(options.view, bounds, props.padding, props.cover),
+      attributionControl: options.attributionControl === false ? false : { compact: true, customAttribution: network.meta.attribution },
     });
     // A linked view's centre was the middle of what the cover left; a fitted opening already keeps clear of it.
-    if (options.view) this.map.setPadding(cover);
-    else this.setCover(cover);
-    this.camera = new CameraDirector(this.map, padding);
+    if (options.view) this.map.setPadding(props.cover);
+    else this.coverEdges(props.cover);
+    this.camera = new CameraDirector(this.map, () => this.props.current);
     this.networkLayer = new NetworkLayer(this.map);
     this.activeStepLayer = new ActiveStepLayer(this.map);
     this.routeLayer = new RouteLayer(this.map);
     this.reachLayer = new ReachLayer(this.map);
     this.coverageLayer = new CoverageLayer(this.map);
     this.buildingsLayer = new BuildingsLayer(this.map);
-    this.queries = new NetworkQueries(this.index, this.timeline, this.player.today);
     this.stationLayer = new StationLayer(
       this.map,
-      station => this.index.coordOf(station),
-      station => this.index.stationLabel(station, this.player.clock),
-      this.index.compareLines,
+      station => this.model.index.coordOf(station),
+      station => this.model.index.stationLabel(station, this.player.clock),
+      this.model.index.compareLines,
     );
-    this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, this.index.bounds, PALETTES[this.theme]) : null;
+    this.overlay = new OverlayController({
+      model: this.model,
+      route: this.routeLayer,
+      reach: this.reachLayer,
+      coverage: this.coverageLayer,
+      camera: this.camera,
+      moment: () => this.moment(),
+      theme: () => this.props.current.theme,
+      report: result => this.notify('overlay', result),
+    });
+    this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, bounds, PALETTES[props.theme]) : null;
     this.frames = new FrameRenderer({
-      index: this.index,
-      timeline: this.timeline,
+      index: this.model.index,
+      timeline: this.model.timeline,
       player: this.player,
       network: this.networkLayer,
       activeStep: this.activeStepLayer,
       stations: this.stationLayer,
       minimap: this.minimap,
-      baseColor: line => this.baseColor(line),
+      baseColor: line => this.model.colorOf(line, this.props.current.theme),
     });
 
-    this.map.on('style.load', () => this.installOverlay());
+    this.map.on('style.load', () => this.install());
     this.map.on('click', event => this.onMapClick(event));
     this.map.on('mouseenter', LAYERS.stations, () => (this.map.getCanvas().style.cursor = 'pointer'));
     this.map.on('mouseleave', LAYERS.stations, () => (this.map.getCanvas().style.cursor = ''));
     this.map.on('move', () => this.updateMinimapViewport());
-    this.map.on('moveend', () => this.emit('view', this.getView()));
-    this.frameRequest = requestAnimationFrame(this.renderFrame);
+    this.map.on('moveend', () => this.notify('view', this.view()));
+    this.frameRequest = this.scheduler.request(this.renderFrame);
   }
 
-  /** The first and last dates the timeline covers, and today, as timestamps. A plan's future has no date: it plays at `end`. */
-  public get range(): { start: number; end: number; today: number } {
-    return { start: this.timeline.start, end: this.player.end, today: this.player.today };
-  }
-
-  /**
-   * Shows the network as it was at the end of a day. Stops playback.
-   *
-   * @param time - A timestamp on that day.
-   */
-  public setDate(time: number): void {
-    this.player.playing = false;
-    this.player.seek(time);
-    this.jumped();
-  }
-
-  /** Shows the network with its plan built: every step played, planned ones too. Stops playback. */
-  public showFuture(): void {
-    this.player.playing = false;
-    this.player.seekEnd();
-    this.jumped();
+  /** Where the map is in its life: loading until its style has loaded, ready, then destroyed. */
+  public get status(): 'loading' | 'ready' | 'destroyed' {
+    return this.life;
   }
 
   /**
-   * Shows the network just after a change, on its date. Stops playback.
+   * Sets the map as the app has it: whole or in part, as often as it likes, before it is ready too.
+   * The map acts on what changed (once ready: what came before is drawn then) and never changes a
+   * prop itself.
    *
-   * @param index - The change's position, from `getChanges`.
+   * @param props - The props.
    */
-  public showChange(index: number): void {
-    this.player.playing = false;
-    this.player.seekPast(index);
+  public update(props: Partial<MapProps>): void {
+    if (this.life !== 'destroyed') this.props.update(props);
+  }
+
+  /**
+   * Moves through time as a video player's seek does: playing, it plays on from there; paused, it
+   * stays paused. The future, where every change has played, pauses.
+   *
+   * @param to - A day, just after a change or just before one, today, or the future.
+   */
+  public seek(to: SeekTarget): void {
+    if (this.life === 'destroyed') return;
+    this.player.seek(to);
     this.jumped();
   }
 
   /**
-   * Plays on from a change, starting it now.
+   * Plays: on from here (from the start again once at the end), from history's start (for a network
+   * with a plan, today, where its future starts), or from a change.
    *
-   * @param index - The change's position, from `getChanges`.
+   * @param from - Where from.
    */
-  public playFrom(index: number): void {
-    this.player.seekBefore(index);
-    this.jumped();
-    this.player.playing = true;
+  public play(from: PlayFrom = 'here'): void {
+    if (this.life === 'destroyed') return;
+    this.player.play(from);
+    if (from !== 'here') this.jumped();
   }
 
-  /**
-   * Every change in the timeline, planned ones last, described as its caption will be.
-   *
-   * @returns The changes, in the order they play, coloured for the current theme.
-   */
-  public getChanges(): ChangeInfo[] {
-    return describeSteps({ index: this.index, timeline: this.timeline, visibleLines: new Set(this.index.lineIds), baseColor: line => this.baseColor(line) });
-  }
-
-  /** Plays history from the current date; from the start if already at today. */
-  public play(): void {
-    if (this.player.cursor >= this.timeline.steps.length && this.player.clock >= this.player.end) this.player.seek(this.timeline.start);
-    this.player.playing = true;
-  }
-
-  /** Pauses playback where it is. */
+  /** Pauses where it is. */
   public pause(): void {
-    this.player.playing = false;
+    this.player.pause();
   }
 
-  /** Finishes the change playing now, or jumps to the next one. */
+  /** Pauses, and the camera goes back to the whole network. */
+  public stop(): void {
+    if (this.life === 'destroyed') return;
+    this.player.pause();
+    this.fitNetwork();
+  }
+
+  /** Finishes the change playing now, or goes to the next one. */
   public skip(): void {
-    this.handlePlayerEvents(this.player.skip());
+    if (this.life !== 'destroyed') this.handlePlayerEvents(this.player.skip());
   }
 
   /**
-   * Sets the playback speed.
+   * A year back or on.
    *
-   * @param speed - A multiplier: 1 is normal speed.
+   * @param direction - Back (-1) or on (1).
    */
-  public setSpeed(speed: number): void {
-    this.player.speed = speed;
+  public stepYear(direction: -1 | 1): void {
+    if (this.life === 'destroyed') return;
+    this.player.stepYear(direction);
+    this.jumped();
   }
 
-  /**
-   * Sets how the camera follows playback.
-   *
-   * @param mode - The camera mode.
-   */
-  public setCameraMode(mode: CameraMode): void {
-    this.camera.mode = mode;
-    this.player.preSeconds = mode === 'free' ? FREE_CAMERA_PRE_SECONDS : CAMERA_PRE_SECONDS;
-  }
-
-  /**
-   * Sets the room the app's panels take up.
-   *
-   * @param padding - Pixels to keep clear on each side.
-   */
-  public setPadding(padding: Padding): void {
-    this.camera.padding = padding;
-  }
-
-  /**
-   * Sets the panels the app lays over the map's edges. The map's centre, where a station is flown
-   * to, moves into the middle of the rest, and every frame keeps clear of them; what is drawn stays
-   * where it is, so a panel slides over the map without moving it.
-   *
-   * @param cover - Pixels covered on each side; a side left out is uncovered.
-   */
-  public setCover(cover: Partial<Padding>): void {
-    const next = { ...NO_COVER, ...cover };
-    const { clientWidth, clientHeight } = this.map.getContainer();
-    const middle: [number, number] = [next.left + (clientWidth - next.left - next.right) / 2, next.top + (clientHeight - next.top - next.bottom) / 2];
-    this.map.jumpTo({ center: this.map.unproject(middle), padding: next });
-  }
-
-  /**
-   * Switches the colour theme of the basemap, lines and minimap.
-   *
-   * @param theme - The theme.
-   */
-  public setTheme(theme: Theme): void {
-    this.theme = theme;
-    this.minimap?.setPalette(PALETTES[theme]);
-    if (this.ready) this.applyPalette();
-    this.frames.redraw();
-  }
-
-  /**
-   * Shows only some lines.
-   *
-   * @param lineIds - The lines to show.
-   */
-  public setVisibleLines(lineIds: string[]): void {
-    this.frames.visibleLines = new Set(lineIds);
-    this.frames.redraw();
-  }
-
-  /**
-   * Brings some lines forward and fades the rest, as for a line's panel; `null` shows every line
-   * alike. A route shown fades every line behind it, whatever this asks.
-   *
-   * @param lineIds - The lines to bring forward, or `null`.
-   */
-  public focusLines(lineIds: string[] | null): void {
-    this.focusedLines = lineIds;
-    if (this.ready) this.applyBackdrop();
-  }
-
-  /**
-   * Sees the map flat from above, or in 3D: tilted, the city's buildings rising as the camera comes
-   * down, the network drawn over them; playback then follows each change from close by, turned along
-   * it. Into 3D the camera comes down to where the buildings stand; back, it lies flat and faces north.
-   *
-   * @param mode - Flat, or 3D.
-   */
-  public setViewMode(mode: ViewMode): void {
-    this.buildingsLayer.show(mode === '3d');
-    this.camera.setViewMode(mode);
+  /** To just before the change before the one playing, or the last played: playing, it plays again. */
+  public previousChange(): void {
+    if (this.life === 'destroyed') return;
+    this.player.previousChange();
+    this.jumped();
   }
 
   /** Zooms in a step, about the centre. */
   public zoomIn(): void {
-    this.map.zoomIn();
+    if (this.life !== 'destroyed') this.map.zoomIn();
   }
 
   /** Zooms out a step, about the centre. */
   public zoomOut(): void {
-    this.map.zoomOut();
-  }
-
-  /**
-   * Names the stations on the map, or shows only their dots.
-   *
-   * @param shown - Whether to name them.
-   */
-  public setStationLabels(shown: boolean): void {
-    this.stationLayer.showLabels(shown);
-  }
-
-  /**
-   * Rings a station and flies to it, or clears the selection.
-   *
-   * @param station - The station id, or `null`.
-   */
-  public selectStation(station: string | null): void {
-    this.selectedStation = station;
-    if (!this.ready) return;
-    this.stationLayer.select(station);
-    if (station) this.map.easeTo({ center: this.index.coordOf(station), zoom: Math.max(this.map.getZoom(), SELECTED_STATION_ZOOM), duration: SELECT_FLY_MS });
-  }
-
-  /**
-   * Where the map looks now.
-   *
-   * @returns Its centre and zoom.
-   */
-  public getView(): MapView {
-    const { lng, lat } = this.map.getCenter();
-    return { center: [lng, lat], zoom: this.map.getZoom() };
-  }
-
-  /**
-   * Moves the map to a view at once.
-   *
-   * @param view - The centre and zoom.
-   */
-  public setView(view: MapView): void {
-    this.map.jumpTo({ center: view.center, zoom: view.zoom });
+    if (this.life !== 'destroyed') this.map.zoomOut();
   }
 
   /**
@@ -398,224 +247,156 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param durationMs - How long the move takes.
    */
   public fitNetwork(durationMs = FIT_NETWORK_MS): void {
-    this.camera.fit(this.index.bounds, Infinity, durationMs);
+    if (this.life !== 'destroyed') this.camera.fit(this.model.index.bounds, Infinity, durationMs);
   }
 
   /**
-   * Every line a user can toggle, with its colour in the current theme.
+   * Moves the map to a view at once.
    *
-   * @returns The lines, in the network's order.
+   * @param view - The centre and zoom.
    */
-  public getLines(): LineInfo[] {
-    return this.queries.lines(line => this.baseColor(line));
+  public jumpTo(view: MapView): void {
+    if (this.life !== 'destroyed') this.map.jumpTo({ center: view.center, zoom: view.zoom });
   }
 
-  /**
-   * A line on the date shown: its stops in order, by branch, how long it is, and the changes that
-   * made it.
-   *
-   * @param line - The line id.
-   * @returns The line's details.
-   */
-  public getLineDetails(line: string): LineDetails {
-    return this.queries.lineDetails(line, this.moment());
-  }
-
-  /**
-   * The best route between two stations on the date shown: the lines to ride, where to change, and
-   * about how long it takes.
-   *
-   * @param from - The station to start at.
-   * @param to - The station to get to.
-   * @param preference - Fastest (the default), or fewer changes.
-   * @returns The route, or `null` if the network of the date has none.
-   */
-  public findRoute(from: string, to: string, preference: RoutePreference = 'fastest'): RouteInfo | null {
-    return this.queries.route(from, to, preference, this.moment());
-  }
-
-  /**
-   * Draws a route over the network and frames it, or clears it. While one is shown the network is
-   * its backdrop: every line faded, the stations faded and unnamed; the route's own stops are marked
-   * on it, its start, changes and end named.
-   *
-   * @param route - A route `findRoute` gave, or `null`.
-   */
-  public showRoute(route: RouteInfo | null): void {
-    const track = routeTrack(this.index, route);
-    this.routeLayer.update(track, routeStops(this.index, route));
-    if (this.ready) this.applyBackdrop();
-    const bounds = boundsOf(track.flatMap(feature => feature.geometry.coordinates));
-    if (bounds) this.camera.fit(bounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS, ROUTE_NAME_ROOM);
-  }
-
-  /**
-   * The network year by year up to this one, and how many stations opened in each decade.
-   *
-   * @returns Its growth.
-   */
-  public getGrowth(): NetworkGrowth {
-    return this.queries.growth();
-  }
-
-  /**
-   * The network's records on the date shown: the stations open longest, those most lines call at,
-   * and the longest lines.
-   *
-   * @param count - How many of each.
-   * @returns The records.
-   */
-  public getRecords(count = 5): NetworkRecords {
-    return this.queries.records(count, this.moment());
-  }
-
-  /**
-   * How long it takes to get from a station to every other on the date shown, by the fastest routes.
-   *
-   * @param from - The station to start at.
-   * @returns The stations it gets to, soonest first, and the bands they are coloured in; `null` if no line calls there on the date.
-   */
-  public findReach(from: string): ReachInfo | null {
-    return this.queries.reach(from, this.moment());
-  }
-
-  /**
-   * Draws how far one gets from a station, or clears it: the track and the stations in the colour of
-   * how long they take, each named with its time where there is room, over the network faded as
-   * behind a route. A new start is framed with all it reaches.
-   *
-   * @param reach - A reach `findReach` gave, or `null`.
-   */
-  public showReach(reach: ReachInfo | null): void {
-    const stops = reachStops(this.index, reach);
-    this.reachLayer.update(reachTrack(this.index, this.timeline, this.player.cursor, reach), stops);
-    if (this.ready) this.applyBackdrop();
-    const from = reach?.from.id ?? null;
-    if (from !== null && from !== this.reachFrom) {
-      const bounds = boundsOf(stops.map(stop => stop.geometry.coordinates));
-      if (bounds) this.camera.fit(bounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
-    }
-    this.reachFrom = from;
-  }
-
-  /**
-   * Gives the city's outline, which coverage is measured within; `null` for a city without one.
-   *
-   * @param boundary - The outline.
-   */
-  public setBoundary(boundary: CityBoundary | null): void {
-    this.coverage = boundary ? new CoverageMeasure(boundary, this.index, this.timeline) : null;
-    this.coverageFramed = false;
-    this.drawCoverage();
-  }
-
-  /**
-   * How much of the city is within walking distance of a station open on the date shown.
-   *
-   * @returns The share in each band and within the headline distance; `null` without an outline.
-   */
-  public findCoverage(): CoverageInfo | null {
-    return this.coverage?.info(this.player.cursor) ?? null;
-  }
-
-  /**
-   * The share of the city within the headline distance of a station, at the end of each year up to this one.
-   *
-   * @returns A share for each year, oldest first; none without an outline.
-   */
-  public getCoverageHistory(): CoverageYear[] {
-    return this.coverage?.history(this.player.today) ?? [];
-  }
-
-  /**
-   * Shades the city by how far it is to the nearest station open on the date shown, and draws its
-   * outline; or clears them. Call again as the date changes.
-   *
-   * @param shown - Whether to draw it.
-   */
-  public showCoverage(shown: boolean): void {
-    this.coverageShown = shown;
-    this.drawCoverage();
-    // The first time it is drawn, the camera frames the whole city, as a reach frames what it gets to.
-    if (shown && this.coverage && !this.coverageFramed) {
-      this.camera.fit(this.coverage.bounds, OPENING_MAX_ZOOM, SELECT_FLY_MS);
-      this.coverageFramed = true;
-    }
-  }
-
-  /**
-   * The stations on the map on the date shown, for a search: each with its names and its lines' colours.
-   *
-   * @returns The stations, by name.
-   */
-  public getStations(): StationSummary[] {
-    return this.queries.stations(this.moment());
-  }
-
-  /**
-   * A station's lines, with when each opened there and, if it has, closed: its track, or its calls
-   * there while the track stays.
-   *
-   * @param station - The station id.
-   * @returns The station's details.
-   */
-  public getStationInfo(station: string): StationInfo {
-    return this.queries.stationInfo(station, this.moment());
-  }
-
-  /** Stops rendering and removes the map, the minimap and every listener. */
+  /** Takes it all down: the frame loop, the map and minimap, and every listener. Later calls do nothing. */
   public destroy(): void {
-    cancelAnimationFrame(this.frameRequest);
+    if (this.life === 'destroyed') return;
+    this.life = 'destroyed';
+    this.scheduler.cancel(this.frameRequest);
+    this.queue = [];
     this.minimap?.destroy();
     this.map.remove();
     this.removeAllListeners();
   }
 
-  /**
-   * Where the map stands, for a question about the network.
-   *
-   * @returns The cursor, the clock and the theme's colours.
-   */
-  private moment(): NetworkMoment {
-    return { cursor: this.player.cursor, clock: this.player.clock, colorOf: line => this.baseColor(line) };
+  /** What each prop does once changed (`PropsReconciler`), reading it from the props. */
+  private get effects(): Record<keyof MapProps, () => void> {
+    return {
+      theme: () => {
+        const palette = PALETTES[this.props.current.theme];
+        this.minimap?.setPalette(palette);
+        recolorBasemap(this.map, palette, { labels: true });
+        for (const layer of this.layers) layer.applyPalette(palette);
+        this.frames.redraw();
+        // A route's and a reach's colours are the theme's.
+        this.drawOverlay();
+      },
+      // Into 3D the buildings rise and the camera comes down to them; back, it lies flat and faces north.
+      viewMode: () => {
+        this.buildingsLayer.show(this.props.current.viewMode === '3d');
+        this.camera.tilt();
+      },
+      stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
+      visibleLines: () => {
+        this.frames.visibleLines = new Set(this.props.current.visibleLines ?? this.model.index.lineIds);
+        this.frames.redraw();
+      },
+      focusedLines: () => this.applyBackdrop(),
+      selectedStation: () => {
+        const station = this.props.current.selectedStation;
+        this.selectionAway = false;
+        this.stationLayer.select(station);
+        if (station) this.camera.flyTo(this.model.index.coordOf(station), SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+      },
+      overlay: () => this.drawOverlay(),
+      boundary: () => this.drawOverlay(),
+      speed: () => this.player.setSpeed(this.props.current.speed),
+      // A free camera does not move, so a step needs no time before it to frame it.
+      camera: () => this.player.setLeadIn(this.props.current.camera === 'free' ? FREE_CAMERA_PRE_SECONDS : CAMERA_PRE_SECONDS),
+      // The camera reads it each time it frames.
+      padding: () => undefined,
+      cover: () => this.coverEdges(this.props.current.cover),
+    };
   }
 
-  /** The overlay's layer groups, bottom to top. */
+  /**
+   * Whether it is not destroyed: asked afresh, as a listener may have destroyed it meanwhile.
+   *
+   * @returns True until `destroy`.
+   */
+  private alive(): boolean {
+    return this.life !== 'destroyed';
+  }
+
+  /** The layer groups, bottom to top. */
   private get layers(): MapLayer[] {
     return [this.coverageLayer, this.buildingsLayer, this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
   }
 
-  /** Draws the coverage on the date shown, if it is shown and the city has an outline; else hides it. */
-  private drawCoverage(): void {
-    this.coverageLayer.update(this.coverageShown && this.coverage ? this.coverage.drawing(this.player.cursor) : null);
+  /**
+   * Raises an event, delivered at the end of the frame: never inside a call.
+   *
+   * @param event - The event.
+   * @param payload - What it says.
+   */
+  private notify<Name extends keyof TransitMapEvents>(event: Name, payload: TransitMapEvents[Name]): void {
+    this.queue.push(() => this.emit(event, payload));
   }
 
-  /** Fades the network behind a route or a reach shown; else brings forward the lines in focus. */
+  /** Delivers the events raised since the last frame, in order. */
+  private flush(): void {
+    const events = this.queue;
+    this.queue = [];
+    for (const deliver of events) deliver();
+  }
+
+  /**
+   * The moment the map shows, for the model's questions.
+   *
+   * @returns The cursor and the clock.
+   */
+  private moment(): NetworkTime {
+    return { cursor: this.player.cursor, time: this.player.clock };
+  }
+
+  /**
+   * Where the map looks now.
+   *
+   * @returns Its centre and zoom.
+   */
+  private view(): MapView {
+    const { lng, lat } = this.map.getCenter();
+    return { center: [lng, lat], zoom: this.map.getZoom() };
+  }
+
+  /** Draws the overlay the props ask for, and the network behind it. */
+  private drawOverlay(): void {
+    const { overlay, boundary } = this.props.current;
+    this.overlay.draw(overlay, boundary);
+    this.applyBackdrop();
+  }
+
+  /** Fades the network behind a route or a reach; else brings forward the lines in focus. */
   private applyBackdrop(): void {
-    const backdrop = this.routeLayer.shown || this.reachLayer.shown;
-    this.networkLayer.focus(backdrop ? [] : this.focusedLines);
+    const backdrop = this.overlay.backdrop;
+    this.networkLayer.focus(backdrop ? [] : this.props.current.focusedLines);
     this.stationLayer.fade(backdrop);
   }
 
-  /** Recolours the basemap and installs the overlay once the style has loaded. */
-  private installOverlay(): void {
-    const font = basemapFont(this.map);
-    for (const layer of this.layers) layer.install(font);
-    this.applyPalette();
-    // A station selected before the style loaded (from a link) gets its ring now; a route, a reach or coverage drew as installed.
-    this.stationLayer.select(this.selectedStation);
-    this.applyBackdrop();
-    this.ready = true;
-    this.frames.redraw(true);
-    this.updateMinimapViewport();
-    this.emit('ready', undefined);
+  /**
+   * Lays the app's panels over the map's edges. The map's centre, where a station is flown to, moves
+   * into the middle of the rest, and every frame keeps clear of them; what is drawn stays where it is,
+   * so a panel slides over the map without moving it.
+   *
+   * @param cover - Pixels covered on each side.
+   */
+  private coverEdges(cover: Padding): void {
+    const { clientWidth, clientHeight } = this.map.getContainer();
+    const middle: [number, number] = [cover.left + (clientWidth - cover.left - cover.right) / 2, cover.top + (clientHeight - cover.top - cover.bottom) / 2];
+    this.map.jumpTo({ center: this.map.unproject(middle), padding: cover });
   }
 
-  /** Applies the theme's palette to the basemap and every overlay layer. */
-  private applyPalette(): void {
-    const palette = PALETTES[this.theme];
-    recolorBasemap(this.map, palette, { labels: true });
-    for (const layer of this.layers) layer.applyPalette(palette);
+  /** The style has loaded: installs the layers, then draws everything the props say, and is ready. */
+  private install(): void {
+    if (this.life !== 'loading') return;
+    const font = basemapFont(this.map);
+    for (const layer of this.layers) layer.install(font);
+    this.life = 'ready';
+    this.props.start();
+    this.frames.redraw(true);
+    this.updateMinimapViewport();
+    this.notify('status', 'ready');
   }
 
   /**
@@ -624,19 +405,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param event - The map click.
    */
   private onMapClick(event: MapMouseEvent): void {
-    const station = this.stationLayer.stationAt(event.point);
-    this.emit('stationClick', station ? this.getStationInfo(station) : null);
-  }
-
-  /**
-   * A line's own colour in the current theme.
-   *
-   * @param line - The line id.
-   * @returns Its colour.
-   */
-  private baseColor(line: string): string {
-    const info = this.index.lineOf(line);
-    return (this.theme === 'dark' && info.darkColor) || info.color;
+    if (this.life === 'ready') this.notify('stationClick', this.stationLayer.stationAt(event.point));
   }
 
   /**
@@ -646,19 +415,15 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns Its animation.
    */
   private createAnimation(step: Step): ReturnType<typeof createStepAnimation> {
-    return createStepAnimation(step, {
-      index: this.index,
-      timeline: this.timeline,
-      stationsBefore: this.timeline.stationsOnMap(step.index),
-      view: this.camera.viewMode,
-    });
+    const { index, timeline } = this.model;
+    return createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index), view: this.props.current.viewMode });
   }
 
-  /** Redraws at once after the player jumped, nothing pulsing and no caption. */
+  /** Redraws at once after a jump in time, nothing pulsing and no caption. */
   private jumped(): void {
     this.stationLayer.resetPulses();
     this.frames.redraw(true);
-    this.emit('step', null);
+    this.notify('step', null);
   }
 
   /**
@@ -668,29 +433,28 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   private handlePlayerEvents(events: PlayerEvent[]): void {
     for (const event of events) {
-      if (event.type === 'stepStart') this.onStepStart(event.playback);
+      if (event.type === 'stepStart') this.onStepStart();
       else if (event.type === 'stepEnd') this.onStepEnd(event.step);
       else this.onPlaybackEnd();
     }
   }
 
-  /**
-   * Frames a starting step and announces it.
-   *
-   * @param playback - The step that started.
-   */
-  private onStepStart(playback: ActivePlayback): void {
+  /** Frames a starting step and announces it: the change starts drawing as the camera arrives. */
+  private onStepStart(): void {
+    const active = this.player.active;
+    if (!active) return;
     this.frames.stepStarted();
     const speed = this.player.speed;
+    const { index, timeline } = this.model;
     const moveMs = this.camera.focusStep(
-      playback.animation,
-      this.timeline.stationsOnMap(this.player.cursor),
-      station => this.index.coordOf(station),
-      (playback.preSeconds * 1000) / speed,
+      active.animation,
+      timeline.stationsOnMap(this.player.cursor),
+      station => index.coordOf(station),
+      (active.preSeconds * 1000) / speed,
     );
-    // The change starts as the camera arrives: at once, after a beat, where it stays.
-    playback.preSeconds = moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed;
-    this.emit('step', playback.animation.describe(this.frames.renderState()));
+    // At once, after a beat, where it stays.
+    this.player.retimeLeadIn(moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed);
+    this.notify('step', this.model.change(active.animation.step.index, this.props.current.theme));
   }
 
   /**
@@ -700,46 +464,55 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    */
   private onStepEnd(step: Step): void {
     this.frames.redraw();
-    const next = this.timeline.steps[step.index + 1];
-    if (!next || next.time !== step.time) this.emit('step', null);
+    const next = this.model.timeline.steps[step.index + 1];
+    if (!next || next.time !== step.time) this.notify('step', null);
   }
 
-  /** Playback reached today: show the whole network. */
+  /** Playback reached its end: the whole network in view. */
   private onPlaybackEnd(): void {
-    this.emit('step', null);
-    this.emit('end', undefined);
+    this.notify('step', null);
+    this.notify('end', undefined);
     this.fitNetwork(END_OVERVIEW_MS);
   }
 
   /**
-   * One frame: advance playback, redraw what changed, report the time.
+   * One frame: advance playback; once ready, draw what changed, follow the date with the overlay and
+   * report the time; then deliver the frame's events.
    *
    * @param now - The frame time.
    */
   private readonly renderFrame = (now: number): void => {
+    if (this.life === 'destroyed') return;
     const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt || now)) / 1000);
     this.lastFrameAt = now;
     this.handlePlayerEvents(this.player.tick(seconds));
-    if (this.ready) this.draw(now, seconds);
-    this.emitTime();
-    this.frameRequest = requestAnimationFrame(this.renderFrame);
+    if (this.life === 'ready') this.draw(now, seconds);
+    this.flush();
+    // A listener may have destroyed it.
+    if (this.alive()) this.frameRequest = this.scheduler.request(this.renderFrame);
   };
 
   /**
-   * Draws the frame, and tells the app of the playing step's stations, and of a selection the date
-   * took off the map.
+   * Draws the frame; hides the ring of a selected station the moment took off the map, and says so.
    *
    * @param now - The frame time.
    * @param seconds - The time since the last frame.
    */
   private draw(now: number, seconds: number): void {
-    const { revealed, selectionGone, tips } = this.frames.draw(now, this.selectedStation);
+    const selected = this.props.current.selectedStation;
+    const { revealed, selectionGone, tips } = this.frames.draw(now, selected);
     this.camera.follow(tips, seconds);
-    if (revealed !== null) this.emit('stepProgress', revealed);
-    if (selectionGone) {
-      this.selectStation(null);
-      this.emit('stationClick', null);
+    if (revealed !== null) this.notify('stepProgress', revealed);
+    if (selected && selectionGone !== this.selectionAway) {
+      this.selectionAway = selectionGone;
+      this.stationLayer.select(selectionGone ? null : selected);
+      if (selectionGone) this.notify('selectionGone', selected);
     }
+    // The overlay first, so the app hears of the new date with what the overlay came to on it.
+    const { overlay, boundary } = this.props.current;
+    this.overlay.follow(overlay, boundary);
+    const time = this.frames.timeState();
+    if (time) this.notify('time', time);
   }
 
   /** Outlines the main camera's view on the minimap. */
@@ -750,11 +523,5 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
       [bounds.getWest(), bounds.getSouth()],
       [bounds.getEast(), bounds.getNorth()],
     ]);
-  }
-
-  /** Emits `time` when the clock's day, the cursor, the playing state or the stats change. */
-  private emitTime(): void {
-    const state = this.frames.timeState();
-    if (state) this.emit('time', state);
   }
 }

@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo } from '@railtime/network/facts.types';
   import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue';
 
   import { changesByDecade } from '~/features/explorer/changes/changes.utils';

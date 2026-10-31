@@ -1,24 +1,27 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import { ActiveStepLayer } from '../../../src/layers/activeStep.service';
 import type { FeatureCollection, LineFeature } from '../../../src/layers/features.types';
 import { FrameRenderer } from '../../../src/layers/frame.service';
 import { SOURCES } from '../../../src/layers/ids.constants';
 import { NetworkLayer } from '../../../src/layers/network.service';
+import type { NetworkSnapshot } from '../../../src/layers/snapshot.types';
 import { StationLayer } from '../../../src/stations/layer.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 /**
  * The tiny network's frames drawn on a stand-in map, on a date, with a minimap that keeps what it is sent.
  *
- * @param date - The date shown.
+ * @param date - The date shown; its plan's end, with a plan.
+ * @param plan - One of its plans to build on it.
  * @returns The frames, the map, the playback and what the minimap was sent.
  */
-const framesOn = (date: string) => {
-  const playback = playbackOf(tinyNetwork());
-  playback.player.seek(toTimestamp(date));
+const framesOn = (date: string, plan?: string) => {
+  const playback = playbackOf(tinyNetwork(), plan);
+  if (plan) playback.player.seek('future');
+  else playback.player.seek({ time: toTimestamp(date) });
   const fake = fakeMap();
   const network = new NetworkLayer(fake.map);
   const activeStep = new ActiveStepLayer(fake.map);
@@ -29,13 +32,13 @@ const framesOn = (date: string) => {
     (first, second) => first.localeCompare(second),
   );
   for (const layer of [network, activeStep, stations]) layer.install(['Font']);
-  const minimap = { lines: [] as FeatureCollection<LineFeature>[], active: [] as FeatureCollection<LineFeature>[] };
+  const minimap = { networks: [] as Pick<NetworkSnapshot, 'lines' | 'planned'>[], active: [] as FeatureCollection<LineFeature>[] };
   const frames = new FrameRenderer({
     ...playback,
     network,
     activeStep,
     stations,
-    minimap: { setLines: lines => minimap.lines.push(lines), setActive: lines => minimap.active.push(lines) },
+    minimap: { setNetwork: snapshot => minimap.networks.push(snapshot), setActive: lines => minimap.active.push(lines) },
     baseColor: line => playback.index.lineOf(line).color,
   });
   return { frames, fake, playback, minimap };
@@ -50,11 +53,19 @@ describe('FrameRenderer', () => {
     frames.draw(0, null);
     expect(fake.sends.get(SOURCES.lines)).toBe(1);
     expect(fake.sends.get(SOURCES.stations)).toBe(1);
-    expect(minimap.lines).toHaveLength(1);
+    expect(minimap.networks).toHaveLength(1);
     const after = sendsOf(fake);
     for (let frame = 1; frame <= 60; frame++) frames.draw(frame * 16, null);
     expect(sendsOf(fake)).toEqual(after);
     expect(fake.sends.get(SOURCES.active)).toBeUndefined();
+  });
+
+  test("shows the minimap a plan's track as the map does, dashed apart from the built lines", () => {
+    const { frames, fake, minimap } = framesOn('', 'extension');
+    frames.draw(0, null);
+    const planned = fake.data.get(SOURCES.planned) as FeatureCollection<LineFeature>;
+    expect(planned.features).not.toEqual([]);
+    expect(minimap.networks.at(-1)?.planned).toEqual(planned);
   });
 
   test('draws again when told the network changed, with only the lines toggled on', () => {
@@ -70,7 +81,7 @@ describe('FrameRenderer', () => {
   test('plays a step frame by frame, counting its new stations, and clears it from the map and the minimap once it ends', () => {
     const { frames, fake, playback, minimap } = framesOn('1905-01-01');
     frames.draw(0, null);
-    playback.player.playing = true;
+    playback.player.play();
     playback.player.skip();
     frames.stepStarted();
     const revealed: number[] = [];
@@ -106,7 +117,7 @@ describe('FrameRenderer', () => {
     expect(frames.timeState()).toBeNull();
     frames.draw(0, null);
     expect(frames.timeState()).toMatchObject({ stats: { stations: 4, lines: 2 }, playing: false, future: false });
-    playback.player.seek(toTimestamp('1935-01-02'));
+    playback.player.seek({ time: toTimestamp('1935-01-02') });
     expect(frames.timeState()?.time).toBe(toTimestamp('1935-01-02'));
     expect(frames.timeState()).toBeNull();
   });
@@ -114,9 +125,9 @@ describe('FrameRenderer', () => {
   test("blends a line's colour on every frame while its identity changes", () => {
     const { frames, fake, playback } = framesOn('1989-06-01');
     const identity = playback.timeline.steps.find(step => step.kind === 'identity')!;
-    playback.player.seekBefore(identity.index);
+    playback.player.seek({ beforeChange: identity.index });
     frames.draw(0, null);
-    playback.player.playing = true;
+    playback.player.play();
     playback.player.tick(1 / 60);
     frames.stepStarted();
     // Past the camera's move, into the drawing.

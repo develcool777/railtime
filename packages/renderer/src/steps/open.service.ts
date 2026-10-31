@@ -1,14 +1,11 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import { required } from '../core/required.utils';
 import { lineFeature, pointFeature } from '../layers/features.utils';
-import type { RenderState } from '../layers/lineStyle.types';
 import { offsetFor, resolveLine } from '../layers/lineStyle.utils';
-import { sliceAlong } from '../core/geometry.utils';
-import type { OpenStep } from '../network/timeline.types';
+import { sliceAlong } from '@railtime/network/geometry.utils';
+import type { OpenStep } from '@railtime/network/timeline.types';
 import { clamp } from '../core/easing.utils';
-import type { Growth, SegmentPlan } from '../playback/growth.types';
-import { planGrowth } from '../playback/growth.utils';
-import type { StepInfo } from '../transitMap.types';
+import type { Growth, SegmentPlan } from '@railtime/network/growth.types';
+import { planGrowth } from '@railtime/network/growth.utils';
 import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MAX_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -64,28 +61,6 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
   }
 
   /**
-   * "<line> opens", "… extended" or "… reopens", from the first station to the last reached.
-   *
-   * @param state - The render state when the step starts.
-   * @returns The caption.
-   */
-  public describe(state: RenderState): StepInfo {
-    const { index, timeline } = this.context;
-    const { reach } = this.growth;
-    const existed = index.lineSegments.some(
-      lineSegment => timeline.isOpen(lineSegment, this.step.index) && timeline.identityOf(lineSegment.line, this.step.index).id === this.step.line,
-    );
-    return {
-      kind: 'open',
-      time: this.date,
-      title: `${index.lineName(this.step.line)} ${this.verb(existed)}`,
-      subtitle: `${this.nameOf(required(reach[0], 'first station reached').station)} – ${this.nameOf(required(reach.at(-1), 'last station reached').station)}`,
-      color: state.baseColor(this.step.line),
-      stations: reach.filter(reached => reached.isNew).map(reached => this.nameOf(reached.station)),
-    };
-  }
-
-  /**
    * Draws each segment up to the growth front, a glowing head where it is still growing, and marks
    * the stations the front has passed.
    *
@@ -100,17 +75,6 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
       for (const line of this.linesByStation.get(reached.station) ?? []) this.reach(frame, drawing, reached.station, line);
       if (reached.isNew && drawing.reached.has(reached.station)) drawing.highlighted.add(reached.station);
     }
-  }
-
-  /**
-   * What the caption says the line does: back on track it left, it reopens.
-   *
-   * @param existed - The line was already on the map.
-   * @returns "reopens", "extended" or "opens".
-   */
-  private verb(existed: boolean): string {
-    if (this.step.lineSegments.every(lineSegment => lineSegment.previous !== null)) return 'reopens';
-    return existed ? 'extended' : 'opens';
   }
 
   /**

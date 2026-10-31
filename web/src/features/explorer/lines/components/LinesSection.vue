@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { LineInfo } from '@railtime/renderer/transitMap.types';
+  import type { LineInfo } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
   import { yearOf } from '~/features/explorer/format.utils';

@@ -1,8 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { RenderState } from '../layers/lineStyle.types';
-import { DAY_MS } from '../core/date.utils';
-import type { RenameStep } from '../network/timeline.types';
-import type { StepInfo } from '../transitMap.types';
+import type { RenameStep } from '@railtime/network/timeline.types';
 import { RENAME_DRAW_SECONDS, RENAME_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -25,24 +22,6 @@ export class RenameStepAnimation extends StepAnimation<RenameStep> {
    */
   public cameraPoints(): LngLat[] {
     return [this.context.index.coordOf(this.step.station)];
-  }
-
-  /**
-   * "<former name> renamed", to what.
-   *
-   * @param state - The render state when the step starts.
-   * @returns The caption.
-   */
-  public describe(state: RenderState): StepInfo {
-    const [first] = this.context.index.lineSegmentsAt(this.step.station);
-    return {
-      kind: 'rename',
-      time: this.date,
-      title: `${this.nameOf(this.step.station, this.step.time - DAY_MS)} renamed`,
-      subtitle: `now ${this.nameOf(this.step.station)}`,
-      color: first ? state.baseColor(first.line) : '#ffffff',
-      stations: [this.nameOf(this.step.station)],
-    };
   }
 
   /**

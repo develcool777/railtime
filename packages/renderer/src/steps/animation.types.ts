@@ -1,5 +1,5 @@
-import type { NetworkIndex } from '../network/index.service';
-import type { Timeline } from '../network/timeline.service';
+import type { NetworkIndex } from '@railtime/network/index.service';
+import type { Timeline } from '@railtime/network/timeline.service';
 import type { FeatureCollection, HeadProperties, LineFeature, PointFeature, StationLines } from '../layers/features.types';
 import type { RenderState } from '../layers/lineStyle.types';
 import type { NetworkSnapshot } from '../layers/snapshot.types';

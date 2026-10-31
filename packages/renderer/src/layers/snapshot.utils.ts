@@ -1,4 +1,4 @@
-import type { LineSegment } from '../network/index.types';
+import type { LineSegment } from '@railtime/network/index.types';
 import type { LineFeature, StationLines } from './features.types';
 import { lineFeature } from './features.utils';
 import type { RenderState, ResolvedLine, SideBySide } from './lineStyle.types';

@@ -1,20 +1,13 @@
-import { required } from '../core/required.utils';
+import { required } from '@railtime/network/required.utils';
 import type { PointFeature, ReachStopProperties, ReachTrackFeature } from '../layers/features.types';
 import { pointFeature } from '../layers/features.utils';
-import type { NetworkIndex } from '../network/index.service';
-import type { TrackSegment } from '../network/index.types';
-import type { Timeline } from '../network/timeline.service';
-import type { ReachInfo } from '../transitMap.types';
-import { REACH_BANDS } from './layer.constants';
+import type { NetworkIndex } from '@railtime/network/index.service';
+import type { TrackSegment } from '@railtime/network/index.types';
+import type { Timeline } from '@railtime/network/timeline.service';
+import type { ReachInfo } from '@railtime/network/facts.types';
+import { bandOf } from '@railtime/network/reach.utils';
+import { REACH_BANDS } from '@railtime/network/reach.constants';
 import type { ReachedSegment } from './layer.types';
-
-/**
- * The band a time falls in: the last has no end, so every time finds one.
- *
- * @param minutes - How long it takes.
- * @returns The band's place in `REACH_BANDS`.
- */
-export const bandOf = (minutes: number): number => REACH_BANDS.findIndex(entry => entry.upTo === null || minutes <= entry.upTo);
 
 /**
  * The track a reach colours: each open segment with a reached station at an end, timed as the mean

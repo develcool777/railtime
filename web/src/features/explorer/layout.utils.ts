@@ -22,6 +22,20 @@ export const mapPaddingFor = (mode: TimeMode, phone: boolean, sheet: SheetSnap):
 };
 
 /**
+ * How much of the map's left the panel covers: its width while open beside the map; none on a phone
+ * (a sheet over the foot), in map only, or folded.
+ *
+ * @param layout - The layout.
+ * @param layout.phone - Whether it is the phone's.
+ * @param layout.mapOnly - Whether only the map shows.
+ * @param layout.panelOpen - Whether the panel is open.
+ * @param layout.panelWidth - Its width, pixels.
+ * @returns Pixels.
+ */
+export const panelCoverOf = (layout: { phone: boolean; mapOnly: boolean; panelOpen: boolean; panelWidth: number }): number =>
+  layout.phone || layout.mapOnly || !layout.panelOpen ? 0 : layout.panelWidth;
+
+/**
  * The panel's width as its edge is dragged, kept between its least and greatest.
  *
  * @param startWidth - Its width when the drag began, pixels.

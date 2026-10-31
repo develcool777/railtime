@@ -57,10 +57,11 @@
       class="size-9 flex-none justify-center rounded-full"
       aria-label="Next change"
       @click="emit('skip')" />
+    <PlayerSettings :settings :viewMode phone @change="emit('settings', $event)" @viewMode="emit('viewMode', $event)" />
     <UButton label="Exit" color="neutral" variant="ghost" class="flex-none font-semibold" @click="emit('exit')" />
   </div>
 
-  <!-- The player: the change playing, the speed and camera, and the timeline it runs along. -->
+  <!-- The player: the change playing, its settings, and the timeline it runs along. -->
   <div v-else class="map-card flex w-full flex-col gap-2 p-3">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
       <p class="text-highlighted flex-none text-4xl leading-10 font-extrabold tracking-[-0.02em] tabular-nums">{{ yearText }}</p>
@@ -69,34 +70,19 @@
         <p class="text-highlighted truncate text-sm font-bold">{{ step?.title }}</p>
         <p class="text-muted truncate text-xs tabular-nums">{{ caption }}</p>
       </div>
-      <UTabs :modelValue="speed" :items="SPEED_OPTIONS" :content="false" aria-label="Speed" @update:modelValue="emit('speed', Number($event))" />
-      <UTooltip :text="minimap ? 'Hide the minimap' : 'Show the minimap'">
-        <UButton
-          icon="i-lucide-map"
-          color="neutral"
-          variant="outline"
-          :active="minimap"
-          activeColor="primary"
-          activeVariant="soft"
-          square
-          class="size-9 justify-center"
-          aria-label="Minimap"
-          :aria-pressed="minimap"
-          @click="emit('minimap', !minimap)" />
-      </UTooltip>
-      <UDropdownMenu :items="cameraItems" :content="{ align: 'end', side: 'top' }">
-        <UButton
-          :label="cameraLabel"
-          icon="i-lucide-video"
-          trailingIcon="i-lucide-chevron-down"
-          color="neutral"
-          variant="outline"
-          class="h-9"
-          aria-label="Camera" />
-      </UDropdownMenu>
+      <PlayerSettings :settings :viewMode :phone="false" @change="emit('settings', $event)" @viewMode="emit('viewMode', $event)" />
       <UButton icon="i-lucide-x" label="Exit" color="neutral" variant="outline" class="h-9 font-semibold" @click="emit('exit')" />
     </div>
     <div class="flex items-center gap-3">
+      <UTooltip text="Previous change" :kbds="['←']">
+        <UButton
+          icon="i-lucide-skip-back"
+          color="neutral"
+          variant="outline"
+          class="size-9 flex-none justify-center rounded-full"
+          aria-label="Previous change"
+          @click="emit('previous')" />
+      </UTooltip>
       <UTooltip :text="playing ? 'Pause' : 'Play'" :kbds="['space']">
         <UButton
           :icon="playing ? 'i-lucide-pause' : 'i-lucide-play'"
@@ -119,11 +105,11 @@
 </template>
 
 <script setup lang="ts">
-  import type { CameraMode, ChangeInfo, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo, StepInfo } from '@railtime/network/facts.types';
+  import type { TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
 
-  import { CAMERA_OPTIONS, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
-  import type { TimeMode } from '~/features/explorer/explorer.types';
+  import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';
   import { formatDay, formatStats, yearOf } from '~/features/explorer/format.utils';
   import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
 
@@ -136,10 +122,10 @@
     range: { start: number; end: number; today: number };
     /** The change playing now, for the player's caption. */
     step: StepInfo | null;
-    speed: number;
-    camera: CameraMode;
-    /** Whether the minimap shows above the player. */
-    minimap: boolean;
+    /** How playback is set: its speed, camera and minimap. */
+    settings: PlayerSettings;
+    /** How the map is seen: flat, or in 3D. */
+    viewMode: ViewMode;
     /** The plan shown, if any: its name, and what it adds. */
     plan?: { name: string; facts: string };
     /** A network never built: no history, only its plan to play. */
@@ -152,11 +138,11 @@
     future: [];
     play: [];
     pause: [];
+    previous: [];
     skip: [];
     pick: [target: TimelineTarget];
-    speed: [speed: number];
-    camera: [mode: CameraMode];
-    minimap: [shown: boolean];
+    settings: [change: Partial<PlayerSettings>];
+    viewMode: [mode: ViewMode];
     exit: [];
   }>();
 
@@ -185,14 +171,4 @@
     const day = step.time === null ? 'Future' : formatDay(step.time);
     return step.subtitle ? `${step.subtitle} · ${day}` : day;
   });
-
-  const cameraLabel = computed(() => CAMERA_OPTIONS.find(option => option.value === props.camera)?.label ?? '');
-  const cameraItems = computed(() =>
-    CAMERA_OPTIONS.map(option => ({
-      label: option.label,
-      type: 'checkbox' as const,
-      checked: option.value === props.camera,
-      onSelect: () => emit('camera', option.value),
-    })),
-  );
 </script>

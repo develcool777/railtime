@@ -1,6 +1,7 @@
 /** The minimap's GeoJSON sources. */
 export const MINIMAP_SOURCES = {
   lines: 'mm-lines',
+  planned: 'mm-planned',
   active: 'mm-active',
   viewport: 'mm-viewport',
 } as const;
@@ -8,6 +9,7 @@ export const MINIMAP_SOURCES = {
 /** The minimap's layers, bottom to top. */
 export const MINIMAP_LAYERS = {
   lines: 'mm-lines',
+  planned: 'mm-planned',
   activeGlow: 'mm-active-glow',
   active: 'mm-active',
   viewport: 'mm-viewport',

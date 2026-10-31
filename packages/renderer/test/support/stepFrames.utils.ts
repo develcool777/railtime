@@ -1,5 +1,5 @@
 import type { Network } from '@railtime/schema/network.types';
-import { toTimestamp } from '../../src/core/date.utils';
+import { toTimestamp } from '@railtime/network/date.utils';
 import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
 import { emptyDrawing } from '../../src/steps/animation.utils';
 import { playbackOf, renderStateOf } from './playback.utils';
@@ -15,7 +15,7 @@ import type { FrameOptions, StartedStep } from './stepFrames.types';
  */
 export const stepAfter = (network: Network, date: string): StartedStep => {
   const playback = playbackOf(network);
-  playback.player.seek(toTimestamp(date));
+  playback.player.seek({ time: toTimestamp(date) });
   playback.player.skip();
   const active = playback.player.active;
   if (!active) throw new Error(`No step after ${date}`);

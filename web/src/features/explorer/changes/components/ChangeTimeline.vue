@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
   import { timelinePosition } from '~/features/explorer/changes/changes.utils';

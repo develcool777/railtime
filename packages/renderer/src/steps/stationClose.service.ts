@@ -1,9 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import { required } from '../core/required.utils';
-import type { RenderState } from '../layers/lineStyle.types';
-import { resolveLine } from '../layers/lineStyle.utils';
-import type { StationCloseStep } from '../network/timeline.types';
-import type { StepInfo } from '../transitMap.types';
+import type { StationCloseStep } from '@railtime/network/timeline.types';
 import { STATION_CLOSE_DRAW_SECONDS, STATION_CLOSE_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -29,24 +25,6 @@ export class StationCloseStepAnimation extends StepAnimation<StationCloseStep> {
    */
   public cameraPoints(): LngLat[] {
     return [this.context.index.coordOf(this.step.station)];
-  }
-
-  /**
-   * "<station> closes", on which lines.
-   *
-   * @param state - The render state when the step starts.
-   * @returns The caption.
-   */
-  public describe(state: RenderState): StepInfo {
-    const lines = this.step.lines.map(line => resolveLine(state, line));
-    return {
-      kind: 'stationClose',
-      time: this.date,
-      title: `${this.nameOf(this.step.station, this.step.time)} closes`,
-      subtitle: `on the ${lines.map(line => this.context.index.lineName(line.id)).join(' and ')}`,
-      color: required(lines[0], 'line of a station-close step').color,
-      stations: [],
-    };
   }
 
   /**

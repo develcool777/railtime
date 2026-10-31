@@ -1,8 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import { required } from '../core/required.utils';
-import type { RenderState } from '../layers/lineStyle.types';
-import type { IdentityStep } from '../network/timeline.types';
-import type { StepInfo } from '../transitMap.types';
+import type { IdentityStep } from '@railtime/network/timeline.types';
 import { IDENTITY_DRAW_SECONDS, IDENTITY_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -36,22 +33,6 @@ export class IdentityStepAnimation extends StepAnimation<IdentityStep> {
     return this.context.index.lineSegments
       .filter(lineSegment => this.step.lines.includes(lineSegment.line))
       .flatMap(lineSegment => lineSegment.segment.coordinates);
-  }
-
-  /**
-   * The change, in words from the data (the alias's `text`).
-   *
-   * @param state - The render state when the step starts.
-   * @returns The caption.
-   */
-  public describe(state: RenderState): StepInfo {
-    return {
-      kind: 'identity',
-      time: this.date,
-      title: this.step.text,
-      color: state.baseColor(required(this.step.lines[0], 'line of an identity step')),
-      stations: [],
-    };
   }
 
   /**

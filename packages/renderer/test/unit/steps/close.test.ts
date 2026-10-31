@@ -1,8 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
 import { CloseStepAnimation } from '../../../src/steps/close.service';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { stepAfter } from '../../support/stepFrames.utils';
 
 /** Degrees of longitude in a km on the test line, as the tiny network places its stations. */
@@ -30,19 +29,9 @@ const withBranch = (): Network => {
 };
 
 describe('CloseStepAnimation', () => {
-  test('says a section is suspended when its line will return, and closes when it will not', () => {
-    const suspended = stepAfter(tinyNetwork(), '1939-01-01');
-    expect(suspended.animation).toBeInstanceOf(CloseStepAnimation);
-    expect(suspended.animation.describe(suspended.state)).toEqual({
-      kind: 'close',
-      time: toTimestamp('1940-01-01'),
-      title: 'Blue line: section suspended',
-      subtitle: 'B – C',
-      color: '#0000ff',
-      stations: [],
-    });
-    const closes = stepAfter(tinyNetwork(), '1949-01-01');
-    expect(closes.animation.describe(closes.state)).toMatchObject({ title: 'Blue line: section closes', subtitle: 'B – C' });
+  test('plays a section suspended, or closing for good, as a close', () => {
+    expect(stepAfter(tinyNetwork(), '1939-01-01').animation).toBeInstanceOf(CloseStepAnimation);
+    expect(stepAfter(tinyNetwork(), '1949-01-01').animation).toBeInstanceOf(CloseStepAnimation);
   });
 
   test('retracts each segment towards the end that stays on the map, and fades a station left with no line', () => {

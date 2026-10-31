@@ -5,12 +5,16 @@ enforces them: `pnpm eslint-check` must pass.
 
 ## What this is
 
-A pnpm monorepo: `packages/schema` (the network format: `format/` its types, `validation/` the Zod
-shape and the checks between parts, `plan/` building a plan on a network), `packages/renderer` (the MapLibre engine,
-`TransitMap`), `packages/data` (every city's files in `cities/<country>/<city>/`: its network
-`<city>.json`, outline and pictures; the index of them, `cities/cities.json`; and the commands that keep
-them, a folder each in `src/`: `format/`, `boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`) and `web` (the Nuxt 4 + Nuxt UI explorer).
-`README.md` has the commands; `packages/renderer/_README.md` explains steps, cursors and the frame model.
+A pnpm monorepo, a job to each part (`ARCHITECTURE.md`): `packages/schema` (the format: `format/` its
+types, `validation/` the Zod shape and the checks between parts, `plan/` building a plan on a network),
+`packages/network` (the facts: `NetworkModel`, the network through time and every answer about it),
+`packages/renderer` (drawing: the MapLibre engine, `TransitMap`), `packages/data` (storage: every
+city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline and pictures; the index
+of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
+`boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`) and `web`
+(the app: the Nuxt 4 + Nuxt UI explorer).
+`README.md` has the commands; `ARCHITECTURE.md` the contract between the parts;
+`packages/network/_README.md` steps and cursors; `packages/renderer/_README.md` the frame model.
 
 ## Checks
 
@@ -43,10 +47,14 @@ landing page's pictures in Chrome).
 
 ## Architecture
 
-- **The renderer has no UI.** Controls, captions and panels are Nuxt UI components in `web`;
-  the renderer exposes methods and events (`transitMap.types.ts`) and never imports Vue.
-- **Pure first.** `core/`, `network/`, `route/finder.service.ts`, `playback/` (but `camera.service.ts`),
-  `steps/` and every `*.utils.ts` take no map: keep new logic there and test it (see Tests). A layer
+- **A fact is `network`'s.** A count, a length, a station's neighbours, a route, a caption: a method
+  on `NetworkModel` or a util in `packages/network`, tested there; `web` and `data` ask it, never work
+  it out. `web` keeps presentation: formatting, grouping, the search.
+- **The renderer has no UI and no facts.** Controls, captions and panels are Nuxt UI components in
+  `web`; the renderer takes props, commands and listeners (`transitMap.types.ts`, `ARCHITECTURE.md`)
+  and never imports Vue. A setting it shows is a prop, never a `setX` method.
+- **Pure first.** All of `packages/network`, the renderer's player, `steps/` and every `*.utils.ts`
+  take no map: keep new logic there and test it (see Tests). A layer
   group is tested on the stand-in map (`test/support/factories/fakeMap.utils.ts`), which refuses what
   MapLibre would: a layer the style spec does not allow, data that is not GeoJSON features, and a
   layer reading (`['get', name]`) a property no feature of its source has.
@@ -71,9 +79,13 @@ landing page's pictures in Chrome).
   Components are used by tag, never imported (`nuxt.config.ts` scans every `components/` under
   `features/`); anything else in a feature is imported by its path
   (`~/features/explorer/time/timeline.utils`), so what one feature or part takes from another can be
-  searched for. In the explorer, a part never imports another part's composable: `ExplorerView`
-  wires them, handing one's actions to another as callbacks.
+  searched for. In the explorer, a part never imports another part's composable: what parts share
+  is in the store.
   Something one surface uses goes in its feature; it moves to the top when a second needs it.
+  The explorer's state (what is open, how it is set) is one Pinia store, `explorer.store.ts`: every
+  button calls its actions, and its rules are pure functions in `explorer.utils.ts`; its `mapProps` is
+  everything the map shows, and `map/transitMap.composable.ts` is the only code that touches the map.
+  What is looked at goes in the address, preferences in cookies (`features/explorer/_README.md`).
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
   camelCase attributes and events.
@@ -83,10 +95,14 @@ landing page's pictures in Chrome).
 Each package keeps its tests beside its code, as dataroom-ui does inside its one app:
 
 ```text
-packages/renderer/
-  vitest.config.ts          the package's project (`pnpm --filter @railtime/renderer test-unit`)
+packages/network/
+  vitest.config.ts          the package's project (`pnpm --filter @railtime/network test-unit`)
   test/unit/                mirrors src/: test/unit/network/timeline.test.ts tests src/network/timeline.*.ts
-  test/support/             what tests share: factories/ (tinyNetwork), playback.utils.ts
+  test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries:
+                            exported as `@railtime/network/testing/*` for the other packages' tests), model.utils.ts
+packages/renderer/
+  test/unit/                mirrors src/, as network's; transitMap.test.ts tests the contract whole
+  test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it)
 packages/data/
   test/unit/<feature>/      mirrors src/<feature>/: city/ (finding the cities and reading their files),
                             format/, boundary/, preview/ (a command each)
@@ -96,7 +112,7 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
                             they import as the app does, from ~/, and test/support/ from @test/
 ```
 
-- The renderer knows no city: its tests use made-up networks (`tinyNetwork`). A check of a city's
+- `network` and the renderer know no city: their tests use made-up networks (`tinyNetwork`). A check of a city's
   history (the Victoria line's three stages, London's size today) goes in
   `packages/data/test/unit/cities/<country>/<city>.test.ts`.
 
@@ -109,7 +125,7 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
   module, then `test('does what, when')`; never `it`.
 - A `console.warn` or `console.error` during a test fails it (`vitest.setup.ts`).
 - Coverage: `pnpm test-unit-coverage`, into `test-reports/coverage/`.
-- Mutation testing, by hand, as in dataroom-ui: `pnpm test-mutation packages/renderer/src/route` has
+- Mutation testing, by hand, as in dataroom-ui: `pnpm test-mutation packages/network/src/route` has
   Stryker break the folder's code one small change at a time and run its own tests against each; a
   change no test notices is code run but not checked. The report is in `test-reports/mutation/`;
   each run's score goes in `test-reports/mutation-scores.json`, which is committed. With no folder,

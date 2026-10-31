@@ -1,22 +1,22 @@
-import { useColorMode, useState } from '#imports';
+import { planFacts } from '@railtime/network/plan.utils';
 import { isPlanOnly } from '@railtime/schema/plan.utils';
-import { computed, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
 
-import type { Section } from '~/features/explorer/explorer.types';
+import { useExplorerStore } from '~/features/explorer/explorer.store';
 import { formatPlanFacts, formatStats } from '~/features/explorer/format.utils';
 import type { ExplorerPlan, ExplorerPlanInput } from '~/features/explorer/plans/plan.composable.types';
-import { planFacts } from '~/features/explorer/plans/plan.utils';
 
 /**
  * The plan shown, if any, and what the page says about it: its summary, the legend for its dashed
  * track, what is built today to compare it with, and choosing another.
  *
- * @param input - The network, the plan, where the map is, and what choosing one does.
+ * @param input - The network, the plan, and what choosing one does.
  * @returns The plan and its captions.
  */
 export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
-  const { network, plan, time, timeMode, onChoose } = input;
-  const colorMode = useColorMode();
+  const { network, plan, onChoose } = input;
+  const { playing, time, theme, model } = storeToRefs(useExplorerStore());
 
   const chosenPlan = computed(() => (plan ? network.plans?.[plan] : undefined));
   // What the plan adds, worked out once: it does not change.
@@ -28,26 +28,19 @@ export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
 
   const planLegend = computed(() => {
     const firstLine = chosenFacts?.lines[0];
-    if (!chosenPlan.value || !time.value?.future || timeMode.value === 'playing') return null;
+    if (!chosenPlan.value || !time.value?.future || playing.value) return null;
     if (!firstLine) return { name: chosenPlan.value.name, color: 'var(--ui-text-highlighted)' };
-    return { name: chosenPlan.value.name, color: colorMode.value === 'light' ? firstLine.color : firstLine.darkColor };
+    return { name: chosenPlan.value.name, color: theme.value === 'light' ? firstLine.color : firstLine.darkColor };
   });
 
-  // Read once the map first shows today, drawn: before its first frame its stats are all nought. With a plan shown it never shows today, and the card goes without.
-  const builtFacts = ref('');
-  watch(time, now => {
-    const drawnToday = now && now.cursor === now.todayCursor && !now.future && now.stats.stations > 0;
-    if (!builtFacts.value && !plan && drawnToday) builtFacts.value = formatStats(now.stats);
+  // The network built today, to set beside a plan; with a plan shown the model is the plan's, and the card goes without.
+  const builtFacts = computed(() => {
+    const built = model.value;
+    return built && !plan ? formatStats(built.asOf(built.momentOn(built.range.today), theme.value).stats()) : '';
   });
 
-  // Choosing a plan, the built network too, mounts the explorer afresh: it opens again on Plans, where the choice was made.
-  const planPicked = useState('railtime-plan-picked', () => false);
-  const openingSection: Section = plan || planPicked.value ? 'plans' : 'lines';
-  planPicked.value = false;
   const choosePlan = (id: string | undefined) => {
-    if (id === plan) return;
-    planPicked.value = true;
-    onChoose(id);
+    if (id !== plan) onChoose(id);
   };
 
   return {
@@ -58,7 +51,6 @@ export const useExplorerPlan = (input: ExplorerPlanInput): ExplorerPlan => {
     planLegend,
     builtFacts,
     planMark: plan ? 'A plan is shown' : undefined,
-    openingSection,
     choosePlan,
   };
 };

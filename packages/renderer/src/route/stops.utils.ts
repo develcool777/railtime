@@ -1,4 +1,4 @@
-import type { RouteInfo } from '../transitMap.types';
+import type { RouteInfo } from '@railtime/network/facts.types';
 import type { RouteStopKind, RouteStopMark } from './stops.types';
 
 /** Which mark a stop keeps when two legs give it one: a change outranks a stop passed, the end both; of two alike, the later (at a change, the line boarded). */

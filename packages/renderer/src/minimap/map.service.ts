@@ -3,7 +3,8 @@ import { recolorBasemap } from '../layers/basemap.utils';
 import type { FeatureCollection, LineFeature } from '../layers/features.types';
 import { emptyCollection } from '../layers/features.utils';
 import type { Palette } from '../layers/theme.types';
-import type { Bounds } from '../core/geometry.types';
+import type { NetworkSnapshot } from '../layers/snapshot.types';
+import type { Bounds } from '@railtime/network/geometry.types';
 import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES } from './map.constants';
 
 /**
@@ -44,12 +45,13 @@ export class Minimap {
   }
 
   /**
-   * Shows the network as it stands.
+   * Shows the network as it stands, as the main map does: its track built, and a plan's dashed.
    *
-   * @param lines - The main map's line features.
+   * @param snapshot - The main map's network.
    */
-  public setLines(lines: FeatureCollection<LineFeature>): void {
-    this.setData(MINIMAP_SOURCES.lines, lines);
+  public setNetwork(snapshot: Pick<NetworkSnapshot, 'lines' | 'planned'>): void {
+    this.setData(MINIMAP_SOURCES.lines, snapshot.lines);
+    this.setData(MINIMAP_SOURCES.planned, snapshot.planned);
   }
 
   /**
@@ -107,6 +109,12 @@ export class Minimap {
     recolorBasemap(this.map, this.palette, { labels: false });
     for (const source of Object.values(MINIMAP_SOURCES)) this.map.addSource(source, { type: 'geojson', data: emptyCollection() });
     this.map.addLayer({ id: MINIMAP_LAYERS.lines, type: 'line', source: MINIMAP_SOURCES.lines, paint: { 'line-color': ['get', 'color'], 'line-width': 1.2 } });
+    this.map.addLayer({
+      id: MINIMAP_LAYERS.planned,
+      type: 'line',
+      source: MINIMAP_SOURCES.planned,
+      paint: { 'line-color': ['get', 'color'], 'line-width': 1.2, 'line-dasharray': [2, 1.5] },
+    });
     this.map.addLayer({
       id: MINIMAP_LAYERS.activeGlow,
       type: 'line',

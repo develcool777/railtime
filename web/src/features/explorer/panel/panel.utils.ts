@@ -1,4 +1,4 @@
-import type { LineDetails, StationInfo } from '@railtime/renderer/transitMap.types';
+import type { LineDetails, StationInfo } from '@railtime/network/facts.types';
 
 import { formatDay, yearOf } from '~/features/explorer/format.utils';
 import type { PanelTopContent, SectionTopInput } from '~/features/explorer/panel/panel.types';

@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { CoverageInfo, CoverageYear } from '@railtime/renderer/transitMap.types';
+  import type { CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
   import type { BoundaryState } from '~/features/explorer/coverage/coverage.composable.types';

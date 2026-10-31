@@ -1,5 +1,5 @@
 import { clamp } from '../core/easing.utils';
-import { DAY_MS } from '../core/date.utils';
+import { DAY_MS } from '@railtime/network/date.utils';
 import type { StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
@@ -144,7 +144,7 @@ export class FrameRenderer {
   private refreshSnapshot(state: RenderState): void {
     this.snapshot = buildNetworkSnapshot(state, this.parts.player.active !== null);
     this.parts.network.update(this.snapshot);
-    this.parts.minimap?.setLines(this.snapshot.lines);
+    this.parts.minimap?.setNetwork(this.snapshot);
     this.stale = false;
     this.lastTimeKey = '';
   }

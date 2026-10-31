@@ -49,7 +49,8 @@
 </template>
 
 <script setup lang="ts">
-  import type { ChangeInfo, TimeState } from '@railtime/renderer/transitMap.types';
+  import type { ChangeInfo } from '@railtime/network/facts.types';
+  import type { TimeState } from '@railtime/renderer/transitMap.types';
   import { computed, ref, useTemplateRef } from 'vue';
 
   import { FUTURE_SHARE } from '~/features/explorer/time/time.constants';

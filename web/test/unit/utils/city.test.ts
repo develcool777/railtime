@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { citiesByCountry, cityMenu, networkUrlOf, planToOpen, previewUrlOf } from '~/utils/city.utils';
 import { CITIES } from '~/constants/city.constants';
-import { planOnlyNetwork } from '@test/support/factories/planOnlyNetwork.utils';
+import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));

@@ -29,4 +29,8 @@ export type FakeMap = {
   };
   /** What `queryRenderedFeatures` answers. */
   rendered: { properties: Record<string, unknown> }[];
+  /** Fires a map event, as MapLibre would: `style.load`, `click`, `moveend`. */
+  fire: (event: string, payload?: unknown) => void;
+  /** Whether `remove` was called. */
+  isRemoved: () => boolean;
 };

@@ -1,4 +1,4 @@
-import type { NetworkGrowth, YearStats } from '@railtime/renderer/transitMap.types';
+import type { YearStats } from '@railtime/network/facts.types';
 
 import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
 
@@ -27,15 +27,6 @@ export const formatMetric = (value: number, metric: GrowthMetric): string => {
   const plural = rounded === 1 ? noun : noun + 's';
   return `${number} ${plural}`;
 };
-
-/**
- * Whether a network has a history to show: some year with a station on the map. One never built has
- * only its plans.
- *
- * @param growth - The network's growth.
- * @returns True if any year has a station.
- */
-export const hasHistory = (growth: NetworkGrowth): boolean => growth.years.some(entry => entry.stations > 0);
 
 /**
  * A value as an axis or a readout writes it: whole, with thousands marked.

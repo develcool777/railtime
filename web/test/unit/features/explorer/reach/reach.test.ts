@@ -1,4 +1,4 @@
-import type { ReachInfo } from '@railtime/renderer/transitMap.types';
+import type { ReachInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
 import { formatMinutes, reachGroups } from '~/features/explorer/reach/reach.utils';
 

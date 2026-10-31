@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { DecadeOpenings } from '@railtime/renderer/transitMap.types';
+  import type { DecadeOpenings } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
   import { formatNumber } from '~/features/explorer/insights/insights.utils';
