@@ -12,3 +12,21 @@ export const STATION_MIN_ZOOM = 12;
 
 /** Shortest a camera move takes, ms, whatever the speed: quicker is a jolt. */
 export const MIN_MOVE_MS = 700;
+
+/** In 3D, how far the camera tilts, degrees: low enough to see the buildings stand, high enough to see the streets. */
+export const VIEW_3D_PITCH = 60;
+
+/** In 3D, the camera's turn when it is seen in 3D but nothing turns it, degrees: the buildings a little from the side. */
+export const VIEW_3D_BEARING = -20;
+
+/** In 3D, the closest the camera comes to a change: street level, where the buildings stand. */
+export const CLOSE_UP_MAX_ZOOM = 16;
+
+/** In 3D, the farthest the camera stays from a change: a long one is seen whole, from a district away. */
+export const CLOSE_UP_MIN_ZOOM = 13.5;
+
+/** Turning the map to 3D, the camera comes down to at least this zoom: where the buildings stand. */
+export const VIEW_3D_ENTRY_ZOOM = 15;
+
+/** How long the camera takes to tilt into 3D or back to the flat map, ms. */
+export const VIEW_TILT_MS = 1200;

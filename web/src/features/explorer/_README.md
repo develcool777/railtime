@@ -11,7 +11,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 
 | Part        | What                                                                                                              | Components                                                        |
 | ----------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `map/`      | The map: `useTransitMap` mounts it and mirrors its events; the station-names choice                               | `MapTools`                                                        |
+| `map/`      | The map: `useTransitMap` mounts it and mirrors its events; the station-names choice; flat or 3D (`useViewMode`)   | `MapTools`                                                        |
 | `time/`     | The time control: at rest, the timeline, the player (`useExplorerTime`); the timeline's scale                     | `TimeControl`, `TimelineBar`                                      |
 | `panel/`    | The panel's frame: the open section, the views pushed over it, its top (`useExplorerPanel`)                       | `PanelTop`, `ExplorerRail`, `ExplorerPanel`                       |
 | `lines/`    | The Lines section, and a line's view                                                                              | `LinesSection`, `LineView`                                        |

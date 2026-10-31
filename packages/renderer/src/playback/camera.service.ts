@@ -4,14 +4,28 @@ import { clamp } from '../core/easing.utils';
 import { boundsOf } from '../core/geometry.utils';
 import type { Bounds } from '../core/geometry.types';
 import type { StepAnimation } from '../steps/animation.service';
-import type { CameraMode, Padding } from '../transitMap.types';
+import type { CameraMode, Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';
-import { FOLLOW_MAX_ZOOM, MIN_MOVE_MS, OVERVIEW_MAX_ZOOM, STATION_MIN_ZOOM, ZOOM_SLACK } from './camera.constants';
+import {
+  CLOSE_UP_MAX_ZOOM,
+  CLOSE_UP_MIN_ZOOM,
+  FOLLOW_MAX_ZOOM,
+  MIN_MOVE_MS,
+  OVERVIEW_MAX_ZOOM,
+  STATION_MIN_ZOOM,
+  VIEW_3D_BEARING,
+  VIEW_3D_ENTRY_ZOOM,
+  VIEW_3D_PITCH,
+  VIEW_TILT_MS,
+  ZOOM_SLACK,
+} from './camera.constants';
+import { closeUpOf } from './camera.utils';
 
 /**
  * Moves the main map's camera for playback. `follow` frames just the change, so a single new
  * station gets a close-up; `overview` frames the change with the network already on the map;
- * `free` leaves the camera to the user.
+ * `free` leaves the camera to the user. Seen in 3D, `follow` comes down to the change instead,
+ * tilted and turned along it, as a drone following a new line.
  */
 export class CameraDirector {
   /** How the camera follows playback. */
@@ -20,10 +34,37 @@ export class CameraDirector {
   public padding: Padding;
   /** The map whose camera this moves. */
   private readonly map: MapLibreMap;
+  /** How the map is seen: flat, or in 3D. */
+  private view: ViewMode = '2d';
 
   public constructor(map: MapLibreMap, padding: Padding) {
     this.map = map;
     this.padding = padding;
+  }
+
+  /**
+   * How the map is seen.
+   *
+   * @returns Flat, or in 3D.
+   */
+  public get viewMode(): ViewMode {
+    return this.view;
+  }
+
+  /**
+   * Sees the map flat or in 3D: into 3D, the camera tilts and comes down to where the buildings stand;
+   * back, it lies flat and faces north, where it is.
+   *
+   * @param mode - Flat, or 3D.
+   */
+  public setViewMode(mode: ViewMode): void {
+    if (mode === this.view) return;
+    this.view = mode;
+    this.map.easeTo(
+      mode === '3d'
+        ? { pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: Math.max(this.map.getZoom(), VIEW_3D_ENTRY_ZOOM), duration: VIEW_TILT_MS }
+        : { pitch: 0, bearing: 0, duration: VIEW_TILT_MS },
+    );
   }
 
   /**
@@ -43,6 +84,7 @@ export class CameraDirector {
     if (this.mode === 'overview') for (const station of stationsOnMap) points.push(coordOf(station));
     const bounds = boundsOf(points);
     if (!bounds) return 0;
+    if (this.view === '3d' && this.mode === 'follow') return this.closeUp(points, bounds, Math.max(MIN_MOVE_MS, durationMs));
     const maxZoom = this.closestZoom(points.length);
     if (this.frames(points, bounds, maxZoom)) return 0;
     const moveMs = Math.max(MIN_MOVE_MS, durationMs);
@@ -66,6 +108,22 @@ export class CameraDirector {
       left: this.padding.left + (room.left ?? 0),
     };
     this.map.fitBounds(bounds as LngLatBoundsLike, { padding, maxZoom, duration: durationMs });
+  }
+
+  /**
+   * Comes down to a change in 3D: tilted, turned so it runs up the screen, as close as it fits.
+   *
+   * @param points - The change's points, in order.
+   * @param bounds - Their bounding box.
+   * @param durationMs - How long the move takes.
+   * @returns How long the move takes, ms.
+   */
+  private closeUp(points: LngLat[], bounds: Bounds, durationMs: number): number {
+    const { center, bearing } = closeUpOf(points, this.map.getBearing());
+    const fitted = this.map.cameraForBounds(bounds as LngLatBoundsLike, { padding: this.padding, bearing, maxZoom: CLOSE_UP_MAX_ZOOM })?.zoom;
+    const zoom = clamp(fitted ?? CLOSE_UP_MAX_ZOOM, CLOSE_UP_MIN_ZOOM, CLOSE_UP_MAX_ZOOM);
+    this.map.easeTo({ center, zoom, bearing, pitch: VIEW_3D_PITCH, duration: durationMs });
+    return durationMs;
   }
 
   /**

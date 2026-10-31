@@ -2,6 +2,7 @@ import { Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-g
 import { EventEmitter } from './core/eventEmitter.service';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { BuildingsLayer } from './buildings/layer.service';
 import { CoverageLayer } from './coverage/layer.service';
 import { CoverageMeasure } from './coverage/measure.service';
 import { ActiveStepLayer } from './layers/activeStep.service';
@@ -60,6 +61,7 @@ import type {
   Theme,
   TransitMapEvents,
   TransitMapOptions,
+  ViewMode,
 } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
 
@@ -105,6 +107,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private coverageShown = false;
   /** The camera has framed the city for its coverage: once, so a later date leaves the view be. */
   private coverageFramed = false;
+  /** The basemap's buildings, standing when the map is seen in 3D. */
+  private readonly buildingsLayer: BuildingsLayer;
   /** Draws each frame on the layers. */
   private readonly frames: FrameRenderer;
   /** The overview inset, if the app gave it a container. */
@@ -152,6 +156,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.routeLayer = new RouteLayer(this.map);
     this.reachLayer = new ReachLayer(this.map);
     this.coverageLayer = new CoverageLayer(this.map);
+    this.buildingsLayer = new BuildingsLayer(this.map);
     this.queries = new NetworkQueries(this.index, this.timeline, this.player.today);
     this.stationLayer = new StationLayer(
       this.map,
@@ -323,6 +328,18 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   public focusLines(lineIds: string[] | null): void {
     this.focusedLines = lineIds;
     if (this.ready) this.applyBackdrop();
+  }
+
+  /**
+   * Sees the map flat from above, or in 3D: tilted, the city's buildings rising as the camera comes
+   * down, the network drawn over them; playback then follows each change from close by, turned along
+   * it. Into 3D the camera comes down to where the buildings stand; back, it lies flat and faces north.
+   *
+   * @param mode - Flat, or 3D.
+   */
+  public setViewMode(mode: ViewMode): void {
+    this.buildingsLayer.show(mode === '3d');
+    this.camera.setViewMode(mode);
   }
 
   /** Zooms in a step, about the centre. */
@@ -565,7 +582,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** The overlay's layer groups, bottom to top. */
   private get layers(): MapLayer[] {
-    return [this.coverageLayer, this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
+    return [this.coverageLayer, this.buildingsLayer, this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
   }
 
   /** Draws the coverage on the date shown, if it is shown and the city has an outline; else hides it. */

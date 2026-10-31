@@ -97,7 +97,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     getSource: (id: string) => {
       if (images.has(id)) return { updateImage: (image: { url: string; coordinates: unknown }) => images.set(id, image) };
-      if (!data.has(id)) return undefined;
+      // A basemap's own source: one its layers read.
+      if (!data.has(id)) return style.some(layer => 'source' in layer && layer.source === id) ? { type: 'vector' } : undefined;
       return {
         setData: (next: unknown) => {
           featuresOf(id, next);
@@ -133,6 +134,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     queryRenderedFeatures: () => rendered,
     getZoom: () => view.zoom,
+    getBearing: () => 0,
     getPadding: () => view.cover,
     getContainer: () => ({ clientWidth: view.width, clientHeight: view.height }),
     project: ([lng, lat]: [number, number]) => {
