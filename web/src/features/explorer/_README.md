@@ -15,7 +15,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | `time/`     | The time control: at rest, the timeline, the player (`useExplorerTime`); the timeline's scale         | `TimeControl`, `TimelineBar`                                      |
 | `panel/`    | The panel's frame: the open section, the views pushed over it, its top (`useExplorerPanel`)           | `PanelTop`, `ExplorerRail`, `ExplorerSheet`                       |
 | `lines/`    | The Lines section, and a line's view                                                                  | `LinesSection`, `LineView`                                        |
-| `changes/`  | The Changes section, which follows playback                                                           | `ChangesSection`, `ChangeRow`                                     |
+| `changes/`  | The Changes section, which follows playback                                                           | `ChangesSection`, `ChangeTimeline`                                |
 | `stations/` | The Stations section, a station's view and the walk from it along its lines; finding stations by name | `StationsSection`, `StationView`, `StationLinks`, `StationSearch` |
 | `route/`    | The Route section: a route between two stations (`useRouteFinder`)                                    | `RouteSection`                                                    |
 | `insights/` | The Insights section: how the network grew, and its records on the date shown (`useInsights`)         | `InsightsSection`, `GrowthChart`, `DecadeChart`                   |

@@ -28,11 +28,7 @@
       </section>
     </template>
 
-    <ul v-else role="list" class="-mx-2">
-      <li v-for="change in changes" :key="change.index">
-        <ChangeRow :change :title="titleInLine(change.title, line.name)" @select="emit('change', $event)" />
-      </li>
-    </ul>
+    <ChangeTimeline v-else :changes :titleOf="change => titleInLine(change.title, line.name)" @select="emit('change', $event)" />
   </div>
 </template>
 

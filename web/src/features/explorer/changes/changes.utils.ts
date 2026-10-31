@@ -40,3 +40,20 @@ export const currentChangeIndex = (changes: ChangeInfo[], time: TimeState | null
   const ofYear = changes.filter(change => change.index < time.cursor && change.time !== null && yearOf(change.time) === year);
   return ofYear.at(-1)?.index ?? null;
 };
+
+/**
+ * Where a run of changes stands against the current one, as a timeline's position: the current
+ * change's place in it; past its end when every change in it came before (all done); none when the
+ * current one is still ahead, or there is none.
+ *
+ * @param indices - The run's changes, by their position in the timeline, in order.
+ * @param current - The current change's position; `null` for none.
+ * @returns The position to mark active: `-1` for none, `indices.length` for all done.
+ */
+export const timelinePosition = (indices: number[], current: number | null): number => {
+  if (current === null) return -1;
+  const here = indices.indexOf(current);
+  if (here !== -1) return here;
+  const last = indices.at(-1);
+  return last !== undefined && last < current ? indices.length : -1;
+};

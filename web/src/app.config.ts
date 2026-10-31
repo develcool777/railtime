@@ -17,6 +17,24 @@ export default defineAppConfig({
     badge: {
       defaultVariants: { variant: 'subtle', size: 'sm' },
     },
+    // ⌘K: a panel under the header, as tall as its results, its field roomy; a row's mark centred on its name.
+    dashboardSearch: {
+      slots: { input: '[&_input]:h-13 [&_input]:text-base' },
+      variants: {
+        fullscreen: {
+          false: { modal: 'top-18 translate-y-0 rounded-lg shadow-[0_20px_60px_rgba(21,32,48,0.25)] sm:h-auto sm:max-h-[28rem] sm:max-w-[560px]' },
+        },
+      },
+    },
+    commandPalette: {
+      slots: { item: 'items-center' },
+    },
+    // A run of changes (the Changes list, a line's history): the line between them visible, those done
+    // with their own dot on a green line, the current one ringed.
+    timeline: {
+      slots: { separator: 'bg-accented' },
+      compoundVariants: [{ color: 'primary', class: { indicator: 'group-data-[state=completed]:bg-transparent' } }],
+    },
     // The home page is a catalogue, not a landing page: its hero, sections and cards at that scale.
     pageHero: {
       slots: {

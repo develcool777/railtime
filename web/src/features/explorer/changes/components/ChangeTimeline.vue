@@ -1,0 +1,62 @@
+<template>
+  <!-- A run of changes as a timeline: those the map has reached done, the current one active. -->
+  <UTimeline :modelValue="position" :items orientation="vertical" size="3xs" @select="(_event, item) => emit('select', item.value)">
+    <!-- Filled for an opening, hollow for a plan's, grey and hollow for a closure. -->
+    <template #indicator="{ item }">
+      <span class="size-2.5 rounded-full border-2" :style="dotStyleOf(item.change)" />
+    </template>
+    <template #date="{ item }">
+      <span class="tabular-nums">{{ item.date }}</span>
+    </template>
+    <!-- The title a button, so the keyboard reaches each change; its click is the item's. -->
+    <template #title="{ item }">
+      <UButton :label="item.title" color="neutral" variant="link" class="text-highlighted p-0 text-left text-sm leading-5 font-medium whitespace-normal" />
+    </template>
+  </UTimeline>
+</template>
+
+<script setup lang="ts">
+  import type { ChangeInfo } from '@railtime/renderer/transitMap.types';
+  import { computed } from 'vue';
+
+  import { timelinePosition } from '~/features/explorer/changes/changes.utils';
+  import { yearOf } from '~/features/explorer/format.utils';
+
+  const props = defineProps<{
+    /** The run of changes, in order. */
+    changes: ChangeInfo[];
+    /** The change the map is at, by its position in the whole timeline; none before the first. */
+    current?: number | null;
+    /** A shorter title for each, where the context says the rest (a line's own view). */
+    titleOf?: (change: ChangeInfo) => string;
+  }>();
+  const emit = defineEmits<{ select: [index: number] }>();
+
+  const items = computed(() =>
+    props.changes.map(change => ({
+      value: change.index,
+      change,
+      date: change.time === null ? 'Plan' : String(yearOf(change.time)),
+      title: props.titleOf?.(change) ?? change.title,
+      description: change.subtitle,
+    })),
+  );
+  const position = computed(() =>
+    timelinePosition(
+      props.changes.map(change => change.index),
+      props.current ?? null,
+    ),
+  );
+
+  /**
+   * A change's dot: filled in its line's colour for an opening, hollow for a plan's, grey for a closure.
+   *
+   * @param change - The change.
+   * @returns The dot's colours.
+   */
+  const dotStyleOf = (change: ChangeInfo) => {
+    if (change.kind === 'close' || change.kind === 'stationClose') return { borderColor: 'var(--ui-text-dimmed)' };
+    if (change.time === null) return { borderColor: change.color };
+    return { borderColor: change.color, background: change.color };
+  };
+</script>
