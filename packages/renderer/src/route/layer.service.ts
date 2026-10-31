@@ -13,8 +13,22 @@ import type { Palette } from '../layers/theme.types';
  * stops between, smaller, where there is room.
  */
 export class RouteLayer extends MapLayer {
+  /** The route's stretches: kept, so installing draws one shown before the basemap loaded. */
+  private features: RouteFeature[] = [];
+  /** Its stops, marked. */
+  private stops: PointFeature<RouteStopProperties>[] = [];
+
   public constructor(map: MapLibreMap) {
     super(map);
+  }
+
+  /**
+   * Whether a route is drawn.
+   *
+   * @returns True if one is.
+   */
+  public get shown(): boolean {
+    return this.features.length > 0;
   }
 
   /**
@@ -87,6 +101,7 @@ export class RouteLayer extends MapLayer {
       },
       paint: { 'text-halo-width': 2 },
     });
+    this.draw();
   }
 
   /**
@@ -111,8 +126,15 @@ export class RouteLayer extends MapLayer {
    * @param stops - Its stops, marked; none to clear them.
    */
   public update(features: RouteFeature[], stops: PointFeature<RouteStopProperties>[]): void {
-    const collection: FeatureCollection<RouteFeature> = { ...emptyCollection<RouteFeature>(), features };
+    this.features = features;
+    this.stops = stops;
+    this.draw();
+  }
+
+  /** Puts the route kept in the sources; before they are installed, nothing. */
+  private draw(): void {
+    const collection: FeatureCollection<RouteFeature> = { ...emptyCollection<RouteFeature>(), features: this.features };
     this.setData(SOURCES.route, collection);
-    this.setData(SOURCES.routeStops, { ...emptyCollection<PointFeature<RouteStopProperties>>(), features: stops });
+    this.setData(SOURCES.routeStops, { ...emptyCollection<PointFeature<RouteStopProperties>>(), features: this.stops });
   }
 }

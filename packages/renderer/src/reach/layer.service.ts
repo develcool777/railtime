@@ -12,8 +12,22 @@ import type { Palette } from '../layers/theme.types';
  * room, the nearest first.
  */
 export class ReachLayer extends MapLayer {
+  /** The track reached: kept, so installing draws a reach shown before the basemap loaded. */
+  private track: ReachTrackFeature[] = [];
+  /** The stations reached, the start among them. */
+  private stops: PointFeature<ReachStopProperties>[] = [];
+
   public constructor(map: MapLibreMap) {
     super(map);
+  }
+
+  /**
+   * Whether a reach is drawn.
+   *
+   * @returns True if one is.
+   */
+  public get shown(): boolean {
+    return this.stops.length > 0;
   }
 
   /**
@@ -74,6 +88,7 @@ export class ReachLayer extends MapLayer {
       },
       paint: { 'text-halo-width': 2 },
     });
+    this.draw();
   }
 
   /**
@@ -96,7 +111,14 @@ export class ReachLayer extends MapLayer {
    * @param stops - The stations it reaches, the start among them; none to clear them.
    */
   public update(track: ReachTrackFeature[], stops: PointFeature<ReachStopProperties>[]): void {
-    this.setData(SOURCES.reachTrack, { ...emptyCollection<ReachTrackFeature>(), features: track });
-    this.setData(SOURCES.reachStops, { ...emptyCollection<PointFeature<ReachStopProperties>>(), features: stops });
+    this.track = track;
+    this.stops = stops;
+    this.draw();
+  }
+
+  /** Puts the reach kept in the sources; before they are installed, nothing. */
+  private draw(): void {
+    this.setData(SOURCES.reachTrack, { ...emptyCollection<ReachTrackFeature>(), features: this.track });
+    this.setData(SOURCES.reachStops, { ...emptyCollection<PointFeature<ReachStopProperties>>(), features: this.stops });
   }
 }
