@@ -5,11 +5,11 @@
   "license": "(MIT AND ODbL-1.0)",
   "type": "module",
   "scripts": {
-    "boundary": "node src/cli.fetchBoundary.ts",
-    "format": "node src/cli.formatCity.ts",
+    "boundary": "node src/boundary/cli.ts",
+    "summaries": "node src/summary/cli.ts",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run",
-    "previews": "node src/cli.renderPreviews.ts"
+    "previews": "node src/preview/cli.ts"
   },
   "exports": {
     "./cities.json": "./cities/cities.json"

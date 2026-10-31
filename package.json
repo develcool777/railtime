@@ -16,7 +16,7 @@
     "format-check": "prettier --check .",
     "code-quality:dead-code": "knip",
     "data:boundary": "pnpm --filter @railtime/data boundary",
-    "data:format": "pnpm --filter @railtime/data format",
+    "data:summaries": "pnpm --filter @railtime/data summaries",
     "data:previews": "pnpm --filter @railtime/data previews",
     "test-unit-coverage": "vitest run --coverage",
     "test-mutation": "node packages/tooling/src/cli.mutation.ts"

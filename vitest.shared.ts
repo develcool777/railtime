@@ -36,12 +36,12 @@ export const assertTestsMirrorSource = (root: string, testDir: string, sourceDir
 };
 
 /**
- * Refuses to start while a dataset test has no dataset: `test/unit/cities/unitedKingdom/tyneAndWear.test.ts`
+ * Refuses to start while a city's test has no city: `test/unit/cities/unitedKingdom/tyneAndWear.test.ts`
  * checks `cities/united-kingdom/tyne-and-wear/tyne-and-wear.json`.
  *
  * @param root - The data package's folder.
  */
-export const assertTestsMirrorDatasets = (root: string): void => {
+export const assertTestsMirrorCities = (root: string): void => {
   const kebab = (name: string) => name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
   const orphans = globSync('*/*.test.ts', { cwd: join(root, 'test/unit/cities') }).filter(testPath => {
     const [country = '', city = ''] = testPath
@@ -50,5 +50,5 @@ export const assertTestsMirrorDatasets = (root: string): void => {
       .map(kebab);
     return globSync(`${country}/${city}/${city}.json`, { cwd: join(root, 'cities') }).length === 0;
   });
-  if (orphans.length > 0) throw new Error(`A dataset test checks cities/<country>/<city>/<city>.json; these have none:\n${orphans.join('\n')}`);
+  if (orphans.length > 0) throw new Error(`A city's test checks cities/<country>/<city>/<city>.json; these have none:\n${orphans.join('\n')}`);
 };

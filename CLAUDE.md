@@ -7,17 +7,18 @@ enforces them: `pnpm eslint-check` must pass.
 
 A pnpm monorepo: `packages/schema` (the network format: `format/` its types, `validation/` the Zod
 shape and the checks between parts, `plan/` building a plan on a network), `packages/renderer` (the MapLibre engine,
-`TransitMap`), `packages/data` (every city's dataset in `cities/<country>/<city>/`, the index of them,
-`cities/cities.json`, and `pnpm data:format`, which validates and tidies a dataset and rewrites the
-index), `packages/tooling` (the repo's own tools: `pnpm test-mutation`) and `web` (the Nuxt 4 + Nuxt UI explorer).
+`TransitMap`), `packages/data` (every city's files in `cities/<country>/<city>/`: its network
+`<city>.json`, outline and pictures; the index of them, `cities/cities.json`; and the commands that keep
+them, a folder each in `src/`: `format/`, `boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`) and `web` (the Nuxt 4 + Nuxt UI explorer).
 `README.md` has the commands; `packages/renderer/_README.md` explains steps, cursors and the frame model.
 
 ## Checks
 
 `pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
 `pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
-After editing a city's dataset, run `pnpm data:format <city>`; after changing its track or lines'
-colours, `pnpm data:previews <city>` too (it draws the landing page's pictures in Chrome).
+After adding a city or changing one's lines, stations or plans, run `pnpm data:summaries` (the landing
+page's list); after changing its track or lines' colours, `pnpm data:previews <city>` too (it draws the
+landing page's pictures in Chrome).
 
 ## Conventions (enforced)
 
@@ -32,6 +33,11 @@ colours, `pnpm data:previews <city>` too (it draws the landing page's pictures i
 - **Strict indexing** (`noUncheckedIndexedAccess`): a lookup by an id the network supplied goes
   through `required()` (or `NetworkIndex.stationOf`/`lineOf`), which fails loudly; `!` only inside a
   loop whose bounds guarantee the element, with a comment saying so.
+- **A command is a feature's `cli.ts`** (`packages/data/src/boundary/cli.ts`, `pnpm data:boundary`): it
+  reads its arguments, calls the feature in a `try`, and on an error says it and sets
+  `process.exitCode = 1`. The feature knows nothing of the command: it takes typed arguments, throws
+  what went wrong, and closes what it opened. A function in the feature's utils, or a service where it
+  holds state (`PreviewRenderer`: a server, Chrome, a page); beside it one types and one constants file.
 - **Erasable TypeScript only** (`erasableSyntaxOnly`): scripts run directly under Node's type
   stripping, so no enums or constructor parameter properties.
 
@@ -82,7 +88,8 @@ packages/renderer/
   test/unit/                mirrors src/: test/unit/network/timeline.test.ts tests src/network/timeline.*.ts
   test/support/             what tests share: factories/ (tinyNetwork), playback.utils.ts
 packages/data/
-  test/unit/dataset/        mirrors src/dataset/
+  test/unit/<feature>/      mirrors src/<feature>/: city/ (finding the cities and reading their files),
+                            format/, boundary/, preview/ (a command each)
   test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
                             cities/united-kingdom/london/london.json, played through the renderer
 web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts); components are checked in the browser;
@@ -114,30 +121,31 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 
 ## Data
 
-`packages/data/cities/<country>/<city>/<city>.json` is the city's dataset and its source of truth: edit
-it directly (a date, a station name), never regenerate it. `pnpm data:format <city>` validates it
-against the schema, keeps its layout (one station or segment per line) and rewrites
-`cities/cities.json`, the index the landing page reads; a test fails otherwise.
+`packages/data/cities/<country>/<city>/<city>.json` is the city's network and its source of truth: edit
+it directly (a date, a station name), keeping its layout (one station or segment per line), never
+regenerate it. The tests read every city through the schema, so one it refuses fails them;
+`pnpm data:summaries` rewrites `cities/cities.json`, the list the landing page reads, and a test fails
+while it is out of date.
 A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
-`packages/schema/src/validation/checks.constants.ts`), or `data:format` refuses it: the line would miss the station's dot. Where an
+`packages/schema/src/validation/checks.constants.ts`), or the schema refuses it: the line would miss the station's dot. Where an
 interchange's lines run apart underground, each line's track ends at the one station point.
 A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
-says the line never called there); its `closed` while the line runs there. `data:format` refuses
+says the line never called there); its `closed` while the line runs there. The schema refuses
 any other.
 
 Each city's test lists every date a line comes apart (`lineSplits` in `test/support/history.utils.ts`),
 with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just
 the same and fails the test: fix the date, or, if history really parted the line, add it with its reason.
 
-Each city has its outline beside its dataset, `<city>.boundary.json` (`CityBoundary`, from
+Each city has its outline beside its network, `<city>.boundary.json` (`CityBoundary`, from
 OpenStreetMap's administrative boundary, simplified): what the Coverage section measures within. It is
 the city's limits, or the county a network spans (Greater Manchester, Tyne and Wear), never a wider
 region: a plan running out to the next towns stays outside. `pnpm data:boundary <city> [relation]`
 fetches it (`src/boundary/`): again from the relation its `source` names, or from the OpenStreetMap
 relation given, for a new city; it writes nothing the schema refuses or that holds half the city's
-stations or fewer (its plans' where nothing is built). `data:format` keeps it tidy, and a test checks
-every city has one, in its layout, holding more than half its stations.
+stations or fewer (its plans' where nothing is built). A test checks every city has one, in its
+layout, holding more than half its stations.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction
-goes in the dataset with that source in mind.
+goes in the network with that source in mind.

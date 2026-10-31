@@ -1,11 +1,10 @@
-import { parseNetwork } from '@railtime/schema/network.schema';
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { CITY_INDEX_PATH, datasets } from '../../../src/dataset/city.utils.ts';
-import { formatCityIndex, indexEntryOf } from '../../../src/dataset/cityIndex.utils.ts';
+import { SUMMARIES_PATH, cities, readNetwork } from '../../../src/city.utils.ts';
+import { formatSummaries, summaryOf } from '../../../src/summary/summary.utils.ts';
 
 /** Every city's network, with its country. */
-const CITIES = datasets().map(({ country, city, path }) => ({ country, city, network: parseNetwork(JSON.parse(readFileSync(path, 'utf8'))) }));
+const CITIES = cities().map(city => ({ country: city.country, city: city.id, network: readNetwork(city) }));
 
 /**
  * A city's network, by its id.
@@ -15,15 +14,15 @@ const CITIES = datasets().map(({ country, city, path }) => ({ country, city, net
  */
 const cityOf = (id: string) => {
   const found = CITIES.find(candidate => candidate.city === id);
-  if (!found) throw new Error(`No dataset for ${id}`);
+  if (!found) throw new Error(`No city ${id}`);
   return found;
 };
 
-describe('CityIndexUtils', () => {
-  describe('indexEntryOf', () => {
+describe('SummaryUtils', () => {
+  describe('summaryOf', () => {
     test('sums up a network with a history: when it opened, its lines and stations', () => {
       const { network, country } = cityOf('london');
-      const entry = indexEntryOf(network, country);
+      const entry = summaryOf(network, country);
       expect(entry).toMatchObject({ name: 'London', country: 'united-kingdom', openedYear: 1863, planOnly: false });
       expect(entry.lines).toBeGreaterThan(10);
       expect(entry.plans).toBe(Object.keys(network.plans ?? {}).length);
@@ -31,17 +30,17 @@ describe('CityIndexUtils', () => {
 
     test('sums up a network never built by its first plan', () => {
       const { network, country } = cityOf('bratislava');
-      const entry = indexEntryOf(network, country);
+      const entry = summaryOf(network, country);
       expect(entry).toMatchObject({ planOnly: true, openedYear: null });
       expect(entry.stations).toBeGreaterThan(0);
       expect(entry.lines).toBeGreaterThan(0);
     });
   });
 
-  describe('formatCityIndex', () => {
-    test('cities/cities.json is the index of every dataset as they are (pnpm data:format <city>)', () => {
-      const index = Object.fromEntries(CITIES.map(({ country, city, network }) => [city, indexEntryOf(network, country)]));
-      expect(readFileSync(CITY_INDEX_PATH, 'utf8')).toBe(formatCityIndex(index));
+  describe('formatSummaries', () => {
+    test('cities/cities.json is the index of every city as they are (pnpm data:summaries)', () => {
+      const index = Object.fromEntries(CITIES.map(({ country, city, network }) => [city, summaryOf(network, country)]));
+      expect(readFileSync(SUMMARIES_PATH, 'utf8')).toBe(formatSummaries(index));
     });
   });
 });

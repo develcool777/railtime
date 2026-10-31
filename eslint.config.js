@@ -50,9 +50,12 @@ const TEST_SYNTAX = [
   },
   { selector: "CallExpression[callee.name='it']", message: 'Write `test(…)`, not `it(…)`.' },
 ];
-const SCRIPT_FILE = 'cli.+([a-zA-Z0-9])';
-/** Commands run with node (`pnpm data:format`), named for what they do. */
-const CLI_FILES = 'packages/*/src/cli.*.ts';
+const SCRIPT_FILE = 'cli?(.+([a-zA-Z0-9]))';
+/**
+ * Commands run with node: `src/cli.<name>.ts`, or a feature's own, `src/<feature>/cli.ts`
+ * (`pnpm data:boundary`), which only hands its arguments to the feature's service.
+ */
+const CLI_FILES = ['packages/*/src/cli.*.ts', 'packages/*/src/*/cli.ts'];
 
 /** Config files at a package root follow their tool's naming, not ours. */
 const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**/app.config.ts'];
@@ -140,7 +143,7 @@ export default defineConfig(
   // ---- File names ------------------------------------------------------------
   {
     files: ['packages/*/src/**/*.ts', 'web/src/**/*.ts'],
-    ignores: [...TOOL_CONFIGS, CLI_FILES],
+    ignores: [...TOOL_CONFIGS, ...CLI_FILES],
     plugins: { 'check-file': checkFile },
     rules: {
       'check-file/filename-naming-convention': ['error', { '**/*.ts': SOURCE_FILE }],
@@ -158,7 +161,7 @@ export default defineConfig(
     },
   },
   {
-    files: [CLI_FILES],
+    files: CLI_FILES,
     plugins: { 'check-file': checkFile },
     rules: { 'check-file/filename-naming-convention': ['error', { '**/*.ts': SCRIPT_FILE }] },
   },
