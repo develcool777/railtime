@@ -13,11 +13,14 @@
       <UContainer class="pt-8">
         <CityFilterBar v-model:filter="filter" :shown="shownCount" :total="CITIES.length" />
       </UContainer>
-      <UPageSection
-        v-for="{ country, cities } in sections"
-        :key="country"
-        :title="country"
-        :description="`${cities.length} ${cities.length === 1 ? 'city' : 'cities'}`">
+      <!-- A country to a section, a line between each and the next. -->
+      <UPageSection v-for="({ country, cities }, position) in sections" :key="country" :class="{ 'border-default border-t': position > 0 }">
+        <template #title>
+          <span class="flex items-center gap-2">
+            {{ country }}
+            <UBadge color="neutral" :label="`${cities.length} ${cities.length === 1 ? 'city' : 'cities'}`" />
+          </span>
+        </template>
         <UPageGrid>
           <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="summaryOf(city.value)" :eager="EAGER_CITIES.has(city.value)" />
         </UPageGrid>
