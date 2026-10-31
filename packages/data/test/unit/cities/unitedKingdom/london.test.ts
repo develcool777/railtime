@@ -21,6 +21,15 @@ describe('London', () => {
     expect(stations).toContain('rickmansworth');
   });
 
+  test('extends the Metropolitan to Harrow in 1880 by Neasden, its non-stop track to Wembley Park only from 1939', () => {
+    const extended = stepsOn('1880-08-02').filter(step => step.kind === 'open');
+    expect(extended).toHaveLength(1);
+    const stations = extended[0]?.kind === 'open' ? extended[0].segments.flatMap(segment => [segment.stationA, segment.stationB]) : [];
+    expect(stations).toEqual(expect.arrayContaining(['willesden-green', 'neasden', 'harrow-on-the-hill']));
+    expect(stations).not.toContain('finchley-road');
+    expect(stepsOn('1939-11-20').some(step => step.kind === 'open' && step.line === 'metropolitan')).toBe(true);
+  });
+
   test('plays the Victoria line in its three 1968–69 stages', () => {
     for (const date of ['1968-09-01', '1968-12-01', '1969-03-07'])
       expect(stepsOn(date).some(step => step.kind === 'open' && step.line === 'victoria')).toBe(true);

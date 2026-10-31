@@ -40,10 +40,16 @@ describe('CameraDirector', () => {
     // Already close and in view: nothing to do.
     fake.view.zoom = 13;
     expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
+    // Close, but under a panel over the map's left: a pan.
+    fake.view.cover.left = 600;
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(1000);
+    fake.view.cover.left = 0;
+    fake.view.center = coordOf('c');
+    expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
     // Close but looking elsewhere: a pan, at the same zoom.
     fake.view.center = [1, 51.5];
     expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(1000);
-    expect(fake.moves[1]?.options.maxZoom).toBe(13);
+    expect(fake.moves[2]?.options.maxZoom).toBe(13);
   });
 
   test('frames a step with the network around it in overview, and leaves the camera to the user when free', () => {

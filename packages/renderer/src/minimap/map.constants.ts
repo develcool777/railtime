@@ -12,3 +12,6 @@ export const MINIMAP_LAYERS = {
   active: 'mm-active',
   viewport: 'mm-viewport',
 } as const;
+
+/** Room around the city in the minimap, pixels. */
+export const MINIMAP_PADDING = 8;

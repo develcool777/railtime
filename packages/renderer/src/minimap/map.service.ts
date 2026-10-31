@@ -4,7 +4,7 @@ import type { FeatureCollection, LineFeature } from '../layers/features.types';
 import { emptyCollection } from '../layers/features.utils';
 import type { Palette } from '../layers/theme.types';
 import type { Bounds } from '../core/geometry.types';
-import { MINIMAP_LAYERS, MINIMAP_SOURCES } from './map.constants';
+import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES } from './map.constants';
 
 /**
  * A small, fixed overview of the whole city: the network so far, the change happening now, and a
@@ -29,12 +29,17 @@ export class Minimap {
       container,
       style,
       bounds: bounds as LngLatBoundsLike,
-      fitBoundsOptions: { padding: 8 },
+      fitBoundsOptions: { padding: MINIMAP_PADDING },
       interactive: false,
       attributionControl: false,
     });
     this.map.on('style.load', () => this.install());
-    this.resizeObserver = new ResizeObserver(() => this.map.resize());
+    // Created hidden, it first fitted the city into nothing: fit it again whenever it gets a size.
+    this.resizeObserver = new ResizeObserver(() => {
+      if (container.clientWidth === 0 || container.clientHeight === 0) return;
+      this.map.resize();
+      this.map.fitBounds(bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
+    });
     this.resizeObserver.observe(container);
   }
 
