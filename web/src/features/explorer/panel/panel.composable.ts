@@ -1,26 +1,30 @@
-import { computed, ref, watch } from 'vue';
+import type { StationInfo } from '@railtime/renderer/transitMap.types';
+import { storeToRefs } from 'pinia';
+import { computed, ref, shallowRef, watch } from 'vue';
 
 import { currentChangeIndex } from '~/features/explorer/changes/changes.utils';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
-import type { Section } from '~/features/explorer/explorer.types';
+import { useExplorerStore } from '~/features/explorer/explorer.store';
+import type { PanelView } from '~/features/explorer/explorer.types';
 import type { ExplorerPanel, ExplorerPanelInput } from '~/features/explorer/panel/panel.composable.types';
 import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel.utils';
 import type { LineDirection } from '~/features/explorer/stations/station.types';
 import { directionsAt } from '~/features/explorer/stations/station.utils';
 
 /**
- * The panel: the section open, the line or station view pushed over it, what each lists on the
- * date shown, and what its top says. A station picked on the map opens its view wherever the panel is.
+ * The panel's content: what the store has open (the section, the line or station views pushed over
+ * it), read from the map for the date shown, and what its top says. The station open is rung on the map.
  *
- * @param input - The network and plan, the map, the layout, and what the time control shows.
- * @returns The panel's state and what changes it.
+ * @param input - The network and plan, and the map.
+ * @returns What the panel lists, and what changes the map from it.
  */
 export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
-  const { network, plan, opening, chosenPlan, planCount, binding, layout, timeMode } = input;
-  const { map, time, step, station, lines, changes } = binding;
+  const { network, plan, chosenPlan, planCount, binding } = input;
+  const { map, time, step, lines, changes } = binding;
+  const store = useExplorerStore();
+  const { section, views, openStation, openLine, timeMode } = storeToRefs(store);
 
   const sections = SECTIONS.filter(entry => entry.id !== 'plans' || planCount > 0);
-  const section = ref<Section>(opening);
   const sectionLabel = computed(() => sections.find(entry => entry.id === section.value)?.label ?? 'Lines');
 
   const visible = ref(new Set([...Object.keys(network.lines), ...Object.keys(chosenPlan.value?.lines ?? {})]));
@@ -29,16 +33,39 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
     map.value?.setVisibleLines([...next]);
   };
 
-  const openLine = ref<string | null>(null);
+  /**
+   * Whether the network, or the plan shown, has a line: a link can name one it does not.
+   *
+   * @param id - The line.
+   * @returns True if it does.
+   */
+  const hasLine = (id: string) => network.lines[id] !== undefined || chosenPlan.value?.lines?.[id] !== undefined;
   const lineDetails = computed(() => {
     // Read for the date shown: a line's stops change with it.
     const shown = time.value?.cursor;
-    return openLine.value && map.value && shown !== undefined ? map.value.getLineDetails(openLine.value) : null;
+    return openLine.value && map.value && shown !== undefined && hasLine(openLine.value) ? map.value.getLineDetails(openLine.value) : null;
   });
   const lineChanges = computed(() => {
     const wanted = new Set(lineDetails.value?.changes ?? []);
     return changes.value.filter(change => wanted.has(change.index));
   });
+
+  /**
+   * Whether the network, or the plan shown, has a station: a link can name one it does not.
+   *
+   * @param id - The station.
+   * @returns True if it does.
+   */
+  const hasStation = (id: string) => network.stations[id] !== undefined || chosenPlan.value?.stations?.[id] !== undefined;
+  // Read again for the date shown, and the theme (its lines' colours, which `lines` follows).
+  const station = shallowRef<StationInfo | null>(null);
+  watch(
+    [map, openStation, () => time.value?.cursor, lines],
+    ([transitMap, id, shown]) => (station.value = transitMap && id && shown !== undefined && hasStation(id) ? transitMap.getStationInfo(id) : null),
+    { immediate: true },
+  );
+  // The station open is the one rung on the map, however it was opened.
+  watch([map, openStation], ([transitMap, id]) => transitMap?.selectStation(id && hasStation(id) ? id : null));
 
   // None while playing, when the panel follows the changes.
   const stations = computed(() => (time.value && !time.value.playing && map.value ? map.value.getStations() : []));
@@ -55,9 +82,24 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
   const currentChange = computed(() => currentChangeIndex(changes.value, time.value, timeMode.value === 'playing' && step.value !== null));
   const shownDate = computed(() => (!time.value || time.value.future ? null : time.value.time));
 
+  /**
+   * What a pushed view is called, for the back link over it.
+   *
+   * @param view - The view.
+   * @returns Its line's or station's name.
+   */
+  const nameOf = (view: PanelView) =>
+    view.kind === 'line'
+      ? (network.lines[view.id]?.name ?? chosenPlan.value?.lines?.[view.id]?.name ?? view.id)
+      : (network.stations[view.id]?.name ?? chosenPlan.value?.stations?.[view.id]?.name ?? view.id);
+  const backLabel = computed(() => {
+    const under = views.value.at(-2);
+    return under ? nameOf(under) : sectionLabel.value;
+  });
+
   const panelTop = computed(() => {
-    if (station.value) return stationTop(station.value, stationTrail.value.at(-1)?.name ?? lineDetails.value?.name ?? sectionLabel.value);
-    if (lineDetails.value) return lineTop(lineDetails.value, sectionLabel.value);
+    if (station.value) return stationTop(station.value, backLabel.value);
+    if (lineDetails.value) return lineTop(lineDetails.value, backLabel.value);
     return sectionTop({
       section: section.value,
       label: sectionLabel.value,
@@ -73,88 +115,17 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
     });
   });
 
-  // The stations walked through from a station's view, so Back retraces the walk.
-  const stationTrail = ref<{ id: string; name: string }[]>([]);
-  let walking = false;
-
-  const closeStation = () => {
-    stationTrail.value = [];
-    station.value = null;
-    map.value?.selectStation(null);
-  };
-  const openStation = (id: string) => {
-    if (!map.value) return;
-    station.value = map.value.getStationInfo(id);
-    map.value.selectStation(id);
-  };
-  const walkTo = (id: string) => {
-    if (!station.value || station.value.id === id) return;
-    stationTrail.value = [...stationTrail.value, { id: station.value.id, name: station.value.name }];
-    walking = true;
-    openStation(id);
-  };
-  // A station picked on the map opens its view in the panel, wherever the panel is; picked anywhere
-  // but by a walk, it starts a new one.
-  watch(
-    () => station.value?.id,
-    picked => {
-      if (picked) layout.revealPanel();
-      if (!walking) stationTrail.value = [];
-      walking = false;
-    },
-  );
-
-  // The rail marks what is on top: a station's view is the Stations section's, a line's the Lines'.
-  const railSection = computed((): Section => {
-    if (station.value) return 'stations';
-    if (openLine.value) return 'lines';
-    return section.value;
-  });
-  const hasPushedView = () => station.value !== null || openLine.value !== null;
-  const openSection = (id: Section) => {
-    section.value = id;
-    closeStation();
-    openLine.value = null;
-    layout.revealPanel();
-  };
-  // Beside the map, the open section's own icon folds the panel, as an editor's activity bar does.
-  const pickSection = (id: Section) => {
-    if (!layout.phone.value && layout.panelOpen.value && section.value === id && !hasPushedView()) layout.panelOpen.value = false;
-    else openSection(id);
-  };
-  const goBack = () => {
-    const previous = stationTrail.value.at(-1);
-    if (previous) {
-      stationTrail.value = stationTrail.value.slice(0, -1);
-      walking = true;
-      openStation(previous.id);
-    } else if (station.value) closeStation();
-    else openLine.value = null;
-  };
-  const pushLine = (id: string) => {
-    closeStation();
-    openLine.value = id;
-    layout.revealPanel();
-  };
-
   const showChange = (index: number) => map.value?.showChange(index);
   const pickChange = (index: number) => {
     if (timeMode.value === 'playing') map.value?.playFrom(index);
     else showChange(index);
   };
-  const followPlayback = () => {
-    closeStation();
-    openLine.value = null;
-    section.value = 'changes';
-  };
 
   return {
     sections,
-    section,
-    railSection,
-    openLine,
     lineDetails,
     lineChanges,
+    station,
     stations,
     stationColors,
     stationDirections,
@@ -163,16 +134,7 @@ export const useExplorerPanel = (input: ExplorerPanelInput): ExplorerPanel => {
     currentChange,
     panelTop,
     shownDate,
-    pickSection,
-    openSection,
-    goBack,
-    hasPushedView,
-    pushLine,
-    openStation,
-    walkTo,
-    closeStation,
     pickChange,
     showChange,
-    followPlayback,
   };
 };

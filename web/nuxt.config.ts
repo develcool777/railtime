@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
   // The investors site's layout: shared code at the top of src/, each product surface in features/<name>/.
   srcDir: 'src/',
-  modules: ['@nuxt/ui', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxtjs/sitemap', '@nuxtjs/robots'],
   css: ['~/css/main.css', '@railtime/renderer/transitMap.css'],
   // The map follows the system theme until the user picks one.
   colorMode: { preference: 'system', fallback: 'dark' },

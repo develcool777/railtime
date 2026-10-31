@@ -1,24 +1,24 @@
 <template>
   <div ref="explorer" class="bg-page flex h-dvh w-full flex-col">
-    <SiteHeader v-if="!mapOnly" wide>
+    <SiteHeader v-if="chrome.header" wide>
       <template #context>
-        <CitySelect v-model:open="cityMenuOpen" :city @city="emit('city', $event)" />
+        <CitySelect v-model:open="citiesOpen" :city @city="emit('city', $event)" />
       </template>
       <template #center>
         <!-- Opens the search, as ⌘K and / do. -->
-        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="searchOpen = true" />
+        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.setOverlay('search')" />
       </template>
-      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="searchOpen = true" />
+      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.setOverlay('search')" />
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
-      <ExplorerRail v-if="!phone && !mapOnly" :sections :open="panelOpen ? railSection : null" :marks @pick="pickSection" />
+      <ExplorerRail v-if="chrome.rail" :sections :open="panelOpen ? railSection : null" :marks @pick="store.pickSection" />
 
       <!-- The map keeps its size: the panel slides over its left edge, which resizing it every frame would make stutter. -->
       <div class="relative min-w-0 flex-1 overflow-hidden">
         <!-- The panel: over the map's left, a column that folds and resizes; on a phone, a drawer over its foot. -->
         <ExplorerPanel
-          v-if="!mapOnly"
+          v-if="chrome.panel"
           v-model:snap="sheet"
           :phone
           :open="panelOpen"
@@ -27,7 +27,7 @@
           :sections
           :section="railSection"
           :marks
-          @pick="pickSection"
+          @pick="store.pickSection"
           @resize="startResize">
           <PanelTop
             :title="panelTop.title"
@@ -35,13 +35,13 @@
             :dots="panelTop.dots"
             :backLabel="panelTop.backLabel"
             :foldable="!phone"
-            @back="goBack"
+            @back="store.goBack"
             @fold="panelOpen = false" />
           <div class="min-h-0 flex-1 overflow-y-auto">
-            <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="walkTo" @line="pushLine" />
-            <LineView v-else-if="lineDetails" :line="lineDetails" :changes="lineChanges" :stationColors @station="openStation" @change="showChange" />
-            <StationsSection v-else-if="section === 'stations'" :stations @open="openStation" />
-            <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="pushLine" />
+            <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="store.walkTo" @line="store.pushLine" />
+            <LineView v-else-if="lineDetails" :line="lineDetails" :changes="lineChanges" :stationColors @station="store.pickStation" @change="showChange" />
+            <StationsSection v-else-if="section === 'stations'" :stations @open="store.pickStation" />
+            <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="store.pushLine" />
             <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="pickChange" />
             <RouteSection
               v-else-if="section === 'route'"
@@ -53,10 +53,23 @@
               @to="routeEnds.to = $event"
               @swap="swapEnds"
               @preference="routePreference = $event"
-              @station="openStation" />
-            <ReachSection v-else-if="section === 'reach'" :stations :from="reachFrom" :reach="foundReach" @from="reachFrom = $event" @station="openStation" />
+              @station="store.pickStation" />
+            <ReachSection
+              v-else-if="section === 'reach'"
+              :stations
+              :from="reachFrom"
+              :reach="foundReach"
+              @from="reachFrom = $event"
+              @station="store.pickStation" />
             <CoverageSection v-else-if="section === 'coverage'" :state="boundaryState" :coverage :history="coverageHistory" @year="showYear" />
-            <InsightsSection v-else-if="section === 'insights'" :growth :records :year="shownYear" @year="showYear" @station="openStation" @line="pushLine" />
+            <InsightsSection
+              v-else-if="section === 'insights'"
+              :growth
+              :records
+              :year="shownYear"
+              @year="showYear"
+              @station="store.pickStation"
+              @line="store.pushLine" />
             <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
           </div>
         </ExplorerPanel>
@@ -68,7 +81,7 @@
           </div>
 
           <PlanLegend
-            v-if="planLegend && !mapOnly"
+            v-if="planLegend && chrome.tools"
             class="absolute top-4 left-4 max-lg:top-3 max-lg:left-3"
             :class="{ 'transition-transform duration-200 ease-out': !resizing }"
             :style="{ transform: `translateX(${panelCover}px)` }"
@@ -76,16 +89,17 @@
             :color="planLegend.color" />
 
           <MapTools
-            v-if="!mapOnly"
+            v-if="chrome.tools"
             class="absolute top-4 right-4 max-lg:top-3 max-lg:right-3"
             :stationNames
             :viewMode
             @zoomIn="map?.zoomIn()"
             @zoomOut="map?.zoomOut()"
             @fit="map?.fitNetwork()"
-            @stationNames="setStationNames"
-            @viewMode="setViewMode"
-            @mapOnly="toggleMapOnly" />
+            @stationNames="stationNames = $event"
+            @viewMode="viewMode = $event"
+            @mapOnly="store.setMapOnly(true)"
+            @help="store.setOverlay('help')" />
           <UButton
             v-else
             icon="i-lucide-minimize-2"
@@ -93,7 +107,7 @@
             color="neutral"
             variant="outline"
             class="map-card absolute top-4 right-4 h-10 px-3 font-semibold"
-            @click="toggleMapOnly">
+            @click="store.setMapOnly(false)">
             <template #trailing>
               <UKbd value="Esc" />
             </template>
@@ -101,7 +115,7 @@
 
           <!-- The time control, and above it while history plays the minimap, unless turned off; on a phone it rides above the sheet. -->
           <div
-            v-show="!mapOnly && !(phone && sheet === 'full')"
+            v-show="chrome.timeControl"
             class="pointer-events-none absolute z-10 flex -translate-x-1/2 flex-col gap-3"
             :class="[timeMode === 'rest' ? 'items-center' : 'items-start', resizing ? '' : 'transition-[left,width] duration-200 ease-out']"
             :style="{
@@ -112,7 +126,7 @@
             }">
             <!-- The same wrapper as the map's: MapLibre makes the minimap's container relative too. -->
             <div
-              v-show="minimapShown"
+              v-show="chrome.minimap"
               class="pointer-events-auto h-[124px] w-[200px] overflow-hidden rounded-lg border-[3px] border-white shadow-[0_8px_30px_rgba(21,32,48,0.1)] dark:border-(--ui-bg)">
               <div ref="minimapElement" class="h-full w-full" aria-label="Overview of the whole city" />
             </div>
@@ -124,9 +138,8 @@
               :changes
               :range
               :step
-              :speed
-              :camera
-              :minimap="minimapOn"
+              :settings="player"
+              :viewMode
               :plan="planSummary"
               :planOnly
               @open="openTimeline"
@@ -135,17 +148,17 @@
               @future="showFuture"
               @play="play"
               @pause="map?.pause()"
+              @previous="stepTime(-1)"
               @skip="map?.skip()"
               @pick="pick"
-              @speed="setSpeed"
-              @camera="setCamera"
-              @minimap="minimapOn = $event"
+              @settings="store.setPlayer"
+              @viewMode="viewMode = $event"
               @exit="exitHistory" />
           </div>
 
           <!-- The map's credits stay on it: its licence asks for them. On a phone they fold into a button. -->
-          <MapCredits v-if="!phone" :credits class="absolute right-2 bottom-1 max-w-[40%] text-right leading-4" />
-          <UPopover v-else-if="!mapOnly">
+          <MapCredits v-if="chrome.credits === 'line'" :credits class="absolute right-2 bottom-1 max-w-[40%] text-right leading-4" />
+          <UPopover v-else-if="chrome.credits === 'button'">
             <UButton
               icon="i-lucide-info"
               color="neutral"
@@ -162,25 +175,28 @@
       </div>
     </div>
 
-    <ExplorerSearch v-model:open="searchOpen" :stations :lines :city @station="openStation" @line="pushLine" @city="emit('city', $event)" />
+    <ExplorerSearch v-model:open="searchOpen" :stations :lines :city @station="store.pickStation" @line="store.pushLine" @city="emit('city', $event)" />
+    <ExplorerHelp v-model:open="helpOpen" :sections :phone />
   </div>
 </template>
 
 <script setup lang="ts">
   import { useRoute } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
-  import { computed, ref, useTemplateRef, watch } from 'vue';
+  import { storeToRefs } from 'pinia';
+  import { computed, useTemplateRef, watch } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
-  import type { Section, TimeMode } from '~/features/explorer/explorer.types';
+  import { useExplorerStore } from '~/features/explorer/explorer.store';
+  import type { Section } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
-  import { useStationNames } from '~/features/explorer/map/stationNames.composable';
-  import { useViewMode } from '~/features/explorer/map/viewMode.composable';
+  import { useMapLook } from '~/features/explorer/map/mapLook.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
+  import { openingSectionOf } from '~/features/explorer/plans/plan.utils';
   import { useInsights } from '~/features/explorer/insights/insights.composable';
   import { useReachFinder } from '~/features/explorer/reach/reach.composable';
   import { useCoverage } from '~/features/explorer/coverage/coverage.composable';
@@ -195,40 +211,47 @@
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  /** What the time control shows: driven by the time control, read by the panel and the layout too. */
-  const timeMode = ref<TimeMode>('rest');
-  const { phone, sheet, panelOpen, panelWidth, minimapOn, panelCover, resizing, startResize, revealPanel, togglePanel, mapOnly, toggleMapOnly, mapPadding } =
-    useExplorerLayout(explorer);
+  // What is open and how it is set is the store's; the parts below read it, and the buttons call its actions.
+  const store = useExplorerStore();
+  const { section, railSection, openStation, timeMode, phone, sheet, panelOpen, panelWidth, viewMode, stationNames, player, chrome } = storeToRefs(store);
+  const searchOpen = store.overlayOpen('search');
+  const helpOpen = store.overlayOpen('help');
+  const citiesOpen = store.overlayOpen('cities');
 
-  // The address says what to open on: a day, a view, a station's view.
+  // The address says what to open on: a day, a view, a tab, a station's view, 3D, map only.
   const opening = parseExplorerQuery(useRoute().query);
+  const openingSection = openingSectionOf(props.plan);
+  store.open(opening, openingSection);
+
+  const { panelCover, resizing, startResize, mapPadding } = useExplorerLayout(explorer);
+
   const binding = useTransitMap({
     container: mapElement,
     minimapContainer: minimapElement,
     network: props.network,
-    padding: () => mapPadding(timeMode.value),
+    padding: mapPadding,
     cover: () => panelCover.value,
+    onStation: id => (id ? store.pickStation(id) : store.closeStation()),
     ...(opening.view ? { view: opening.view } : {}),
     ...(props.plan ? { plan: props.plan } : {}),
   });
-  const { map, time, step, station, lines, changes } = binding;
-  watch([timeMode, sheet, phone], () => map.value?.setPadding(mapPadding(timeMode.value)));
+  const { map, time, step, lines, changes } = binding;
+  watch([timeMode, sheet, phone], () => map.value?.setPadding(mapPadding()));
   watch(panelCover, left => map.value?.setCover({ left }));
+  useMapLook(map);
 
-  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, planMark, openingSection, choosePlan } = useExplorerPlan({
+  const { planOnly, planCount, chosenPlan, planSummary, planLegend, builtFacts, planMark, choosePlan } = useExplorerPlan({
     network: props.network,
     plan: props.plan,
     time,
-    timeMode,
     onChoose: id => emit('plan', id),
   });
 
   const {
     sections,
-    section,
-    railSection,
     lineDetails,
     lineChanges,
+    station,
     stations,
     stationColors,
     stationDirections,
@@ -237,44 +260,16 @@
     currentChange,
     panelTop,
     shownDate,
-    pickSection,
-    openSection,
-    goBack,
-    hasPushedView,
-    pushLine,
-    openStation,
-    walkTo,
     pickChange,
     showChange,
-    followPlayback,
-  } = useExplorerPanel({
-    network: props.network,
-    plan: props.plan,
-    opening: openingSection,
-    chosenPlan,
-    planCount,
-    binding,
-    layout: { phone, panelOpen, revealPanel },
-    timeMode,
-  });
+  } = useExplorerPanel({ network: props.network, plan: props.plan, chosenPlan, planCount, binding });
 
-  const {
-    speed,
-    camera,
-    range,
-    openTimeline,
-    closeTimeline,
-    toggleTimeline,
-    play,
-    togglePlay,
-    exitHistory,
-    showFuture,
-    showToday,
-    pick,
-    setSpeed,
-    setCamera,
-    stepTime,
-  } = useExplorerTime({ binding, timeMode, plan: props.plan, planOnly, currentChange, onPlay: followPlayback });
+  const { range, openTimeline, closeTimeline, toggleTimeline, play, togglePlay, exitHistory, showFuture, showToday, pick, stepTime } = useExplorerTime({
+    binding,
+    plan: props.plan,
+    planOnly,
+    currentChange,
+  });
 
   const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding, section, timeMode });
   const { reachFrom, foundReach, reachMark } = useReachFinder({ binding, section, timeMode });
@@ -296,14 +291,11 @@
     return shown;
   });
 
-  useExplorerAddress({ network: props.network, plan: props.plan, chosenPlan, binding, timeMode, opening });
-
-  const { stationNames, setStationNames } = useStationNames(map);
-  const { viewMode, setViewMode } = useViewMode(map);
+  useExplorerAddress({ plan: props.plan, binding, opening, openingSection });
 
   /** The lines the map brings forward: a line's own in its view; every line otherwise. A route shown fades them all itself. */
   const focusedLines = computed(() => {
-    if (timeMode.value === 'playing' || station.value) return null;
+    if (timeMode.value === 'playing' || openStation.value) return null;
     return lineDetails.value ? [lineDetails.value.id] : null;
   });
   watch(focusedLines, (next, previous) => {
@@ -311,24 +303,6 @@
   });
 
   const credits = computed(() => map.value?.credits ?? []);
-  /** The minimap shows where the camera is while history plays beside the map, unless it is turned off. */
-  const minimapShown = computed(() => timeMode.value === 'playing' && minimapOn.value && !phone.value);
 
-  const searchOpen = ref(false);
-  const cityMenuOpen = ref(false);
-
-  useExplorerShortcuts({
-    sections,
-    openSection,
-    openSearch: () => (searchOpen.value = true),
-    togglePanel,
-    toggleTimeline,
-    togglePlay,
-    stepTime,
-    toggleStationNames: () => setStationNames(!stationNames.value),
-    mapOnly,
-    toggleMapOnly,
-    hasPushedView,
-    goBack,
-  });
+  useExplorerShortcuts({ sections, toggleTimeline, togglePlay, stepTime });
 </script>

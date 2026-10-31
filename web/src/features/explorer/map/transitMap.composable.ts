@@ -1,6 +1,6 @@
 import { useColorMode } from '#imports';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { ChangeInfo, LineInfo, MapView, StationInfo, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineInfo, MapView, StepInfo, Theme, TimeState } from '@railtime/renderer/transitMap.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { TransitMapBinding, TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
@@ -18,7 +18,6 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
   const map = shallowRef<TransitMap | null>(null);
   const time = ref<TimeState | null>(null);
   const step = ref<StepInfo | null>(null);
-  const station = ref<StationInfo | null>(null);
   const lines = ref<LineInfo[]>([]);
   const changes = ref<ChangeInfo[]>([]);
   // Where it opens, until it first moves: a linked view stays in the address.
@@ -42,10 +41,8 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
     transitMap.on('time', state => (time.value = state));
     transitMap.on('step', info => (step.value = info));
     transitMap.on('view', where => (view.value = where));
-    transitMap.on('stationClick', info => {
-      station.value = info;
-      transitMap.selectStation(info?.id ?? null);
-    });
+    // A station clicked, or gone from the map on another date: what the panel opens is the store's.
+    transitMap.on('stationClick', info => mount.onStation(info?.id ?? null));
     lines.value = transitMap.getLines();
     changes.value = transitMap.getChanges();
     map.value = transitMap;
@@ -65,9 +62,8 @@ export const useTransitMap = (mount: TransitMapMount): TransitMapBinding => {
       transitMap.setTheme(theme());
       lines.value = transitMap.getLines();
       changes.value = transitMap.getChanges();
-      if (station.value) station.value = transitMap.getStationInfo(station.value.id);
     },
   );
 
-  return { map, time, step, station, lines, changes, view };
+  return { map, time, step, lines, changes, view };
 };

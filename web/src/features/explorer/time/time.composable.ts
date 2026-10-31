@@ -1,7 +1,7 @@
-import type { CameraMode } from '@railtime/renderer/transitMap.types';
-import { computed, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
+import { computed, watch } from 'vue';
 
-import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
+import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { ExplorerTime, ExplorerTimeInput } from '~/features/explorer/time/time.composable.types';
 import { isAtRest, yearAway } from '~/features/explorer/time/time.utils';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
@@ -11,15 +11,14 @@ import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
  * plays the history (with a plan, its future). A date away from rest opens the timeline, so the way
  * back is in sight; playback reaching its end leaves the timeline open, at today.
  *
- * @param input - The map, the time control's mode, the plan, and the panel's part in playback.
+ * @param input - The map, the plan, and the change the map is at.
  * @returns The time control's state and what changes it.
  */
 export const useExplorerTime = (input: ExplorerTimeInput): ExplorerTime => {
-  const { binding, timeMode, plan, planOnly, currentChange, onPlay } = input;
+  const { binding, plan, planOnly, currentChange } = input;
   const { map, time } = binding;
-
-  const speed = ref(DEFAULT_SPEED);
-  const camera = ref<CameraMode>('follow');
+  const store = useExplorerStore();
+  const { timeMode, player } = storeToRefs(store);
   const range = computed(() => map.value?.range ?? { start: 0, end: Date.now(), today: Date.now() });
 
   // A link's date, or a change picked in the panel, takes the map away from rest.
@@ -41,11 +40,19 @@ export const useExplorerTime = (input: ExplorerTimeInput): ExplorerTime => {
   };
   const showToday = () => map.value?.setDate(range.value.today);
 
+  // How playback is set is the store's: the map is told at mount and on each change.
+  watch(
+    [map, () => player.value.speed, () => player.value.camera],
+    ([transitMap, speed, camera]) => {
+      transitMap?.setSpeed(speed);
+      transitMap?.setCameraMode(camera);
+    },
+    { immediate: true },
+  );
+
   const playHistory = () => {
-    onPlay();
+    store.followPlayback();
     timeMode.value = 'playing';
-    map.value?.setSpeed(speed.value);
-    map.value?.setCameraMode(camera.value);
     map.value?.setDate(plan ? range.value.today : range.value.start);
     map.value?.play();
   };
@@ -87,15 +94,6 @@ export const useExplorerTime = (input: ExplorerTimeInput): ExplorerTime => {
     if (wasPlaying && target.kind !== 'future') transitMap.play();
   };
 
-  const setSpeed = (value: number) => {
-    speed.value = value;
-    map.value?.setSpeed(value);
-  };
-  const setCamera = (value: CameraMode) => {
-    camera.value = value;
-    map.value?.setCameraMode(value);
-  };
-
   const stepTime = (direction: -1 | 1) => {
     const now = time.value;
     if (!now || !map.value || planOnly) return;
@@ -105,8 +103,6 @@ export const useExplorerTime = (input: ExplorerTimeInput): ExplorerTime => {
   };
 
   return {
-    speed,
-    camera,
     range,
     openTimeline,
     closeTimeline,
@@ -117,8 +113,6 @@ export const useExplorerTime = (input: ExplorerTimeInput): ExplorerTime => {
     showFuture,
     showToday,
     pick,
-    setSpeed,
-    setCamera,
     stepTime,
   };
 };

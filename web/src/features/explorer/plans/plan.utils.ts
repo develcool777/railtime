@@ -1,5 +1,6 @@
 import type { LngLat, Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
+import type { Section } from '~/features/explorer/explorer.types';
 import type { PlanFacts } from '~/features/explorer/plans/plan.types';
 
 /** The Earth's mean radius, km. */
@@ -53,3 +54,11 @@ export const planFacts = (network: Network, planId: string): PlanFacts => {
     }),
   };
 };
+
+/**
+ * The section the panel opens on without a tab in the address: Plans with a plan shown, else Lines.
+ *
+ * @param plan - The plan shown, if any.
+ * @returns The section.
+ */
+export const openingSectionOf = (plan: string | undefined): Section => (plan ? 'plans' : 'lines');

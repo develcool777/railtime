@@ -28,7 +28,7 @@
     /** How the map is seen: flat, or in 3D. */
     viewMode: ViewMode;
   }>();
-  const emit = defineEmits<{ zoomIn: []; zoomOut: []; fit: []; stationNames: [shown: boolean]; viewMode: [mode: ViewMode]; mapOnly: [] }>();
+  const emit = defineEmits<{ zoomIn: []; zoomOut: []; fit: []; stationNames: [shown: boolean]; viewMode: [mode: ViewMode]; mapOnly: []; help: [] }>();
 
   const groups = computed(() => [
     [
@@ -47,11 +47,12 @@
       {
         label: props.viewMode === '3d' ? 'Flat map' : 'See in 3D',
         icon: 'i-lucide-box',
-        kbds: undefined,
+        kbds: ['D'],
         active: props.viewMode === '3d',
         run: () => emit('viewMode', props.viewMode === '3d' ? '2d' : '3d'),
       },
       { label: 'Map only', icon: 'i-lucide-maximize-2', kbds: ['F'], active: undefined, run: () => emit('mapOnly') },
+      { label: 'What you can do', icon: 'i-lucide-circle-help', kbds: ['?'], active: undefined, run: () => emit('help') },
     ],
   ]);
 </script>

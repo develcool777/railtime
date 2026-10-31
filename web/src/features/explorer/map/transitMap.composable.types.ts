@@ -1,5 +1,5 @@
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { ChangeInfo, LineInfo, MapView, Padding, StationInfo, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, LineInfo, MapView, Padding, StepInfo, TimeState } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
 import type { Ref, ShallowRef } from 'vue';
 
@@ -18,6 +18,8 @@ export type TransitMapMount = {
   padding: () => Padding;
   /** How much of the map's left a panel covers, pixels: the map opens clear of it. */
   cover: () => number;
+  /** A station clicked on the map, or `null` for none: the map clicked away from one, or the station gone on the date shown. */
+  onStation: (id: string | null) => void;
 };
 
 /** The mounted map, and its events as reactive state. */
@@ -28,8 +30,6 @@ export type TransitMapBinding = {
   time: Ref<TimeState | null>;
   /** The change playing now, for the caption. */
   step: Ref<StepInfo | null>;
-  /** The station clicked last, if its panel is open. */
-  station: Ref<StationInfo | null>;
   /** Every line, with its colour in the current theme. */
   lines: Ref<LineInfo[]>;
   /** Every change in the timeline, planned ones last, coloured for the current theme. */

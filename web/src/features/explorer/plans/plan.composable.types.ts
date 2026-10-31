@@ -2,16 +2,13 @@ import type { TimeState } from '@railtime/renderer/transitMap.types';
 import type { Network, Plan } from '@railtime/schema/network.types';
 import type { ComputedRef, Ref } from 'vue';
 
-import type { Section, TimeMode } from '~/features/explorer/explorer.types';
-
 /** What `useExplorerPlan` reads. */
 export type ExplorerPlanInput = {
   network: Network;
   /** The plan shown, if any. */
   plan?: string;
   time: Ref<TimeState | null>;
-  timeMode: Ref<TimeMode>;
-  /** Shows another plan, or the built network (`undefined`): the page mounts the explorer afresh. */
+  /** Shows another plan, or the built network (`undefined`): the page mounts the explorer afresh, on Plans. */
   onChoose: (plan: string | undefined) => void;
 };
 
@@ -30,8 +27,6 @@ export type ExplorerPlan = {
   builtFacts: Ref<string>;
   /** What the dot on Plans says while a plan is shown, whatever section is open; none without one. */
   planMark: string | undefined;
-  /** The section the panel opens on: Plans with a plan shown, or one just chosen; else Lines. */
-  openingSection: Section;
   /** Chooses a plan, or the built network; the one shown already does nothing. */
   choosePlan: (plan: string | undefined) => void;
 };

@@ -74,6 +74,9 @@ landing page's pictures in Chrome).
   searched for. In the explorer, a part never imports another part's composable: `ExplorerView`
   wires them, handing one's actions to another as callbacks.
   Something one surface uses goes in its feature; it moves to the top when a second needs it.
+  The explorer's state (what is open, how it is set) is one Pinia store, `explorer.store.ts`: every
+  button calls its actions, and its rules are pure functions in `explorer.utils.ts`. What is looked at
+  goes in the address, preferences in cookies (`features/explorer/_README.md`).
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
   camelCase attributes and events.

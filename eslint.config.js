@@ -33,7 +33,7 @@ const NO_CLASS_OUTSIDE_SERVICE = { selector: 'ClassDeclaration', message: 'Class
 const SHORT_NAMES = ['id', 'x', 'y', 'km', 'on', 'to', '_'];
 
 /** What a source file may be called: `<camelName>.<role>.ts`, or `<camelName>.<role>.types.ts` for the types of one file. */
-const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable)).@(service|utils|constants|types|schema|composable)';
+const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store)).@(service|utils|constants|types|schema|composable|store)';
 const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|utils|types)';
 
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */

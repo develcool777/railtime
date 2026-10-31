@@ -1,30 +1,27 @@
-import { useCookie } from '#imports';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ShallowRef } from 'vue';
 
-import { PANEL_WIDTH, PHONE_QUERY } from '~/features/explorer/explorer.constants';
-import type { SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import { PHONE_QUERY } from '~/features/explorer/explorer.constants';
+import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { ExplorerLayout } from '~/features/explorer/layout.composable.types';
 import { draggedPanelWidth, mapPaddingFor } from '~/features/explorer/layout.utils';
 
 /**
- * The explorer's layout: whether it is the phone's, the panel beside the map (open, its width, its
- * edge dragged), the phone's sheet, and map only. Client only, as the map is.
+ * What the layout takes from the browser: whether it is the phone's, the panel's edge dragged, and
+ * full screen kept with map only. The layout's state is the store's. Client only, as the map is.
  *
  * @param root - The explorer's element, which map only takes full screen.
- * @returns The layout's state and what changes it.
+ * @returns What the store does not hold: the room the panel and the cards take, and the drag.
  */
 export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>): ExplorerLayout => {
+  const store = useExplorerStore();
+  const { phone, sheet, panelOpen, panelWidth, mapOnly, timeMode } = storeToRefs(store);
+
   const phoneQuery = window.matchMedia(PHONE_QUERY);
-  const phone = ref(phoneQuery.matches);
+  phone.value = phoneQuery.matches;
   const onPhoneChange = (event: MediaQueryListEvent) => (phone.value = event.matches);
-  const sheet = ref<SheetSnap>('peek');
 
-  const panelOpen = useCookie<boolean>('railtime-panel-open', { default: () => true });
-  const panelWidth = useCookie<number>('railtime-panel-width', { default: () => PANEL_WIDTH.initial });
-  const minimapOn = useCookie<boolean>('railtime-minimap', { default: () => true });
-
-  const mapOnly = ref(false);
   const panelCover = computed(() => (phone.value || mapOnly.value || !panelOpen.value ? 0 : panelWidth.value));
 
   const resizing = ref(false);
@@ -42,23 +39,15 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
     window.addEventListener('pointerup', onUp);
   };
 
-  const revealPanel = () => {
-    if (!phone.value) panelOpen.value = true;
-    else if (sheet.value === 'peek') sheet.value = 'half';
-  };
-  const togglePanel = () => {
-    if (!phone.value) panelOpen.value = !panelOpen.value;
-  };
-
-  const toggleMapOnly = async () => {
-    mapOnly.value = !mapOnly.value;
-    // Not every browser has full screen (an iPhone's Safari): there the panels still hide.
-    if (mapOnly.value) await root.value?.requestFullscreen?.().catch(() => undefined);
-    else if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
-  };
+  // Map only takes the page full screen where the browser lets it: not every browser has it (an
+  // iPhone's Safari), and none without a click (map only opened by a link), where the panels still hide.
+  watch(mapOnly, async shown => {
+    if (shown && !document.fullscreenElement) await root.value?.requestFullscreen?.().catch(() => undefined);
+    else if (!shown && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+  });
   // Leaving full screen (Esc, or the browser's own control) brings the panels back.
   const onFullscreenChange = () => {
-    if (!document.fullscreenElement) mapOnly.value = false;
+    if (!document.fullscreenElement) store.setMapOnly(false);
   };
 
   onMounted(() => {
@@ -71,18 +60,9 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
   });
 
   return {
-    phone,
-    sheet,
-    panelOpen,
-    panelWidth,
-    minimapOn,
     panelCover,
     resizing,
     startResize,
-    revealPanel,
-    togglePanel,
-    mapOnly,
-    toggleMapOnly,
-    mapPadding: (mode: TimeMode) => mapPaddingFor(mode, phone.value, sheet.value),
+    mapPadding: () => mapPaddingFor(timeMode.value, phone.value, sheet.value),
   };
 };
