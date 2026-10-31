@@ -16,20 +16,21 @@ describe('PlanUtils', () => {
       ]);
     });
 
-    test('stands a new station between two neighbours on their track, splitting it where it is nearest, its dates kept', () => {
+    test('stands a new station between two neighbours on their track, split where it is nearest and brought to the station, its dates kept', () => {
       const { network } = buildPlan(plannedNetwork(), 'extension');
       expect(network.segments.map(segment => `${segment.stationA}-${segment.stationB}`)).toEqual(['a-b', 'b-c', 'c-d']);
       expect(network.segments[0]).toEqual({
         stationA: 'a',
         stationB: 'b',
         lines: { red: { open: '1900-01-01' } },
+        // B stands 111 m north of the track: the track bends to it.
         coordinates: [
           [0, 51.5],
-          [0.01, 51.5],
+          [0.01, 51.501],
         ],
       });
       expect(network.segments[1]!.coordinates).toEqual([
-        [0.01, 51.5],
+        [0.01, 51.501],
         [0.02, 51.5],
       ]);
     });

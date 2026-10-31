@@ -10,15 +10,15 @@
   "stations": {
     "elektrozavodska": {"name":"Elektrozavodska","names":{"uk":"Електрозаводська"},"coordinate":[33.49248,47.99536],"infill":{"2m":"2000-06-19"}},
     "industrialna": {"name":"Industrialna","names":{"uk":"Індустріальна"},"coordinate":[33.47191,47.96951]},
-    "kiltseva": {"name":"Kiltseva","names":{"uk":"Кільцева"},"coordinate":[33.38719,47.88858]},
-    "maidan-pratsi": {"name":"Maidan Pratsi","names":{"uk":"Майдан Праці"},"coordinate":[33.46381,47.964]},
+    "kiltseva": {"name":"Kiltseva","names":{"uk":"Кільцева"},"coordinate":[33.38714,47.88844]},
+    "maidan-pratsi": {"name":"Maidan Pratsi","names":{"uk":"Майдан Праці"},"coordinate":[33.46402,47.96379]},
     "miska-likarnia": {"name":"Miska Likarnia","names":{"uk":"Міська лікарня"},"coordinate":[33.44902,47.95054],"infill":{"1m":"2001-05-19","2m":"2001-05-19"}},
-    "miska-rada": {"name":"Miska Rada","names":{"uk":"Міська рада"},"coordinate":[33.39637,47.90864],"formerNames":[{"name":"Budynok Rad","names":{"uk":"Будинок Рад"},"until":"2024-07-26"}]},
-    "mudriona": {"name":"Mudriona","names":{"uk":"Мудрьона"},"coordinate":[33.39925,47.91773],"formerNames":[{"name":"Dzerzhynska","names":{"uk":"Дзержинська"},"until":"2016-05-19"}]},
+    "miska-rada": {"name":"Miska Rada","names":{"uk":"Міська рада"},"coordinate":[33.3963,47.90819],"formerNames":[{"name":"Budynok Rad","names":{"uk":"Будинок Рад"},"until":"2024-07-26"}]},
+    "mudriona": {"name":"Mudriona","names":{"uk":"Мудрьона"},"coordinate":[33.39936,47.91805],"formerNames":[{"name":"Dzerzhynska","names":{"uk":"Дзержинська"},"until":"2016-05-19"}]},
     "prospekt-metalurhiv": {"name":"Prospekt Metalurhiv","names":{"uk":"Проспект Металургів"},"coordinate":[33.39424,47.89702]},
-    "soniachna": {"name":"Soniachna","names":{"uk":"Сонячна"},"coordinate":[33.45665,47.95688],"formerNames":[{"name":"Zhovtneva","names":{"uk":"Жовтнева"},"until":"2007-02-28"},{"name":"Imeni Hutovskoho","names":{"uk":"Імені Гутовського"},"until":"2016-05-19"}]},
+    "soniachna": {"name":"Soniachna","names":{"uk":"Сонячна"},"coordinate":[33.45647,47.95673],"formerNames":[{"name":"Zhovtneva","names":{"uk":"Жовтнева"},"until":"2007-02-28"},{"name":"Imeni Hutovskoho","names":{"uk":"Імені Гутовського"},"until":"2016-05-19"}]},
     "vechirnii-bulvar": {"name":"Vechirnii Bulvar","names":{"uk":"Вечірній бульвар"},"coordinate":[33.42127,47.93707],"formerNames":[{"name":"Maidan Artema","names":{"uk":"Майдан Артема"},"until":"2016-05-19"}]},
-    "zarichna": {"name":"Zarichna","names":{"uk":"Зарічна"},"coordinate":[33.4981,48.00314]}
+    "zarichna": {"name":"Zarichna","names":{"uk":"Зарічна"},"coordinate":[33.49827,48.00333]}
   },
   "segments": [
     {"stationA":"elektrozavodska","stationB":"zarichna","lines":{"2m":{"open":"1999-10-26"}},"coordinates":[[33.49254,47.99537],[33.49324,47.99593],[33.49387,47.99643],[33.49395,47.99655],[33.49424,47.997],[33.49444,47.99731],[33.4946,47.99758],[33.49477,47.99787],[33.49495,47.99818],[33.49514,47.99849],[33.49529,47.99874],[33.49547,47.99903],[33.49555,47.99917],[33.49571,47.99941],[33.49588,47.9997],[33.4961,48.00004],[33.49628,48.00032],[33.49642,48.00055],[33.49659,48.00082],[33.49676,48.00109],[33.49697,48.00143],[33.49702,48.00151],[33.49709,48.00159],[33.49721,48.00173],[33.49733,48.00188],[33.4974,48.00197],[33.49752,48.00216],[33.49789,48.00274],[33.49827,48.00333]]},

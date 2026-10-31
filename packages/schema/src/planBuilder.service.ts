@@ -81,18 +81,20 @@ export class PlanBuilder {
   }
 
   /**
-   * Splits a segment at the point on it nearest a station: two segments in its place, each with its
-   * lines, its dated ones and the sections' alike.
+   * Splits a segment at the point on it nearest a station, the track brought to the station there:
+   * two segments in its place, each with its lines, its dated ones and the sections' alike.
    *
    * @param segment - The segment.
    * @param station - The station to stand on it.
    */
   private split(segment: Segment, station: string): void {
     // Within bounds: the schema checks every station of a plan exists.
-    const [first, second] = splitTrack(segment.coordinates, this.network.stations[station]!.coordinate);
+    const place = this.network.stations[station]!.coordinate;
+    const [first, second] = splitTrack(segment.coordinates, place);
+    // The halves meet at the station itself, not beside it on the track.
     const halves: Segment[] = [
-      { ...segment, stationB: station, coordinates: first },
-      { ...segment, stationA: station, coordinates: second },
+      { ...segment, stationB: station, coordinates: [...first.slice(0, -1), place] },
+      { ...segment, stationA: station, coordinates: [place, ...second.slice(1)] },
     ];
     this.network.segments.splice(this.network.segments.indexOf(segment), 1, ...halves);
     for (const section of this.sections) section.segments = section.segments.flatMap(item => (item === segment ? halves : [item]));
