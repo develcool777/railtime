@@ -21,6 +21,14 @@ export const datasets = (): Dataset[] =>
     .sort((first, second) => first.path.localeCompare(second.path));
 
 /**
+ * Where a city's outline is kept, beside its dataset: `<city>.boundary.json`. Not every city has one yet.
+ *
+ * @param dataset - The city's dataset.
+ * @returns The outline's path.
+ */
+export const boundaryPathOf = (dataset: Pick<Dataset, 'path'>): string => dataset.path.replace(/\.json$/, '.boundary.json');
+
+/**
  * The city a command was run for: its first argument, which must name a city in `cities/` with a
  * dataset. Exits with the usage otherwise.
  *

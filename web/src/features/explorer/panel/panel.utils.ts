@@ -68,5 +68,6 @@ export const sectionTop = (input: SectionTopInput): PanelTopContent => {
   if (section === 'route') return { title: input.label, context: 'Between any two stations, on the date shown' };
   if (section === 'insights') return { title: input.label, context: 'How the network grew, and its records' };
   if (section === 'reach') return { title: input.label, context: 'How far you get from a station' };
+  if (section === 'coverage') return { title: input.label, context: 'How much of the city is near a station' };
   return { title: input.label, context: `${counted(input.planCount, 'plan')} drawn up` };
 };

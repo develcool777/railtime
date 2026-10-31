@@ -9,9 +9,11 @@
     "test-unit-ci": "vitest run"
   },
   "exports": {
+    "./boundary.schema": "./src/validation/boundary.schema.ts",
+    "./boundary.types": "./src/format/boundary.types.ts",
     "./cityIndex.types": "./src/format/cities.types.ts",
-    "./network.types": "./src/format/network.types.ts",
     "./network.schema": "./src/validation/network.schema.ts",
+    "./network.types": "./src/format/network.types.ts",
     "./plan.types": "./src/plan/build.types.ts",
     "./plan.utils": "./src/plan/build.utils.ts"
   },

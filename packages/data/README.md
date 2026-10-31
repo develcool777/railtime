@@ -56,6 +56,9 @@ Track and stations come from OpenStreetMap.
   section by section from today.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
+- `<city>.boundary.json`, beside the dataset where a city has one: its outline (`name`, `source`,
+  `polygons` of closed rings, holes after each outer ring), the city's administrative limits from
+  OpenStreetMap, simplified. The Coverage section shades how far each part of it is from a station.
 - `infill` and `closed`: a station opening on a line already running through it, or a line no
   longer calling there, by line. Dated while the line runs there; an `infill` after the line has
   left says it never called there. `data:format` refuses any other date.

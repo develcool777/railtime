@@ -53,6 +53,14 @@ export const networkUrlOf = (city: string): string => {
 };
 
 /**
+ * Where a city's outline is served, under the site's base URL: beside its dataset, if it has one.
+ *
+ * @param city - A city id.
+ * @returns The path, relative to the base URL.
+ */
+export const boundaryUrlOf = (city: string): string => networkUrlOf(city).replace(/\.json$/, '.boundary.json');
+
+/**
  * Where a city's preview is served, under the site's base URL: the picture `pnpm data:previews`
  * draws beside its dataset, in a theme.
  *

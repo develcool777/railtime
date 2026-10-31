@@ -51,6 +51,7 @@ const LATITUDE_STRETCH = 1.6;
 export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 } };
   const data = new Map<string, unknown>();
+  const images = new Map<string, { url: string; coordinates: unknown }>();
   const sends = new Map<string, number>();
   const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
   const moves: FakeMap['moves'] = [];
@@ -61,7 +62,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     const source = 'source' in layer ? layer.source : undefined;
     const sources = Object.fromEntries([
       ...[...data.keys()].map(id => [id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }]),
-      ...(source && !data.has(source) ? [[source, { type: 'vector', tiles: ['https://tiles.invalid/{z}/{x}/{y}.pbf'] }]] : []),
+      ...[...images].map(([id, image]) => [id, { type: 'image', ...image }]),
+      ...(source && !data.has(source) && !images.has(source) ? [[source, { type: 'vector', tiles: ['https://tiles.invalid/{z}/{x}/{y}.pbf'] }]] : []),
     ]);
     const errors = validateStyleMin({ version: 8, sources, layers: [layer as LayerSpecification] });
     if (errors.length > 0) throw new Error(`layer ${layer.id}: ${errors.map(error => error.message).join('; ')}`);
@@ -84,22 +86,27 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     return layer;
   };
   const map = {
-    addSource: (id: string, source: { data: unknown }) => {
-      if (data.has(id)) throw new Error(`source ${id} already added`);
+    addSource: (id: string, source: { type: string; data?: unknown; url?: string; coordinates?: unknown }) => {
+      if (data.has(id) || images.has(id)) throw new Error(`source ${id} already added`);
+      if (source.type === 'image') {
+        images.set(id, { url: source.url ?? '', coordinates: source.coordinates });
+        return;
+      }
       featuresOf(id, source.data);
       data.set(id, source.data);
     },
-    getSource: (id: string) =>
-      data.has(id)
-        ? {
-            setData: (next: unknown) => {
-              featuresOf(id, next);
-              data.set(id, next);
-              sends.set(id, (sends.get(id) ?? 0) + 1);
-              for (const layer of layers.values()) assertPropertiesHeld(layer);
-            },
-          }
-        : undefined,
+    getSource: (id: string) => {
+      if (images.has(id)) return { updateImage: (image: { url: string; coordinates: unknown }) => images.set(id, image) };
+      if (!data.has(id)) return undefined;
+      return {
+        setData: (next: unknown) => {
+          featuresOf(id, next);
+          data.set(id, next);
+          sends.set(id, (sends.get(id) ?? 0) + 1);
+          for (const layer of layers.values()) assertPropertiesHeld(layer);
+        },
+      };
+    },
     addLayer: (layer: LayerSpecification) => {
       if (layers.has(layer.id)) throw new Error(`layer ${layer.id} already added`);
       const added = { paint: {}, layout: {}, ...layer } as FakeLayer;
@@ -146,5 +153,5 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
   };
-  return { map: map as unknown as MapLibreMap, data, sends, layers, moves, rendered, view };
+  return { map: map as unknown as MapLibreMap, data, images, sends, layers, moves, rendered, view };
 };

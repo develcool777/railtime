@@ -207,6 +207,43 @@ export type ReachInfo = {
   bands: ReachBand[];
 };
 
+/** A band of walking distance to the nearest station, nearest first. */
+export type CoverageBand = {
+  /** The most metres in it. */
+  upTo: number;
+  /** "400–800 m". */
+  label: string;
+  color: string;
+};
+
+/** A band, and how much of the city lies in it. */
+export type CoverageShare = CoverageBand & {
+  /** Of the city's area, 0..1. */
+  share: number;
+  km2: number;
+};
+
+/** How much of a city lies within walking distance of a station open on the date shown. */
+export type CoverageInfo = {
+  /** What the city's outline is: "Greater London". */
+  name: string;
+  /** Where the outline comes from, as credited. */
+  source: string;
+  /** The city's area inside its outline. */
+  km2: number;
+  /** The headline: the share within this many metres. */
+  metres: number;
+  /** The share of the city within `metres` of a station, 0..1. */
+  share: number;
+  /** Each band, nearest first. */
+  bands: CoverageShare[];
+  /** What lies farther than every band. */
+  beyond: { share: number; km2: number };
+};
+
+/** The share of a city within the headline distance of a station at the end of a year. */
+export type CoverageYear = { year: number; share: number };
+
 /** The network at the end of one year. */
 export type YearStats = ModelYearStats;
 
