@@ -1,35 +1,29 @@
 <template>
-  <div class="border-muted flex-none border-b px-4 pt-3.5 pb-3">
-    <div v-if="backLabel || foldable" class="flex h-6 items-center justify-between">
+  <!-- One row: back (in a pushed view), the title and what it is of, close; the buttons sit on the title's line. -->
+  <div class="border-muted flex flex-none items-start gap-1.5 border-b px-4 py-3">
+    <UTooltip v-if="backLabel" :text="`Back to ${backLabel}`">
       <UButton
-        v-if="backLabel"
-        icon="i-lucide-chevron-left"
-        :label="backLabel"
+        icon="i-lucide-arrow-left"
         color="neutral"
-        variant="link"
-        size="xs"
-        class="text-muted -ml-1 gap-0.5 px-0"
+        variant="ghost"
+        size="sm"
+        square
+        class="-ml-1.5"
+        :aria-label="`Back to ${backLabel}`"
         @click="emit('back')" />
-      <span v-else />
-      <UTooltip v-if="foldable" text="Close the panel" :kbds="['[']">
-        <UButton
-          icon="i-lucide-x"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          square
-          class="size-7 rounded-md"
-          aria-label="Close the panel"
-          @click="emit('fold')" />
-      </UTooltip>
+    </UTooltip>
+    <div class="min-w-0 flex-1">
+      <h2 class="text-highlighted truncate text-lg leading-7 font-bold">{{ title }}</h2>
+      <p v-if="context || dots?.length" class="text-muted flex min-w-0 items-center gap-1.5 text-xs leading-4">
+        <span v-if="dots?.length" class="flex flex-none gap-1">
+          <span v-for="color in dots" :key="color" class="size-2 rounded-full" :style="{ background: color }" />
+        </span>
+        <span class="truncate tabular-nums">{{ context }}</span>
+      </p>
     </div>
-    <h2 class="text-highlighted truncate text-lg leading-6 font-bold">{{ title }}</h2>
-    <p v-if="context || dots?.length" class="text-muted flex min-w-0 items-center gap-1.5 text-xs leading-4">
-      <span v-if="dots?.length" class="flex flex-none gap-1">
-        <span v-for="color in dots" :key="color" class="size-2 rounded-full" :style="{ background: color }" />
-      </span>
-      <span class="truncate tabular-nums">{{ context }}</span>
-    </p>
+    <UTooltip v-if="foldable" text="Close the panel" :kbds="['[']">
+      <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="sm" square class="-mr-1.5" aria-label="Close the panel" @click="emit('fold')" />
+    </UTooltip>
   </div>
 </template>
 
