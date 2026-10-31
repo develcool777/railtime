@@ -7,3 +7,6 @@ dist
 *.log
 coverage/
 test-reports/
+
+# Screenshots taken while checking the app, never part of it.
+/*.png
