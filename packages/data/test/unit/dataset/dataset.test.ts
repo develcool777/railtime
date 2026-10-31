@@ -27,15 +27,19 @@ describe('DatasetUtils', () => {
   });
 
   describe('boundaries', () => {
-    test('finds the outlines kept so far', () => {
-      expect(BOUNDED.map(dataset => dataset.name)).toEqual(expect.arrayContaining(['ukraine/kharkiv', 'united-kingdom/london']));
+    test('finds an outline for every city', () => {
+      expect(BOUNDED.map(dataset => dataset.name)).toEqual(DATASETS.map(dataset => dataset.name));
     });
 
     test.each(BOUNDED)("$name's outline is valid, and holds most of its stations: it is its own city's", ({ path, boundaryPath }) => {
       const boundary = parseBoundary(JSON.parse(readFileSync(boundaryPath, 'utf8')));
-      const stations = Object.values(parseNetwork(JSON.parse(readFileSync(path, 'utf8'))).stations);
-      // A network can run out past its city's limits (London's Metropolitan to Amersham), but not mostly.
-      expect(stations.filter(station => holds(boundary, station.coordinate)).length / stations.length).toBeGreaterThan(0.8);
+      const network = parseNetwork(JSON.parse(readFileSync(path, 'utf8')));
+      const built = Object.values(network.stations);
+      // A city with nothing built yet is placed by its plans.
+      const stations = built.length > 0 ? built : Object.values(network.plans ?? {}).flatMap(plan => Object.values(plan.stations ?? {}));
+      // A network or a plan can run out past its city's limits (London's Metropolitan to Amersham, Bristol's
+      // mass transit to its airport), but not mostly: another city's outline would hold none.
+      expect(stations.filter(station => holds(boundary, station.coordinate)).length / stations.length).toBeGreaterThan(0.5);
     });
   });
 });

@@ -35,7 +35,8 @@
         </li>
       </ul>
 
-      <div v-if="history.length > 1" class="flex flex-col gap-1">
+      <!-- A city nothing was ever built in has only a flat line at 0 to show. -->
+      <div v-if="history.length > 1 && history.some(entry => entry.share > 0)" class="flex flex-col gap-1">
         <p class="text-highlighted text-sm font-medium">Within {{ coverage.metres }} m, year by year</p>
         <!-- A click picks the year under the crosshair. -->
         <UChart
@@ -43,7 +44,7 @@
           :data="points"
           index="year"
           :categories="[{ key: 'percent', label: 'Covered', color: 'primary' }]"
-          :format="(value: number) => `${Math.round(value)}%`"
+          :format="(value: number) => formatShare(value / 100)"
           :height="150"
           :ariaLabel="summary"
           class="cursor-pointer"
