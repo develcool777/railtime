@@ -6,7 +6,11 @@ import { ReachLayer } from '../../../src/reach/layer.service';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { REACH_BANDS } from '../../../src/reach/layer.constants';
-import { bandOf, reachedSegments } from '../../../src/reach/layer.utils';
+import { bandOf, reachStops, reachTrack, reachedSegments } from '../../../src/reach/layer.utils';
+import { toTimestamp } from '../../../src/core/date.utils';
+import { NetworkQueries } from '../../../src/network/queries.service';
+import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { playbackOf } from '../../support/playback.utils';
 
 describe('ReachLayer', () => {
   test('draws the track and stations reached, the start named apart, and clears them', () => {
@@ -71,6 +75,36 @@ describe('ReachLayerUtils', () => {
 
     test('leaves out a segment with neither end reached', () => {
       expect(reachedSegments(new Map(), segments)).toEqual([]);
+    });
+  });
+
+  /** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */
+  const reachFromA = () => {
+    const playback = playbackOf(tinyNetwork());
+    playback.player.seek(toTimestamp('1955-01-01'));
+    const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
+    const moment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#f00' };
+    return { playback, reach: queries.reach('a', moment)! };
+  };
+
+  describe('reachTrack', () => {
+    test("colours each open segment reached in its time's band, and nothing without a reach", () => {
+      const { playback, reach } = reachFromA();
+      const track = reachTrack(playback.index, playback.timeline, playback.player.cursor, reach);
+      expect(track.map(feature => feature.geometry.coordinates)).toEqual([0, 1, 2].map(segment => playback.index.segments[segment]!.coordinates));
+      expect(new Set(track.map(feature => feature.properties.color))).toEqual(new Set([REACH_BANDS[0]!.color]));
+      expect(reachTrack(playback.index, playback.timeline, playback.player.cursor, null)).toEqual([]);
+    });
+  });
+
+  describe('reachStops', () => {
+    test('names the start apart and every other station with its time, and nothing without a reach', () => {
+      const { playback, reach } = reachFromA();
+      const stops = reachStops(playback.index, reach);
+      expect(stops[0]?.properties).toEqual({ color: REACH_BANDS[0]!.color, label: 'A', minutes: 0, origin: true });
+      expect(stops.slice(1).map(stop => stop.properties.label)).toEqual(reach.stations.map(station => `${station.name} · ${Math.round(station.minutes)} min`));
+      expect(stops.every(stop => !stop.properties.origin || stop === stops[0])).toBe(true);
+      expect(reachStops(playback.index, null)).toEqual([]);
     });
   });
 });

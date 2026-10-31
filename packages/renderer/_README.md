@@ -54,14 +54,15 @@ full names. Whatever takes no map (`*.utils.ts`, `network/`, `route/finder`, `pl
 
 ```text
 src/
-├── transitMap.service.ts      TransitMap extends EventEmitter: the one public entry, composes the rest
+├── transitMap.service.ts      TransitMap extends EventEmitter: the one public entry; owns the MapLibre map and composes the rest
 ├── core/                      nothing about rail: EventEmitter, `required`, dates, geometry, easing, a priority queue
 ├── network/                   the network and its history; pure
 │   ├── index.service.ts       NetworkIndex: segments prepared for drawing, a LineSegment per (segment, line, period)
 │   ├── timeline.service.ts    Timeline: the history as ordered steps; the state at any cursor
 │   ├── orientation.utils.ts   a consistent direction of travel per segment
 │   ├── history.utils.ts       the network year by year, openings by decade
-│   └── lineDetails.utils.ts   a line's branches and length at a cursor
+│   ├── lineDetails.utils.ts   a line's branches and length at a cursor
+│   └── queries.service.ts     NetworkQueries: what the app asks (lines, stations, routes, reach, records) at a moment
 ├── steps/                     one class per kind of step
 │   ├── animation.service.ts   abstract StepAnimation: drawSeconds, holdSeconds, cameraPoints(), describe(), draw()
 │   ├── open.service.ts        OpenStepAnimation: a stretch grows out of the network
@@ -85,8 +86,9 @@ src/
 ├── route/
 │   ├── finder.service.ts      RouteFinder: Dijkstra over the network at a cursor; a reach too
 │   ├── stops.utils.ts         how a route's stops are marked
+│   ├── layer.utils.ts         a route's track and stops, as drawn
 │   └── layer.service.ts       RouteLayer: a route over the faded network
-├── reach/layer.service.ts     ReachLayer: how far one gets from a station; its bands in layer.constants.ts
+├── reach/layer.service.ts     ReachLayer: how far one gets from a station; its bands and drawing in layer.constants.ts, layer.utils.ts
 ├── minimap/map.service.ts     Minimap: the overview inset
 └── still/basemap.service.ts   BasemapStill: pictures of the basemap, with a track over it, for previews
 ```
