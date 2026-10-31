@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format-check": "prettier --check .",
     "code-quality:dead-code": "knip",
+    "data:boundary": "pnpm --filter @railtime/data boundary",
     "data:format": "pnpm --filter @railtime/data format",
     "data:previews": "pnpm --filter @railtime/data previews",
     "test-unit-coverage": "vitest run --coverage",

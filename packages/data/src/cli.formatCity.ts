@@ -7,6 +7,7 @@
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import { parseNetwork } from '@railtime/schema/network.schema';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { formatBoundary } from './boundary/boundary.utils.ts';
 import { CITY_INDEX_PATH, boundaryPathOf, cityArgument, datasets } from './dataset/city.utils.ts';
 import { formatCityIndex, indexEntryOf } from './dataset/cityIndex.utils.ts';
 import { formatNetwork } from './dataset/dataset.utils.ts';
@@ -24,9 +25,12 @@ const index = Object.fromEntries(
 writeFileSync(CITY_INDEX_PATH, formatCityIndex(index));
 console.log(`${CITY_INDEX_PATH}: ${Object.keys(index).length} cities`);
 
-// Its outline, where it has one, which the Coverage section measures within.
+// Its outline, which the Coverage section measures within: fetched by pnpm data:boundary, kept tidy here.
 const boundaryPath = boundaryPathOf(dataset);
 if (existsSync(boundaryPath)) {
-  const boundary = parseBoundary(JSON.parse(readFileSync(boundaryPath, 'utf8')));
-  console.log(`${boundaryPath}: valid, ${boundary.name}`);
+  const kept = readFileSync(boundaryPath, 'utf8');
+  const boundary = parseBoundary(JSON.parse(kept));
+  const tidy = formatBoundary(boundary);
+  writeFileSync(boundaryPath, tidy);
+  console.log(`${boundaryPath}: valid, ${boundary.name}, ${kept === tidy ? 'already tidy' : 'rewritten'}`);
 }

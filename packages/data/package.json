@@ -5,6 +5,7 @@
   "license": "(MIT AND ODbL-1.0)",
   "type": "module",
   "scripts": {
+    "boundary": "node src/cli.fetchBoundary.ts",
     "format": "node src/cli.formatCity.ts",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run",

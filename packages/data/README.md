@@ -13,8 +13,10 @@ packages/data/
     …
   src/cli.formatCity.ts                  pnpm data:format <city>
   src/cli.renderPreviews.ts              pnpm data:previews [city]
+  src/cli.fetchBoundary.ts               pnpm data:boundary [city [relation]]
   test/unit/dataset/                     the command's helpers, and the index kept up to date
   test/unit/preview/                     the previews' helpers, and every city has its pictures
+  test/unit/boundary/                    the outlines' helpers (every city's outline is checked in dataset/)
   test/unit/cities/<country>/<city>.test.ts   plays a city's history; lists where its lines come apart
 ```
 
@@ -59,12 +61,14 @@ Track and stations come from OpenStreetMap.
 - `<city>.boundary.json`, beside every dataset: its outline (`name`, `source`,
   `polygons` of closed rings, holes after each outer ring), the city's administrative limits from
   OpenStreetMap, simplified. The Coverage section shades how far each part of it is from a station.
+  `pnpm data:boundary [city]` fetches it again from the relation its `source` names; for a new city,
+  `pnpm data:boundary <city> <relation>`, the relation's number from its page on openstreetmap.org.
 - `infill` and `closed`: a station opening on a line already running through it, or a line no
   longer calling there, by line. Dated while the line runs there; an `infill` after the line has
   left says it never called there. `data:format` refuses any other date.
 
 A new city is a new dataset in the same format, then `pnpm data:format <city>` to add it to the index
-and `pnpm data:previews <city>` to draw its card's pictures, plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
+and `pnpm data:previews <city>` to draw its card's pictures, `pnpm data:boundary <city> <relation>` for its outline, plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
 and its own page at `/<city>`. Its history gets a test of its own,
 `test/unit/cities/<country>/<city>.test.ts` (camelCase), which plays it through the renderer and
 lists each date a line comes apart, with why: a works closure or a stretch opening on its own is
