@@ -129,10 +129,11 @@ Each city's test lists every date a line comes apart (`lineSplits` in `test/supp
 with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just
 the same and fails the test: fix the date, or, if history really parted the line, add it with its reason.
 
-A city may have its outline beside its dataset, `<city>.boundary.json` (`CityBoundary`, from
-OpenStreetMap's administrative boundary, simplified): what the Coverage section measures within.
-`data:format` validates it, and a test checks it holds most of the city's stations. London and Kharkiv
-have one so far.
+Each city has its outline beside its dataset, `<city>.boundary.json` (`CityBoundary`, from
+OpenStreetMap's administrative boundary, simplified): what the Coverage section measures within. It is
+the city's limits, or the county a network spans (Greater Manchester, Tyne and Wear), never a wider
+region: a plan running out to the next towns stays outside. `data:format` validates it, and a test
+checks it is there and holds more than half of the city's stations (its plans' where nothing is built).
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction
