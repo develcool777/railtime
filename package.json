@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --filter @railtime/web dev",
     "build": "pnpm --filter @railtime/web build",
-    "type-check": "tsc --noEmit -p packages/schema && tsc --noEmit -p packages/renderer && tsc --noEmit -p packages/data && pnpm --filter @railtime/web type-check",
+    "type-check": "tsc --noEmit -p packages/schema && tsc --noEmit -p packages/renderer && tsc --noEmit -p packages/data && tsc --noEmit -p packages/tooling && pnpm --filter @railtime/web type-check",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run",
     "eslint-check": "eslint",
@@ -17,7 +17,8 @@
     "code-quality:dead-code": "knip",
     "data:format": "pnpm --filter @railtime/data format",
     "data:previews": "pnpm --filter @railtime/data previews",
-    "test-unit-coverage": "vitest run --coverage"
+    "test-unit-coverage": "vitest run --coverage",
+    "test-mutation": "node packages/tooling/src/cli.mutation.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

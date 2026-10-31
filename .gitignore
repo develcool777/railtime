@@ -6,4 +6,7 @@ dist
 .DS_Store
 *.log
 coverage/
-test-reports/
+# Local, but the mutation score history, which is shared.
+test-reports/*
+!test-reports/mutation-scores.json
+.stryker-tmp/

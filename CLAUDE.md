@@ -9,7 +9,7 @@ A pnpm monorepo: `packages/schema` (the network format: `format/` its types, `va
 shape and the checks between parts, `plan/` building a plan on a network), `packages/renderer` (the MapLibre engine,
 `TransitMap`), `packages/data` (every city's dataset in `cities/<country>/<city>/`, the index of them,
 `cities/cities.json`, and `pnpm data:format`, which validates and tidies a dataset and rewrites the
-index) and `web` (the Nuxt 4 + Nuxt UI explorer).
+index), `packages/tooling` (the repo's own tools: `pnpm test-mutation`) and `web` (the Nuxt 4 + Nuxt UI explorer).
 `README.md` has the commands; `packages/renderer/_README.md` explains steps, cursors and the frame model.
 
 ## Checks
@@ -100,6 +100,12 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
   module, then `test('does what, when')`; never `it`.
 - A `console.warn` or `console.error` during a test fails it (`vitest.setup.ts`).
 - Coverage: `pnpm test-unit-coverage`, into `test-reports/coverage/`.
+- Mutation testing, by hand, as in dataroom-ui: `pnpm test-mutation packages/renderer/src/route` has
+  Stryker break the folder's code one small change at a time and run its own tests against each; a
+  change no test notices is code run but not checked. The report is in `test-reports/mutation/`;
+  each run's score goes in `test-reports/mutation-scores.json`, which is committed. With no folder,
+  it lists the folders with their last scores. Coverage says a line ran; this says a test would fail
+  if it were wrong.
 
 ## Data
 

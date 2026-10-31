@@ -21,6 +21,10 @@
       "entry": ["src/pages/**/*.vue", "test/**/*.test.ts"],
       "project": ["src/**/*.{ts,vue,css}", "test/**/*.ts"],
       "ignoreDependencies": ["@iconify-json/lucide", "vue-tsc"]
+    },
+    "packages/tooling": {
+      "entry": ["src/cli.*.ts", "test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
     }
   }
 }
