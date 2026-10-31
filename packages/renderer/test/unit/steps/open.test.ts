@@ -57,9 +57,10 @@ describe('OpenStepAnimation', () => {
   });
 
   test('says a line opens though another already runs there, and one back on track it left reopens', () => {
+    // B and C are both on the map: the stretch grows one way, from C, nearer the centre, and is named as it grows.
     const opens = stepAfter(tinyNetwork(), '1929-01-01');
-    expect(opens.animation.describe(opens.state)).toMatchObject({ title: 'Blue line opens', subtitle: 'B – C' });
+    expect(opens.animation.describe(opens.state)).toMatchObject({ title: 'Blue line opens', subtitle: 'C – B' });
     const reopens = stepAfter(tinyNetwork(), '1944-01-01');
-    expect(reopens.animation.describe(reopens.state)).toMatchObject({ title: 'Blue line reopens', subtitle: 'B – C' });
+    expect(reopens.animation.describe(reopens.state)).toMatchObject({ title: 'Blue line reopens', subtitle: 'C – B' });
   });
 });
