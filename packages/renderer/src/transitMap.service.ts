@@ -715,7 +715,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt || now)) / 1000);
     this.lastFrameAt = now;
     this.handlePlayerEvents(this.player.tick(seconds));
-    if (this.ready) this.draw(now);
+    if (this.ready) this.draw(now, seconds);
     this.emitTime();
     this.frameRequest = requestAnimationFrame(this.renderFrame);
   };
@@ -725,9 +725,11 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * took off the map.
    *
    * @param now - The frame time.
+   * @param seconds - The time since the last frame.
    */
-  private draw(now: number): void {
-    const { revealed, selectionGone } = this.frames.draw(now, this.selectedStation);
+  private draw(now: number, seconds: number): void {
+    const { revealed, selectionGone, tips } = this.frames.draw(now, this.selectedStation);
+    this.camera.follow(tips, seconds);
     if (revealed !== null) this.emit('stepProgress', revealed);
     if (selectionGone) {
       this.selectStation(null);

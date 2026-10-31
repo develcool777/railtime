@@ -52,6 +52,17 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
   }
 
   /**
+   * Where the stretch starts growing: the end of its first segment the growth leaves from.
+   *
+   * @returns The point.
+   */
+  public override startPoint(): LngLat | null {
+    const first = this.growth.plans.reduce<SegmentPlan | null>((earliest, plan) => (!earliest || plan.startKm < earliest.startKm ? plan : earliest), null);
+    if (!first) return null;
+    return (first.fromStationA ? first.segment.coordinates[0] : first.segment.reversedCoordinates[0]) ?? null;
+  }
+
+  /**
    * "<line> opens", "… extended" or "… reopens", from the first station to the last reached.
    *
    * @param state - The render state when the step starts.

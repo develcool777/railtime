@@ -49,7 +49,7 @@ const LATITUDE_STRETCH = 1.6;
  * @returns The stand-in and what it keeps.
  */
 export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
-  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 } };
+  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 }, moving: false };
   const data = new Map<string, unknown>();
   const images = new Map<string, { url: string; coordinates: unknown }>();
   const sends = new Map<string, number>();
@@ -154,6 +154,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       Object.assign(view, { center: [(west + east) / 2, (south + north) / 2], zoom: options.maxZoom });
     },
     easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
+    jumpTo: (options: Record<string, unknown>) => moves.push({ kind: 'jump', target: options.center, options }),
+    isMoving: () => view.moving,
   };
   return { map: map as unknown as MapLibreMap, data, images, sends, layers, moves, rendered, view };
 };

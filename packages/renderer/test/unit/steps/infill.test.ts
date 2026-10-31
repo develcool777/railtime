@@ -12,6 +12,8 @@ describe('InfillStepAnimation', () => {
     const drawing = draw(0.1);
     expect([...drawing.highlighted]).toEqual(['c']);
     expect(drawing.reached.get('c')).toEqual(new Map([['red', '#ff0000']]));
+    // A lone station starts and ends where it stands.
+    expect(animation.startPoint()).toEqual(animation.cameraPoints()[0]);
     expect(animation.describe(state)).toEqual({
       kind: 'infill',
       time: toTimestamp('1920-06-01'),

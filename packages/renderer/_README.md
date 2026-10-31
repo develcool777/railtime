@@ -74,7 +74,7 @@ src/
 ├── playback/
 │   ├── player.service.ts      Player: the clock and each step's phases; pure
 │   ├── growth.utils.ts        where a stretch grows from, and the order its stations appear in
-│   └── camera.service.ts      CameraDirector: framing a step; in 3D, a close-up turned along it (camera.utils.ts)
+│   └── camera.service.ts      CameraDirector: framing a step; in 3D, following its line as it grows (camera.utils.ts)
 ├── layers/                    what every group of map layers shares, and the network's own
 │   ├── layer.service.ts       abstract MapLayer: owns its sources and layers
 │   ├── network.service.ts     NetworkLayer: the network on the map, closed track as ghosts

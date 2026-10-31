@@ -1,14 +1,12 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
 import { clamp } from '../core/easing.utils';
-import { boundsOf } from '../core/geometry.utils';
+import { boundsOf, distanceKm } from '../core/geometry.utils';
 import type { Bounds } from '../core/geometry.types';
 import type { StepAnimation } from '../steps/animation.service';
 import type { CameraMode, Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';
 import {
-  CLOSE_UP_MAX_ZOOM,
-  CLOSE_UP_MIN_ZOOM,
   FOLLOW_MAX_ZOOM,
   MIN_MOVE_MS,
   OVERVIEW_MAX_ZOOM,
@@ -19,13 +17,14 @@ import {
   VIEW_TILT_MS,
   ZOOM_SLACK,
 } from './camera.constants';
-import { closeUpOf } from './camera.utils';
+import type { Chase } from './camera.types';
+import { chaseStartOf, chaseZoomOf, followOf } from './camera.utils';
 
 /**
  * Moves the main map's camera for playback. `follow` frames just the change, so a single new
  * station gets a close-up; `overview` frames the change with the network already on the map;
- * `free` leaves the camera to the user. Seen in 3D, `follow` comes down to the change instead,
- * tilted and turned along it, as a drone following a new line.
+ * `free` leaves the camera to the user. Seen in 3D, `follow` flies down to where a change starts
+ * and then moves with it as it is drawn, frame by frame, as a drone following a new line.
  */
 export class CameraDirector {
   /** How the camera follows playback. */
@@ -36,6 +35,8 @@ export class CameraDirector {
   private readonly map: MapLibreMap;
   /** How the map is seen: flat, or in 3D. */
   private view: ViewMode = '2d';
+  /** In 3D, where the camera looks from as it follows the change playing; `null` between changes. */
+  private chase: Chase | null = null;
 
   public constructor(map: MapLibreMap, padding: Padding) {
     this.map = map;
@@ -60,6 +61,7 @@ export class CameraDirector {
   public setViewMode(mode: ViewMode): void {
     if (mode === this.view) return;
     this.view = mode;
+    this.chase = null;
     this.map.easeTo(
       mode === '3d'
         ? { pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: Math.max(this.map.getZoom(), VIEW_3D_ENTRY_ZOOM), duration: VIEW_TILT_MS }
@@ -84,7 +86,7 @@ export class CameraDirector {
     if (this.mode === 'overview') for (const station of stationsOnMap) points.push(coordOf(station));
     const bounds = boundsOf(points);
     if (!bounds) return 0;
-    if (this.view === '3d' && this.mode === 'follow') return this.closeUp(points, bounds, Math.max(MIN_MOVE_MS, durationMs));
+    if (this.view === '3d' && this.mode === 'follow') return this.flyToStart(animation, bounds, Math.max(MIN_MOVE_MS, durationMs));
     const maxZoom = this.closestZoom(points.length);
     if (this.frames(points, bounds, maxZoom)) return 0;
     const moveMs = Math.max(MIN_MOVE_MS, durationMs);
@@ -111,18 +113,32 @@ export class CameraDirector {
   }
 
   /**
-   * Comes down to a change in 3D: tilted, turned so it runs up the screen, as close as it fits.
+   * In 3D, follows the change playing as it is drawn: called each frame with its growing tips. Leaves the
+   * camera be on the flat map, in another mode, while it is moving (flying to the change, or dragged), or with no tip.
    *
-   * @param points - The change's points, in order.
-   * @param bounds - Their bounding box.
+   * @param tips - The growing tips this frame.
+   * @param seconds - The time since the last frame.
+   */
+  public follow(tips: LngLat[], seconds: number): void {
+    if (this.view !== '3d' || this.mode !== 'follow' || !this.chase || tips.length === 0 || this.map.isMoving()) return;
+    this.chase = followOf(this.chase, tips, seconds);
+    this.map.jumpTo({ center: this.chase.center, bearing: this.chase.bearing });
+  }
+
+  /**
+   * In 3D, flies down to where a change starts, facing the rest of it, close enough to see it drawn.
+   *
+   * @param animation - The change's animation.
+   * @param bounds - The box round it.
    * @param durationMs - How long the move takes.
    * @returns How long the move takes, ms.
    */
-  private closeUp(points: LngLat[], bounds: Bounds, durationMs: number): number {
-    const { center, bearing } = closeUpOf(points, this.map.getBearing());
-    const fitted = this.map.cameraForBounds(bounds as LngLatBoundsLike, { padding: this.padding, bearing, maxZoom: CLOSE_UP_MAX_ZOOM })?.zoom;
-    const zoom = clamp(fitted ?? CLOSE_UP_MAX_ZOOM, CLOSE_UP_MIN_ZOOM, CLOSE_UP_MAX_ZOOM);
-    this.map.easeTo({ center, zoom, bearing, pitch: VIEW_3D_PITCH, duration: durationMs });
+  private flyToStart(animation: StepAnimation, bounds: Bounds, durationMs: number): number {
+    const [southWest, northEast] = bounds;
+    const middle: LngLat = [(southWest[0] + northEast[0]) / 2, (southWest[1] + northEast[1]) / 2];
+    this.chase = chaseStartOf(animation.startPoint() ?? middle, middle, this.map.getBearing());
+    const zoom = chaseZoomOf(distanceKm(southWest, northEast));
+    this.map.easeTo({ center: this.chase.center, bearing: this.chase.bearing, zoom, pitch: VIEW_3D_PITCH, duration: durationMs });
     return durationMs;
   }
 

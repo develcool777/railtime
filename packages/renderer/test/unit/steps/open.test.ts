@@ -34,6 +34,8 @@ describe('OpenStepAnimation', () => {
     expect(quarter.lines.features).toHaveLength(1);
     const [growing] = quarter.lines.features;
     expect(growing?.geometry.coordinates[0]).toEqual([ONE_KM, 51.5]);
+    // A camera following it starts where it grows from: B.
+    expect(animation.startPoint()).toEqual([ONE_KM, 51.5]);
     expect(growing?.geometry.coordinates.at(-1)?.[0]).toBeCloseTo(1.5 * ONE_KM, 6);
     expect(growing?.properties).toMatchObject({ color: '#ff0000', highlight: 1 });
     expect(quarter.heads.features.map(head => head.geometry.coordinates)).toEqual([growing?.geometry.coordinates.at(-1)]);
