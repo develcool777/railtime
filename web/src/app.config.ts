@@ -33,7 +33,11 @@ export default defineAppConfig({
     // with their own dot on a green line, the current one ringed.
     timeline: {
       slots: { item: 'cursor-pointer', separator: 'bg-accented' },
-      compoundVariants: [{ color: 'primary', class: { indicator: 'group-data-[state=completed]:bg-transparent' } }],
+      compoundVariants: [
+        { color: 'primary', class: { indicator: 'group-data-[state=completed]:bg-transparent' } },
+        // Each change's row keeps its own room below it.
+        { orientation: 'vertical', size: '3xs', class: { wrapper: 'pb-0' } },
+      ],
     },
     // The home page is a catalogue, not a landing page: its hero, sections and cards at that scale.
     pageHero: {
