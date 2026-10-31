@@ -110,4 +110,81 @@ describe('Timeline', () => {
     expect(timeline.servesStation('f', 'red', timeline.steps.length - 1)).toBe(false);
     expect(timeline.servesStation('f', 'red', timeline.steps.length)).toBe(true);
   });
+
+  test('tells the step a line segment opens and closes at, and that it has closed only after its closing step', () => {
+    const { index, timeline } = timelineOf();
+    const blue = index.lineSegments.find(lineSegment => lineSegment.line === 'blue')!;
+    const opens = timeline.steps.findIndex(step => step.kind === 'open' && step.line === 'blue');
+    const closes = timeline.steps.findIndex(step => step.kind === 'close' && step.line === 'blue');
+    expect(timeline.steps.map((_, cursor) => timeline.opensAt(blue, cursor))).toEqual(timeline.steps.map((_, cursor) => cursor === opens));
+    expect(timeline.steps.map((_, cursor) => timeline.closesAt(blue, cursor))).toEqual(timeline.steps.map((_, cursor) => cursor === closes));
+    expect([timeline.hasClosed(blue, closes), timeline.hasClosed(blue, closes + 1)]).toEqual([false, true]);
+  });
+
+  test("ends its dates on the last dated step, a plan's undated ones after it", () => {
+    const { timeline } = timelineOf();
+    expect(timeline.lastDate).toBe(toTimestamp('1990-01-01'));
+    const planned = playbackOf(tinyNetwork(), 'extension').timeline;
+    expect(planned.lastDate).toBe(toTimestamp('1990-01-01'));
+  });
+
+  test('draws a line through each of its aliases in turn, as the next one while an identity step plays', () => {
+    const network = tinyNetwork();
+    network.lines.pink!.aliases = [
+      { until: '1950-01-01', as: 'blue', text: 'Pink drawn as blue' },
+      { until: '1990-01-01', as: 'red', text: 'Pink becomes its own line' },
+    ];
+    const { timeline } = timelineOf(network);
+    const toBlue = timeline.steps.findIndex(step => step.kind === 'identity' && step.time === toTimestamp('1950-01-01'));
+    expect(timeline.identityOf('pink', toBlue - 1)).toEqual({ id: 'blue' });
+    expect(timeline.identityOf('pink', toBlue, true)).toEqual({ id: 'red', previousId: 'blue' });
+    expect(timeline.identityOf('pink', toBlue + 1)).toEqual({ id: 'red' });
+  });
+
+  test('opens a line on its own once its alias has ended, from the day it ends', () => {
+    const network = tinyNetwork();
+    network.segments[2]!.lines.pink = { open: '1990-01-01' };
+    const { timeline } = timelineOf(network);
+    const opens = timeline.steps.filter(step => step.kind === 'open' && step.time === toTimestamp('1990-01-01'));
+    expect(opens.map(step => step.kind === 'open' && step.line)).toEqual(['pink']);
+  });
+
+  test("plays lines opening on one day in the network's order of lines", () => {
+    const network = tinyNetwork();
+    // Green on A – B, the first segment, the same day blue opens on B – C.
+    network.segments[0]!.lines.green = { open: '1930-01-01' };
+    const { timeline } = timelineOf(network);
+    const opens = timeline.steps.filter(step => step.kind === 'open' && step.time === toTimestamp('1930-01-01'));
+    expect(opens.map(step => step.kind === 'open' && step.line)).toEqual(['blue', 'green']);
+  });
+
+  test('renames a station through each of its former names in turn', () => {
+    const network = tinyNetwork();
+    network.stations.d!.formerNames = [
+      { name: 'Older D', until: '1915-01-01' },
+      { name: 'Old D', until: '1925-01-01' },
+    ];
+    const { timeline } = timelineOf(network);
+    expect(timeline.steps.filter(step => step.kind === 'rename').map(step => step.kind === 'rename' && [step.from, step.to])).toEqual([
+      ['Older D', 'Old D'],
+      ['Old D', 'D'],
+    ]);
+  });
+
+  test('takes a station off the map once all its track has closed', () => {
+    const network = tinyNetwork();
+    network.stations.e = { name: 'E', coordinate: [4 * 0.0144, 51.5] };
+    network.segments.push({
+      stationA: 'd',
+      stationB: 'e',
+      lines: { blue: { open: '1930-01-01', close: '1950-01-01' } },
+      coordinates: [
+        [3 * 0.0144, 51.5],
+        [4 * 0.0144, 51.5],
+      ],
+    });
+    const { timeline } = timelineOf(network);
+    expect(timeline.stationsOnMap(timeline.cursorAt(toTimestamp('1935-01-01'))).has('e')).toBe(true);
+    expect(timeline.stationsOnMap(timeline.cursorAt(toTimestamp('1955-01-01'))).has('e')).toBe(false);
+  });
 });

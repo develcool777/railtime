@@ -9,15 +9,12 @@ import { REACH_BANDS } from './layer.constants';
 import type { ReachedSegment } from './layer.types';
 
 /**
- * The band a time falls in.
+ * The band a time falls in: the last has no end, so every time finds one.
  *
  * @param minutes - How long it takes.
  * @returns The band's place in `REACH_BANDS`.
  */
-export const bandOf = (minutes: number): number => {
-  const band = REACH_BANDS.findIndex(entry => entry.upTo === null || minutes <= entry.upTo);
-  return band === -1 ? REACH_BANDS.length - 1 : band;
-};
+export const bandOf = (minutes: number): number => REACH_BANDS.findIndex(entry => entry.upTo === null || minutes <= entry.upTo);
 
 /**
  * The track a reach colours: each open segment with a reached station at an end, timed as the mean

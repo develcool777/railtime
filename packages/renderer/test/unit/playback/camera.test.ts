@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/core/date.utils';
 import { FOLLOW_MAX_ZOOM, MIN_MOVE_MS, OVERVIEW_MAX_ZOOM, STATION_MIN_ZOOM } from '../../../src/playback/camera.constants';
 import { CameraDirector } from '../../../src/playback/camera.service';
+import type { StepAnimation } from '../../../src/steps/animation.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { playbackOf } from '../../support/playback.utils';
@@ -88,5 +89,61 @@ describe('CameraDirector', () => {
         options: { padding: { top: 0, right: 110, bottom: 0, left: 0 }, maxZoom: 13, duration: 800 },
       },
     ]);
+  });
+
+  test("fits a box with the room asked for added to the app's own on every side", () => {
+    const { fake, camera } = stepAfter('1905-01-01');
+    camera.fit(
+      [
+        [0, 0],
+        [1, 1],
+      ],
+      13,
+      800,
+      { top: 1, right: 2, bottom: 3, left: 4 },
+    );
+    expect(fake.moves[0]?.options.padding).toEqual({ top: 11, right: 22, bottom: 33, left: 44 });
+  });
+
+  test('frames only the change in follow, not the network already on the map', () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
+    camera.focusStep(animation, new Set(['a']), coordOf, 1000);
+    // B, the stretch's west end, not A.
+    expect((fake.moves[0]!.target as [[number, number]])[0][0]).toBe(coordOf('b')[0]);
+  });
+
+  test('leaves the camera be for a step with nothing to frame', () => {
+    const { fake, camera } = stepAfter('1905-01-01');
+    const nothing = { cameraPoints: () => [] } as unknown as StepAnimation;
+    expect(camera.focusStep(nothing, new Set(), () => [0, 0], 1000)).toBe(0);
+    expect(fake.moves).toEqual([]);
+  });
+
+  test("moves for a lone station inside the app's padding on any side, though no panel covers it", () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1915-01-01');
+    fake.view.zoom = 13;
+    const [longitude, latitude] = coordOf('c');
+    const scale = (512 / 360) * 2 ** 13;
+    // The view's centre that draws C at a pixel: the stand-in's projection, 1.6× taller in latitude.
+    const centreFor = (x: number, y: number): [number, number] => [longitude - (x - 500) / scale, latitude + (y - 300) / (scale * 1.6)];
+    // Inside the padding (top 10, right 20, bottom 30, left 40) on each side, then clear of it.
+    for (const [x, y] of [
+      [30, 300],
+      [990, 300],
+      [500, 5],
+      [500, 585],
+    ] as const) {
+      fake.view.center = centreFor(x, y);
+      expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(1000);
+    }
+    for (const [x, y] of [
+      [50, 300],
+      [970, 300],
+      [500, 20],
+      [500, 560],
+    ] as const) {
+      fake.view.center = centreFor(x, y);
+      expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
+    }
   });
 });

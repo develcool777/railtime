@@ -12,6 +12,15 @@ import { NetworkQueries } from '../../../src/network/queries.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { playbackOf } from '../../support/playback.utils';
 
+/** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */
+const reachFromA = () => {
+  const playback = playbackOf(tinyNetwork());
+  playback.player.seek(toTimestamp('1955-01-01'));
+  const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
+  const moment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#f00' };
+  return { playback, reach: queries.reach('a', moment)! };
+};
+
 describe('ReachLayer', () => {
   test('draws the track and stations reached, the start named apart, and clears them', () => {
     const fake = fakeMap();
@@ -19,6 +28,7 @@ describe('ReachLayer', () => {
     layer.install(['Font']);
     layer.applyPalette(PALETTES.light);
     expect(fake.layers.get(LAYERS.reachStops)?.paint['circle-stroke-color']).toBe(PALETTES.light.labelHalo);
+    for (const labels of [LAYERS.reachLabels, LAYERS.reachOriginLabel]) expect(fake.layers.get(labels)?.paint['text-color']).toBe(PALETTES.light.label);
     expect(fake.layers.get(LAYERS.reachOriginLabel)?.filter).toEqual(['get', 'origin']);
 
     const track: ReachTrackFeature = {
@@ -38,6 +48,16 @@ describe('ReachLayer', () => {
     expect(fake.data.get(SOURCES.reachStops)).toEqual({ type: 'FeatureCollection', features: [start] });
     layer.update([], []);
     expect(fake.data.get(SOURCES.reachStops)).toEqual({ type: 'FeatureCollection', features: [] });
+  });
+
+  test('draws a reach found on a network: features the map can draw, with what its layers read', () => {
+    const fake = fakeMap();
+    const layer = new ReachLayer(fake.map);
+    layer.install(['Font']);
+    const { playback, reach } = reachFromA();
+    const track = reachTrack(playback.index, playback.timeline, playback.player.cursor, reach);
+    layer.update(track, reachStops(playback.index, reach));
+    expect(fake.sends.get(SOURCES.reachTrack)).toBe(1);
   });
 });
 
@@ -78,15 +98,6 @@ describe('ReachLayerUtils', () => {
     });
   });
 
-  /** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */
-  const reachFromA = () => {
-    const playback = playbackOf(tinyNetwork());
-    playback.player.seek(toTimestamp('1955-01-01'));
-    const queries = new NetworkQueries(playback.index, playback.timeline, playback.player.today);
-    const moment = { cursor: playback.player.cursor, clock: playback.player.clock, colorOf: () => '#f00' };
-    return { playback, reach: queries.reach('a', moment)! };
-  };
-
   describe('reachTrack', () => {
     test("colours each open segment reached in its time's band, and nothing without a reach", () => {
       const { playback, reach } = reachFromA();
@@ -94,6 +105,16 @@ describe('ReachLayerUtils', () => {
       expect(track.map(feature => feature.geometry.coordinates)).toEqual([0, 1, 2].map(segment => playback.index.segments[segment]!.coordinates));
       expect(new Set(track.map(feature => feature.properties.color))).toEqual(new Set([REACH_BANDS[0]!.color]));
       expect(reachTrack(playback.index, playback.timeline, playback.player.cursor, null)).toEqual([]);
+    });
+
+    test("colours the start's own track, though no station is reached beyond it, and only track open at the cursor", () => {
+      const playback = playbackOf(tinyNetwork());
+      // Only A–B is open in 1905: C, reached, is on track that opens in 1910.
+      playback.player.seek(toTimestamp('1905-01-01'));
+      const reach = { from: { id: 'a', name: 'A' }, stations: [{ id: 'c', name: 'C', minutes: 20, band: 1 }], bands: REACH_BANDS };
+      const track = reachTrack(playback.index, playback.timeline, playback.player.cursor, reach);
+      expect(track.map(feature => feature.geometry.coordinates)).toEqual([playback.index.segments[0]!.coordinates]);
+      expect(track[0]?.properties.color).toBe(REACH_BANDS[0]!.color);
     });
   });
 

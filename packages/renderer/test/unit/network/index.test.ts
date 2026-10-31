@@ -60,4 +60,38 @@ describe('NetworkIndex', () => {
     expect(index.lineOpens('pink')).toBe(toTimestamp('1990-01-01'));
     expect(index.lineOpens('purple')).toBe(Infinity);
   });
+
+  test("centres on the middle of its stations' box", () => {
+    const index = new NetworkIndex(tinyNetwork());
+    // A to D: 0 to 3 km east, on one latitude.
+    expect(index.centre[0]).toBeCloseTo(1.5 * 0.0144, 9);
+    expect(index.centre[1]).toBeCloseTo(51.5, 9);
+  });
+
+  test('gives other names by their language code, in order', () => {
+    const index = new NetworkIndex(tinyNetwork());
+    expect(index.otherNames({ name: 'D', names: { uk: 'Д', de: 'D-Bahnhof' } })).toEqual(['D-Bahnhof', 'Д']);
+  });
+
+  test('measures a segment along all its points, and reverses it without turning the original round', () => {
+    const network = tinyNetwork();
+    network.segments[0]!.coordinates = [
+      [0, 51.5],
+      [0.0072, 51.5],
+      [0.0144, 51.5],
+    ];
+    const [segment] = new NetworkIndex(network).segments;
+    expect(segment?.coordinates[0]).toEqual([0, 51.5]);
+    expect(segment?.reversedCoordinates).toEqual([...segment!.coordinates].reverse());
+    expect(segment?.lengthKm).toBeCloseTo(segment!.distances[2]!, 9);
+    expect(segment?.lengthKm).toBeGreaterThan(segment!.distances[1]! * 1.5);
+  });
+
+  test("lists the lines a user can toggle in the network's order, leaving out one only an alias draws as", () => {
+    const network = tinyNetwork();
+    network.lines.ghost = { name: 'Ghost', network: 'metro', mode: 'metro', color: '#999999', pseudo: true };
+    const index = new NetworkIndex(network);
+    expect(index.lineIds).toEqual(['red', 'blue', 'pink', 'green']);
+    expect(['green', 'pink', 'red', 'blue'].sort(index.compareLines)).toEqual(['red', 'blue', 'pink', 'green']);
+  });
 });

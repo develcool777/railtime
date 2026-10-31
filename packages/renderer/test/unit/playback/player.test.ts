@@ -84,4 +84,83 @@ describe('Player', () => {
     // Frame to frame, the speed changes by a few per cent at most.
     for (const [position, speed] of speeds.entries()) if (position > 0) expect(Math.abs(speed - speeds[position - 1]!) / speed).toBeLessThan(0.05);
   });
+
+  test('plays a step through its phases at their exact edges: a beat for the camera, the change drawn, then held', () => {
+    const { player } = playbackOf(tinyNetwork());
+    // Red's 1910 stretch: 1 s for the camera, 1 s to draw its 2 km, held 1.2 s for its two new stations.
+    player.seek(toTimestamp('1905-01-01'));
+    expect([player.phase, player.progress, player.holdProgress]).toEqual([null, 0, 0]);
+    player.skip();
+    player.playing = true;
+    expect(player.phase).toBe('pre');
+    expect(player.progress).toBeCloseTo(0);
+    expect(player.holdProgress).toBe(0);
+    player.tick(0.5);
+    expect(player.phase).toBe('pre');
+    player.tick(0.5);
+    expect(player.phase).toBe('draw');
+    expect(player.progress).toBeCloseTo(0);
+    player.tick(0.5);
+    expect(player.progress).toBeCloseTo(0.5);
+    player.tick(0.5);
+    expect([player.phase, player.progress, player.holdProgress]).toEqual(['hold', 1, 0]);
+    player.tick(0.6);
+    expect(player.holdProgress).toBeCloseTo(0.5);
+    expect(player.tick(0.6).map(event => event.type)).toEqual(['stepEnd']);
+    expect([player.phase, player.progress, player.holdProgress, player.cursor]).toEqual([null, 0, 0, 2]);
+  });
+
+  test('plays faster at a higher speed, and not at all while paused', () => {
+    const { player } = playbackOf(tinyNetwork());
+    player.seek(toTimestamp('1905-01-01'));
+    player.skip();
+    expect(player.tick(5)).toEqual([]);
+    expect(player.active?.elapsed).toBe(0);
+    player.playing = true;
+    player.speed = 2;
+    player.tick(0.25);
+    expect(player.active?.elapsed).toBe(0.5);
+    // Between steps, the clock runs twice as fast too.
+    const between = playbackOf(tinyNetwork()).player;
+    // Nine quiet years before green opens in 1970: the clock runs at its fastest.
+    between.seek(toTimestamp('1961-01-01'));
+    between.playing = true;
+    between.speed = 2;
+    const before = between.clock;
+    between.tick(0.01);
+    expect((between.clock - before) / YEAR_MS).toBeCloseTo(2 * FAST_YEARS_PER_SECOND * 0.01);
+  });
+
+  test('ends at today, or at a change dated after it, with the clock there', () => {
+    const later = tinyNetwork();
+    later.segments[2]!.lines.green!.open = '2030-01-01';
+    const { player, timeline } = playbackOf(later);
+    expect(player.end).toBe(toTimestamp('2030-01-01'));
+    expect(playbackOf(tinyNetwork()).player.end).toBe(player.today);
+    expect(timeline.lastDate).toBe(player.end);
+    // From past the last change, the clock runs on to the end before playback stops.
+    const fresh = playbackOf(tinyNetwork());
+    fresh.player.seekPast(fresh.timeline.steps.length - 1);
+    fresh.player.playing = true;
+    const events: string[] = [];
+    let frames = 0;
+    for (; frames < 5000 && fresh.player.playing; frames++) {
+      events.push(...fresh.player.tick(1 / 30).map(event => event.type));
+      if (fresh.player.playing) expect(fresh.player.clock).toBeLessThan(fresh.player.end);
+    }
+    expect(events).toEqual(['end']);
+    // 36 years from 1990, at 4 a second at most: seconds of frames, not one.
+    expect(frames).toBeGreaterThan(200);
+    expect(fresh.player.clock).toBe(fresh.player.end);
+  });
+
+  test('skips nothing past the last step, and seeks to the first or last step for a place outside them', () => {
+    const { timeline, player } = playbackOf(tinyNetwork());
+    player.seekEnd();
+    expect(player.skip()).toEqual([]);
+    player.seekBefore(999);
+    expect(player.cursor).toBe(timeline.steps.length - 1);
+    player.seekBefore(-5);
+    expect(player.cursor).toBe(0);
+  });
 });

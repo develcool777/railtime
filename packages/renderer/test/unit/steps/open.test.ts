@@ -1,35 +1,63 @@
 import { describe, expect, test } from 'vitest';
-import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MIN_DRAW_SECONDS } from '../../../src/steps/animation.constants';
 import { OpenStepAnimation } from '../../../src/steps/open.service';
-import { emptyDrawing } from '../../../src/steps/animation.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { playbackOf, renderStateOf } from '../../support/playback.utils';
+import { stepAfter } from '../../support/stepFrames.utils';
+
+/** Degrees of longitude in a km on the test line, as the tiny network places its stations. */
+const ONE_KM = 0.0144;
 
 describe('OpenStepAnimation', () => {
+  /** Red's 1910 stretch: from B, already on the map, on to C and D, 1 km each. */
+  const extension = () => stepAfter(tinyNetwork(), '1905-01-01');
+
   test('highlights the stations a stretch opens as the growth front passes them', () => {
-    const playback = playbackOf(tinyNetwork());
-    playback.player.seek(toTimestamp('1905-01-01'));
-    playback.player.skip();
-    const animation = playback.player.active!.animation as OpenStepAnimation;
+    const { animation, draw, state } = extension();
     expect(animation).toBeInstanceOf(OpenStepAnimation);
-    const frameAt = (progress: number) => {
-      const state = renderStateOf(playback);
-      const drawing = emptyDrawing();
-      animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress, holdProgress: 0 }, drawing);
-      return drawing;
-    };
     // Half-way the front has passed C, but C is an infill station: it does not open on red until 1920.
-    expect([...frameAt(0.5).highlighted]).toEqual([]);
-    expect([...frameAt(1).highlighted]).toEqual(['d']);
+    expect([...draw(0.5).highlighted]).toEqual([]);
+    expect([...draw(1).highlighted]).toEqual(['d']);
     // D opened in 1910 under its name then, Old D.
-    expect(animation.describe(renderStateOf(playback))).toMatchObject({ title: 'Red line extended', stations: ['C', 'Old D'] });
+    expect(animation.describe(state)).toMatchObject({ title: 'Red line extended', subtitle: 'B – Old D', stations: ['C', 'Old D'] });
   });
 
-  test('says a line back on track it left reopens', () => {
-    const playback = playbackOf(tinyNetwork());
-    playback.player.seek(toTimestamp('1944-01-01'));
-    playback.player.skip();
-    expect(playback.player.active!.animation.describe(renderStateOf(playback))).toMatchObject({ title: 'Blue line reopens', subtitle: 'B – C' });
+  test('takes as long as its track, a second at least, and holds a little longer for each new station', () => {
+    const { animation } = extension();
+    // 2 km at 2.5 km a second is under the shortest.
+    expect(animation.drawSeconds).toBe(MIN_DRAW_SECONDS);
+    expect(animation.holdSeconds).toBeCloseTo(HOLD_BASE_SECONDS + 2 * HOLD_PER_STATION_SECONDS);
+  });
+
+  test('grows out of the network along its track, a head at the front, and frames all of it', () => {
+    const { animation, draw, playback } = extension();
+    const quarter = draw(0.25);
+    expect(quarter.lines.features).toHaveLength(1);
+    const [growing] = quarter.lines.features;
+    expect(growing?.geometry.coordinates[0]).toEqual([ONE_KM, 51.5]);
+    expect(growing?.geometry.coordinates.at(-1)?.[0]).toBeCloseTo(1.5 * ONE_KM, 6);
+    expect(growing?.properties).toMatchObject({ color: '#ff0000', highlight: 1 });
+    expect(quarter.heads.features.map(head => head.geometry.coordinates)).toEqual([growing?.geometry.coordinates.at(-1)]);
+    expect(quarter.heads.features[0]?.properties).toEqual({ color: '#ff0000' });
+    // Fully drawn: both segments, no head; the highlight fades as it holds.
+    const drawn = draw(1, { holdProgress: 0.25 });
+    expect(drawn.lines.features).toHaveLength(2);
+    expect(drawn.heads.features).toEqual([]);
+    expect(drawn.lines.features.map(feature => feature.properties.highlight)).toEqual([0.75, 0.75]);
+    expect(animation.cameraPoints()).toEqual([...playback.index.segments[1]!.coordinates, ...playback.index.segments[2]!.coordinates]);
+  });
+
+  test('draws nothing of a hidden line, and reaches none of its stations', () => {
+    const drawing = extension().draw(1, { hidden: ['red'] });
+    expect(drawing.lines.features).toEqual([]);
+    expect(drawing.heads.features).toEqual([]);
+    expect(drawing.reached.size).toBe(0);
+    expect(drawing.highlighted.size).toBe(0);
+  });
+
+  test('says a line opens though another already runs there, and one back on track it left reopens', () => {
+    const opens = stepAfter(tinyNetwork(), '1929-01-01');
+    expect(opens.animation.describe(opens.state)).toMatchObject({ title: 'Blue line opens', subtitle: 'B – C' });
+    const reopens = stepAfter(tinyNetwork(), '1944-01-01');
+    expect(reopens.animation.describe(reopens.state)).toMatchObject({ title: 'Blue line reopens', subtitle: 'B – C' });
   });
 });

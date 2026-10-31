@@ -41,7 +41,9 @@ colours, `pnpm data:previews <city>` too (it draws the landing page's pictures i
   the renderer exposes methods and events (`transitMap.types.ts`) and never imports Vue.
 - **Pure first.** `core/`, `network/`, `route/finder.service.ts`, `playback/` (but `camera.service.ts`),
   `steps/` and every `*.utils.ts` take no map: keep new logic there and test it (see Tests). A layer
-  group is tested on the stand-in map (`test/support/factories/fakeMap.utils.ts`).
+  group is tested on the stand-in map (`test/support/factories/fakeMap.utils.ts`), which refuses what
+  MapLibre would: a layer the style spec does not allow, data that is not GeoJSON features, and a
+  layer reading (`['get', name]`) a property no feature of its source has.
 - **A folder per subject; files named for what they are, not the folder again**: `reach/layer.service.ts`
   (`ReachLayer`), `reach/layer.utils.ts`, `reach/layer.constants.ts`. Classes keep their full names.
 - **A new kind of step** is a `StepAnimation` subclass plus one line in `createStepAnimation`.
@@ -105,7 +107,10 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
   change no test notices is code run but not checked. The report is in `test-reports/mutation/`;
   each run's score goes in `test-reports/mutation-scores.json`, which is committed. With no folder,
   it lists the folders with their last scores. Coverage says a line ran; this says a test would fail
-  if it were wrong.
+  if it were wrong. A rerun reuses what it can: after adding tests for code that runs as its module
+  loads (a Zod schema, a constant built from others), run with `--fresh`, or those mutants keep their
+  old result. A survivor that changes nothing (`i >= 0` where `i > 0` and `list[-1]` is `undefined`)
+  or only how the map looks (a halo width) is left; one that changes behaviour gets a test.
 
 ## Data
 
