@@ -30,6 +30,9 @@ export type ReachTrackFeature = Feature<{ type: 'LineString'; coordinates: LngLa
 /** Properties of a station a reach gets to: its band's colour, its name and time, and whether it is the start. */
 export type ReachStopProperties = { color: string; label: string; minutes: number; origin: boolean };
 
+/** A ring of a city's outline. */
+export type OutlineFeature = Feature<{ type: 'LineString'; coordinates: LngLat[] }, Record<string, never>>;
+
 /** Properties of a stop on a route: how it is marked, its line's colour, and its name. */
 export type RouteStopProperties = { kind: RouteStopKind; color: string; name: string };
 

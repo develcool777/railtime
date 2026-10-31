@@ -55,6 +55,7 @@
               @preference="routePreference = $event"
               @station="openStation" />
             <ReachSection v-else-if="section === 'reach'" :stations :from="reachFrom" :reach="foundReach" @from="reachFrom = $event" @station="openStation" />
+            <CoverageSection v-else-if="section === 'coverage'" :state="boundaryState" :coverage :history="coverageHistory" @year="showYear" />
             <InsightsSection v-else-if="section === 'insights'" :growth :records :year="shownYear" @year="showYear" @station="openStation" @line="pushLine" />
             <PlansSection v-else :network :plan :built="builtFacts" @choose="choosePlan" />
           </div>
@@ -179,6 +180,7 @@
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
   import { useInsights } from '~/features/explorer/insights/insights.composable';
   import { useReachFinder } from '~/features/explorer/reach/reach.composable';
+  import { useCoverage } from '~/features/explorer/coverage/coverage.composable';
   import { useRouteFinder } from '~/features/explorer/route/route.composable';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
   import { useExplorerTime } from '~/features/explorer/time/time.composable';
@@ -273,6 +275,7 @@
 
   const { routeEnds, routePreference, foundRoute, swapEnds, routeMark } = useRouteFinder({ binding, section, timeMode });
   const { reachFrom, foundReach, reachMark } = useReachFinder({ binding, section, timeMode });
+  const { boundaryState, coverage, history: coverageHistory } = useCoverage({ binding, section, city: props.city });
 
   const { growth, records, shownYear } = useInsights({ binding });
   // A year picked on a chart: the map as it was at its end (today, for this year), the timeline open to say so.

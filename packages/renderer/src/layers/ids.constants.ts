@@ -3,6 +3,8 @@ export const OVERLAY_PREFIX = 'rt-';
 
 /** The overlay's GeoJSON sources. */
 export const SOURCES = {
+  coverageHeat: 'rt-coverage-heat',
+  coverageOutline: 'rt-coverage-outline',
   lines: 'rt-lines',
   ghosts: 'rt-ghosts',
   planned: 'rt-planned',
@@ -20,6 +22,8 @@ export const SOURCES = {
 
 /** The overlay's layers, bottom to top. */
 export const LAYERS = {
+  coverageHeat: 'rt-coverage-heat',
+  coverageOutline: 'rt-coverage-outline',
   ghosts: 'rt-ghosts',
   glow: 'rt-glow',
   lines: 'rt-lines',

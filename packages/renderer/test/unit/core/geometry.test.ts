@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { LngLat } from '@railtime/schema/network.types';
-import { boundsOf, cumulativeDistances, distanceKm, sliceAlong } from '../../../src/core/geometry.utils';
+import { boundsOf, cumulativeDistances, distanceKm, latitudeOf, mercatorY, sliceAlong } from '../../../src/core/geometry.utils';
 
 /** Km in a degree of longitude on the equator, where these tracks run. */
 const KM_PER_DEGREE = 111.32;
@@ -106,6 +106,15 @@ describe('GeometryUtils', () => {
 
     test('has no box without points', () => {
       expect(boundsOf([])).toBeNull();
+    });
+  });
+
+  describe('mercatorY and latitudeOf', () => {
+    test('put the equator at 0, stretch latitudes apart towards the poles, and undo each other', () => {
+      expect(mercatorY(0)).toBeCloseTo(0, 12);
+      // A degree near London is drawn taller than one at the equator: 1 / cos(51.5°) as tall.
+      expect((mercatorY(52) - mercatorY(51)) / (mercatorY(1) - mercatorY(0))).toBeCloseTo(1 / Math.cos((51.5 * Math.PI) / 180), 2);
+      for (const latitude of [-60, 0, 51.5, 85]) expect(latitudeOf(mercatorY(latitude))).toBeCloseTo(latitude, 9);
     });
   });
 });

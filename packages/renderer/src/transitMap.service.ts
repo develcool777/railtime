@@ -1,6 +1,11 @@
 import { type LngLatBoundsLike, Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
 import { EventEmitter } from './core/eventEmitter.service';
 import { buildPlan } from '@railtime/schema/plan.utils';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { CoverageGrid } from './coverage/grid.service';
+import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from './coverage/layer.constants';
+import { CoverageLayer } from './coverage/layer.service';
+import { coverageHistory, coverageImage, coverageOf, servedStations } from './coverage/layer.utils';
 import { ActiveStepLayer } from './layers/activeStep.service';
 import { basemapFont, recolorBasemap } from './layers/basemap.utils';
 import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties } from './layers/features.types';
@@ -42,6 +47,8 @@ import {
 import type {
   CameraMode,
   ChangeInfo,
+  CoverageInfo,
+  CoverageYear,
   Credit,
   LineDetails,
   LineInfo,
@@ -101,6 +108,18 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private reachStops: PointFeature<ReachStopProperties>[] = [];
   /** The station the reach drawn starts at: the camera frames a reach when it changes. */
   private reachFrom: string | null = null;
+  /** How much of the city is within walking distance of a station, when it is shown. */
+  private readonly coverageLayer: CoverageLayer;
+  /** The city's outline, cut into cells; `null` until the app gives the outline. */
+  private coverageGrid: CoverageGrid | null = null;
+  /** The outline itself, for its name, source and rings. */
+  private boundary: CityBoundary | null = null;
+  /** Whether the coverage is drawn. */
+  private coverageShown = false;
+  /** The camera has framed the city for its coverage: once, so a later date leaves the view be. */
+  private coverageFramed = false;
+  /** The covered share year by year, worked out the first time it is asked for. */
+  private coverageYears: CoverageYear[] | null = null;
   /** Draws each frame on the layers. */
   private readonly frames: FrameRenderer;
   /** The overview inset, if the app gave it a container. */
@@ -162,6 +181,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.activeStepLayer = new ActiveStepLayer(this.map);
     this.routeLayer = new RouteLayer(this.map);
     this.reachLayer = new ReachLayer(this.map);
+    this.coverageLayer = new CoverageLayer(this.map);
     this.queries = new NetworkQueries(this.index, this.timeline, this.player.today);
     this.stationLayer = new StationLayer(
       this.map,
@@ -498,6 +518,61 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   }
 
   /**
+   * Gives the city's outline, which coverage is measured within; `null` for a city without one.
+   *
+   * @param boundary - The outline.
+   */
+  public setBoundary(boundary: CityBoundary | null): void {
+    this.boundary = boundary;
+    this.coverageGrid = boundary ? new CoverageGrid(boundary) : null;
+    this.coverageYears = null;
+    this.coverageFramed = false;
+    this.drawCoverage();
+  }
+
+  /**
+   * How much of the city is within walking distance of a station open on the date shown.
+   *
+   * @returns The share in each band and within the headline distance; `null` without an outline.
+   */
+  public findCoverage(): CoverageInfo | null {
+    const { coverageGrid: grid, boundary } = this;
+    if (!grid || !boundary) return null;
+    const farthest = COVERAGE_BANDS.at(-1)?.upTo ?? COVERAGE_HEADLINE_METRES;
+    const distances = grid.distances(servedStations(this.index, this.timeline, this.player.cursor), farthest);
+    return { name: boundary.name, source: boundary.source, ...coverageOf(grid, distances, COVERAGE_BANDS, COVERAGE_HEADLINE_METRES) };
+  }
+
+  /**
+   * The share of the city within the headline distance of a station, at the end of each year up to this one.
+   *
+   * @returns A share for each year, oldest first; none without an outline.
+   */
+  public getCoverageHistory(): CoverageYear[] {
+    if (!this.coverageGrid) return [];
+    const years: [number, number] = [new Date(this.timeline.start).getUTCFullYear(), new Date(this.player.today).getUTCFullYear()];
+    this.coverageYears ??= coverageHistory(this.index, this.timeline, this.coverageGrid, years, COVERAGE_HEADLINE_METRES);
+    return this.coverageYears;
+  }
+
+  /**
+   * Shades the city by how far it is to the nearest station open on the date shown, and draws its
+   * outline; or clears them. Call again as the date changes.
+   *
+   * @param shown - Whether to draw it.
+   */
+  public showCoverage(shown: boolean): void {
+    this.coverageShown = shown;
+    this.drawCoverage();
+    // The first time it is drawn, the camera frames the whole city, as a reach frames what it gets to.
+    if (shown && this.coverageGrid && !this.coverageFramed) {
+      const [, northEast, , southWest] = this.coverageGrid.corners;
+      this.camera.fit([southWest, northEast], OPENING_MAX_ZOOM, SELECT_FLY_MS);
+      this.coverageFramed = true;
+    }
+  }
+
+  /**
    * The stations on the map on the date shown, for a search: each with its names and its lines' colours.
    *
    * @returns The stations, by name.
@@ -536,7 +611,25 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
 
   /** The overlay's layer groups, bottom to top. */
   private get layers(): MapLayer[] {
-    return [this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
+    return [this.coverageLayer, this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
+  }
+
+  /** Draws the coverage on the date shown, if it is shown and the city has an outline; else hides it. */
+  private drawCoverage(): void {
+    // Until the overlay is installed there is nothing to draw on: installing it draws the coverage.
+    if (!this.ready) return;
+    const { coverageGrid: grid, boundary } = this;
+    if (!this.coverageShown || !grid || !boundary) {
+      this.coverageLayer.update(null);
+      return;
+    }
+    const farthest = COVERAGE_BANDS.at(-1)?.upTo ?? COVERAGE_HEADLINE_METRES;
+    const distances = grid.distances(servedStations(this.index, this.timeline, this.player.cursor), farthest);
+    this.coverageLayer.update({
+      image: { width: grid.columns, height: grid.rows, pixels: coverageImage(grid, distances, COVERAGE_BANDS) },
+      corners: grid.corners,
+      outline: boundary.polygons.flat().map(ring => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ring } })),
+    });
   }
 
   /** Fades the network behind a route or a reach shown; else brings forward the lines in focus. */
@@ -557,6 +650,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.reachLayer.update(this.reachTrack, this.reachStops);
     this.applyBackdrop();
     this.ready = true;
+    this.drawCoverage();
     this.frames.redraw(true);
     this.updateMinimapViewport();
     this.emit('ready', undefined);

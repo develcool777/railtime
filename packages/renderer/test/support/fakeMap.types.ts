@@ -9,6 +9,8 @@ export type FakeMap = {
   map: MapLibreMap;
   /** Each source's data, as last set. */
   data: Map<string, unknown>;
+  /** Each image source's picture and corners, as last set. */
+  images: Map<string, { url: string; coordinates: unknown }>;
   /** How many times each source's data was set. */
   sends: Map<string, number>;
   /** The layers, by id, in the order added. */

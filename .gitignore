@@ -5,7 +5,8 @@ dist
 .data/
 .DS_Store
 *.log
-coverage/
+# A coverage report left at the root; the tools write theirs under test-reports/. Not any folder called coverage: the app has one.
+/coverage/
 # Local, but the mutation score history, which is shared.
 test-reports/*
 !test-reports/mutation-scores.json

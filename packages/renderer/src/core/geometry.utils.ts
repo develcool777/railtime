@@ -1,9 +1,6 @@
 import type { LngLat } from '@railtime/schema/network.types';
+import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from './geometry.constants';
 import type { Bounds } from './geometry.types';
-
-const KM_PER_DEGREE_LATITUDE = 110.57;
-const KM_PER_DEGREE_LONGITUDE_AT_EQUATOR = 111.32;
-const RADIANS_PER_DEGREE = Math.PI / 180;
 
 /**
  * Distance between two points, by an equirectangular approximation at their own latitude: degrees of
@@ -92,3 +89,19 @@ export const boundsOf = (points: Iterable<LngLat>): Bounds | null => {
         [east, north],
       ];
 };
+
+/**
+ * Web Mercator's y of a latitude: the map's own vertical scale.
+ *
+ * @param latitude - Degrees.
+ * @returns Its y.
+ */
+export const mercatorY = (latitude: number): number => Math.log(Math.tan(Math.PI / 4 + (latitude * RADIANS_PER_DEGREE) / 2));
+
+/**
+ * The latitude of a Web Mercator y: `mercatorY` undone.
+ *
+ * @param y - A y.
+ * @returns Degrees.
+ */
+export const latitudeOf = (y: number): number => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) / RADIANS_PER_DEGREE;

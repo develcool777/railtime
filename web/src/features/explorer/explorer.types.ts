@@ -1,5 +1,5 @@
 /** One of the panel's sections, as the rail lists them. */
-export type Section = 'lines' | 'stations' | 'changes' | 'route' | 'reach' | 'insights' | 'plans';
+export type Section = 'lines' | 'stations' | 'changes' | 'route' | 'reach' | 'coverage' | 'insights' | 'plans';
 
 /** How high the phone's sheet stands: its tabs only, half the screen, or all of it. */
 export type SheetSnap = 'peek' | 'half' | 'full';
