@@ -57,7 +57,8 @@ export const emptyDrawing = (): StepDrawing => ({
 export const describeSteps = (state: Omit<RenderState, 'cursor' | 'identityProgress'>): ChangeInfo[] => {
   const { index, timeline } = state;
   return timeline.steps.map(step => {
-    const animation = createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index) });
+    // Captions: how the map is seen does not change a step's words.
+    const animation = createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index), view: '2d' });
     return { index: step.index, ...animation.describe({ ...state, cursor: step.index, identityProgress: null }) };
   });
 };

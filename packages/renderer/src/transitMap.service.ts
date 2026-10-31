@@ -646,7 +646,12 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @returns Its animation.
    */
   private createAnimation(step: Step): ReturnType<typeof createStepAnimation> {
-    return createStepAnimation(step, { index: this.index, timeline: this.timeline, stationsBefore: this.timeline.stationsOnMap(step.index) });
+    return createStepAnimation(step, {
+      index: this.index,
+      timeline: this.timeline,
+      stationsBefore: this.timeline.stationsOnMap(step.index),
+      view: this.camera.viewMode,
+    });
   }
 
   /** Redraws at once after the player jumped, nothing pulsing and no caption. */

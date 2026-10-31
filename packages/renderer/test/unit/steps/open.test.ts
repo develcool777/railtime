@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MIN_DRAW_SECONDS } from '../../../src/steps/animation.constants';
+import { toTimestamp } from '../../../src/core/date.utils';
+import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS } from '../../../src/steps/animation.constants';
 import { OpenStepAnimation } from '../../../src/steps/open.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { playbackOf } from '../../support/playback.utils';
 import { stepAfter } from '../../support/stepFrames.utils';
 
 /** Degrees of longitude in a km on the test line, as the tiny network places its stations. */
@@ -21,10 +23,19 @@ describe('OpenStepAnimation', () => {
     expect(animation.describe(state)).toMatchObject({ title: 'Red line extended', subtitle: 'B – Old D', stations: ['C', 'Old D'] });
   });
 
+  test('grows more slowly in 3D, where the camera follows it at street level', () => {
+    const playback = playbackOf(tinyNetwork(), undefined, '3d');
+    playback.player.seek(toTimestamp('1905-01-01'));
+    playback.player.skip();
+    // 2 km at 0.8 km a second.
+    expect(playback.player.active?.animation.drawSeconds).toBeCloseTo(2 / GROWTH_PACE['3d'].kmPerSecond, 1);
+    expect(GROWTH_PACE['3d'].kmPerSecond).toBeLessThan(GROWTH_PACE['2d'].kmPerSecond);
+  });
+
   test('takes as long as its track, a second at least, and holds a little longer for each new station', () => {
     const { animation } = extension();
     // 2 km at 2.5 km a second is under the shortest.
-    expect(animation.drawSeconds).toBe(MIN_DRAW_SECONDS);
+    expect(animation.drawSeconds).toBe(GROWTH_PACE['2d'].minSeconds);
     expect(animation.holdSeconds).toBeCloseTo(HOLD_BASE_SECONDS + 2 * HOLD_PER_STATION_SECONDS);
   });
 

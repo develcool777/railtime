@@ -9,7 +9,7 @@ import { clamp } from '../core/easing.utils';
 import type { Growth, SegmentPlan } from '../playback/growth.types';
 import { planGrowth } from '../playback/growth.utils';
 import type { StepInfo } from '../transitMap.types';
-import { GROWTH_KM_PER_SECOND, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MAX_DRAW_SECONDS, MAX_HOLD_SECONDS, MIN_DRAW_SECONDS } from './animation.constants';
+import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MAX_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
 
@@ -18,7 +18,7 @@ import type { StepContext, StepDrawing, StepFrame } from './animation.types';
  * pops in, pulses and is labelled as the growth front reaches it.
  */
 export class OpenStepAnimation extends StepAnimation<OpenStep> {
-  /** Seconds at 1×, by the stretch's length. */
+  /** Seconds at 1×, by the stretch's length and how the map is seen. */
   public readonly drawSeconds: number;
   /** Seconds at 1×, longer for more new stations. */
   public readonly holdSeconds: number;
@@ -34,7 +34,8 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
     const { index } = context;
     this.growth = planGrowth(step.segments, context.stationsBefore, station => index.coordOf(station), index.centre);
     const newStations = this.growth.reach.filter(reached => reached.isNew).length;
-    this.drawSeconds = clamp(this.growth.totalKm / GROWTH_KM_PER_SECOND, MIN_DRAW_SECONDS, MAX_DRAW_SECONDS);
+    const pace = GROWTH_PACE[context.view];
+    this.drawSeconds = clamp(this.growth.totalKm / pace.kmPerSecond, pace.minSeconds, pace.maxSeconds);
     this.holdSeconds = Math.min(MAX_HOLD_SECONDS, HOLD_BASE_SECONDS + HOLD_PER_STATION_SECONDS * newStations);
     for (const { segment, line } of step.lineSegments) {
       this.linesBySegment.set(segment.index, [...(this.linesBySegment.get(segment.index) ?? []), line]);
