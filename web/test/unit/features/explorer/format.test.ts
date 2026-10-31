@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { decadeOf, formatPlanFacts, formatStats, lineColor } from '~/features/explorer/format.utils';
+import { decadeHeading, formatPlanFacts, formatStats, lineColor } from '~/features/explorer/format.utils';
 
 describe('FormatUtils', () => {
   describe('formatPlanFacts', () => {
@@ -19,11 +19,11 @@ describe('FormatUtils', () => {
     });
   });
 
-  describe('decadeOf', () => {
+  describe('decadeHeading', () => {
     test('names the decade of a date, or the future for a plan', () => {
-      expect(decadeOf(Date.UTC(1933, 6, 31))).toBe('1930s');
-      expect(decadeOf(Date.UTC(1940, 0, 1))).toBe('1940s');
-      expect(decadeOf(null)).toBe('Future');
+      expect(decadeHeading(Date.UTC(1933, 6, 31))).toBe('1930s');
+      expect(decadeHeading(Date.UTC(1940, 0, 1))).toBe('1940s');
+      expect(decadeHeading(null)).toBe('Future');
     });
   });
 

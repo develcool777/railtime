@@ -1,6 +1,6 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { resolveLine } from '../layers/lineStyle.utils';
-import type { Step } from '@railtime/network/engine/timeline.types';
+import type { Step } from '@railtime/network/engine.types';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
 
 /**

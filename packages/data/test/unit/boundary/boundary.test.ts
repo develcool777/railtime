@@ -1,6 +1,7 @@
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { LngLat, Network, Station } from '@railtime/schema/network.types';
+import type { Network, Station } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { cities, readNetwork } from '../../../src/city.utils.ts';

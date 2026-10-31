@@ -1,10 +1,9 @@
-import type { NetworkIndex } from '@railtime/network/engine/index.service';
-import type { Timeline } from '@railtime/network/engine/timeline.service';
+import type { NetworkEngine } from '@railtime/network/engine.service';
 
 /** Everything that decides how a line looks in a frame. */
 export type RenderState = {
-  index: NetworkIndex;
-  timeline: Timeline;
+  index: NetworkEngine['index'];
+  timeline: NetworkEngine['timeline'];
   cursor: number;
   /** How far the identity step at the cursor has played (0..1), or `null` when none is playing. */
   identityProgress: number | null;

@@ -1,4 +1,5 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import { endOfYear } from '@railtime/core/date.utils';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { CoverageBand, CoverageInfo, CoverageYear } from '../facts/facts.types';
 import type { NetworkIndex } from '../network/index.service';
 import type { Timeline } from '../network/timeline.service';
@@ -90,7 +91,7 @@ export const coverageHistory = (index: NetworkIndex, timeline: Timeline, grid: C
   let lastCursor = -1;
   let share = 0;
   for (let year = years[0]; year <= years[1]; year++) {
-    const cursor = timeline.cursorAt(Date.UTC(year, 11, 31));
+    const cursor = timeline.cursorAt(endOfYear(year));
     // A year with no change keeps the year before's share: the grid is not walked again.
     if (cursor !== lastCursor) {
       const distances = grid.distances(servedStations(index, timeline, cursor), metres);

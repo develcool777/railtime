@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { required } from '../../../src/core/required.utils';
+import { required } from '../../src/required.utils';
 
 describe('RequiredUtils', () => {
   describe('required', () => {

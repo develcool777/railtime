@@ -1,3 +1,5 @@
+import { formatNumber } from '~/utils/format.utils';
+
 /**
  * A share as a whole percentage, or with one decimal while it is under 10.
  *
@@ -18,4 +20,4 @@ export const formatShare = (share: number): string => {
  * @param km2 - The area, km².
  * @returns "1,572 km²", "3.4 km²".
  */
-export const formatArea = (km2: number): string => (km2 < 10 ? `${km2.toFixed(1)} km²` : `${Math.round(km2).toLocaleString('en-GB')} km²`);
+export const formatArea = (km2: number): string => (km2 < 10 ? `${km2.toFixed(1)} km²` : `${formatNumber(km2)} km²`);

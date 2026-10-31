@@ -17,6 +17,7 @@
     "./basemapStill.constants": "./src/still/basemap.constants.ts"
   },
   "dependencies": {
+    "@railtime/core": "workspace:*",
     "@railtime/network": "workspace:*",
     "@railtime/schema": "workspace:*",
     "maplibre-gl": "^6.16.0"

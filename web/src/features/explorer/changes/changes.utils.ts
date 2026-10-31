@@ -1,7 +1,9 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import type { TimeState } from '@railtime/renderer/transitMap.types';
 
-import { decadeOf, yearOf } from '~/features/explorer/format.utils';
+import { yearOf } from '@railtime/core/date.utils';
+
+import { decadeHeading } from '~/features/explorer/format.utils';
 import type { ChangeGroup } from '~/features/explorer/changes/changes.types';
 
 /**
@@ -13,7 +15,7 @@ import type { ChangeGroup } from '~/features/explorer/changes/changes.types';
 export const changesByDecade = (changes: ChangeInfo[]): ChangeGroup[] => {
   const groups: ChangeGroup[] = [];
   for (const change of changes) {
-    const decade = decadeOf(change.time);
+    const decade = decadeHeading(change.time);
     const group = groups.at(-1);
     if (group?.decade === decade) group.changes.push(change);
     else groups.push({ decade, changes: [change] });

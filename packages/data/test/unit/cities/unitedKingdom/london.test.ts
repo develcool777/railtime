@@ -1,15 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../../../renderer/src/layers/snapshot.utils';
-import { toTimestamp } from '@railtime/network/date.utils';
-import { NetworkIndex } from '@railtime/network/engine/index.service';
-import type { TrackSegment } from '@railtime/network/engine/index.types';
-import { Timeline } from '@railtime/network/engine/timeline.service';
+import { toTimestamp } from '@railtime/core/date.utils';
+import { NetworkEngine } from '@railtime/network/engine.service';
+import type { TrackSegment } from '@railtime/network/engine.types';
 import { playbackOf, renderStateOf } from '../../../../../renderer/test/support/playback.utils';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 const london = cityNetwork('london');
-const index = new NetworkIndex(london);
-const timeline = new Timeline(index);
+const { index, timeline } = new NetworkEngine(london, null, toTimestamp('2026-01-01'));
 const stepsOn = (date: string) => timeline.steps.filter(step => step.time === toTimestamp(date));
 const startOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationA : segment.stationB);
 const endOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationB : segment.stationA);

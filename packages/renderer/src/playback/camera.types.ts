@@ -1,5 +1,5 @@
 import type { MapProps } from '../transitMap.types';
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 
 /** Where the 3D camera looks from, following a line as it is drawn. */
 export type Chase = {

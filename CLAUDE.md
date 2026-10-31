@@ -5,9 +5,12 @@ enforces them: `pnpm eslint-check` must pass.
 
 ## What this is
 
-A pnpm monorepo, a job to each part (`ARCHITECTURE.md`): `packages/schema` (the format: `format/` its
+A pnpm monorepo, a job to each part (`ARCHITECTURE.md`): `packages/core` (helpers about nothing in
+rail, used by more than one package: dates, geometry, `required`; a helper is never copied, it moves
+here), `packages/schema` (the format: `format/` its
 types, `validation/` the Zod shape and the checks between parts, `plan/` building a plan on a network),
-`packages/network` (the facts: `NetworkFacts`, the network through time, its plans and every answer about them),
+`packages/network` (the facts: `NetworkFacts` for everyone, every answer about the network, its history
+and its plans; `NetworkEngine`, `facts.engine`, the raw network the renderer plays and draws),
 `packages/renderer` (drawing: the MapLibre engine, `TransitMap`), `packages/data` (storage: every
 city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline and pictures; the index
 of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
@@ -49,7 +52,7 @@ landing page's pictures in Chrome).
 
 - **A fact is `network`'s.** A count, a length, a station's neighbours, a route, a caption: a method
   on `NetworkFacts` (or the `FactsAt` its `asOf` gives), tested in `packages/network`; `web` and `data`
-  ask it, never work it out, and never import its `engine/*` (ESLint), which is the renderer's. No
+  ask it, never work it out, and never import its `engine.*` (`NetworkEngine`, ESLint), which is the renderer's. No
   answer takes a theme: a line's colour is a `LineColor` in both, and what shows it picks one. `web` keeps presentation: formatting, grouping, the search.
 - **The renderer has no UI and no facts.** Controls, captions and panels are Nuxt UI components in
   `web`; the renderer takes props, commands and listeners (`transitMap.types.ts`, `ARCHITECTURE.md`)

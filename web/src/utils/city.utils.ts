@@ -1,5 +1,7 @@
+import CITY_INDEX from '@railtime/data/cities.json';
+import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import type { Network } from '@railtime/schema/network.types';
-import { isPlanOnly } from '@railtime/schema/plan.utils';
+import { firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { CITIES } from '~/constants/city.constants';
 
 /**
@@ -87,5 +89,21 @@ export const cityNameOf = (city: string): string => CITIES.find(candidate => can
  */
 export const planToOpen = (network: Network, asked: unknown): string | undefined => {
   if (typeof asked === 'string' && network.plans?.[asked]) return asked;
-  return isPlanOnly(network) ? Object.keys(network.plans ?? {})[0] : undefined;
+  return isPlanOnly(network) ? firstPlanOf(network) : undefined;
+};
+
+/** Every city summed up, as `pnpm data:summaries` writes them: what the landing page and a city's page show. */
+const INDEX: CityIndex = CITY_INDEX;
+
+/**
+ * A city's summary: its lines, stations, plans, when it began.
+ *
+ * @param city - A city in `CITIES`.
+ * @returns Its entry in `cities.json`.
+ * @throws {Error} If it has none: a test keeps the index and the menu's cities the same.
+ */
+export const citySummaryOf = (city: string): CityIndexEntry => {
+  const entry = INDEX[city];
+  if (!entry) throw new Error(`${city} is not in cities.json`);
+  return entry;
 };

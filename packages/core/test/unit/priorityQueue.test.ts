@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { PriorityQueue } from '../../../src/core/priorityQueue.service';
+import { PriorityQueue } from '../../src/priorityQueue.service';
 
 describe('PriorityQueue', () => {
   test('gives items back cheapest first, whatever order they came in', () => {

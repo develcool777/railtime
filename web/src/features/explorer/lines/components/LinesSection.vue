@@ -41,7 +41,8 @@
   import type { LineInfo } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
-  import { lineColor, yearOf } from '~/features/explorer/format.utils';
+  import { yearOf } from '@railtime/core/date.utils';
+  import { lineColor } from '~/features/explorer/format.utils';
   import { foldName } from '~/features/explorer/stations/station.utils';
 
   const props = defineProps<{

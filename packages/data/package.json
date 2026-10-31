@@ -15,10 +15,11 @@
     "./cities.json": "./cities/cities.json"
   },
   "dependencies": {
+    "@railtime/network": "workspace:*",
     "@railtime/schema": "workspace:*"
   },
   "devDependencies": {
-    "@railtime/network": "workspace:*",
+    "@railtime/core": "workspace:*",
     "@railtime/renderer": "workspace:*",
     "esbuild": "^0.28.2",
     "playwright-core": "^1.60.0",

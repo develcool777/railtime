@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '@railtime/network/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import {
   CLOSE_UP_MAX_ZOOM,
   CLOSE_UP_MIN_ZOOM,

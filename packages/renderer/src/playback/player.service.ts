@@ -1,8 +1,8 @@
-import { YEAR_MS } from '@railtime/network/date.utils';
-import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { Timeline } from '@railtime/network/engine/timeline.service';
-import type { Step } from '@railtime/network/engine/timeline.types';
-import { clamp, easeInOut } from '../core/easing.utils';
+import type { NetworkEngine } from '@railtime/network/engine.service';
+import { YEAR_MS } from '@railtime/core/date.utils';
+import type { Step } from '@railtime/network/engine.types';
+import { clamp } from '@railtime/core/number.utils';
+import { easeInOut } from '../core/easing.utils';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
 import type { PlayFrom, SeekTarget } from '../transitMap.types';
 import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './player.types';
@@ -32,12 +32,12 @@ export class Player {
   /** Where the clock ends: today, or a dated step after it. Planned steps play here. */
   public readonly end: number;
   /** The steps to play. */
-  private readonly timeline: Timeline;
+  private readonly timeline: NetworkEngine['timeline'];
   /** Builds each step's animation as it starts. */
   private readonly createAnimation: AnimationFactory;
 
-  public constructor(facts: Pick<NetworkFacts, 'timeline' | 'range'>, createAnimation: AnimationFactory) {
-    const { timeline, range } = facts;
+  public constructor(engine: Pick<NetworkEngine, 'timeline' | 'range'>, createAnimation: AnimationFactory) {
+    const { timeline, range } = engine;
     const today = range.today;
     this.timeline = timeline;
     this.today = today;

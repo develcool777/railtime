@@ -6,13 +6,14 @@ rule here broken changes this file first.
 
 ## The packages: one job each
 
-| Package    | Job                                                                           | Depends on                               |
-| ---------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
-| `schema`   | **The format**: a network's types, and the validation that enforces them      | —                                        |
-| `network`  | **The facts**: the network through time, and every number and answer about it | schema                                   |
-| `renderer` | **Drawing**: a network on a map, and playing its history                      | network, schema, MapLibre                |
-| `data`     | **Storage**: every city's files, and the commands that keep them              | network (summaries), renderer (pictures) |
-| `web`      | **The app**: what is open, the layout, how numbers and dates are written      | all of them                              |
+| Package    | Job                                                                            | Depends on                               |
+| ---------- | ------------------------------------------------------------------------------ | ---------------------------------------- |
+| `core`     | **Helpers about nothing in rail**: dates, geometry, `required`, lists, a queue | —                                        |
+| `schema`   | **The format**: a network's types, and the validation that enforces them       | core                                     |
+| `network`  | **The facts**: the network through time, and every number and answer about it  | core, schema                             |
+| `renderer` | **Drawing**: a network on a map, and playing its history                       | core, network, schema, MapLibre          |
+| `data`     | **Storage**: every city's files, and the commands that keep them               | network (summaries), renderer (pictures) |
+| `web`      | **The app**: what is open, the layout, how numbers and dates are written       | all of them                              |
 
 - **A fact is asked of `network`, never worked out where it is needed.** A count, a length, a
   station's neighbours, a route, a caption, what a plan adds: `web` and `data` ask `network`. What
@@ -20,6 +21,9 @@ rule here broken changes this file first.
 - **`schema` is the format and nothing else.** Building a plan stays in it: its validation builds every
   plan to check it fits, so `network` cannot hold it without a cycle.
 - **`renderer` draws and plays, and knows nothing it can ask `network`.**
+- **A helper used in two packages lives once, in `core`, the bottom of the stack.** Never a copy: a
+  date, a distance, a bounding box, `clamp`, `pushTo`, `required`, and the coordinate and date types.
+  Within one package, one helper too: the app's counts and numbers are `web/src/utils/format.utils.ts`.
 
 ## `network`: the facts
 
@@ -60,10 +64,11 @@ something re-runs. No answer depends on the theme: a line's colour comes in both
 `{ light, dark }`), and what shows it picks one (the renderer by its `theme` prop, the app by CSS
 `light-dark()`, `lineColor`).
 
-The package has two doors. `facts.service`, `facts.types` and `date.utils` are for everyone.
-`engine/*` is the raw network the renderer plays and draws: the index (track, stations), the timeline
-(its steps, and each opening's growth), geometry and `required`. ESLint keeps `web` and `data` from
-importing it. What the renderer draws over the network comes as answers, as the app's do: a route's
+The package has two doors, an object behind each. `NetworkFacts` (`facts.service`, `facts.types`) is
+for everyone. `NetworkEngine` (`engine.service`, `engine.types`), which `NetworkFacts` builds on and
+hands over as `facts.engine`, is the raw network the renderer plays and draws: the index (track,
+stations), the timeline (its steps, and each opening's growth) and the dates it runs between. ESLint
+keeps `web` and `data` from importing it. What the renderer draws over the network comes as answers, as the app's do: a route's
 segments, a reach's `track` in its `bands`, coverage's `cells(cursor)`; it works no fact out itself.
 
 ## `renderer`: the contract

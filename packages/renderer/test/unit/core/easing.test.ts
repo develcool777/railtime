@@ -1,13 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { clamp, easeInOut, easeOutBack } from '../../../src/core/easing.utils';
+import { easeInOut, easeOutBack } from '../../../src/core/easing.utils';
 
 describe('EasingUtils', () => {
-  describe('clamp', () => {
-    test('holds a value within its bounds', () => {
-      expect([clamp(-1, 0, 1), clamp(0.5, 0, 1), clamp(2, 0, 1)]).toEqual([0, 0.5, 1]);
-    });
-  });
-
   describe('easeInOut', () => {
     test('starts and ends on its bounds, half-way at the middle, slow at either end', () => {
       expect(easeInOut(0)).toBeCloseTo(0);

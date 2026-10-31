@@ -1,4 +1,5 @@
 import { useColorMode, useCookie } from '#imports';
+import { endOfYear } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { RoutePreference, RouteStop, StepInfo, Theme } from '@railtime/network/facts.types';
@@ -368,7 +369,7 @@ export const useExplorerStore = defineStore('explorer', () => {
    */
   const showYear = (year: number) => {
     const today = facts.value?.range.today ?? Date.now();
-    map.value?.seek({ time: Math.min(Date.UTC(year, 11, 31), today) });
+    map.value?.seek({ time: Math.min(endOfYear(year), today) });
     if (timeMode.value === 'rest') openTimeline();
   };
 

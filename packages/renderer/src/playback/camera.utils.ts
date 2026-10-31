@@ -1,20 +1,9 @@
-import type { LngLat } from '@railtime/schema/network.types';
-import { clamp } from '../core/easing.utils';
-import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/network/engine/geometry.constants';
+import type { LngLat } from '@railtime/core/geometry.types';
+import { clamp } from '@railtime/core/number.utils';
+import { RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
+import { offsetKm } from '@railtime/core/geometry.utils';
 import { CHASE_ZOOM_AT_1KM, CHASE_ZOOM_PER_DOUBLING, CLOSE_UP_MAX_ZOOM, CLOSE_UP_MIN_ZOOM, FOLLOW_RATE, MIN_TURN_KM, TURN_RATE } from './camera.constants';
 import type { Chase } from './camera.types';
-
-/**
- * Km east and north from one point to another, as a small stretch of the map measures them.
- *
- * @param from - Where from.
- * @param to - Where to.
- * @returns Km east, km north.
- */
-const kmBetween = (from: LngLat, to: LngLat): [number, number] => [
-  (to[0] - from[0]) * KM_PER_DEGREE_LONGITUDE_AT_EQUATOR * Math.cos(from[1] * RADIANS_PER_DEGREE),
-  (to[1] - from[1]) * KM_PER_DEGREE_LATITUDE,
-];
 
 /**
  * The way from one point to another.
@@ -24,7 +13,7 @@ const kmBetween = (from: LngLat, to: LngLat): [number, number] => [
  * @returns Degrees clockwise from north; `null` when the two are about the same point.
  */
 const bearingBetween = (from: LngLat, to: LngLat): number | null => {
-  const [east, north] = kmBetween(from, to);
+  const [east, north] = offsetKm(from, to);
   return Math.hypot(east, north) < MIN_TURN_KM ? null : Math.atan2(east, north) / RADIANS_PER_DEGREE;
 };
 

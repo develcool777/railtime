@@ -1,5 +1,6 @@
+import { yearOf } from '@railtime/core/date.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { Bounds } from '../core/geometry.types';
+import type { Bounds } from '@railtime/core/geometry.types';
 import type { NetworkIndex } from '../network/index.service';
 import type { Timeline } from '../network/timeline.service';
 import type { CoverageCells, CoverageInfo, CoverageYear } from '../facts/facts.types';
@@ -51,7 +52,7 @@ export class CoverageMeasure {
    * @returns A share for each year, oldest first.
    */
   public history(): CoverageYear[] {
-    const years: [number, number] = [new Date(this.timeline.start).getUTCFullYear(), new Date(this.today).getUTCFullYear()];
+    const years: [number, number] = [yearOf(this.timeline.start), yearOf(this.today)];
     this.years ??= coverageHistory(this.index, this.timeline, this.grid, years, COVERAGE_HEADLINE_METRES);
     return this.years;
   }

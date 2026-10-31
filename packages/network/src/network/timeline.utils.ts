@@ -1,19 +1,7 @@
-import type { LngLat } from '@railtime/schema/network.types';
-import { distanceKm } from '../core/geometry.utils';
-import type { LineSegment, TrackSegment } from './index.types';
-
-/**
- * Adds a value to the list stored under a key.
- *
- * @param map - Lists by key.
- * @param key - Where to add.
- * @param value - What to add.
- */
-export const pushTo = <Key, Value>(map: Map<Key, Value[]>, key: Key, value: Value): void => {
-  const list = map.get(key) ?? [];
-  list.push(value);
-  map.set(key, list);
-};
+import { pushTo } from '@railtime/core/collection.utils';
+import type { LngLat } from '@railtime/core/geometry.types';
+import { distanceKm } from '@railtime/core/geometry.utils';
+import type { LineSegment, TrackSegment } from './engine.types';
 
 /**
  * Splits one day's openings for one line into connected stretches, nearest the network's centre first.

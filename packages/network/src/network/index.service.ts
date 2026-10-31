@@ -1,10 +1,12 @@
-import type { Line, LngLat, Network, Segment, Station } from '@railtime/schema/network.types';
+import { pushTo } from '@railtime/core/collection.utils';
+import type { Line, Network, Segment, Station } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { BuiltSection } from '@railtime/schema/plan.types';
-import { required } from '../core/required.utils';
-import { toTimestamp } from '../core/date.utils';
-import type { Bounds } from '../core/geometry.types';
-import { boundsOf, cumulativeDistances } from '../core/geometry.utils';
-import type { LineSegment, TrackSegment } from './index.types';
+import { required } from '@railtime/core/required.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
+import type { Bounds } from '@railtime/core/geometry.types';
+import { boundsOf, cumulativeDistances } from '@railtime/core/geometry.utils';
+import type { LineSegment, TrackSegment } from './engine.types';
 import { orientSegments } from './orientation.utils';
 
 /**
@@ -60,8 +62,8 @@ export class NetworkIndex {
     ];
     this.centre = [(this.bounds[0][0] + this.bounds[1][0]) / 2, (this.bounds[0][1] + this.bounds[1][1]) / 2];
     for (const { stationA, stationB } of network.transfers ?? []) {
-      this.transfersByStation.set(stationA, [...(this.transfersByStation.get(stationA) ?? []), stationB]);
-      this.transfersByStation.set(stationB, [...(this.transfersByStation.get(stationB) ?? []), stationA]);
+      pushTo(this.transfersByStation, stationA, stationB);
+      pushTo(this.transfersByStation, stationB, stationA);
     }
   }
 

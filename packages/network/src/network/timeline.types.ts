@@ -1,38 +1,4 @@
-import type { LineSegment, TrackSegment } from './index.types';
-
-/** What every step has. */
-type StepBase = {
-  /** Position in the timeline; also the cursor at which the step plays. */
-  index: number;
-  /** The step's date, as a UTC midnight timestamp; `Infinity` for a planned step, which has none. */
-  time: number;
-  /** It builds a plan's section: after every dated step, in the plan's order. */
-  planned: boolean;
-};
-
-/** A connected stretch of one (effective) line opens. */
-export type OpenStep = StepBase & { kind: 'open'; line: string; lineSegments: LineSegment[]; segments: TrackSegment[] };
-
-/** One line's sections close. */
-export type CloseStep = StepBase & { kind: 'close'; line: string; lineSegments: LineSegment[] };
-
-/** A station opens on track its lines already run over. */
-export type InfillStep = StepBase & { kind: 'infill'; station: string; lines: string[] };
-
-/** Lines stop calling at a station while still running through it. */
-export type StationCloseStep = StepBase & { kind: 'stationClose'; station: string; lines: string[] };
-
-/** A station takes a new name. */
-export type RenameStep = StepBase & { kind: 'rename'; station: string; from: string; to: string };
-
-/** Lines stop being drawn as another line (a branch becoming its own line, one line splitting into several). */
-export type IdentityStep = StepBase & { kind: 'identity'; lines: string[]; text: string };
-
-/**
- * One thing that happens, played on its own. Several steps can share a date: they play one after
- * another while the clock waits on that date.
- */
-export type Step = OpenStep | CloseStep | InfillStep | StationCloseStep | RenameStep | IdentityStep;
+import type { CloseStep, IdentityStep, InfillStep, LineSegment, OpenStep, RenameStep, StationCloseStep } from './engine.types';
 
 /** A step before the timeline numbers it, and marks it planned by its time. */
 export type StepDraft =
@@ -58,21 +24,3 @@ export type DayChanges = {
 
 /** The step at which a line stops being drawn as `as`. */
 export type AliasEnd = { step: number; as: string };
-
-/** How one segment of a growing stretch draws. */
-export type SegmentPlan = {
-  segment: TrackSegment;
-  /** Draws from station A towards B (else from B towards A). */
-  fromStationA: boolean;
-  /** How far the growth front has travelled, km, when this segment starts drawing. */
-  startKm: number;
-};
-
-/** How a stretch of new track grows. */
-export type Growth = {
-  plans: SegmentPlan[];
-  /** How far the growth front travels in all. */
-  totalKm: number;
-  /** Every station of the stretch in the order the front reaches it; `isNew` if it was not on the map before. */
-  reach: { station: string; km: number; isNew: boolean }[];
-};

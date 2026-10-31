@@ -1,5 +1,6 @@
-import { required } from '../core/required.utils';
-import type { TrackSegment, Travel } from './index.types';
+import { pushTo } from '@railtime/core/collection.utils';
+import { required } from '@railtime/core/required.utils';
+import type { TrackSegment, Travel } from './engine.types';
 import type { Chain } from './orientation.types';
 
 /**
@@ -11,12 +12,7 @@ import type { Chain } from './orientation.types';
  */
 const groupByStation = <Thing>(things: Thing[], stationsOf: (thing: Thing) => string[]): Map<string, Thing[]> => {
   const byStation = new Map<string, Thing[]>();
-  for (const thing of things)
-    for (const station of stationsOf(thing)) {
-      const group = byStation.get(station) ?? [];
-      group.push(thing);
-      byStation.set(station, group);
-    }
+  for (const thing of things) for (const station of stationsOf(thing)) pushTo(byStation, station, thing);
   return byStation;
 };
 

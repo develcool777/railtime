@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { CoverageGrid } from '../../../src/coverage/grid.service';
 import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from '../../../src/coverage/measure.constants';
 import { CoverageMeasure } from '../../../src/coverage/measure.service';
@@ -10,7 +10,7 @@ import { factsOf } from '../../support/facts.utils';
 
 describe('CoverageMeasure', () => {
   test("measures the city on the network at a cursor, named by its outline, as the grid's helpers do", () => {
-    const { index, timeline } = factsOf(tinyNetwork());
+    const { index, timeline } = factsOf(tinyNetwork()).engine;
     const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const grid = new CoverageGrid(CITY);
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
@@ -21,7 +21,7 @@ describe('CoverageMeasure', () => {
   });
 
   test('works out the history from the timeline’s first year to today’s once, frames the city, and draws it cell by cell', () => {
-    const { index, timeline } = factsOf(tinyNetwork());
+    const { index, timeline } = factsOf(tinyNetwork()).engine;
     const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const history = measure.history();
     const first = new Date(timeline.start).getUTCFullYear();
@@ -103,7 +103,7 @@ describe('MeasureUtils', () => {
 
   describe('servedStations', () => {
     test('places the stations a line calls at, not one it only passes', () => {
-      const { index, timeline } = factsOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork()).engine;
       // In 1915 red runs through C, which opens on it only in 1920.
       expect(servedStations(index, timeline, timeline.cursorAt(toTimestamp('1915-01-01')))).toEqual(['a', 'b', 'd'].map(station => index.coordOf(station)));
     });
@@ -111,7 +111,7 @@ describe('MeasureUtils', () => {
 
   describe('coverageHistory', () => {
     test('measures the covered share at the end of each year, growing with the network', () => {
-      const { index, timeline } = factsOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork()).engine;
       const history = coverageHistory(index, timeline, new CoverageGrid(AROUND_TINY), [1899, 1925], 800);
       expect(history.map(entry => entry.year)).toEqual(Array.from({ length: 27 }, (_, position) => 1899 + position));
       const share = (year: number) => history.find(entry => entry.year === year)!.share;
@@ -124,7 +124,7 @@ describe('MeasureUtils', () => {
     });
 
     test('gives each year the share coverageOf finds at its end, from any first year', () => {
-      const { index, timeline } = factsOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork()).engine;
       const grid = new CoverageGrid(AROUND_TINY);
       for (const first of [1899, 1900, 1901, 1905, 1915]) {
         const history = coverageHistory(index, timeline, grid, [first, 1925], 800);
@@ -137,7 +137,7 @@ describe('MeasureUtils', () => {
     });
 
     test('shares nothing out of a city with no area', () => {
-      const { index, timeline } = factsOf(tinyNetwork());
+      const { index, timeline } = factsOf(tinyNetwork()).engine;
       const history = coverageHistory(index, timeline, new CoverageGrid({ ...AROUND_TINY, polygons: [] }), [1899, 1925], 800);
       expect(history.every(entry => entry.share === 0)).toBe(true);
     });

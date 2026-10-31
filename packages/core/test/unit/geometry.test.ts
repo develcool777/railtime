@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { LngLat } from '@railtime/schema/network.types';
-import { boundsOf, cumulativeDistances, distanceKm, latitudeOf, mercatorY, sliceAlong } from '../../../src/core/geometry.utils';
+import type { LngLat } from '../../src/geometry.types';
+import { boundsOf, cumulativeDistances, distanceKm, latitudeOf, mercatorY, offsetKm, sliceAlong } from '../../src/geometry.utils';
 
 /** Km in a degree of longitude on the equator, where these tracks run. */
 const KM_PER_DEGREE = 111.32;
@@ -31,6 +31,15 @@ describe('GeometryUtils', () => {
       // At 51.5° and 55° north: cos(51.5°) and cos(55°) of the 111.32 km at the equator.
       expect(distanceKm([-0.5, 51.5], [0.5, 51.5])).toBeCloseTo(69.3, 1);
       expect(distanceKm([-2, 55], [-1, 55])).toBeCloseTo(63.85, 1);
+    });
+  });
+
+  describe('offsetKm', () => {
+    test('splits the way between two points into km east and km north, signed', () => {
+      const [east, north] = offsetKm([0.5, 52], [-0.5, 51]);
+      expect(east).toBeCloseTo(-69.3, 1);
+      expect(north).toBeCloseTo(-110.57, 1);
+      expect(Math.hypot(east, north)).toBeCloseTo(distanceKm([0.5, 52], [-0.5, 51]), 9);
     });
   });
 

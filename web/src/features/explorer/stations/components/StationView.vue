@@ -41,13 +41,14 @@
     <section v-if="station.formerNames.length > 0">
       <h3 class="eyebrow text-muted pb-1">Former names</h3>
       <p v-for="former in station.formerNames" :key="former.until" class="text-default py-1 text-sm">
-        {{ [former.name, ...former.otherNames].join(' / ') }} <span class="text-muted text-xs">until {{ former.until.slice(0, 4) }}</span>
+        {{ [former.name, ...former.otherNames].join(' / ') }} <span class="text-muted text-xs">until {{ yearOf(toTimestamp(former.until)) }}</span>
       </p>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+  import { toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
   import type { StationInfo, StationLineInfo } from '@railtime/network/facts.types';
 
   import type { LineDirection } from '@railtime/network/facts.types';
@@ -67,7 +68,7 @@
   const isOpen = (line: StationLineInfo): boolean => {
     if (props.date === null) return !line.closed;
     if (line.opened === null) return false;
-    const day = new Date(props.date).toISOString().slice(0, 10);
+    const day = toIsoDate(props.date);
     return line.opened <= day && (!line.closed || line.closed > day);
   };
 </script>

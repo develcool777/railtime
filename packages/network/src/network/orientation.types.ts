@@ -1,4 +1,4 @@
-import type { TrackSegment, Travel } from './index.types';
+import type { TrackSegment, Travel } from './engine.types';
 
 /** A run of track between junctions (stations where other than two segments meet). */
 export type Chain = {

@@ -1,6 +1,6 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { coverageDrawing } from '../coverage/layer.utils';
-import { boundsOf } from '@railtime/network/engine/geometry.utils';
+import { boundsOf } from '@railtime/core/geometry.utils';
 import { reachStops, reachTrack } from '../reach/layer.utils';
 import { routeStops, routeTrack } from '../route/layer.utils';
 import { OPENING_MAX_ZOOM, ROUTE_NAME_ROOM, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from '../transitMap.constants';
@@ -50,10 +50,10 @@ export class OverlayController {
     const route = request?.kind === 'route' ? then.route(request.from, request.to, request.preference) : null;
     const reach = request?.kind === 'reach' ? then.reach(request.from) : null;
     const coverage = request?.kind === 'coverage' && boundary ? facts.coverage(boundary) : null;
-    const routeLine = routeTrack(facts.index, route, theme);
-    const reachStations = reachStops(facts.index, reach);
-    routeLayer.update(routeLine, routeStops(facts.index, route, theme));
-    reachLayer.update(reachTrack(facts.index, reach), reachStations);
+    const routeLine = routeTrack(facts.engine.index, route, theme);
+    const reachStations = reachStops(facts.engine.index, reach);
+    routeLayer.update(routeLine, routeStops(facts.engine.index, route, theme));
+    reachLayer.update(reachTrack(facts.engine.index, reach), reachStations);
     coverageLayer.update(coverage ? coverageDrawing(coverage.cells(moment.cursor), coverage.boundary) : null);
 
     const subject = overlaySubjectOf(request);

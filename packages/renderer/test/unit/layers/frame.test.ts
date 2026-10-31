@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '@railtime/network/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { ActiveStepLayer } from '../../../src/layers/activeStep.service';
 import type { FeatureCollection, LineFeature } from '../../../src/layers/features.types';
 import { FrameRenderer } from '../../../src/layers/frame.service';

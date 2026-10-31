@@ -1,16 +1,9 @@
+import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import type { LineDetails, StationInfo } from '@railtime/network/facts.types';
 
-import { formatDay, lineColor, yearOf } from '~/features/explorer/format.utils';
+import { formatDay, lineColor } from '~/features/explorer/format.utils';
 import type { PanelTopContent, SectionTopInput } from '~/features/explorer/panel/panel.types';
-
-/**
- * A count with its noun, singular for one.
- *
- * @param count - How many.
- * @param noun - The noun, singular.
- * @returns "1 line", "3 lines".
- */
-const counted = (count: number, noun: string): string => (count === 1 ? `1 ${noun}` : `${count} ${noun}s`);
+import { counted } from '~/utils/format.utils';
 
 /**
  * The top of a station's view: its name; under it, its names in other languages and the year its
@@ -21,10 +14,10 @@ const counted = (count: number, noun: string): string => (count === 1 ? `1 ${nou
  * @returns The panel's top.
  */
 export const stationTop = (station: StationInfo, backLabel: string): PanelTopContent => {
-  const opened = station.lines.flatMap(line => (line.opened ? [line.opened.slice(0, 4)] : [])).sort()[0];
+  const opened = station.lines.flatMap(line => (line.opened ? [line.opened] : [])).sort()[0];
   return {
     title: station.name,
-    context: [...station.otherNames, opened ? `opened ${opened}` : 'planned'].join(' · '),
+    context: [...station.otherNames, opened ? `opened ${yearOf(toTimestamp(opened))}` : 'planned'].join(' · '),
     dots: station.lines.map(line => lineColor(line.color)),
     backLabel,
   };

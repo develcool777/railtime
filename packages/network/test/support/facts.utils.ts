@@ -23,5 +23,5 @@ export const factsOf = (network: Network, plan?: string): NetworkFacts => Networ
  */
 export const questionsOn = (facts: NetworkFacts, when: number | 'future'): FactsAt =>
   when === 'future'
-    ? facts.asOf({ cursor: facts.timeline.steps.length, time: facts.range.end })
-    : facts.asOf({ cursor: facts.timeline.cursorAt(when), time: when });
+    ? facts.asOf({ cursor: facts.engine.timeline.steps.length, time: facts.range.end })
+    : facts.asOf({ cursor: facts.engine.timeline.cursorAt(when), time: when });

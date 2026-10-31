@@ -1,3 +1,4 @@
+import { clamp } from '@railtime/core/number.utils';
 import type { Padding } from '@railtime/renderer/transitMap.types';
 
 import { PANEL_WIDTH, SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
@@ -42,5 +43,4 @@ export const panelCoverOf = (layout: { phone: boolean; mapOnly: boolean; panelOp
  * @param moved - How far the pointer has moved since, pixels; rightwards is positive.
  * @returns The width, a whole number of pixels.
  */
-export const draggedPanelWidth = (startWidth: number, moved: number): number =>
-  Math.round(Math.min(Math.max(startWidth + moved, PANEL_WIDTH.min), PANEL_WIDTH.max));
+export const draggedPanelWidth = (startWidth: number, moved: number): number => Math.round(clamp(startWidth + moved, PANEL_WIDTH.min, PANEL_WIDTH.max));

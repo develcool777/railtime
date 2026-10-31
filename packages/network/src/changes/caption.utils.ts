@@ -1,7 +1,7 @@
-import { DAY_MS } from '../core/date.utils';
-import { required } from '../core/required.utils';
+import { DAY_MS } from '@railtime/core/date.utils';
+import { required } from '@railtime/core/required.utils';
 import type { LineColor, StepInfo } from '../facts/facts.types';
-import type { CloseStep, IdentityStep, InfillStep, OpenStep, RenameStep, Step, StationCloseStep } from '../network/timeline.types';
+import type { CloseStep, IdentityStep, InfillStep, OpenStep, RenameStep, Step, StationCloseStep } from '../network/engine.types';
 import type { CaptionContext } from './caption.types';
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildPlan, isPlanOnly } from '../../../src/plan/build.utils';
+import { buildPlan, firstPlanOf, isPlanOnly } from '../../../src/plan/build.utils';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
 
 describe('PlanBuildUtils', () => {
@@ -131,6 +131,13 @@ describe('PlanBuildUtils', () => {
       expect(isPlanOnly({ ...plannedNetwork(), segments: [] })).toBe(true);
       expect(isPlanOnly({ ...plannedNetwork(), segments: [], plans: {} })).toBe(false);
       expect(isPlanOnly({ ...plannedNetwork(), segments: [], plans: undefined })).toBe(false);
+    });
+  });
+
+  describe('firstPlanOf', () => {
+    test("is a network's first plan, and none without plans", () => {
+      expect(firstPlanOf(plannedNetwork())).toBe(Object.keys(plannedNetwork().plans ?? {})[0]);
+      expect(firstPlanOf({ ...plannedNetwork(), plans: undefined })).toBeUndefined();
     });
   });
 });

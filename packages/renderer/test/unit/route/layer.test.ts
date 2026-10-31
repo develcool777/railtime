@@ -4,7 +4,7 @@ import { pointFeature } from '../../../src/layers/features.utils';
 import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import { RouteLayer } from '../../../src/route/layer.service';
 import { routeStops, routeTrack } from '../../../src/route/layer.utils';
-import { toTimestamp } from '@railtime/network/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { networkNow, playbackOf } from '../../support/playback.utils';
 import { PALETTES } from '../../../src/layers/theme.constants';

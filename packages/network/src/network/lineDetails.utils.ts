@@ -1,8 +1,8 @@
+import { pushTo } from '@railtime/core/collection.utils';
 import type { LineDetails, LineDirection, StopToward } from '../facts/facts.types';
 import type { NetworkIndex } from './index.service';
-import type { LineSegment } from './index.types';
+import type { LineSegment, Step } from './engine.types';
 import type { Timeline } from './timeline.service';
-import type { Step } from './timeline.types';
 
 /** A line's track at a cursor, as a graph: each station's neighbours on it, with the km between. */
 type LineGraph = Map<string, { to: string; km: number; edge: number }[]>;
@@ -20,7 +20,7 @@ const lineGraph = (index: NetworkIndex, timeline: Timeline, line: string, cursor
   const open = index.lineSegments.filter(lineSegment => lineSegment.line === line && timeline.isOpen(lineSegment, cursor));
   const graph: LineGraph = new Map();
   for (const [edge, { segment }] of open.entries()) {
-    const link = (from: string, to: string) => graph.set(from, [...(graph.get(from) ?? []), { to, km: segment.lengthKm, edge }]);
+    const link = (from: string, to: string) => pushTo(graph, from, { to, km: segment.lengthKm, edge });
     link(segment.stationA, segment.stationB);
     link(segment.stationB, segment.stationA);
   }

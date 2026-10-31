@@ -1,4 +1,4 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { RouteStopKind } from '../route/stops.types';
 
 /** Minimal GeoJSON, so the renderer needs no @types/geojson. */

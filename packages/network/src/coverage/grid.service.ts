@@ -1,11 +1,11 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import {
   KM_PER_DEGREE_LATITUDE,
   KM_PER_DEGREE_LONGITUDE_AT_EQUATOR as KM_PER_DEGREE_LONGITUDE_AT_EQUATOR,
   RADIANS_PER_DEGREE as RADIANS_PER_DEGREE,
-} from '../core/geometry.constants';
-import { boundsOf, latitudeOf, mercatorY } from '../core/geometry.utils';
+} from '@railtime/core/geometry.constants';
+import { boundsOf, latitudeOf, mercatorY, offsetKm } from '@railtime/core/geometry.utils';
 import { MAX_CELLS, MIN_CELL_KM } from './measure.constants';
 import type { GridCorners } from './grid.types';
 
@@ -43,9 +43,7 @@ export class CoverageGrid {
       [0, 0],
       [0, 0],
     ];
-    const middle = (south + north) / 2;
-    const widthKm = (east - west) * KM_PER_DEGREE_LONGITUDE_AT_EQUATOR * Math.cos(middle * RADIANS_PER_DEGREE);
-    const heightKm = (north - south) * KM_PER_DEGREE_LATITUDE;
+    const [widthKm, heightKm] = offsetKm([west, south], [east, north]);
     const cellKm = Math.max(MIN_CELL_KM, Math.sqrt((widthKm * heightKm) / MAX_CELLS));
     this.columns = Math.max(1, Math.ceil(widthKm / cellKm));
     this.rows = Math.max(1, Math.ceil(heightKm / cellKm));
@@ -97,6 +95,8 @@ export class CoverageGrid {
     const metres = new Float32Array(this.inside.length).fill(Infinity);
     const reachKm = reachMetres / 1000;
     for (const [longitude, latitude] of points) {
+      // `offsetKm` taken apart: this runs for every cell near every station, so the longitude's scale
+      // is worked out once a point, at its own latitude, not once a cell.
       const kmPerDegree = KM_PER_DEGREE_LONGITUDE_AT_EQUATOR * Math.cos(latitude * RADIANS_PER_DEGREE);
       const firstColumn = Math.max(0, Math.floor((longitude - reachKm / kmPerDegree - this.west) / this.columnDegrees));
       const lastColumn = Math.min(this.columns - 1, Math.floor((longitude + reachKm / kmPerDegree - this.west) / this.columnDegrees));

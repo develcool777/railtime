@@ -1,6 +1,7 @@
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import { cityNameOf, networkUrlOf } from '~/utils/city.utils';
 import type { PageSeo } from './seo.types';
+import { counted } from '~/utils/format.utils';
 
 /** The site's name, as titles end with it. */
 const SITE_NAME = 'Railtime';
@@ -21,15 +22,6 @@ export const pageUrl = (siteUrl: string, baseUrl: string, path: string): string 
   const slash = path === '' || /\.\w+$/.test(path) ? '' : '/';
   return `${siteUrl.replace(/\/$/, '')}${baseUrl}${path}${slash}`;
 };
-
-/**
- * The number of something, with its noun: "1 line", "20 lines".
- *
- * @param count - How many.
- * @param noun - The noun, singular.
- * @returns The phrase.
- */
-const counted = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? '' : 's'}`;
 
 /**
  * What the landing page says about itself.

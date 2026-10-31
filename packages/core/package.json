@@ -1,0 +1,25 @@
+{
+  "name": "@railtime/core",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test-unit": "vitest",
+    "test-unit-ci": "vitest run"
+  },
+  "exports": {
+    "./collection.utils": "./src/collection.utils.ts",
+    "./date.types": "./src/date.types.ts",
+    "./date.utils": "./src/date.utils.ts",
+    "./geometry.constants": "./src/geometry.constants.ts",
+    "./geometry.types": "./src/geometry.types.ts",
+    "./geometry.utils": "./src/geometry.utils.ts",
+    "./number.utils": "./src/number.utils.ts",
+    "./priorityQueue.service": "./src/priorityQueue.service.ts",
+    "./required.utils": "./src/required.utils.ts"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}

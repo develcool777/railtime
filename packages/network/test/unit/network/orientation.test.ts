@@ -1,6 +1,6 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { describe, expect, test } from 'vitest';
-import type { TrackSegment, Travel } from '../../../src/network/index.types';
+import type { TrackSegment, Travel } from '../../../src/network/engine.types';
 import { NetworkIndex } from '../../../src/network/index.service';
 import { orientSegments } from '../../../src/network/orientation.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';

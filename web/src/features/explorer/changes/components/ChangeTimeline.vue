@@ -21,7 +21,8 @@
   import { computed } from 'vue';
 
   import { timelinePosition } from '~/features/explorer/changes/changes.utils';
-  import { lineColor, yearOf } from '~/features/explorer/format.utils';
+  import { yearOf } from '@railtime/core/date.utils';
+  import { lineColor } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
     /** The run of changes, in order. */

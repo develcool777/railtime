@@ -16,7 +16,8 @@
   import { computed } from 'vue';
 
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
-  import { formatMetric, formatNumber } from '~/features/explorer/insights/insights.utils';
+  import { formatMetric } from '~/features/explorer/insights/insights.utils';
+  import { formatNumber } from '~/utils/format.utils';
 
   /** What each measure is called in the readout. */
   const METRIC_LABELS: Record<GrowthMetric, string> = { stations: 'Stations', km: 'Track', lines: 'Lines' };

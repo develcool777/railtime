@@ -1,14 +1,9 @@
 import type { LineColor, NetworkStats } from '@railtime/network/facts.types';
+import { decadeOf, yearOf } from '@railtime/core/date.utils';
+
+import { counted } from '~/utils/format.utils';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-/**
- * The year of a timestamp, in UTC.
- *
- * @param time - A timestamp.
- * @returns Its year.
- */
-export const yearOf = (time: number): number => new Date(time).getUTCFullYear();
 
 /**
  * A day as people write it.
@@ -30,7 +25,7 @@ export const formatDay = (time: number): string => {
  */
 export const formatPlanFacts = (stations: number, km: number): string => {
   const facts: string[] = [];
-  if (stations > 0) facts.push(`${stations} station${stations === 1 ? '' : 's'}`);
+  if (stations > 0) facts.push(counted(stations, 'station'));
   if (Math.round(km) > 0) facts.push(`${Math.round(km)} km`);
   return facts.length > 0 ? `adds ${facts.join(' · ')}` : '';
 };
@@ -45,7 +40,7 @@ export const formatPlanFacts = (stations: number, km: number): string => {
 export const formatStats = (stats: NetworkStats, short = false): string => {
   const km = `${Math.round(stats.km)} km`;
   if (short) return `${stats.stations} st. · ${km}`;
-  return `${stats.stations} station${stats.stations === 1 ? '' : 's'} · ${km} · ${stats.lines} line${stats.lines === 1 ? '' : 's'}`;
+  return `${counted(stats.stations, 'station')} · ${km} · ${counted(stats.lines, 'line')}`;
 };
 
 /**
@@ -54,7 +49,7 @@ export const formatStats = (stats: NetworkStats, short = false): string => {
  * @param time - A timestamp; `null` for a plan's change, which has no date.
  * @returns "1930s", or "Future".
  */
-export const decadeOf = (time: number | null): string => (time === null ? 'Future' : `${Math.floor(yearOf(time) / 10) * 10}s`);
+export const decadeHeading = (time: number | null): string => (time === null ? 'Future' : `${decadeOf(yearOf(time))}s`);
 
 /**
  * A line's colour as CSS, in whichever theme the page is in: the browser picks by the page's

@@ -1,20 +1,29 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from './geometry.types';
 import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from './geometry.constants';
 import type { Bounds } from './geometry.types';
 
 /**
- * Distance between two points, by an equirectangular approximation at their own latitude: degrees of
- * longitude shrink towards the poles, so they are scaled by the cosine of the points' mean latitude.
- * Well under 1% off at city scale, in any city.
+ * How far east and north one point is of another, by an equirectangular approximation at their own
+ * latitude: degrees of longitude shrink towards the poles, so they are scaled by the cosine of the
+ * points' mean latitude. Well under 1% off at city scale, in any city.
+ *
+ * @param from - The first point.
+ * @param to - The second point.
+ * @returns Km east and km north from `from` to `to`.
+ */
+export const offsetKm = (from: LngLat, to: LngLat): [number, number] => {
+  const longitudeScale = Math.cos(((from[1] + to[1]) / 2) * RADIANS_PER_DEGREE);
+  return [(to[0] - from[0]) * longitudeScale * KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, (to[1] - from[1]) * KM_PER_DEGREE_LATITUDE];
+};
+
+/**
+ * Distance between two points (`offsetKm`).
  *
  * @param from - The first point.
  * @param to - The second point.
  * @returns The distance in km.
  */
-export const distanceKm = (from: LngLat, to: LngLat): number => {
-  const longitudeScale = Math.cos(((from[1] + to[1]) / 2) * RADIANS_PER_DEGREE);
-  return Math.hypot((to[0] - from[0]) * longitudeScale * KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, (to[1] - from[1]) * KM_PER_DEGREE_LATITUDE);
-};
+export const distanceKm = (from: LngLat, to: LngLat): number => Math.hypot(...offsetKm(from, to));
 
 /**
  * The point a fraction of the way from one point to another.

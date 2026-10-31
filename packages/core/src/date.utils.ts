@@ -1,4 +1,4 @@
-import type { IsoDate } from '@railtime/schema/network.types';
+import type { IsoDate } from './date.types';
 
 /** Milliseconds in a day. */
 export const DAY_MS = 864e5;
@@ -34,3 +34,27 @@ export const todayTimestamp = (): number => {
   const now = new Date();
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 };
+
+/**
+ * The year of a timestamp, in UTC.
+ *
+ * @param timestamp - Milliseconds since the epoch.
+ * @returns Its year.
+ */
+export const yearOf = (timestamp: number): number => new Date(timestamp).getUTCFullYear();
+
+/**
+ * The last day of a year: what a year shown means, the network as it stood when the year ended.
+ *
+ * @param year - The year.
+ * @returns The UTC midnight of its 31 December.
+ */
+export const endOfYear = (year: number): number => Date.UTC(year, 11, 31);
+
+/**
+ * The decade a year is in, by its first year.
+ *
+ * @param year - The year.
+ * @returns 1960 for any year of the 1960s.
+ */
+export const decadeOf = (year: number): number => Math.floor(year / 10) * 10;

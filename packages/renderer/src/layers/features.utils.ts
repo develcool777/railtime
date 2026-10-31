@@ -1,4 +1,4 @@
-import type { LngLat } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { FeatureCollection, LineFeature, PointFeature } from './features.types';
 
 /**

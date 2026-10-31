@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/core/date.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkIndex } from '../../../src/network/index.service';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';

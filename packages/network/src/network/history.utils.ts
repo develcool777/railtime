@@ -1,3 +1,4 @@
+import { decadeOf, endOfYear, yearOf } from '@railtime/core/date.utils';
 import type { NetworkStats } from '../facts/facts.types.ts';
 import type { DecadeOpenings, NetworkHistory, OpenNetwork, YearStats } from './history.types';
 import type { NetworkIndex } from './index.service';
@@ -55,9 +56,9 @@ export const statsAt = (index: NetworkIndex, timeline: Timeline, cursor: number)
 export const networkHistory = (index: NetworkIndex, timeline: Timeline, untilYear: number): NetworkHistory => {
   const years: YearStats[] = [];
   const firstYears = new Map<string, number>();
-  const startYear = new Date(timeline.start).getUTCFullYear();
+  const startYear = yearOf(timeline.start);
   for (let year = startYear; year <= untilYear; year++) {
-    const cursor = timeline.cursorAt(Date.UTC(year, 11, 31));
+    const cursor = timeline.cursorAt(endOfYear(year));
     const { stations, segments, lines } = networkAt(index, timeline, cursor);
     for (const station of stations.keys()) if (!firstYears.has(station)) firstYears.set(station, year);
     const km = [...segments].reduce((total, segment) => total + (index.segments[segment]?.lengthKm ?? 0), 0);
@@ -76,7 +77,7 @@ export const networkHistory = (index: NetworkIndex, timeline: Timeline, untilYea
 export const openingsByDecade = (firstYears: ReadonlyMap<string, number>): DecadeOpenings[] => {
   const counts = new Map<number, number>();
   for (const year of firstYears.values()) {
-    const decade = Math.floor(year / 10) * 10;
+    const decade = decadeOf(year);
     counts.set(decade, (counts.get(decade) ?? 0) + 1);
   }
   if (counts.size === 0) return [];

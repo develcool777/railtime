@@ -118,6 +118,7 @@
   import type { RouteInfo, RouteLegInfo, RoutePreference, RouteStop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref, watch } from 'vue';
   import { lineColor } from '~/features/explorer/format.utils';
+  import { counted } from '~/utils/format.utils';
 
   const ENDS = [
     { key: 'from', label: 'from', placeholder: 'From' },
@@ -150,9 +151,8 @@
     const route = props.route;
     if (!route) return '';
     const stops = route.legs.reduce((total, leg) => total + (leg.kind === 'ride' ? leg.stops.length - 1 : 0), 0);
-    const unit = route.changes === 1 ? 'change' : 'changes';
-    const changes = route.changes === 0 ? 'no change' : `${route.changes} ${unit}`;
-    return `${stops} ${stops === 1 ? 'stop' : 'stops'} · ${changes} · ${Math.round(route.km)} km`;
+    const changes = route.changes === 0 ? 'no change' : counted(route.changes, 'change');
+    return `${counted(stops, 'stop')} · ${changes} · ${Math.round(route.km)} km`;
   });
 
   // The rides whose stops are listed; a new route starts with them folded.
@@ -176,7 +176,7 @@
    */
   const rideText = (leg: Extract<RouteLegInfo, { kind: 'ride' }>): string => {
     const stops = leg.stops.length - 1;
-    return `${stops} ${stops === 1 ? 'stop' : 'stops'} · ${Math.round(leg.minutes)} min`;
+    return `${counted(stops, 'stop')} · ${Math.round(leg.minutes)} min`;
   };
 
   /** Clears one end. */
