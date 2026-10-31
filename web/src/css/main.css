@@ -52,22 +52,12 @@
   /* The page behind the cards, and the chips' colours. */
   --rt-page: #fafbfa;
   --rt-hero-bg: #e9f1f7;
-  --rt-tag-bg: #eef7f3;
-  --rt-tag-text: #2a6a4a;
-  --rt-tag-border: #c5ddd5;
-  --rt-ind-bg: #f0f4ff;
-  --rt-ind-text: #3b4faa;
-  --rt-ind-border: #c5cfee;
-  --rt-badge-bg: #fef3e2;
-  --rt-badge-text: #7a4f0a;
-  --rt-badge-border: #f0c87a;
   --rt-selected-bg: #f0faf5;
   --rt-selected-text: #1f704f;
   --rt-selected-ring: #c5e8d8;
   --rt-overlay: rgba(21, 32, 48, 0.28);
   --rt-shadow-map: 0 8px 30px rgba(21, 32, 48, 0.1);
   --rt-shadow-card: 0 1px 3px rgba(21, 32, 48, 0.04);
-  --rt-shadow-card-hover: 0 6px 20px rgba(42, 157, 111, 0.1);
   --rt-shadow-soft: 0 8px 30px rgba(21, 32, 48, 0.06);
 }
 
@@ -87,22 +77,12 @@
 
   --rt-page: #0c1520;
   --rt-hero-bg: #141a25;
-  --rt-tag-bg: #14302a;
-  --rt-tag-text: #7adcb0;
-  --rt-tag-border: #1f4438;
-  --rt-ind-bg: #1a2342;
-  --rt-ind-text: #a3b1ee;
-  --rt-ind-border: #2c3a6e;
-  --rt-badge-bg: #3a2a10;
-  --rt-badge-text: #f0c87a;
-  --rt-badge-border: #5a4218;
   --rt-selected-bg: #18352d;
   --rt-selected-text: #7adcb0;
   --rt-selected-ring: #1f4438;
   --rt-overlay: rgba(0, 0, 0, 0.5);
   --rt-shadow-map: 0 8px 30px rgba(0, 0, 0, 0.35);
   --rt-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --rt-shadow-card-hover: 0 6px 20px rgba(42, 157, 111, 0.12);
   --rt-shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -111,9 +91,6 @@
 }
 @utility shadow-card {
   box-shadow: var(--rt-shadow-card);
-}
-@utility shadow-card-hover {
-  box-shadow: var(--rt-shadow-card-hover);
 }
 @utility shadow-soft {
   box-shadow: var(--rt-shadow-soft);

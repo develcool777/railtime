@@ -2,19 +2,15 @@
   <div class="bg-page min-h-full">
     <SiteHeader />
 
-    <section class="hero border-default border-b">
-      <div class="mx-auto max-w-7xl px-8 pt-16 pb-14 max-sm:px-4 max-sm:pt-10 max-sm:pb-9">
-        <p class="eyebrow text-primary">Metro networks on the real map</p>
-        <h1 class="hero-title text-highlighted mt-3 max-w-[720px] font-extrabold">A city's metro, on any day since it opened.</h1>
-        <p class="text-default mt-4 max-w-[600px] text-[17px] leading-relaxed">
-          See the network today, drag back to any date, or open a plan for what it could become. Then play it, one opening at a time.
-        </p>
-      </div>
-    </section>
+    <UPageHero
+      headline="Metro networks on the real map"
+      title="A city's metro, on any day since it opened."
+      description="See the network today, drag back to any date, or open a plan for what it could become. Then play it, one opening at a time."
+      class="hero border-default border-b" />
 
     <!-- Search and filters, kept in reach while scrolling; on a phone they would cover half the screen, so they scroll away. -->
     <div class="border-default bg-page/95 z-[9] border-b backdrop-blur-sm sm:sticky sm:top-(--ui-header-height)">
-      <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5 px-8 py-3 max-sm:px-4">
+      <UContainer class="flex flex-wrap items-center gap-2.5 py-3">
         <UInput
           v-model="filter.query"
           icon="i-lucide-search"
@@ -33,28 +29,34 @@
           :aria-pressed="filter.withPlans"
           @click="filter.withPlans = !filter.withPlans" />
         <span class="text-muted ml-auto text-[13px] tabular-nums">{{ shownCount }} of {{ CITIES.length }} cities</span>
-      </div>
+      </UContainer>
     </div>
 
-    <main class="mx-auto flex max-w-7xl flex-col gap-12 px-8 pt-10 pb-20 max-sm:px-4">
-      <section v-for="{ country, cities } in sections" :key="country">
-        <h2 class="text-highlighted flex items-baseline gap-2 text-lg font-bold">
-          {{ country }}
-          <span class="text-muted text-[13px] font-normal">{{ cities.length }} {{ cities.length === 1 ? 'city' : 'cities' }}</span>
-        </h2>
-        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <main class="pb-12">
+      <UPageSection
+        v-for="{ country, cities } in sections"
+        :key="country"
+        :title="country"
+        :description="`${cities.length} ${cities.length === 1 ? 'city' : 'cities'}`">
+        <UPageGrid>
           <CityCard v-for="city in cities" :key="city.value" :city="city.value" :summary="summaryOf(city.value)" :eager="EAGER_CITIES.has(city.value)" />
-        </div>
-      </section>
-      <div v-if="sections.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
-        <p class="text-muted text-sm">No city matches.</p>
-        <UButton label="Clear filters" color="neutral" variant="outline" @click="clearFilters" />
-      </div>
+        </UPageGrid>
+      </UPageSection>
+      <UEmpty
+        v-if="sections.length === 0"
+        icon="i-lucide-search-x"
+        title="No city matches"
+        description="Try another name, or clear the filters."
+        :actions="[{ label: 'Clear filters', color: 'neutral', variant: 'outline', onClick: clearFilters }]"
+        variant="naked"
+        class="py-16" />
     </main>
 
-    <footer class="border-default border-t">
-      <MapCredits :credits="STILL_CREDITS" class="mx-auto max-w-7xl px-8 py-4 max-sm:px-4" />
-    </footer>
+    <UFooter class="border-default border-t">
+      <template #left>
+        <MapCredits :credits="STILL_CREDITS" />
+      </template>
+    </UFooter>
   </div>
 </template>
 
@@ -121,10 +123,5 @@
 <style scoped>
   .hero {
     background: var(--rt-hero-bg);
-  }
-  .hero-title {
-    font-size: clamp(1.75rem, 5vw, 3.5rem);
-    letter-spacing: -0.02em;
-    line-height: 1.05;
   }
 </style>
