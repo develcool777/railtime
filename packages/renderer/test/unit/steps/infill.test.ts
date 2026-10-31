@@ -1,24 +1,35 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/core/date.utils';
-import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { emptyDrawing } from '../../../src/steps/animation.utils';
 import { InfillStepAnimation } from '../../../src/steps/infill.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { playbackOf, renderStateOf } from '../../support/playback.utils';
+import { stepAfter } from '../../support/stepFrames.utils';
 
 describe('InfillStepAnimation', () => {
   test('puts the station on its line and highlights it while its step plays, not only once it is over', () => {
-    const playback = playbackOf(tinyNetwork());
     // C opens on red, on track red has run over since 1910.
-    playback.player.seek(toTimestamp('1915-01-01'));
-    playback.player.skip();
-    const animation = playback.player.active!.animation;
+    const { animation, draw, state, playback } = stepAfter(tinyNetwork(), '1915-01-01');
     expect(animation).toBeInstanceOf(InfillStepAnimation);
-    const state = renderStateOf(playback);
-    const drawing = emptyDrawing();
-    animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress: 0.1, holdProgress: 0 }, drawing);
+    const drawing = draw(0.1);
     expect([...drawing.highlighted]).toEqual(['c']);
     expect(drawing.reached.get('c')).toEqual(new Map([['red', '#ff0000']]));
-    expect(animation.describe(state)).toMatchObject({ title: 'C opens', subtitle: 'on the Red line' });
+    expect(animation.describe(state)).toEqual({
+      kind: 'infill',
+      time: toTimestamp('1920-06-01'),
+      title: 'C opens',
+      subtitle: 'on the Red line',
+      color: '#ff0000',
+      stations: ['C'],
+    });
+    expect(animation.cameraPoints()).toEqual([playback.index.coordOf('c')]);
+  });
+
+  test('names every line the station opens on, and adds nothing for a hidden one', () => {
+    const network = tinyNetwork();
+    network.stations.c!.infill = { red: '1935-01-01', blue: '1935-01-01' };
+    const { animation, draw, state } = stepAfter(network, '1934-01-01');
+    expect(animation.describe(state)).toMatchObject({ subtitle: 'on the Red line and Blue line' });
+    const hidden = draw(0.5, { hidden: ['red', 'blue'] });
+    expect(hidden.reached.size).toBe(0);
+    expect(hidden.highlighted.size).toBe(0);
   });
 });

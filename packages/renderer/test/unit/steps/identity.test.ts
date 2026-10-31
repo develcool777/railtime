@@ -1,0 +1,23 @@
+import { describe, expect, test } from 'vitest';
+import { toTimestamp } from '../../../src/core/date.utils';
+import { IdentityStepAnimation } from '../../../src/steps/identity.service';
+import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { stepAfter } from '../../support/stepFrames.utils';
+
+describe('IdentityStepAnimation', () => {
+  test("says the line takes its own identity, in the data's words, frames its track, and leaves the blend to the network layer", () => {
+    const { animation, draw, state, playback } = stepAfter(tinyNetwork(), '1989-01-01');
+    expect(animation).toBeInstanceOf(IdentityStepAnimation);
+    expect(animation.changesIdentity).toBe(true);
+    expect(animation.describe(state)).toEqual({
+      kind: 'identity',
+      time: toTimestamp('1990-01-01'),
+      title: 'Pink becomes its own line',
+      color: '#ff88cc',
+      stations: [],
+    });
+    expect(animation.cameraPoints()).toEqual(playback.index.segments[0]!.coordinates);
+    const drawing = draw(0.5);
+    expect([drawing.lines.features, drawing.heads.features, [...drawing.reached], [...drawing.highlighted], [...drawing.fading]]).toEqual([[], [], [], [], []]);
+  });
+});
