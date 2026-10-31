@@ -7,7 +7,10 @@ export default defineAppConfig({
     // A choice of a few, side by side (Fastest | Fewer changes): small, the picked one a light pill on a muted track.
     tabs: {
       defaultVariants: { color: 'neutral', size: 'sm' },
-      compoundVariants: [{ color: 'neutral', variant: 'pill', class: { indicator: 'bg-default', trigger: 'data-[state=active]:text-highlighted' } }],
+      // The picked one stands out of its track in either theme: white on grey, lighter grey on dark.
+      compoundVariants: [
+        { color: 'neutral', variant: 'pill', class: { indicator: 'bg-default dark:bg-accented', trigger: 'data-[state=active]:text-highlighted' } },
+      ],
     },
     // A status beside a title (a plan's, a city's): small and quiet.
     badge: {

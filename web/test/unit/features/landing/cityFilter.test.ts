@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { matchesFilter } from '~/features/landing/cityFilter.utils';
+import { NO_FILTER, isFiltering, matchesFilter } from '~/features/landing/cityFilter.utils';
 
 describe('CityFilterUtils', () => {
   describe('matchesFilter', () => {
@@ -33,6 +33,20 @@ describe('CityFilterUtils', () => {
     test('shows a city while the index loads only when no filter needs it', () => {
       expect(matchesFilter(kyiv, null, all)).toBe(true);
       expect(matchesFilter(kyiv, null, { ...all, kind: 'history' })).toBe(false);
+    });
+  });
+
+  describe('isFiltering', () => {
+    test('is not, as the page opens', () => {
+      expect(isFiltering(NO_FILTER)).toBe(false);
+      expect(isFiltering({ ...NO_FILTER, query: '  ' })).toBe(false);
+    });
+
+    test('is, with a search, a country, a kind or plans only', () => {
+      expect(isFiltering({ ...NO_FILTER, query: 'lon' })).toBe(true);
+      expect(isFiltering({ ...NO_FILTER, country: 'Ukraine' })).toBe(true);
+      expect(isFiltering({ ...NO_FILTER, kind: 'never-built' })).toBe(true);
+      expect(isFiltering({ ...NO_FILTER, withPlans: true })).toBe(true);
     });
   });
 });

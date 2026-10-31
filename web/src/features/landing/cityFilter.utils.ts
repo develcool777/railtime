@@ -22,3 +22,14 @@ export const matchesFilter = (city: (typeof CITIES)[number], summary: CityIndexE
   if (filter.kind === 'never-built' && !summary.planOnly) return false;
   return !filter.withPlans || summary.plans > 0;
 };
+
+/** The filters as the page opens: every city shown. */
+export const NO_FILTER: CityFilter = { query: '', country: '', kind: 'all', withPlans: false };
+
+/**
+ * Whether any filter narrows the list: a search, a country, a kind, or plans only.
+ *
+ * @param filter - The filters.
+ * @returns True if some city could be left out.
+ */
+export const isFiltering = (filter: CityFilter): boolean => filter.query.trim() !== '' || filter.country !== '' || filter.kind !== 'all' || filter.withPlans;
