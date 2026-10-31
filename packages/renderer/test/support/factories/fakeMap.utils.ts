@@ -1,14 +1,36 @@
+import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
 import type { FakeLayer, FakeMap } from '../fakeMap.types';
 
-/** The prefixes of the paint properties each kind of layer has: setting another throws, as MapLibre does. */
-const PROPERTY_PREFIXES: Record<string, string[]> = {
-  background: ['background'],
-  fill: ['fill'],
-  'fill-extrusion': ['fill-extrusion'],
-  line: ['line'],
-  symbol: ['text', 'icon'],
-  circle: ['circle'],
+/** The GeoJSON geometries a source may hold. */
+const GEOMETRIES = new Set(['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']);
+
+/**
+ * The feature properties an expression reads, `['get', name]`, however deep.
+ *
+ * @param expression - A layer's paint or layout value, or its filter.
+ * @returns The names.
+ */
+const propertiesRead = (expression: unknown): string[] => {
+  if (!Array.isArray(expression)) return [];
+  const [operator, name] = expression;
+  if (operator === 'get' && typeof name === 'string' && expression.length === 2) return [name];
+  return expression.flatMap(propertiesRead);
+};
+
+/**
+ * Refuses what MapLibre could not draw: anything but a collection of features with a geometry each.
+ *
+ * @param id - The source.
+ * @param data - Its data.
+ * @returns The features.
+ */
+const featuresOf = (id: string, data: unknown): { properties?: Record<string, unknown> }[] => {
+  const collection = data as { type?: string; features?: { type?: string; geometry?: { type?: string }; properties?: Record<string, unknown> }[] };
+  if (collection.type !== 'FeatureCollection' || !Array.isArray(collection.features)) throw new Error(`source ${id}: not a FeatureCollection`);
+  for (const feature of collection.features)
+    if (feature.type !== 'Feature' || !GEOMETRIES.has(feature.geometry?.type ?? '')) throw new Error(`source ${id}: not a feature with a geometry`);
+  return collection.features;
 };
 
 /** Pixels per degree of longitude at zoom 0: MapLibre's 512-pixel world. */
@@ -33,6 +55,29 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
   const moves: FakeMap['moves'] = [];
   const rendered: FakeMap['rendered'] = [];
+  // MapLibre refuses a layer the style spec does not allow (an expression it cannot read, a value not
+  // among its options): checked as each is added or changed. A basemap layer's own tiles are a stand-in.
+  const assertValid = (layer: FakeLayer): void => {
+    const source = 'source' in layer ? layer.source : undefined;
+    const sources = Object.fromEntries([
+      ...[...data.keys()].map(id => [id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }]),
+      ...(source && !data.has(source) ? [[source, { type: 'vector', tiles: ['https://tiles.invalid/{z}/{x}/{y}.pbf'] }]] : []),
+    ]);
+    const errors = validateStyleMin({ version: 8, sources, layers: [layer as LayerSpecification] });
+    if (errors.length > 0) throw new Error(`layer ${layer.id}: ${errors.map(error => error.message).join('; ')}`);
+  };
+  // A layer reading a property its source's features never carry draws nothing, or its default: each
+  // name it reads must be on one of them, once the source holds any.
+  const assertPropertiesHeld = (layer: FakeLayer): void => {
+    const source = 'source' in layer ? layer.source : undefined;
+    if (!source || !data.has(source)) return;
+    const features = featuresOf(source, data.get(source));
+    if (features.length === 0) return;
+    const held = new Set(features.flatMap(feature => Object.keys(feature.properties ?? {})));
+    const read = propertiesRead([Object.values(layer.paint), Object.values(layer.layout), 'filter' in layer ? layer.filter : []]);
+    const missing = read.filter(name => !held.has(name));
+    if (missing.length > 0) throw new Error(`layer ${layer.id} reads ${missing.join(', ')}, which no feature of ${source} has`);
+  };
   const layerOf = (id: string): FakeLayer => {
     const layer = layers.get(id);
     if (!layer) throw new Error(`no layer ${id}`);
@@ -41,33 +86,43 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const map = {
     addSource: (id: string, source: { data: unknown }) => {
       if (data.has(id)) throw new Error(`source ${id} already added`);
+      featuresOf(id, source.data);
       data.set(id, source.data);
     },
     getSource: (id: string) =>
       data.has(id)
         ? {
             setData: (next: unknown) => {
+              featuresOf(id, next);
               data.set(id, next);
               sends.set(id, (sends.get(id) ?? 0) + 1);
+              for (const layer of layers.values()) assertPropertiesHeld(layer);
             },
           }
         : undefined,
     addLayer: (layer: LayerSpecification) => {
       if (layers.has(layer.id)) throw new Error(`layer ${layer.id} already added`);
-      layers.set(layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer);
+      const added = { paint: {}, layout: {}, ...layer } as FakeLayer;
+      assertValid(added);
+      assertPropertiesHeld(added);
+      layers.set(layer.id, added);
     },
     getLayer: (id: string) => layers.get(id),
     getStyle: () => ({ layers: [...layers.values()] }),
     setPaintProperty: (id: string, property: string, value: unknown) => {
       const layer = layerOf(id);
-      if (!(PROPERTY_PREFIXES[layer.type] ?? []).some(prefix => property.startsWith(`${prefix}-`))) throw new Error(`${layer.type} layer has no ${property}`);
       layer.paint[property] = value;
+      assertValid(layer);
     },
     setLayoutProperty: (id: string, property: string, value: unknown) => {
-      layerOf(id).layout[property] = value;
+      const layer = layerOf(id);
+      layer.layout[property] = value;
+      assertValid(layer);
     },
     setFilter: (id: string, filter: unknown) => {
-      Object.assign(layerOf(id), { filter });
+      const layer = layerOf(id);
+      Object.assign(layer, { filter });
+      assertValid(layer);
     },
     queryRenderedFeatures: () => rendered,
     getZoom: () => view.zoom,

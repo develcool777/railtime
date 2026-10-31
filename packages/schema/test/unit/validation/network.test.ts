@@ -174,4 +174,103 @@ describe('NetworkSchema', () => {
     network.plans!.extension!.lines = { green: { name: 'Green', network: 'tram', mode: 'tram', color: '#00aa00' } };
     expect(problemsOf(network)).toEqual(['plan extension: line green: unknown network tram']);
   });
+
+  test("accepts every mode and status, a long description, a script's language code and former names in order, and keeps each part's fields", () => {
+    const network = plannedNetwork();
+    network.lines.red!.names = { 'zh-Hant': '紅線' };
+    network.plans!.extension!.description = 'A line on to D';
+    network.stations.a!.formerNames = [
+      { name: 'First', until: '1920-01-01' },
+      { name: 'Second', until: '1930-01-01' },
+    ];
+    for (const mode of ['metro', 'light-metro', 'tram', 'suburban-rail', 'rail', 'cable'] as const) {
+      network.lines.red!.mode = mode;
+      expect(problemsOf(network)).toEqual([]);
+    }
+    for (const status of ['under-construction', 'planned', 'proposed', 'concept', 'abandoned'] as const) {
+      network.plans!.extension!.status = status;
+      expect(problemsOf(network)).toEqual([]);
+    }
+    expect(parseNetwork(network).networks).toEqual({ metro: { name: 'Metro' } });
+  });
+
+  test('refuses a part malformed at its ends: text around a date or a colour, a word for a language, an empty description, a network with no name', () => {
+    const network = plannedNetwork();
+    network.meta.start = '1899-01-01x';
+    network.meta.built = 'x2026-01-01';
+    network.lines.red!.color = '#ff0000x';
+    network.lines.red!.darkColor = 'x#ff0000';
+    network.lines.red!.names = { ukrainian: 'Червона' };
+    network.plans!.extension!.description = '';
+    network.networks.metro = {} as never;
+    expect(problemsOf(network)).toEqual([
+      'expected YYYY-MM-DD',
+      'expected YYYY-MM-DD',
+      'Invalid input: expected string, received undefined',
+      'expected a language code: uk, pt-BR, not ukrainian',
+      'expected #rrggbb',
+      'expected #rrggbb',
+      'Too small: expected string to have >=1 characters',
+    ]);
+  });
+
+  test('checks station dates at their edges: on the day a line opens or closes there, on a line through it at one end only', () => {
+    const network = plannedNetwork();
+    network.lines.blue = { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' };
+    network.stations.e = { name: 'E', coordinate: [0.03, 51.5] };
+    network.segments[0]!.lines.red!.close = '1955-01-01';
+    network.segments.push({
+      stationA: 'c',
+      stationB: 'e',
+      lines: { red: { open: '1950-01-01' }, blue: { open: '1900-01-01', close: '1990-01-01' } },
+      coordinates: [
+        [0.02, 51.5],
+        [0.03, 51.5],
+      ],
+    });
+    // Sound: opening the day the line came, opening while one of its segments here runs, closing after it opened
+    // while one runs, closing before the line's own close.
+    network.stations.a = { ...network.stations.a!, infill: { red: '1900-01-01' } };
+    network.stations.c = { ...network.stations.c!, infill: { red: '1920-01-01' }, closed: { red: '1960-01-01' } };
+    network.stations.e = { ...network.stations.e, closed: { blue: '1950-06-01' } };
+    expect(problemsOf(network)).toEqual([]);
+    // Unsound: opening before the line reaches the far end, closing the day it comes, former names on one day.
+    network.stations.e = { ...network.stations.e, infill: { red: '1940-01-01' }, closed: { red: '1950-01-01' } };
+    network.stations.a.formerNames = [
+      { name: 'First', until: '1920-01-01' },
+      { name: 'Second', until: '1920-01-01' },
+    ];
+    expect(problemsOf(network)).toEqual([
+      'station a: former names out of order',
+      'station e: opens on red on 1940-01-01, before the line runs there',
+      "station e: closes on red on 1950-01-01, when it doesn't run there",
+    ]);
+  });
+
+  test('refuses segment dates on one day: a close the day it opens, a suspension from the day it opens', () => {
+    const network = plannedNetwork();
+    network.lines.blue = { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' };
+    network.stations.e = { name: 'E', coordinate: [0.03, 51.5] };
+    network.segments.push({
+      stationA: 'c',
+      stationB: 'e',
+      lines: { red: { open: '1950-01-01', close: '1950-01-01' }, blue: { open: '1950-01-01', suspended: [{ from: '1950-01-01', until: '1960-01-01' }] } },
+      coordinates: [
+        [0.02, 51.5],
+        [0.03, 51.5],
+      ],
+    });
+    expect(problemsOf(network)).toEqual([
+      'segment c – e: red closes before it opens',
+      'segment c – e: red suspended out of order',
+      'segment c – e: blue suspended out of order',
+    ]);
+  });
+
+  test("checks a plan's sections against the network alone when the plan has no stations of its own", () => {
+    const network = plannedNetwork();
+    delete network.plans!.extension!.stations;
+    network.plans!.extension!.sections = [{ line: 'red', stations: ['a', 'x'] }];
+    expect(problemsOf(network)).toEqual(['plan extension: section 0: unknown station x']);
+  });
 });

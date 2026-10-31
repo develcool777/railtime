@@ -17,6 +17,24 @@
       "survived": 767,
       "noCoverage": 519,
       "fresh": false
+    },
+    {
+      "date": "2026-10-31",
+      "score": 68.7,
+      "killed": 2321,
+      "survived": 538,
+      "noCoverage": 518,
+      "fresh": true
+    }
+  ],
+  "packages/renderer/src/reach": [
+    {
+      "date": "2026-10-31",
+      "score": 91.8,
+      "killed": 123,
+      "survived": 11,
+      "noCoverage": 0,
+      "fresh": true
     }
   ],
   "packages/schema/src": [
@@ -25,6 +43,24 @@
       "score": 88.5,
       "killed": 408,
       "survived": 53,
+      "noCoverage": 0,
+      "fresh": false
+    },
+    {
+      "date": "2026-10-31",
+      "score": 96.1,
+      "killed": 443,
+      "survived": 18,
+      "noCoverage": 0,
+      "fresh": true
+    }
+  ],
+  "packages/schema/src/validation": [
+    {
+      "date": "2026-10-31",
+      "score": 96.9,
+      "killed": 279,
+      "survived": 9,
       "noCoverage": 0,
       "fresh": false
     }
