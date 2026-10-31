@@ -911,45 +911,50 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   };
 
   /**
-   * Draws the frame: the network snapshot when stale, then the playing step and the stations.
+   * Draws the frame: the network snapshot when stale, then the playing step and the stations. A frame
+   * with nothing playing, nothing popping in and the same snapshot draws nothing: MapLibre is left to
+   * pan and zoom.
    *
    * @param now - The frame time.
    */
   private draw(now: number): void {
     const state = this.renderState();
     const active = this.player.active;
-    if (this.snapshotStale || state.identityProgress !== null) this.refreshSnapshot(state);
+    const refreshed = this.snapshotStale || state.identityProgress !== null;
+    if (refreshed) this.refreshSnapshot(state);
     const snapshot = this.snapshot!;
     const drawing = emptyDrawing();
-    const phase = this.player.phase;
-    if (active && phase !== 'pre') {
+    const drawingStep = active !== null && this.player.phase !== 'pre';
+    if (drawingStep) {
       active.animation.draw({ state, snapshot, progress: this.player.progress, holdProgress: this.player.holdProgress }, drawing);
     }
     this.activeStepLayer.update(drawing);
     this.updateMinimapActive(drawing);
 
-    const stations = new Map<string, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
-    for (const [station, lines] of drawing.reached)
-      for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map()).set(lineId, color));
-    this.stationLayer.update({
-      now,
-      stations,
-      linked: snapshot.linked,
-      planned: snapshot.plannedStations,
-      highlighted: drawing.highlighted,
-      fading: drawing.fading,
-      newLabelOpacity: clamp((1 - this.player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
-      instant: this.instant,
-      stepPlaying: active !== null,
-    });
-    this.instant = false;
+    if (refreshed || drawingStep || this.instant || this.stationLayer.animating) {
+      const stations = new Map<string, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
+      for (const [station, lines] of drawing.reached)
+        for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map()).set(lineId, color));
+      this.stationLayer.update({
+        now,
+        stations,
+        linked: snapshot.linked,
+        planned: snapshot.plannedStations,
+        highlighted: drawing.highlighted,
+        fading: drawing.fading,
+        newLabelOpacity: clamp((1 - this.player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
+        instant: this.instant,
+        stepPlaying: active !== null,
+      });
+      this.instant = false;
+    }
 
     if (drawing.highlighted.size !== this.revealedCount) {
       this.revealedCount = drawing.highlighted.size;
       this.emit('stepProgress', this.revealedCount);
     }
     // The selected station is not on the map on this date (gone, or not yet open): let it go, and say so.
-    if (this.selectedStation && !stations.has(this.selectedStation)) {
+    if (this.selectedStation && !snapshot.stations.has(this.selectedStation) && !drawing.reached.has(this.selectedStation)) {
       this.selectStation(null);
       this.emit('stationClick', null);
     }

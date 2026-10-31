@@ -32,6 +32,8 @@ export class StationLayer extends MapLayer {
   private labelsShown = true;
   /** Whether the stations are a backdrop, faded and unnamed, behind a route. */
   private faded = false;
+  /** Some dot was still popping in, or some pulse running, when last drawn: the next frame differs. */
+  private moving = false;
 
   public constructor(
     map: MapLibreMap,
@@ -155,13 +157,26 @@ export class StationLayer extends MapLayer {
   }
 
   /**
+   * Whether the stations drawn last are still changing on their own: a dot popping in, a pulse
+   * running. Once they are not, a frame with the same stations draws nothing new.
+   *
+   * @returns Whether the next frame needs drawing.
+   */
+  public get animating(): boolean {
+    return this.moving;
+  }
+
+  /**
    * Draws this frame's stations and pulses.
    *
    * @param frame - The frame.
    */
   public update(frame: StationFrame): void {
-    this.setData(SOURCES.stations, { type: 'FeatureCollection', features: this.stationFeatures(frame) });
-    this.setData(SOURCES.pulses, { type: 'FeatureCollection', features: this.pulseFeatures(frame) });
+    const stations = this.stationFeatures(frame);
+    const pulses = this.pulseFeatures(frame);
+    this.moving = pulses.length > 0 || this.pulsedAt.size > 0 || stations.some(station => station.properties.scale !== 1 || station.properties.opacity < 1);
+    this.setData(SOURCES.stations, { type: 'FeatureCollection', features: stations });
+    this.setData(SOURCES.pulses, { type: 'FeatureCollection', features: pulses });
   }
 
   /**
@@ -204,7 +219,8 @@ export class StationLayer extends MapLayer {
       if (highlighted && !frame.instant && !this.pulsedAt.has(station)) this.pulsedAt.set(station, frame.now);
       const age = (frame.now - this.appearedAt.get(station)!) / POP_IN_MS;
       const opacity = clamp(age * 3, 0, 1) * (frame.fading.get(station) ?? 1);
-      const firstLine = [...lines.keys()].sort(this.compareLines)[0] ?? '';
+      let firstLine = '';
+      for (const line of lines.keys()) if (!firstLine || this.compareLines(line, firstLine) < 0) firstLine = line;
       features.push(
         pointFeature(this.coordOf(station), {
           id: station,

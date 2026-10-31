@@ -7,6 +7,9 @@ import type { Palette } from './theme.types';
 
 /** What the playing step draws: track growing or retracting, wider while new, with a glowing head at each growing tip. */
 export class ActiveStepLayer extends MapLayer {
+  /** The map shows a drawing with something in it: an empty one clears it once, then sends nothing. */
+  private drawn = false;
+
   public constructor(map: MapLibreMap) {
     super(map);
   }
@@ -48,11 +51,15 @@ export class ActiveStepLayer extends MapLayer {
   }
 
   /**
-   * Draws this frame of the playing step.
+   * Draws this frame of the playing step. Between steps the frames are empty: the first clears the
+   * map, the rest send nothing, so MapLibre has nothing to re-tile.
    *
    * @param drawing - What the step draws now.
    */
   public update(drawing: StepDrawing): void {
+    const drawn = drawing.lines.features.length > 0 || drawing.heads.features.length > 0;
+    if (!drawn && !this.drawn) return;
+    this.drawn = drawn;
     this.setData(SOURCES.active, drawing.lines);
     this.setData(SOURCES.heads, drawing.heads);
   }

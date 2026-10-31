@@ -139,7 +139,7 @@ export class Player {
   }
 
   /**
-   * Runs the clock towards the next step, fast through quiet years, and starts it on its date; a
+   * Runs the clock towards the next step, fast through quiet years and slowing as it nears, and starts it on its date; a
    * planned step starts once the clock reaches the end.
    *
    * @param seconds - Real seconds since the last tick.
@@ -148,7 +148,8 @@ export class Player {
   private advanceClock(seconds: number, events: PlayerEvent[]): void {
     const next = this.timeline.steps[this.cursor];
     const target = next && !next.planned ? next.time : this.end;
-    const yearsPerSecond = (target - this.clock) / YEAR_MS > SLOW_YEARS_PER_SECOND ? FAST_YEARS_PER_SECOND : SLOW_YEARS_PER_SECOND;
+    // As many years a second as are left, between the two speeds: it slows steadily into the date, never with a jolt.
+    const yearsPerSecond = clamp((target - this.clock) / YEAR_MS, SLOW_YEARS_PER_SECOND, FAST_YEARS_PER_SECOND);
     this.clock = Math.min(target, this.clock + yearsPerSecond * this.speed * seconds * YEAR_MS);
     if (next && this.clock >= target) {
       this.startStep(next, events);

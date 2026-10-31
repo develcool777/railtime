@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { toTimestamp } from '../../../src/model/date.utils';
+import { YEAR_MS, toTimestamp } from '../../../src/model/date.utils';
+import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { playbackOf } from '../../support/playback.utils';
 
@@ -63,5 +64,24 @@ describe('Player', () => {
     player.seekPast(timeline.datedCount);
     expect(player.clock).toBe(player.end);
     expect(player.inFuture).toBe(true);
+  });
+
+  test('runs the clock fast through quiet years and slows steadily into the next change, never with a jolt', () => {
+    const { timeline, player } = playbackOf(tinyNetwork());
+    // Five years before red reaches C, D in 1910.
+    player.seek(toTimestamp('1905-01-01'));
+    player.playing = true;
+    const frame = 1 / 60;
+    const speeds: number[] = [];
+    for (let tick = 0; tick < 1000 && !player.active; tick++) {
+      const before = player.clock;
+      player.tick(frame);
+      if (!player.active) speeds.push((player.clock - before) / YEAR_MS / frame);
+    }
+    expect(player.active?.animation.step).toBe(timeline.steps[1]);
+    expect(speeds[0]).toBeCloseTo(FAST_YEARS_PER_SECOND);
+    expect(speeds.at(-1)).toBeCloseTo(SLOW_YEARS_PER_SECOND);
+    // Frame to frame, the speed changes by a few per cent at most.
+    for (const [position, speed] of speeds.entries()) if (position > 0) expect(Math.abs(speed - speeds[position - 1]!) / speed).toBeLessThan(0.05);
   });
 });

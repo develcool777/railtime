@@ -106,7 +106,10 @@ animates `steps[k]`. On one date the order is:
 `Player` gives each step three phases, in seconds at 1×: **pre** (the camera moves, 1 s), **draw**
 (the change animates, 1–6 s by length) and **hold** (new stations stay highlighted, ~1–2.5 s). The
 clock stops on the step's date for all three. Between dates it runs at 4 years/s through quiet
-periods and 1.2 years/s approaching the next change.
+periods and slows steadily to 1.2 years/s over the last years before the next change.
+
+A frame draws only what changed: with nothing playing, nothing popping in and the same snapshot, it
+sends MapLibre nothing, so an idle map costs no script time and panning stays smooth.
 
 ### Lines side by side
 
