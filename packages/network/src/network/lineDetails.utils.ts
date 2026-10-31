@@ -1,3 +1,4 @@
+import type { LineDetails, LineDirection, StopToward } from '../model/facts.types';
 import type { NetworkIndex } from './index.service';
 import type { LineSegment } from './index.types';
 import type { Timeline } from './timeline.service';
@@ -116,4 +117,28 @@ export const stepChangesLine = (step: Step, line: string): boolean => {
   if (step.kind === 'open' || step.kind === 'close') return step.line === line || step.lineSegments.some(lineSegment => lineSegment.line === line);
   if (step.kind === 'rename') return false;
   return step.lines.includes(line);
+};
+
+/**
+ * The stop one before and one after a station on a line, each with the end of the line that way,
+ * as a platform's sign gives them: once for each run it is on, so a junction has a pair for each
+ * branch. A branch's first stop is the station it leaves from, so from there a branch goes one way.
+ *
+ * @param station - The station's id.
+ * @param line - The line on the date shown, with its stops.
+ * @returns Each pair, in the line's order; none where the line does not call.
+ */
+export const directionsAt = (station: string, line: LineDetails): LineDirection[] => {
+  const found: LineDirection[] = [];
+  const toward = (stop: { id: string; name: string } | undefined, end: { name: string } | undefined): StopToward | null =>
+    stop ? { id: stop.id, name: stop.name, towards: end && end.name !== stop.name ? end.name : null } : null;
+  for (const run of line.branches) {
+    run.forEach((stop, place) => {
+      if (stop.id !== station) return;
+      const direction = { previous: toward(run[place - 1], run[0]), next: toward(run[place + 1], run.at(-1)) };
+      const known = found.some(entry => entry.previous?.id === direction.previous?.id && entry.next?.id === direction.next?.id);
+      if ((direction.previous || direction.next) && !known) found.push(direction);
+    });
+  }
+  return found;
 };

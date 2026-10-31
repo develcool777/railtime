@@ -8,7 +8,7 @@ import { bandOf } from '../route/reach.utils';
 import { RouteFinder } from '../route/finder.service';
 import type { NetworkHistory } from '../network/history.types';
 import { networkAt, networkHistory, openingsByDecade } from '../network/history.utils';
-import { lineBranches, lineLengthKm, stepChangesLine } from '../network/lineDetails.utils';
+import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../network/lineDetails.utils';
 import { CoverageMeasure } from '../coverage/measure.service';
 import { NetworkIndex } from '../network/index.service';
 import { Timeline } from '../network/timeline.service';
@@ -126,6 +126,16 @@ export class NetworkModel {
   }
 
   /**
+   * Whether the network has a history to show: some year with a station on the map. One never built
+   * has only its plans.
+   *
+   * @returns True if any year has a station.
+   */
+  public hasHistory(): boolean {
+    return this.growth().years.some(year => year.stations > 0);
+  }
+
+  /**
    * The network at a moment, for the questions about it then.
    *
    * @param moment - The moment: the map's `time`.
@@ -141,6 +151,7 @@ export class NetworkModel {
       records: count => this.recordsAt(count, then),
       route: (from, to, preference) => this.routeAt(from, to, preference, then),
       reach: from => this.reachAt(from, then),
+      directions: station => new Map(this.stationAt(station, then).lines.map(line => [line.id, directionsAt(station, this.lineAt(line.id, then))] as const)),
     };
   }
 

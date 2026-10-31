@@ -1,11 +1,11 @@
 /**
- * The index of every city's dataset: what a list of cities shows of each without loading its whole
- * network. It is written from the datasets, beside them.
+ * The index of every city's network: what a list of cities shows of each without loading its whole
+ * network. It is written from the networks, beside them.
  */
 
 /** One city, as the index sums it up. */
 export type CityIndexEntry = {
-  /** The city's name, as its dataset gives it. */
+  /** The city's name, as its network gives it. */
   name: string;
   /** Its country's folder, beside the city's own. */
   country: string;

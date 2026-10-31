@@ -209,3 +209,27 @@ export type NetworkRecords = {
   /** The longest lines. */
   longest: { id: string; name: string; color: string; km: number }[];
 };
+
+/** A stop one along a line, and the end of the line that way. */
+export type StopToward = {
+  id: string;
+  name: string;
+  /** The last stop that way; `null` when it is that stop. */
+  towards: string | null;
+};
+
+/** The stops either side of a station on a run of a line: none past an end. */
+export type LineDirection = {
+  previous: StopToward | null;
+  next: StopToward | null;
+};
+
+/** What a plan would add to its network, for its card. */
+export type PlanFacts = {
+  /** Its new stations. */
+  stations: number;
+  /** Its new track, km. */
+  km: number;
+  /** The lines its sections build on, in the order they first come, with their colours in each theme. */
+  lines: { id: string; name: string; color: string; darkColor: string }[];
+};

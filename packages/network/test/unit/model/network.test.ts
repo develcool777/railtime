@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/core/date.utils';
 import { NetworkModel } from '../../../src/model/network.service';
+import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { modelOf as plainModelOf, questionsOn } from '../../support/model.utils';
 
@@ -62,6 +63,18 @@ describe('NetworkModel', () => {
     const model = modelOf();
     expect(model.asOf(momentOf(model, '1915-01-01'), 'light').station('d').name).toBe('Old D');
     expect(model.asOf(momentOf(model, '1935-01-01'), 'light').station('d').name).toBe('D');
+  });
+
+  test('has a history when some year has a station, and none for a network never built', () => {
+    expect(modelOf().hasHistory()).toBe(true);
+    expect(NetworkModel.create(planOnlyNetwork(), { plan: 'first', today: TODAY }).hasHistory()).toBe(false);
+  });
+
+  test('gives the stops either side of a station on each of its lines, as at the moment', () => {
+    const model = modelOf();
+    expect(model.asOf(momentOf(model, '1935-01-01'), 'light').directions('c').get('red')).toEqual([
+      { previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: null } },
+    ]);
   });
 
   test('builds a plan on the network: its changes play last', () => {

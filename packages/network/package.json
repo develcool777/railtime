@@ -41,7 +41,10 @@
     "./required.utils": "./src/core/required.utils.ts",
     "./testing/tinyNetwork": "./test/support/factories/tinyNetwork.utils.ts",
     "./testing/routeNetwork": "./test/support/factories/routeNetwork.utils.ts",
-    "./testing/boundaries": "./test/support/factories/boundaries.utils.ts"
+    "./testing/boundaries": "./test/support/factories/boundaries.utils.ts",
+    "./summary.utils": "./src/summary/summary.utils.ts",
+    "./plan.utils": "./src/plan/facts.utils.ts",
+    "./testing/planOnlyNetwork": "./test/support/factories/planOnlyNetwork.utils.ts"
   },
   "dependencies": {
     "@railtime/schema": "workspace:*"
