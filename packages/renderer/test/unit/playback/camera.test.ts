@@ -1,7 +1,19 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '../../../src/core/date.utils';
-import { FOLLOW_MAX_ZOOM, MIN_MOVE_MS, OVERVIEW_MAX_ZOOM, STATION_MIN_ZOOM } from '../../../src/playback/camera.constants';
+import {
+  CLOSE_UP_MAX_ZOOM,
+  CLOSE_UP_MIN_ZOOM,
+  FOLLOW_MAX_ZOOM,
+  MIN_MOVE_MS,
+  OVERVIEW_MAX_ZOOM,
+  STATION_MIN_ZOOM,
+  VIEW_3D_BEARING,
+  VIEW_3D_ENTRY_ZOOM,
+  VIEW_3D_PITCH,
+  VIEW_TILT_MS,
+} from '../../../src/playback/camera.constants';
 import { CameraDirector } from '../../../src/playback/camera.service';
+import { chaseStartOf, chaseZoomOf, followOf } from '../../../src/playback/camera.utils';
 import type { StepAnimation } from '../../../src/steps/animation.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -25,6 +37,62 @@ const stepAfter = (date: string) => {
 };
 
 describe('CameraDirector', () => {
+  test('tilts into 3D, coming down to where the buildings stand, and lies flat facing north again', () => {
+    const { fake, camera } = stepAfter('1905-01-01');
+    expect(camera.viewMode).toBe('2d');
+    camera.setViewMode('3d');
+    expect(camera.viewMode).toBe('3d');
+    expect(fake.moves[0]).toMatchObject({
+      kind: 'ease',
+      options: { pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: VIEW_3D_ENTRY_ZOOM, duration: VIEW_TILT_MS },
+    });
+    // Already closer: it stays as close.
+    camera.setViewMode('2d');
+    fake.view.zoom = 17;
+    camera.setViewMode('3d');
+    expect(fake.moves[2]?.options.zoom).toBe(17);
+    camera.setViewMode('2d');
+    expect(fake.moves[3]).toMatchObject({ kind: 'ease', options: { pitch: 0, bearing: 0 } });
+    // Asked again for the view it has: nothing.
+    camera.setViewMode('2d');
+    expect(fake.moves).toHaveLength(4);
+  });
+
+  test('in 3D, flies down to where a line starts growing, facing it, then moves with its tip each frame', () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
+    camera.setViewMode('3d');
+    expect(camera.focusStep(animation, new Set(), coordOf, 200)).toBe(MIN_MOVE_MS);
+    const start = animation.startPoint()!;
+    expect(fake.moves[1]).toMatchObject({ kind: 'ease', target: start, options: { pitch: VIEW_3D_PITCH, duration: MIN_MOVE_MS } });
+    // While it flies there, the tip is left to it.
+    fake.view.moving = true;
+    camera.follow([coordOf('c')], 0.1);
+    expect(fake.moves).toHaveLength(2);
+    // Then it glides after the tip, a little way each frame.
+    fake.view.moving = false;
+    camera.follow([coordOf('c')], 0.1);
+    const glide = fake.moves[2];
+    expect(glide?.kind).toBe('jump');
+    const [longitude] = glide?.target as [number, number];
+    expect(longitude).toBeGreaterThan(start[0]);
+    expect(longitude).toBeLessThan(coordOf('c')[0]);
+    // No tip, nothing to follow.
+    camera.follow([], 0.1);
+    expect(fake.moves).toHaveLength(3);
+  });
+
+  test('follows nothing on the flat map, or when not following', () => {
+    const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
+    camera.focusStep(animation, new Set(), coordOf, 1000);
+    camera.follow([coordOf('c')], 0.1);
+    expect(fake.moves.map(move => move.kind)).toEqual(['fit']);
+    camera.setViewMode('3d');
+    camera.mode = 'overview';
+    camera.focusStep(animation, new Set(['a']), coordOf, 1000);
+    camera.follow([coordOf('c')], 0.1);
+    expect(fake.moves.map(move => move.kind)).toEqual(['fit', 'ease', 'fit']);
+  });
+
   test('closes in on a stretch, at least as slowly as a calm move, and stays once it frames it', () => {
     const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
     expect(camera.focusStep(animation, new Set(), coordOf, 200)).toBe(MIN_MOVE_MS);
@@ -145,5 +213,56 @@ describe('CameraDirector', () => {
       fake.view.center = centreFor(x, y);
       expect(camera.focusStep(animation, new Set(), coordOf, 1000)).toBe(0);
     }
+  });
+});
+
+describe('CameraUtils', () => {
+  describe('chaseZoomOf', () => {
+    test('follows a short stretch from street level and a long one from farther off, within bounds', () => {
+      expect(chaseZoomOf(1)).toBe(CLOSE_UP_MAX_ZOOM);
+      expect(chaseZoomOf(4)).toBeCloseTo(CLOSE_UP_MAX_ZOOM - 1, 9);
+      expect(chaseZoomOf(0.1)).toBe(CLOSE_UP_MAX_ZOOM);
+      expect(chaseZoomOf(500)).toBe(CLOSE_UP_MIN_ZOOM);
+    });
+  });
+
+  describe('chaseStartOf', () => {
+    test('waits where a change starts, facing the rest of it; a lone station keeps the way it faces', () => {
+      expect(chaseStartOf([0, 51], [0, 52], 70)).toEqual({ center: [0, 51], bearing: 0 });
+      expect(chaseStartOf([0, 51], [1, 51], 70).bearing).toBeCloseTo(90, 9);
+      expect(chaseStartOf([0, 52], [0, 51], 70).bearing).toBeCloseTo(180, 9);
+      expect(chaseStartOf([0.5, 51.5], [0.5, 51.5], 70)).toEqual({ center: [0.5, 51.5], bearing: 70 });
+    });
+  });
+
+  describe('followOf', () => {
+    test('closes on the tips a share each frame, more the longer the frame', () => {
+      const chase = { center: [0, 51] as [number, number], bearing: 0 };
+      const short = followOf(chase, [[0, 52]], 0.05);
+      const long = followOf(chase, [[0, 52]], 0.5);
+      expect(short.center[1]).toBeGreaterThan(51);
+      expect(long.center[1]).toBeGreaterThan(short.center[1]);
+      expect(long.center[1]).toBeLessThan(52);
+      // Two tips: their middle.
+      expect(
+        followOf(
+          chase,
+          [
+            [-1, 52],
+            [1, 52],
+          ],
+          100,
+        ).center[0],
+      ).toBeCloseTo(0, 9);
+    });
+
+    test('turns, more slowly, the shorter way round to face the way the tips move, and keeps its way for a still tip', () => {
+      const east = followOf({ center: [0, 51], bearing: 0 }, [[1, 51]], 0.1).bearing;
+      expect(east).toBeGreaterThan(0);
+      expect(east).toBeLessThan(90);
+      // Facing 170°, the tip due west (270° = -90°): it turns on through 180°, not back through 0°.
+      expect(followOf({ center: [0, 51], bearing: 170 }, [[-1, 51]], 0.1).bearing).toBeGreaterThan(170);
+      expect(followOf({ center: [0, 51], bearing: 33 }, [[0, 51]], 0.1)).toEqual({ center: [0, 51], bearing: 33 });
+    });
   });
 });

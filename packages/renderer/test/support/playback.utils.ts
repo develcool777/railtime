@@ -5,6 +5,7 @@ import { NetworkIndex } from '../../src/network/index.service';
 import { Timeline } from '../../src/network/timeline.service';
 import { Player } from '../../src/playback/player.service';
 import { createStepAnimation } from '../../src/steps/animation.utils';
+import type { ViewMode } from '../../src/transitMap.types';
 import type { Playback } from './playback.types';
 
 /**
@@ -12,14 +13,15 @@ import type { Playback } from './playback.types';
  *
  * @param network - The network.
  * @param plan - One of its plans to build on it, as `TransitMap`'s `plan` option does.
+ * @param view - How the map is seen as the steps play: flat unless told.
  * @returns The pieces.
  */
-export const playbackOf = (network: Network, plan?: string): Playback => {
+export const playbackOf = (network: Network, plan?: string, view: ViewMode = '2d'): Playback => {
   const built = plan ? buildPlan(network, plan) : null;
   const index = new NetworkIndex(built?.network ?? network, built?.sections);
   const timeline = new Timeline(index);
   const player = new Player(timeline, Date.UTC(2026, 0, 1), step =>
-    createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index) }),
+    createStepAnimation(step, { index, timeline, stationsBefore: timeline.stationsOnMap(step.index), view }),
   );
   return { index, timeline, player };
 };

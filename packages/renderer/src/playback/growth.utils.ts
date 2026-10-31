@@ -23,14 +23,17 @@ const nearestUnsettled = (distances: Map<string, number>, settled: Set<string>):
 };
 
 /**
- * How a stretch of new track grows: out of the stations already on the map, or, for a stretch that
- * touches none, from its end nearest the centre. Each segment starts drawing when the growth front
- * reaches its nearer end, so branches grow side by side and stations are reached in order of distance.
+ * How a stretch of new track grows: from one place, so its front moves one way and a camera can follow
+ * it. It starts at an end of the stretch already on the map (an extension grows out of the network),
+ * else at its end nearest the centre (a line between two stations, or crossing the network, grows from
+ * one end through them); only a loop, which has no end, starts at a station on the map, else the one
+ * nearest the centre. Each segment starts drawing when the front reaches its nearer end, so a stretch
+ * that forks grows its branches side by side and stations are reached in order of distance.
  *
  * @param segments - The stretch's segments.
  * @param stationsOnMap - Stations on the map before the stretch opens.
  * @param coordOf - Where a station is.
- * @param centre - Where a stretch touching nothing grows from.
+ * @param centre - What a choice between two starts favours: the one nearer it.
  * @returns The growth plan.
  */
 export const planGrowth = (segments: TrackSegment[], stationsOnMap: Set<string>, coordOf: (station: string) => LngLat, centre: LngLat): Growth => {
@@ -38,8 +41,11 @@ export const planGrowth = (segments: TrackSegment[], stationsOnMap: Set<string>,
   for (const segment of segments) for (const station of [segment.stationA, segment.stationB]) pushTo(segmentsAt, station, segment);
   const stations = [...segmentsAt.keys()];
   const nearCentre = (first: string, second: string) => distanceKm(coordOf(first), centre) - distanceKm(coordOf(second), centre);
-  const connected = stations.filter(station => stationsOnMap.has(station));
-  const sources = connected.length > 0 ? connected : stations.slice().sort(nearCentre).slice(0, 1);
+  const ends = stations.filter(station => segmentsAt.get(station)?.length === 1);
+  const onMap = (candidates: string[]) => candidates.filter(station => stationsOnMap.has(station));
+  const [source] =
+    [onMap(ends), ends, onMap(stations), stations].map(candidates => candidates.slice().sort(nearCentre)).find(candidates => candidates.length > 0) ?? [];
+  const sources = source === undefined ? [] : [source];
 
   // Dijkstra over the stretch: the graphs are small, so a linear scan for the next station is fine.
   const distances = new Map(sources.map(station => [station, 0]));

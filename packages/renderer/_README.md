@@ -74,7 +74,7 @@ src/
 ├── playback/
 │   ├── player.service.ts      Player: the clock and each step's phases; pure
 │   ├── growth.utils.ts        where a stretch grows from, and the order its stations appear in
-│   └── camera.service.ts      CameraDirector: framing a step
+│   └── camera.service.ts      CameraDirector: framing a step; in 3D, following its line as it grows (camera.utils.ts)
 ├── layers/                    what every group of map layers shares, and the network's own
 │   ├── layer.service.ts       abstract MapLayer: owns its sources and layers
 │   ├── network.service.ts     NetworkLayer: the network on the map, closed track as ghosts
@@ -90,6 +90,7 @@ src/
 │   ├── layer.utils.ts         a route's track and stops, as drawn
 │   └── layer.service.ts       RouteLayer: a route over the faded network
 ├── reach/layer.service.ts     ReachLayer: how far one gets from a station; its bands and drawing in layer.constants.ts, layer.utils.ts
+├── buildings/layer.service.ts BuildingsLayer: the basemap's buildings in 3D, rising with the zoom (`setViewMode('3d')`)
 ├── minimap/map.service.ts     Minimap: the overview inset
 └── still/basemap.service.ts   BasemapStill: pictures of the basemap, with a track over it, for previews
 ```

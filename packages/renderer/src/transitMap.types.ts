@@ -9,6 +9,9 @@ export type Theme = 'dark' | 'light';
 /** `follow` frames each change, `overview` the change plus the network so far, `free` leaves the camera alone. */
 export type CameraMode = 'follow' | 'overview' | 'free';
 
+/** How the map is seen: flat from above, or tilted in 3D, the city's buildings standing as the camera comes down. */
+export type ViewMode = '2d' | '3d';
+
 /** Room around the map's edges that the camera keeps clear, in pixels. */
 export type Padding = { top: number; bottom: number; left: number; right: number };
 

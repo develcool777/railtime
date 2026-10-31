@@ -38,6 +38,16 @@ export abstract class StepAnimation<Kind extends Step = Step> {
   public abstract cameraPoints(): LngLat[];
 
   /**
+   * Where the change starts on the map, for a camera that follows it as it is drawn: its first point,
+   * unless it grows from somewhere of its own.
+   *
+   * @returns The point, or `null` for a change with none.
+   */
+  public startPoint(): LngLat | null {
+    return this.cameraPoints()[0] ?? null;
+  }
+
+  /**
    * The step for a caption.
    *
    * @param state - The render state when the step starts.

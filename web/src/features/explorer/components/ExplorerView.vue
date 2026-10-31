@@ -79,10 +79,12 @@
             v-if="!mapOnly"
             class="absolute top-4 right-4 max-lg:top-3 max-lg:right-3"
             :stationNames
+            :viewMode
             @zoomIn="map?.zoomIn()"
             @zoomOut="map?.zoomOut()"
             @fit="map?.fitNetwork()"
             @stationNames="setStationNames"
+            @viewMode="setViewMode"
             @mapOnly="toggleMapOnly" />
           <UButton
             v-else
@@ -175,6 +177,7 @@
   import type { Section, TimeMode } from '~/features/explorer/explorer.types';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useStationNames } from '~/features/explorer/map/stationNames.composable';
+  import { useViewMode } from '~/features/explorer/map/viewMode.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
   import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
@@ -296,6 +299,7 @@
   useExplorerAddress({ network: props.network, plan: props.plan, chosenPlan, binding, timeMode, opening });
 
   const { stationNames, setStationNames } = useStationNames(map);
+  const { viewMode, setViewMode } = useViewMode(map);
 
   /** The lines the map brings forward: a line's own in its view; every line otherwise. A route shown fades them all itself. */
   const focusedLines = computed(() => {

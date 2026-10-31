@@ -1,11 +1,14 @@
-/** How fast a new stretch grows, km per second at 1×. */
-export const GROWTH_KM_PER_SECOND = 2.5;
+import type { ViewMode } from '../transitMap.types';
+import type { GrowthPace } from './animation.types';
 
-/** Shortest time a stretch takes to draw, seconds at 1×: even a short one is seen. */
-export const MIN_DRAW_SECONDS = 1;
-
-/** Longest time a stretch takes to draw, seconds at 1×: a long one speeds up. */
-export const MAX_DRAW_SECONDS = 6;
+/**
+ * How fast a new stretch grows, by how the map is seen. From above, a city at a glance, it grows briskly;
+ * in 3D the camera follows it at street level, where the same pace would cross the screen in a blink.
+ */
+export const GROWTH_PACE: Record<ViewMode, GrowthPace> = {
+  '2d': { kmPerSecond: 2.5, minSeconds: 1, maxSeconds: 6 },
+  '3d': { kmPerSecond: 0.8, minSeconds: 2, maxSeconds: 12 },
+};
 
 /** Base time new stations stay highlighted after their stretch draws, seconds at 1×. */
 export const HOLD_BASE_SECONDS = 0.9;

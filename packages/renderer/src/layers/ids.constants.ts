@@ -24,6 +24,7 @@ export const SOURCES = {
 export const LAYERS = {
   coverageHeat: 'rt-coverage-heat',
   coverageOutline: 'rt-coverage-outline',
+  buildings: 'rt-buildings',
   ghosts: 'rt-ghosts',
   glow: 'rt-glow',
   lines: 'rt-lines',

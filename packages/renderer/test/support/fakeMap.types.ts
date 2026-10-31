@@ -15,10 +15,18 @@ export type FakeMap = {
   sends: Map<string, number>;
   /** The layers, by id, in the order added. */
   layers: Map<string, FakeLayer>;
-  /** Every `fitBounds` and `easeTo` asked of the camera, in order. */
-  moves: { kind: 'fit' | 'ease'; target: unknown; options: Record<string, unknown> }[];
+  /** Every `fitBounds`, `easeTo` and `jumpTo` asked of the camera, in order. */
+  moves: { kind: 'fit' | 'ease' | 'jump'; target: unknown; options: Record<string, unknown> }[];
   /** The camera: where it looks, how close, the container's size and the panels over it (its padding), pixels. Set it to place the camera. */
-  view: { center: [number, number]; zoom: number; width: number; height: number; cover: { top: number; right: number; bottom: number; left: number } };
+  view: {
+    center: [number, number];
+    zoom: number;
+    width: number;
+    height: number;
+    cover: { top: number; right: number; bottom: number; left: number };
+    /** Whether the camera is moving, as `isMoving` answers. */
+    moving: boolean;
+  };
   /** What `queryRenderedFeatures` answers. */
   rendered: { properties: Record<string, unknown> }[];
 };

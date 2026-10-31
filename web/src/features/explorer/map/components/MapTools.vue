@@ -19,13 +19,16 @@
 </template>
 
 <script setup lang="ts">
+  import type { ViewMode } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
 
   const props = defineProps<{
     /** Whether the map names its stations. */
     stationNames: boolean;
+    /** How the map is seen: flat, or in 3D. */
+    viewMode: ViewMode;
   }>();
-  const emit = defineEmits<{ zoomIn: []; zoomOut: []; fit: []; stationNames: [shown: boolean]; mapOnly: [] }>();
+  const emit = defineEmits<{ zoomIn: []; zoomOut: []; fit: []; stationNames: [shown: boolean]; viewMode: [mode: ViewMode]; mapOnly: [] }>();
 
   const groups = computed(() => [
     [
@@ -40,6 +43,13 @@
         kbds: ['N'],
         active: props.stationNames,
         run: () => emit('stationNames', !props.stationNames),
+      },
+      {
+        label: props.viewMode === '3d' ? 'Flat map' : 'See in 3D',
+        icon: 'i-lucide-box',
+        kbds: undefined,
+        active: props.viewMode === '3d',
+        run: () => emit('viewMode', props.viewMode === '3d' ? '2d' : '3d'),
       },
       { label: 'Map only', icon: 'i-lucide-maximize-2', kbds: ['F'], active: undefined, run: () => emit('mapOnly') },
     ],

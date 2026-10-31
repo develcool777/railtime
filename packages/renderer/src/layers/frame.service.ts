@@ -106,7 +106,11 @@ export class FrameRenderer {
 
     const revealed = drawing.highlighted.size === this.revealedCount ? null : drawing.highlighted.size;
     if (revealed !== null) this.revealedCount = revealed;
-    return { revealed, selectionGone: selected !== null && !snapshot.stations.has(selected) && !drawing.reached.has(selected) };
+    return {
+      revealed,
+      selectionGone: selected !== null && !snapshot.stations.has(selected) && !drawing.reached.has(selected),
+      tips: drawing.heads.features.map(head => head.geometry.coordinates),
+    };
   }
 
   /**

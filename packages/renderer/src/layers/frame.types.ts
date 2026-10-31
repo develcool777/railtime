@@ -1,3 +1,4 @@
+import type { LngLat } from '@railtime/schema/network.types';
 import type { Minimap } from '../minimap/map.service';
 import type { NetworkIndex } from '../network/index.service';
 import type { Timeline } from '../network/timeline.service';
@@ -26,4 +27,6 @@ export type FrameOutcome = {
   revealed: number | null;
   /** The selected station is not on the map this frame: gone, or not yet open. */
   selectionGone: boolean;
+  /** Where the playing step's line is growing this frame: its tips; none when nothing grows. */
+  tips: LngLat[];
 };

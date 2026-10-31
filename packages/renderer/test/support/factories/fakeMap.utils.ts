@@ -49,7 +49,7 @@ const LATITUDE_STRETCH = 1.6;
  * @returns The stand-in and what it keeps.
  */
 export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
-  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 } };
+  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 }, moving: false };
   const data = new Map<string, unknown>();
   const images = new Map<string, { url: string; coordinates: unknown }>();
   const sends = new Map<string, number>();
@@ -97,7 +97,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     getSource: (id: string) => {
       if (images.has(id)) return { updateImage: (image: { url: string; coordinates: unknown }) => images.set(id, image) };
-      if (!data.has(id)) return undefined;
+      // A basemap's own source: one its layers read.
+      if (!data.has(id)) return style.some(layer => 'source' in layer && layer.source === id) ? { type: 'vector' } : undefined;
       return {
         setData: (next: unknown) => {
           featuresOf(id, next);
@@ -133,6 +134,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     queryRenderedFeatures: () => rendered,
     getZoom: () => view.zoom,
+    getBearing: () => 0,
     getPadding: () => view.cover,
     getContainer: () => ({ clientWidth: view.width, clientHeight: view.height }),
     project: ([lng, lat]: [number, number]) => {
@@ -152,6 +154,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       Object.assign(view, { center: [(west + east) / 2, (south + north) / 2], zoom: options.maxZoom });
     },
     easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
+    jumpTo: (options: Record<string, unknown>) => moves.push({ kind: 'jump', target: options.center, options }),
+    isMoving: () => view.moving,
   };
   return { map: map as unknown as MapLibreMap, data, images, sends, layers, moves, rendered, view };
 };
