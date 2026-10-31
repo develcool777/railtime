@@ -1,5 +1,5 @@
 <template>
-  <!-- At least the window's height, the list growing to fill it: the footer stays at the foot with few cities shown. -->
+  <!-- At least the window's height, the list (UMain, but only as tall as the rest leaves) filling it: the footer stays at the foot with few cities shown. -->
   <div class="bg-page flex min-h-dvh flex-col">
     <SiteHeader />
 
@@ -33,7 +33,7 @@
       </UContainer>
     </div>
 
-    <main class="flex-1 pb-12">
+    <UMain class="min-h-0 flex-1 pb-12">
       <UPageSection
         v-for="{ country, cities } in sections"
         :key="country"
@@ -51,7 +51,7 @@
         :actions="[{ label: 'Clear filters', color: 'neutral', variant: 'outline', onClick: clearFilters }]"
         variant="naked"
         class="py-16" />
-    </main>
+    </UMain>
 
     <UFooter class="border-default border-t">
       <template #left>
