@@ -3,19 +3,19 @@ import { describe, expect, test } from 'vitest';
 import { captionOf } from '../../../src/changes/caption.utils';
 import { toTimestamp } from '../../../src/core/date.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { modelOf } from '../../support/model.utils';
+import { factsOf } from '../../support/facts.utils';
 
 /**
- * The caption of the first change after a day, in the light theme's colours.
+ * The caption of the first change after a day.
  *
  * @param network - The network.
  * @param date - The day before it.
  * @returns Its caption.
  */
 const captionAfter = (network: Network, date: string) => {
-  const model = modelOf(network);
-  const step = model.timeline.steps[model.timeline.cursorAt(toTimestamp(date))]!;
-  return captionOf(step, { index: model.index, timeline: model.timeline, colorOf: line => model.colorOf(line, 'light') });
+  const facts = factsOf(network);
+  const step = facts.timeline.steps[facts.timeline.cursorAt(toTimestamp(date))]!;
+  return captionOf(step, { index: facts.index, timeline: facts.timeline, colorOf: line => facts.colorOf(line) });
 };
 
 describe('CaptionUtils', () => {
@@ -42,7 +42,7 @@ describe('CaptionUtils', () => {
         time: toTimestamp('1940-01-01'),
         title: 'Blue line: section suspended',
         subtitle: 'B – C',
-        color: '#0000ff',
+        color: { light: '#0000ff', dark: '#0000ff' },
         stations: [],
       });
       expect(captionAfter(tinyNetwork(), '1949-01-01')).toMatchObject({ title: 'Blue line: section closes', subtitle: 'B – C' });
@@ -54,7 +54,7 @@ describe('CaptionUtils', () => {
         time: toTimestamp('1920-06-01'),
         title: 'C opens',
         subtitle: 'on the Red line',
-        color: '#ff0000',
+        color: { light: '#ff0000', dark: '#ff0000' },
         stations: ['C'],
       });
       const network = tinyNetwork();
@@ -78,7 +78,7 @@ describe('CaptionUtils', () => {
         time: toTimestamp('1925-01-01'),
         title: 'Old D renamed',
         subtitle: 'now D',
-        color: '#ff0000',
+        color: { light: '#ff0000', dark: '#ff0000' },
         stations: ['D'],
       });
     });
@@ -88,7 +88,7 @@ describe('CaptionUtils', () => {
         kind: 'identity',
         time: toTimestamp('1990-01-01'),
         title: 'Pink becomes its own line',
-        color: '#ff88cc',
+        color: { light: '#ff88cc', dark: '#ff88cc' },
         stations: [],
       });
     });

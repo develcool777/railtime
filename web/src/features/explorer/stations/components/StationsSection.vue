@@ -9,7 +9,11 @@
         <li v-for="station in group.stations" :key="station.id">
           <ListRow @click="emit('open', station.id)">
             <span class="flex w-[22px] flex-none flex-wrap gap-0.5">
-              <span v-for="color in station.colors" :key="color" class="size-1.5 rounded-full" :style="{ background: color }" />
+              <span
+                v-for="color in station.colors"
+                :key="`${color.light} ${color.dark}`"
+                class="size-1.5 rounded-full"
+                :style="{ background: lineColor(color) }" />
             </span>
             <span class="text-highlighted min-w-0 flex-1 truncate text-sm font-medium">{{ station.name }}</span>
             <span v-if="station.otherNames[0]" class="text-muted max-w-[40%] flex-none truncate text-xs">{{ station.otherNames[0] }}</span>
@@ -26,6 +30,7 @@
 
   import type { StationGroup } from '~/features/explorer/stations/station.types';
   import { findStations, stationsByLetter } from '~/features/explorer/stations/station.utils';
+  import { lineColor } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
     /** The stations on the map on the date shown. */

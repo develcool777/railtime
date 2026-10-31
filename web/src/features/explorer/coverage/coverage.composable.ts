@@ -10,13 +10,13 @@ import { boundaryUrlOf } from '~/utils/city.utils';
 /**
  * How much of the city is within walking distance of a station: its outline loaded the first time the
  * map is to draw it, and kept in the store, whose props give it to the map. What it comes to on the
- * date shown is what the map reports; its history, the model's.
+ * date shown is what the map reports; its history, the network's facts'.
  *
  * @param city - The city, whose outline is loaded.
  * @returns Where the outline is, the coverage, and its history.
  */
 export const useCoverage = (city: string): Coverage => {
-  const { mapOverlay, overlayResult, boundary, model } = storeToRefs(useExplorerStore());
+  const { mapOverlay, overlayResult, boundary, facts } = storeToRefs(useExplorerStore());
   const baseURL = useRuntimeConfig().app.baseURL;
 
   const boundaryState = ref<BoundaryState>('idle');
@@ -40,7 +40,7 @@ export const useCoverage = (city: string): Coverage => {
   );
 
   const coverage = computed(() => (overlayResult.value?.kind === 'coverage' ? overlayResult.value.coverage : null));
-  const history = computed(() => (boundary.value && model.value ? model.value.coverage(boundary.value).history() : []));
+  const history = computed(() => (boundary.value && facts.value ? facts.value.coverage(boundary.value).history() : []));
 
   return { boundaryState, coverage, history };
 };

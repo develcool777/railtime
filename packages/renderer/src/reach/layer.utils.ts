@@ -1,54 +1,30 @@
-import { required } from '@railtime/network/required.utils';
+import { required } from '@railtime/network/engine/required.utils';
+import type { NetworkIndex } from '@railtime/network/engine/index.service';
+import type { ReachInfo } from '@railtime/network/facts.types';
 import type { PointFeature, ReachStopProperties, ReachTrackFeature } from '../layers/features.types';
 import { pointFeature } from '../layers/features.utils';
-import type { NetworkIndex } from '@railtime/network/index.service';
-import type { TrackSegment } from '@railtime/network/index.types';
-import type { Timeline } from '@railtime/network/timeline.service';
-import type { ReachInfo } from '@railtime/network/facts.types';
-import { bandOf } from '@railtime/network/reach.utils';
-import { REACH_BANDS } from '@railtime/network/reach.constants';
-import type { ReachedSegment } from './layer.types';
 
 /**
- * The track a reach colours: each open segment with a reached station at an end, timed as the mean
- * of its ends' times, or the one end's when only one is reached (a station its lines pass by).
+ * A band's colour.
  *
- * @param minutes - Minutes to each station reached, by id.
- * @param segments - The segments open on the date, each once.
- * @param segments.index - The segment's id.
- * @param segments.stationA - One end.
- * @param segments.stationB - The other end.
- * @returns The segments reached, with their times.
+ * @param reach - The reach.
+ * @param band - The band's place in its bands.
+ * @returns Its colour.
  */
-export const reachedSegments = (
-  minutes: ReadonlyMap<string, number>,
-  segments: Iterable<{ index: number; stationA: string; stationB: string }>,
-): ReachedSegment[] => {
-  const reached: ReachedSegment[] = [];
-  for (const segment of segments) {
-    const ends = [minutes.get(segment.stationA), minutes.get(segment.stationB)].filter((time): time is number => time !== undefined);
-    if (ends.length > 0) reached.push({ segment: segment.index, minutes: ends.reduce((total, time) => total + time, 0) / ends.length });
-  }
-  return reached;
-};
+const bandColor = (reach: ReachInfo, band: number): string => required(reach.bands[band], `reach band ${band}`).color;
 
 /**
- * The track a reach colours, each segment in the band of its time.
+ * The track a reach colours, each segment in its band's colour.
  *
  * @param index - The network.
- * @param timeline - When each line runs.
- * @param cursor - The cursor the reach was found at.
  * @param reach - The reach, or `null`.
  * @returns The track; none without a reach.
  */
-export const reachTrack = (index: NetworkIndex, timeline: Timeline, cursor: number, reach: ReachInfo | null): ReachTrackFeature[] => {
+export const reachTrack = (index: NetworkIndex, reach: ReachInfo | null): ReachTrackFeature[] => {
   if (!reach) return [];
-  const minutes = new Map<string, number>([[reach.from.id, 0], ...reach.stations.map(station => [station.id, station.minutes] as const)]);
-  const open = new Map<number, TrackSegment>();
-  for (const lineSegment of index.lineSegments) if (timeline.isOpen(lineSegment, cursor)) open.set(lineSegment.segment.index, lineSegment.segment);
-  return reachedSegments(minutes, open.values()).map(({ segment, minutes: time }) => ({
+  return reach.track.map(({ segment, band }) => ({
     type: 'Feature',
-    properties: { color: required(REACH_BANDS[bandOf(time)], 'reach band').color },
+    properties: { color: bandColor(reach, band) },
     geometry: { type: 'LineString', coordinates: required(index.segments[segment], `segment ${segment}`).coordinates },
   }));
 };
@@ -63,10 +39,10 @@ export const reachTrack = (index: NetworkIndex, timeline: Timeline, cursor: numb
 export const reachStops = (index: NetworkIndex, reach: ReachInfo | null): PointFeature<ReachStopProperties>[] =>
   reach
     ? [
-        pointFeature(index.coordOf(reach.from.id), { color: required(REACH_BANDS[0], 'reach band').color, label: reach.from.name, minutes: 0, origin: true }),
+        pointFeature(index.coordOf(reach.from.id), { color: bandColor(reach, 0), label: reach.from.name, minutes: 0, origin: true }),
         ...reach.stations.map(station =>
           pointFeature(index.coordOf(station.id), {
-            color: required(REACH_BANDS[station.band], 'reach band').color,
+            color: bandColor(reach, station.band),
             label: `${station.name} · ${Math.round(station.minutes)} min`,
             minutes: station.minutes,
             origin: false,

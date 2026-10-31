@@ -1,4 +1,4 @@
-import type { LineDetails } from '../../../src/model/facts.types';
+import type { LineDetails } from '../../../src/facts/facts.types';
 import { describe, expect, test } from 'vitest';
 import { lineBranches, lineLengthKm, stepChangesLine, directionsAt } from '../../../src/network/lineDetails.utils';
 import { NetworkIndex } from '../../../src/network/index.service';
@@ -135,7 +135,7 @@ describe('LineDetailsUtils', () => {
       name: 'Red',
       network: 'metro',
       networkName: 'Metro',
-      color: '#ff0000',
+      color: { light: '#ff0000', dark: '#ff0000' },
       opened: 0,
       stations: 0,
       km: 0,

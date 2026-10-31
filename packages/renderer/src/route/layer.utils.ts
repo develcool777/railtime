@@ -1,8 +1,8 @@
-import { required } from '@railtime/network/required.utils';
+import { required } from '@railtime/network/engine/required.utils';
 import type { PointFeature, RouteFeature, RouteStopProperties } from '../layers/features.types';
 import { pointFeature } from '../layers/features.utils';
-import type { NetworkIndex } from '@railtime/network/index.service';
-import type { RouteInfo } from '@railtime/network/facts.types';
+import type { NetworkIndex } from '@railtime/network/engine/index.service';
+import type { RouteInfo, Theme } from '@railtime/network/facts.types';
 import { routeStopMarks } from './stops.utils';
 
 /**
@@ -11,9 +11,10 @@ import { routeStopMarks } from './stops.utils';
  *
  * @param index - The network.
  * @param route - The route, or `null`.
+ * @param theme - The theme, for its lines' colours.
  * @returns Its stretches; none without a route.
  */
-export const routeTrack = (index: NetworkIndex, route: RouteInfo | null): RouteFeature[] =>
+export const routeTrack = (index: NetworkIndex, route: RouteInfo | null, theme: Theme): RouteFeature[] =>
   (route?.legs ?? []).flatMap((leg, position): RouteFeature[] => {
     if (leg.kind === 'walk') {
       return [
@@ -26,7 +27,7 @@ export const routeTrack = (index: NetworkIndex, route: RouteInfo | null): RouteF
     }
     return (route?.segments[position] ?? []).map(segment => ({
       type: 'Feature',
-      properties: { color: leg.color, walk: false },
+      properties: { color: leg.color[theme], walk: false },
       geometry: { type: 'LineString', coordinates: required(index.segments[segment], `segment ${segment}`).coordinates },
     }));
   });
@@ -36,7 +37,8 @@ export const routeTrack = (index: NetworkIndex, route: RouteInfo | null): RouteF
  *
  * @param index - The network.
  * @param route - The route, or `null`.
+ * @param theme - The theme, for its lines' colours.
  * @returns Its stops; none without a route.
  */
-export const routeStops = (index: NetworkIndex, route: RouteInfo | null): PointFeature<RouteStopProperties>[] =>
-  route ? routeStopMarks(route).map(mark => pointFeature(index.coordOf(mark.station), { kind: mark.kind, color: mark.color, name: mark.name })) : [];
+export const routeStops = (index: NetworkIndex, route: RouteInfo | null, theme: Theme): PointFeature<RouteStopProperties>[] =>
+  route ? routeStopMarks(route, theme).map(mark => pointFeature(index.coordOf(mark.station), { kind: mark.kind, color: mark.color, name: mark.name })) : [];

@@ -10,7 +10,7 @@ describe('FactsUtils', () => {
       // A–B is 0.01° of longitude at 50° N, B–C a little more: about 2 km in all.
       expect(facts.km).toBeGreaterThan(1.8);
       expect(facts.km).toBeLessThan(2.2);
-      expect(facts.lines).toEqual([{ id: 'red', name: 'Red', color: '#ff0000', darkColor: '#ff0000' }]);
+      expect(facts.lines).toEqual([{ id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff0000' } }]);
     });
   });
 });

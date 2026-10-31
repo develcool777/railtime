@@ -1,6 +1,6 @@
 import type { LineDetails, StationInfo } from '@railtime/network/facts.types';
 
-import { formatDay, yearOf } from '~/features/explorer/format.utils';
+import { formatDay, lineColor, yearOf } from '~/features/explorer/format.utils';
 import type { PanelTopContent, SectionTopInput } from '~/features/explorer/panel/panel.types';
 
 /**
@@ -25,7 +25,7 @@ export const stationTop = (station: StationInfo, backLabel: string): PanelTopCon
   return {
     title: station.name,
     context: [...station.otherNames, opened ? `opened ${opened}` : 'planned'].join(' · '),
-    dots: station.lines.map(line => line.color),
+    dots: station.lines.map(line => lineColor(line.color)),
     backLabel,
   };
 };
@@ -40,7 +40,7 @@ export const stationTop = (station: StationInfo, backLabel: string): PanelTopCon
 export const lineTop = (line: LineDetails, backLabel: string): PanelTopContent => {
   const opened = line.opened === null ? 'planned' : `opened ${yearOf(line.opened)}`;
   const size = line.branches.length > 0 ? ` · ${line.stations} stations · ${Math.round(line.km)} km` : '';
-  return { title: line.name, context: `${opened}${size}`, dots: [line.color], backLabel };
+  return { title: line.name, context: `${opened}${size}`, dots: [lineColor(line.color)], backLabel };
 };
 
 /**

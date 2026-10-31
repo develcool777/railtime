@@ -140,6 +140,19 @@ export default defineConfig(
     },
   },
 
+  // ---- What the app and the data ask of the network ------------------------------
+  {
+    // `@railtime/network/engine/*` is what the renderer draws with; the app and the data commands ask
+    // `NetworkFacts`, and every fact comes from it.
+    files: ['web/src/**/*.{ts,vue}', 'packages/data/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['@railtime/network/engine/*'], message: "Ask NetworkFacts (@railtime/network/facts.service): the engine is the renderer's." }] },
+      ],
+    },
+  },
+
   // ---- File names ------------------------------------------------------------
   {
     files: ['packages/*/src/**/*.ts', 'web/src/**/*.ts'],

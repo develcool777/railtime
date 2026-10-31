@@ -35,7 +35,12 @@
           <ListRow v-for="station in records.busiest" :key="station.id" @click="emit('station', station.id)">
             <span class="text-highlighted min-w-0 flex-1 truncate text-sm">{{ station.name }}</span>
             <span class="flex flex-none items-center gap-0.5">
-              <span v-for="line in station.lines" :key="line.id" class="size-2 rounded-full" :style="{ background: line.color }" :title="line.name" />
+              <span
+                v-for="line in station.lines"
+                :key="line.id"
+                class="size-2 rounded-full"
+                :style="{ background: lineColor(line.color) }"
+                :title="line.name" />
             </span>
             <span class="text-muted w-4 flex-none text-right text-xs tabular-nums">{{ station.lines.length }}</span>
           </ListRow>
@@ -44,7 +49,7 @@
         <section class="flex flex-col gap-1">
           <h3 class="eyebrow text-muted px-2 pb-1">Longest lines</h3>
           <ListRow v-for="line in records.longest" :key="line.id" @click="emit('line', line.id)">
-            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: line.color }" />
+            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(line.color) }" />
             <span class="text-highlighted min-w-0 flex-1 truncate text-sm">{{ line.name }}</span>
             <span class="text-muted flex-none text-xs tabular-nums">{{ formatMetric(line.km, 'km') }}</span>
           </ListRow>
@@ -60,6 +65,7 @@
 
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
   import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
+  import { lineColor } from '~/features/explorer/format.utils';
 
   const METRICS: { label: string; value: GrowthMetric }[] = [
     { label: 'Stations', value: 'stations' },

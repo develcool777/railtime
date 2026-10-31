@@ -1,10 +1,10 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
-import { buildPlan } from '@railtime/schema/plan.utils';
+import { buildPlan, isPlanOnly } from '@railtime/schema/plan.utils';
 import { required } from '../core/required.utils';
 import { toIsoDate, todayTimestamp, toTimestamp } from '../core/date.utils';
 import { REACH_BANDS } from '../route/reach.constants';
-import { bandOf } from '../route/reach.utils';
+import { bandOf, reachedSegments } from '../route/reach.utils';
 import { RouteFinder } from '../route/finder.service';
 import type { NetworkHistory } from '../network/history.types';
 import { networkAt, networkHistory, openingsByDecade, statsAt } from '../network/history.utils';
@@ -13,29 +13,40 @@ import { CoverageMeasure } from '../coverage/measure.service';
 import { NetworkIndex } from '../network/index.service';
 import { Timeline } from '../network/timeline.service';
 import { captionOf } from '../changes/caption.utils';
+import { planFacts } from '../plan/facts.utils';
+import { networkSummary } from '../summary/summary.utils';
 import type {
   ChangeInfo,
+  FactsAt,
+  LineColor,
   LineDetails,
   LineInfo,
+  NetworkFactsOptions,
   NetworkGrowth,
+  NetworkMoment,
   NetworkRecords,
+  NetworkSummary,
+  NetworkTime,
+  PlanInfo,
   ReachInfo,
   RouteInfo,
   RoutePreference,
   StationInfo,
   StationSummary,
-  Theme,
   TransferInfo,
 } from './facts.types';
-import type { NetworkAt, NetworkModelOptions, NetworkMoment, NetworkTime } from './network.types';
 
 /**
- * A network and its history, and every question about it: what it is and was on any date, in either
- * theme's colours. Pure: no map, no clock. Each question takes the moment and the theme it is about,
- * so its answer changes when they do and at no other time. Made before any map, and shared by the map,
- * the app and the tests.
+ * A city's network, its history and its plans, and every fact about them: what it is and was on any
+ * date, what a plan would add, how it sums up. Pure: no map, no clock. Made once, from the network as
+ * stored, and asked by the map, the app, the data commands and the tests; nothing else works a fact
+ * out. A line's colour comes in both themes (`LineColor`): what shows it picks one.
  */
-export class NetworkModel {
+export class NetworkFacts {
+  /** The plan built on the network, if one was asked for. */
+  public readonly plan: string | null;
+  /** Whether the network was never built: it has only its plans. */
+  public readonly planOnly: boolean;
   /** The network, indexed: its plan built on it, if one was asked for. */
   public readonly index: NetworkIndex;
   /** Its history as steps, planned ones last. */
@@ -50,69 +61,116 @@ export class NetworkModel {
   private history: NetworkHistory | null = null;
   /** Each outline's coverage, measured the first time it is asked for. */
   private readonly coverages = new WeakMap<CityBoundary, CoverageMeasure>();
+  /** The network as stored, its plans unbuilt. */
+  private readonly source: Network;
 
-  private constructor(index: NetworkIndex, today: number) {
-    this.index = index;
-    this.timeline = new Timeline(index);
+  private constructor(source: Network, plan: string | null, today: number) {
+    const built = plan ? buildPlan(source, plan) : null;
+    this.source = source;
+    this.plan = plan;
+    this.planOnly = isPlanOnly(source);
+    this.index = new NetworkIndex(built?.network ?? source, built?.sections);
+    this.timeline = new Timeline(this.index);
     this.range = { start: this.timeline.start, end: Math.max(today, this.timeline.lastDate), today };
-    this.routes = new RouteFinder(index, this.timeline);
+    this.routes = new RouteFinder(this.index, this.timeline);
     this.thisYear = new Date(today).getUTCFullYear();
   }
 
   /**
-   * A network's model.
+   * A network's facts.
    *
-   * @param network - The network.
+   * @param network - The network, as stored.
    * @param options - A plan to build on it, and today.
-   * @returns The model.
+   * @returns Its facts.
    */
-  public static create(network: Network, options: NetworkModelOptions = {}): NetworkModel {
-    const plan = options.plan ? buildPlan(network, options.plan) : null;
-    return new NetworkModel(new NetworkIndex(plan?.network ?? network, plan?.sections), options.today ?? todayTimestamp());
+  public static create(network: Network, options: NetworkFactsOptions = {}): NetworkFacts {
+    return new NetworkFacts(network, options.plan ?? null, options.today ?? todayTimestamp());
   }
 
   /**
-   * A line's own colour in a theme.
+   * How the network sums up, for a list of cities: one never built by its first plan.
+   *
+   * @returns Its summary.
+   */
+  public summary(): NetworkSummary {
+    return networkSummary(this.source);
+  }
+
+  /**
+   * Every plan the city has, and what each would add to the network as built.
+   *
+   * @returns The plans, in the network's order.
+   */
+  public plans(): PlanInfo[] {
+    return Object.entries(this.source.plans ?? {}).map(([id, plan]) => ({
+      id,
+      name: plan.name,
+      status: plan.status,
+      ...(plan.description ? { description: plan.description } : {}),
+      facts: planFacts(this.source, id),
+    }));
+  }
+
+  /**
+   * A line or station by its id, if the network has it (its plan built on it).
+   *
+   * @param kind - A line or a station.
+   * @param id - Its id.
+   * @returns Its id and name, or `null`.
+   */
+  public find(kind: 'line' | 'station', id: string): { id: string; name: string } | null {
+    const known = kind === 'line' ? this.index.network.lines[id] : this.index.network.stations[id];
+    return known ? { id, name: known.name } : null;
+  }
+
+  /**
+   * A line's own colour, in each theme.
    *
    * @param line - The line id.
-   * @param theme - The theme.
-   * @returns Its colour.
+   * @returns Its colours.
    */
-  public colorOf(line: string, theme: Theme): string {
+  public colorOf(line: string): LineColor {
     const info = this.index.lineOf(line);
-    return (theme === 'dark' && info.darkColor) || info.color;
+    return { light: info.color, dark: info.darkColor ?? info.color };
   }
 
   /**
    * Every line a user can toggle.
    *
-   * @param theme - The theme, for their colours.
    * @returns The lines, in the network's order.
    */
-  public lines(theme: Theme): LineInfo[] {
-    return this.lineInfos(line => this.colorOf(line, theme));
+  public lines(): LineInfo[] {
+    return this.index.lineIds.map(id => {
+      const line = this.index.lineOf(id);
+      return {
+        id,
+        name: line.name,
+        network: line.network,
+        networkName: required(this.index.network.networks[line.network], `network ${line.network}`).name,
+        color: this.colorOf(id),
+        opened: Number.isFinite(this.index.lineOpens(id)) ? this.index.lineOpens(id) : null,
+      };
+    });
   }
 
   /**
    * Every change in the history, planned ones last, described as its caption will be when it plays.
    *
-   * @param theme - The theme, for their colours.
    * @returns The changes, in the order they play.
    */
-  public changes(theme: Theme): ChangeInfo[] {
-    return this.timeline.steps.map(step => this.change(step.index, theme));
+  public changes(): ChangeInfo[] {
+    return this.timeline.steps.map(step => this.change(step.index));
   }
 
   /**
    * One change, described as its caption says it.
    *
    * @param index - Its place in the history (`ChangeInfo.index`).
-   * @param theme - The theme, for its colour.
    * @returns The change.
    */
-  public change(index: number, theme: Theme): ChangeInfo {
+  public change(index: number): ChangeInfo {
     const step = required(this.timeline.steps[index], `change ${index}`);
-    return { index, ...captionOf(step, { index: this.index, timeline: this.timeline, colorOf: line => this.colorOf(line, theme) }) };
+    return { index, ...captionOf(step, { index: this.index, timeline: this.timeline, colorOf: line => this.colorOf(line) }) };
   }
 
   /**
@@ -146,14 +204,22 @@ export class NetworkModel {
   }
 
   /**
+   * The network today, for the questions about it now: every dated change on or before today played.
+   *
+   * @returns The questions, each answered for today.
+   */
+  public today(): FactsAt {
+    return this.asOf(this.momentOn(this.range.today));
+  }
+
+  /**
    * The network at a moment, for the questions about it then.
    *
    * @param moment - The moment: the map's `time`.
-   * @param theme - The theme, for colours.
    * @returns The questions, each answered for that moment.
    */
-  public asOf(moment: NetworkTime, theme: Theme): NetworkAt {
-    const then: NetworkMoment = { cursor: moment.cursor, clock: moment.time, colorOf: line => this.colorOf(line, theme) };
+  public asOf(moment: NetworkTime): FactsAt {
+    const then: NetworkMoment = { cursor: moment.cursor, clock: moment.time };
     return {
       stations: () => this.stationsAt(then),
       station: id => this.stationAt(id, then),
@@ -181,26 +247,6 @@ export class NetworkModel {
   }
 
   /**
-   * Every line a user can toggle, with its colour.
-   *
-   * @param colorOf - A line's colour in the theme asked for.
-   * @returns The lines, in the network's order.
-   */
-  private lineInfos(colorOf: NetworkMoment['colorOf']): LineInfo[] {
-    return this.index.lineIds.map(id => {
-      const line = this.index.lineOf(id);
-      return {
-        id,
-        name: line.name,
-        network: line.network,
-        networkName: required(this.index.network.networks[line.network], `network ${line.network}`).name,
-        color: colorOf(id),
-        opened: Number.isFinite(this.index.lineOpens(id)) ? this.index.lineOpens(id) : null,
-      };
-    });
-  }
-
-  /**
    * A line at a moment: its stops in order, by branch, how long it is, and the changes that made it.
    *
    * @param line - The line id.
@@ -209,7 +255,7 @@ export class NetworkModel {
    */
   private lineAt(line: string, moment: NetworkMoment): LineDetails {
     const info = required(
-      this.lineInfos(moment.colorOf).find(candidate => candidate.id === line),
+      this.lines().find(candidate => candidate.id === line),
       `line ${line}`,
     );
     const branches = lineBranches(this.index, this.timeline, line, moment.cursor).map(run =>
@@ -248,7 +294,7 @@ export class NetworkModel {
               kind: 'ride',
               line: leg.line,
               lineName: this.index.lineName(leg.line),
-              color: moment.colorOf(leg.line),
+              color: this.colorOf(leg.line),
               stops: leg.stops.map(stop),
               minutes: leg.minutes,
               km: leg.km,
@@ -266,7 +312,7 @@ export class NetworkModel {
    *
    * @param from - The station to start at.
    * @param moment - The moment.
-   * @returns The stations it gets to, soonest first, and the bands they are coloured in; `null` if no line calls there then.
+   * @returns The stations it gets to, soonest first, the bands they are coloured in, and the track it colours; `null` if no line calls there then.
    */
   private reachAt(from: string, moment: NetworkMoment): ReachInfo | null {
     const minutes = this.routes.reach(from, moment.cursor);
@@ -274,7 +320,14 @@ export class NetworkModel {
     const name = (station: string) => this.index.stationName(station, moment.clock);
     // The search reaches stations soonest first, so they come in that order.
     const stations = [...minutes].filter(([station]) => station !== from).map(([id, time]) => ({ id, name: name(id), minutes: time, band: bandOf(time) }));
-    return { from: { id: from, name: name(from) }, stations, bands: REACH_BANDS };
+    // Each open segment once, though several lines run on it.
+    const open = new Map(
+      this.index.lineSegments
+        .filter(lineSegment => this.timeline.isOpen(lineSegment, moment.cursor))
+        .map(lineSegment => [lineSegment.segment.index, lineSegment.segment]),
+    );
+    const track = reachedSegments(minutes, open.values()).map(reached => ({ segment: reached.segment, band: bandOf(reached.minutes) }));
+    return { from: { id: from, name: name(from) }, stations, bands: REACH_BANDS, track };
   }
 
   /**
@@ -300,7 +353,7 @@ export class NetworkModel {
       .map(([station, lines]) => ({
         id: station,
         name: name(station),
-        lines: [...lines].sort(this.index.compareLines).map(line => ({ id: line, name: this.index.lineName(line), color: moment.colorOf(line) })),
+        lines: [...lines].sort(this.index.compareLines).map(line => ({ id: line, name: this.index.lineName(line), color: this.colorOf(line) })),
       }))
       .sort((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
       .slice(0, count);
@@ -308,7 +361,7 @@ export class NetworkModel {
       .map(line => ({
         id: line,
         name: this.index.lineName(line),
-        color: moment.colorOf(line),
+        color: this.colorOf(line),
         km: lineLengthKm(this.index, this.timeline, line, moment.cursor),
       }))
       .filter(line => line.km > 0)
@@ -332,7 +385,8 @@ export class NetworkModel {
             id: station,
             name: this.index.stationName(station, moment.clock),
             otherNames: this.index.otherNames(this.index.namedAt(station, moment.clock)),
-            colors: [...new Set(lines.map(line => moment.colorOf(line)))],
+            // Lines sharing a colour show it once.
+            colors: [...new Map(lines.map(line => this.colorOf(line)).map(color => [`${color.light} ${color.dark}`, color])).values()],
             served: lines.length > 0,
           };
         })
@@ -370,7 +424,7 @@ export class NetworkModel {
       return {
         id: line,
         name: this.index.lineName(line),
-        color: moment.colorOf(line),
+        color: this.colorOf(line),
         // A plan's line has no date: Infinity, from its undated line segments.
         opened: info.infill?.[line] ?? (dates.opened === Infinity ? null : toIsoDate(dates.opened)),
         ...(closed ? { closed } : {}),
@@ -424,7 +478,7 @@ export class NetworkModel {
         {
           id: other,
           name: this.index.stationName(other, moment.clock),
-          lines: ordered.map(line => ({ id: line, name: this.index.lineName(line), color: moment.colorOf(line) })),
+          lines: ordered.map(line => ({ id: line, name: this.index.lineName(line), color: this.colorOf(line) })),
         },
       ];
     });

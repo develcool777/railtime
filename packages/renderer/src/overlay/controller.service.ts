@@ -1,6 +1,6 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { coverageDrawing } from '../coverage/layer.utils';
-import { boundsOf } from '@railtime/network/geometry.utils';
+import { boundsOf } from '@railtime/network/engine/geometry.utils';
 import { reachStops, reachTrack } from '../reach/layer.utils';
 import { routeStops, routeTrack } from '../route/layer.utils';
 import { OPENING_MAX_ZOOM, ROUTE_NAME_ROOM, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from '../transitMap.constants';
@@ -14,7 +14,7 @@ import { overlaySubjectOf } from './controller.utils';
  * reports what it came to; again whenever the moment moves on, the theme or the outline changes.
  */
 export class OverlayController {
-  /** The layers, the camera, the model, and where the moment and theme are read. */
+  /** The layers, the camera, the network's facts, and where the moment and theme are read. */
   private readonly parts: OverlayParts;
   /** The cursor it was last worked out at: it is worked out again when the moment moves on. */
   private drawnAt = -1;
@@ -39,21 +39,22 @@ export class OverlayController {
    * @param boundary - The city's outline, for coverage.
    */
   public draw(request: OverlayRequest | null, boundary: CityBoundary | null): void {
-    const { model, route: routeLayer, reach: reachLayer, coverage: coverageLayer, camera } = this.parts;
+    const { facts, route: routeLayer, reach: reachLayer, coverage: coverageLayer, camera } = this.parts;
     const moment = this.parts.moment();
-    const then = model.asOf(moment, this.parts.theme());
+    const theme = this.parts.theme();
+    const then = facts.asOf(moment);
     this.drawnAt = moment.cursor;
     if (boundary !== this.boundary && request?.kind === 'coverage') this.framed = null;
     this.boundary = boundary;
 
     const route = request?.kind === 'route' ? then.route(request.from, request.to, request.preference) : null;
     const reach = request?.kind === 'reach' ? then.reach(request.from) : null;
-    const coverage = request?.kind === 'coverage' && boundary ? model.coverage(boundary) : null;
-    const routeLine = routeTrack(model.index, route);
-    const reachStations = reachStops(model.index, reach);
-    routeLayer.update(routeLine, routeStops(model.index, route));
-    reachLayer.update(reachTrack(model.index, model.timeline, moment.cursor, reach), reachStations);
-    coverageLayer.update(coverage ? coverageDrawing(coverage, moment.cursor) : null);
+    const coverage = request?.kind === 'coverage' && boundary ? facts.coverage(boundary) : null;
+    const routeLine = routeTrack(facts.index, route, theme);
+    const reachStations = reachStops(facts.index, reach);
+    routeLayer.update(routeLine, routeStops(facts.index, route, theme));
+    reachLayer.update(reachTrack(facts.index, reach), reachStations);
+    coverageLayer.update(coverage ? coverageDrawing(coverage.cells(moment.cursor), coverage.boundary) : null);
 
     const subject = overlaySubjectOf(request);
     if (subject !== this.framed) {

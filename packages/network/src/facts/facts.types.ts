@@ -1,10 +1,15 @@
-import type { IsoDate } from '@railtime/schema/network.types';
+import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
+import type { IsoDate, PlanStatus } from '@railtime/schema/network.types';
 import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from '../network/history.types';
+import type { GridCorners } from '../coverage/grid.types';
 import type { Step } from '../network/timeline.types';
 import type { RoutePreference as ModelRoutePreference } from '../route/finder.types';
 
 /** The map's colour theme. */
 export type Theme = 'dark' | 'light';
+
+/** A line's colour in each theme: an answer holds both, and what shows it picks the one for its theme. */
+export type LineColor = Record<Theme, string>;
 
 /** What is on the map. */
 export type NetworkStats = { stations: number; km: number; lines: number };
@@ -17,7 +22,7 @@ export type StepInfo = {
   title: string;
   /** The first and last station it reaches: "<station> – <station>". */
   subtitle?: string;
-  color: string;
+  color: LineColor;
   /** Stations this step opens, in the order they appear. */
   stations: string[];
 };
@@ -32,7 +37,7 @@ export type ChangeInfo = StepInfo & {
 export type StationLineInfo = {
   id: string;
   name: string;
-  color: string;
+  color: LineColor;
   /** When it opened here; `null` for a plan's line, which has no date. */
   opened: IsoDate | null;
   closed?: IsoDate;
@@ -56,7 +61,7 @@ export type StationInfo = {
 export type FormerNameInfo = { name: string; otherNames: string[]; until: IsoDate };
 
 /** A station to change to, and the lines it has on the date shown. */
-export type TransferInfo = { id: string; name: string; lines: { id: string; name: string; color: string }[] };
+export type TransferInfo = { id: string; name: string; lines: { id: string; name: string; color: LineColor }[] };
 
 /** A line, for a legend or toggles. */
 export type LineInfo = {
@@ -64,7 +69,7 @@ export type LineInfo = {
   name: string;
   network: string;
   networkName: string;
-  color: string;
+  color: LineColor;
   /** When it first opened, as a timestamp; `null` for a line only a plan builds. */
   opened: number | null;
 };
@@ -77,7 +82,7 @@ export type StationSummary = {
   /** That name in the network's other languages. */
   otherNames: string[];
   /** The colours of the lines that call there, in line order. */
-  colors: string[];
+  colors: LineColor[];
 };
 
 /** A stop on a line, for a line's panel. */
@@ -110,7 +115,7 @@ export type RouteLegInfo =
       kind: 'ride';
       line: string;
       lineName: string;
-      color: string;
+      color: LineColor;
       /** Its stops, from the one boarded at to the one left at. */
       stops: RouteStop[];
       minutes: number;
@@ -152,6 +157,11 @@ export type ReachInfo = {
   stations: ReachStation[];
   /** The bands its stations are coloured in, soonest first. */
   bands: ReachBand[];
+  /**
+   * The track it colours: each segment open at the moment with a reached station at an end (the
+   * start's included), in the band of its ends' mean time, or its one end's.
+   */
+  track: { segment: number; band: number }[];
 };
 
 /** A band of walking distance to the nearest station, nearest first. */
@@ -188,6 +198,21 @@ export type CoverageInfo = {
   beyond: { share: number; km2: number };
 };
 
+/** A city's coverage at a moment, cell by cell: what a picture of it is drawn from. */
+export type CoverageCells = {
+  columns: number;
+  rows: number;
+  /** Where the cells lie: top left, top right, bottom right, bottom left. */
+  corners: GridCorners;
+  /** The bands, nearest first. */
+  bands: CoverageBand[];
+  /**
+   * Each cell, row by row from the north: its band's place in `bands`; `bands.length` for the city
+   * beyond every band; -1 outside its outline.
+   */
+  cells: Int8Array;
+};
+
 /** The share of a city within the headline distance of a station at the end of a year. */
 export type CoverageYear = { year: number; share: number };
 
@@ -205,9 +230,9 @@ export type NetworkRecords = {
   /** The stations open longest, with the year each first opened. */
   oldest: { id: string; name: string; year: number }[];
   /** The stations most lines call at. */
-  busiest: { id: string; name: string; lines: { id: string; name: string; color: string }[] }[];
+  busiest: { id: string; name: string; lines: { id: string; name: string; color: LineColor }[] }[];
   /** The longest lines. */
-  longest: { id: string; name: string; color: string; km: number }[];
+  longest: { id: string; name: string; color: LineColor; km: number }[];
 };
 
 /** A stop one along a line, and the end of the line that way. */
@@ -230,6 +255,63 @@ export type PlanFacts = {
   stations: number;
   /** Its new track, km. */
   km: number;
-  /** The lines its sections build on, in the order they first come, with their colours in each theme. */
-  lines: { id: string; name: string; color: string; darkColor: string }[];
+  /** The lines its sections build on, in the order they first come. */
+  lines: { id: string; name: string; color: LineColor }[];
+};
+
+/** One of a city's plans, for its card. */
+export type PlanInfo = {
+  id: string;
+  name: string;
+  status: PlanStatus;
+  description?: string;
+  /** What it would add to the network. */
+  facts: PlanFacts;
+};
+
+/** A network summed up, for a list of cities. */
+export type NetworkSummary = Omit<CityIndexEntry, 'name' | 'country'>;
+
+/** A moment in the network's history, as the map's `time` event gives it: the steps happened, and the day. */
+export type NetworkTime = {
+  /** Steps that have happened. */
+  cursor: number;
+  /** The day, as a UTC timestamp. */
+  time: number;
+};
+
+/** What `NetworkFacts` is made with besides the network. */
+export type NetworkFactsOptions = {
+  /** One of the network's plans, built on it: its sections play after every dated change. */
+  plan?: string;
+  /** Today, as a UTC timestamp at midnight: where the map opens, and where history ends. Defaults to the real today. */
+  today?: number;
+};
+
+/** The network at one moment: every question about it then. */
+export type FactsAt = {
+  /** The stations on the map, for a search: each with its names and its lines' colours. */
+  stations: () => StationSummary[];
+  /** A station's lines, with when each opened there and, if it has, closed. */
+  station: (id: string) => StationInfo;
+  /** A line's stops in order, by branch, its length, and the changes that made it. */
+  line: (id: string) => LineDetails;
+  /** The stations open longest, those most lines call at, and the longest lines: so many of each. */
+  records: (count: number) => NetworkRecords;
+  /** The best route between two stations; `null` if there is none at this moment. */
+  route: (from: string, to: string, preference: RoutePreference) => RouteInfo | null;
+  /** How long it takes from a station to every other; `null` if no line calls there at this moment. */
+  reach: (from: string) => ReachInfo | null;
+  /** How many stations, km of track and lines are open. */
+  stats: () => NetworkStats;
+  /** The stops either side of a station, on each of its lines that calls there, by line. */
+  directions: (station: string) => Map<string, LineDirection[]>;
+};
+
+/** A moment as the questions take it inside: the steps happened, and the day (for names). */
+export type NetworkMoment = {
+  /** Steps that have happened. */
+  cursor: number;
+  /** The day, as a timestamp: names are the ones stations had then. */
+  clock: number;
 };

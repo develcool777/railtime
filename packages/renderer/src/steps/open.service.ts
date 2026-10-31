@@ -1,11 +1,9 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import { lineFeature, pointFeature } from '../layers/features.utils';
 import { offsetFor, resolveLine } from '../layers/lineStyle.utils';
-import { sliceAlong } from '@railtime/network/geometry.utils';
-import type { OpenStep } from '@railtime/network/timeline.types';
+import { sliceAlong } from '@railtime/network/engine/geometry.utils';
+import type { Growth, OpenStep, SegmentPlan } from '@railtime/network/engine/timeline.types';
 import { clamp } from '../core/easing.utils';
-import type { Growth, SegmentPlan } from '@railtime/network/growth.types';
-import { planGrowth } from '@railtime/network/growth.utils';
 import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS, MAX_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';
@@ -28,8 +26,7 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
 
   public constructor(step: OpenStep, context: StepContext) {
     super(step, context);
-    const { index } = context;
-    this.growth = planGrowth(step.segments, context.stationsBefore, station => index.coordOf(station), index.centre);
+    this.growth = context.timeline.growthOf(step);
     const newStations = this.growth.reach.filter(reached => reached.isNew).length;
     const pace = GROWTH_PACE[context.view];
     this.drawSeconds = clamp(this.growth.totalKm / pace.kmPerSecond, pace.minSeconds, pace.maxSeconds);

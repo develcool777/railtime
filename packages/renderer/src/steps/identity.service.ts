@@ -1,5 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { IdentityStep } from '@railtime/network/timeline.types';
+import type { IdentityStep } from '@railtime/network/engine/timeline.types';
 import { IDENTITY_DRAW_SECONDS, IDENTITY_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';

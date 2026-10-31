@@ -6,14 +6,14 @@ network (a station's lines, a route, a caption) is `@railtime/network`'s. Its co
 commands, events, lifecycle) is in `../../ARCHITECTURE.md`.
 
 ```ts
-import { NetworkModel } from '@railtime/network/model.service';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
 import '@railtime/renderer/transitMap.css';
 
-const model = NetworkModel.create(network, { plan });
+const facts = NetworkFacts.create(network, { plan });
 const map = new TransitMap({
   container,
-  model,
+  facts,
   props: { theme: 'dark', selectedStation: 'bank' }, // how it is set; the rest, DEFAULT_MAP_PROPS
   on: { time: state => …, step: change => …, stationClick: id => …, overlay: result => … },
   minimapContainer,

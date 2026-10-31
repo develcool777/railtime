@@ -43,7 +43,7 @@
   <!-- The player on a phone: one row, the caption on one line. -->
   <div v-else-if="phone" class="map-card flex h-14 w-full items-center gap-2.5 pr-2 pl-3">
     <p class="text-highlighted flex-none text-xl leading-6 font-extrabold tabular-nums">{{ yearText }}</p>
-    <span class="h-6 w-[3px] flex-none rounded-full" :style="{ background: step?.color ?? 'var(--ui-border)' }" />
+    <span class="h-6 w-[3px] flex-none rounded-full" :style="{ background: step ? lineColor(step.color) : 'var(--ui-border)' }" />
     <p class="text-highlighted min-w-0 flex-1 truncate text-xs font-semibold">{{ step?.title }}</p>
     <UButton
       :icon="playing ? 'i-lucide-pause' : 'i-lucide-play'"
@@ -65,7 +65,7 @@
   <div v-else class="map-card flex w-full flex-col gap-2 p-3">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
       <p class="text-highlighted flex-none text-4xl leading-10 font-extrabold tracking-[-0.02em] tabular-nums">{{ yearText }}</p>
-      <span class="h-9 w-[3px] flex-none rounded-full" :style="{ background: step?.color ?? 'var(--ui-border)' }" />
+      <span class="h-9 w-[3px] flex-none rounded-full" :style="{ background: step ? lineColor(step.color) : 'var(--ui-border)' }" />
       <div class="min-w-[200px] flex-1">
         <p class="text-highlighted truncate text-sm font-bold">{{ step?.title }}</p>
         <p class="text-muted truncate text-xs tabular-nums">{{ caption }}</p>
@@ -110,7 +110,7 @@
   import { computed } from 'vue';
 
   import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';
-  import { formatDay, formatStats, yearOf } from '~/features/explorer/format.utils';
+  import { formatDay, formatStats, lineColor, yearOf } from '~/features/explorer/format.utils';
   import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
 
   const props = defineProps<{

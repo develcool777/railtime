@@ -21,7 +21,7 @@
   import { computed } from 'vue';
 
   import { timelinePosition } from '~/features/explorer/changes/changes.utils';
-  import { yearOf } from '~/features/explorer/format.utils';
+  import { lineColor, yearOf } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
     /** The run of changes, in order. */
@@ -57,7 +57,8 @@
    */
   const dotStyleOf = (change: ChangeInfo) => {
     if (change.kind === 'close' || change.kind === 'stationClose') return { borderColor: 'var(--ui-text-dimmed)' };
-    if (change.time === null) return { borderColor: change.color };
-    return { borderColor: change.color, background: change.color };
+    const color = lineColor(change.color);
+    if (change.time === null) return { borderColor: color };
+    return { borderColor: color, background: color };
   };
 </script>

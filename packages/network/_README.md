@@ -6,14 +6,16 @@ change in words. Pure: no map, no clock; the renderer, the app, `packages/data` 
 it (`../../ARCHITECTURE.md`).
 
 ```ts
-import { NetworkModel } from '@railtime/network/model.service';
+import { NetworkFacts } from '@railtime/network/facts.service';
 
-const model = NetworkModel.create(network, { plan, today }); // a plan built on it, if one is asked for
-model.range; // { start, end, today }: end is past today when a dated change is
-model.lines('light'); // every line, in a theme's colours
-model.changes('light'); // every change, as its caption says it, planned ones last
-model.growth(); // the network year by year, and openings by decade
-const then = model.asOf({ cursor, time }, 'light'); // the map's `time`, or model.momentOn(day)
+const facts = NetworkFacts.create(network, { plan, today }); // a plan built on it, if one is asked for
+facts.range; // { start, end, today }: end is past today when a dated change is
+facts.summary(); // the city summed up, for a list of cities
+facts.plans(); // every plan, with what it would add
+facts.lines(); // every line, its colour in both themes
+facts.changes(); // every change, as its caption says it, planned ones last
+facts.growth(); // the network year by year, and openings by decade
+const then = facts.asOf({ cursor, time }); // the map's `time`, facts.momentOn(day), or facts.today()
 then.stations(); // the stations on the map then, for a search
 then.station('bank'); // its lines, when each opened and closed there, its former names, its transfers
 then.line('central'); // its stops in order, by branch, its km and its changes
@@ -22,27 +24,31 @@ then.route('bank', 'oval', 'fastest');
 then.reach('bank');
 then.records(5);
 then.stats();
-model.coverage(boundary).info(cursor); // how much of the city is within a walk of a station
+facts.coverage(boundary).info(cursor); // how much of the city is within a walk of a station
+facts.coverage(boundary).cells(cursor); // the same, cell by cell in its bands, for a picture
 ```
 
-Beside the model, `networkSummary(network)` (a city summed up for a list) and `planFacts(network,
-plan)` (what a plan adds). `testing/*` exports the networks and outlines the tests share.
+Nothing else is for the app or `data`: `engine/*` (the index, the timeline and each opening's
+`growthOf`, geometry, `required`) is the raw network the renderer plays and draws. A line's colour is a `LineColor`,
+`{ light, dark }`: no question takes a theme. `testing/*` exports the networks and outlines the tests
+share.
 
 A station's names in other languages (`names`) are on its label, beneath its English name, and in
 `getStationInfo().otherNames`.
 
-**Plans.** `NetworkModel.create(network, { plan })` builds one of the network's `plans` on it
+**Plans.** `NetworkFacts.create(network, { plan })` builds one of the network's `plans` on it
 (`buildPlan` in `@railtime/schema`). A plan is undated: the timeline puts its sections after every
 dated step, as `planned` steps at time `Infinity`, and the player plays them one by one once the
 clock reaches its end, the clock standing there. Their track is drawn dashed in its line's colour, a
 station only they reach is a ring, their `StepInfo.time` is `null`, and `TimeState.future` is true
-while one plays or once one has. A different plan is a new model.
+while one plays or once one has. A different plan is a new `NetworkFacts`; `plans()` and `summary()`
+are of the network as stored, whichever plan is built.
 
 ## Structure
 
 ```text
 src/
-├── model/network.service.ts   NetworkModel: every question, for a moment and a theme given; facts.types.ts, the answers' types
+├── facts/facts.service.ts     NetworkFacts: every question, for a moment given; facts.types.ts, the answers' types
 ├── network/                   the network and its history
 │   ├── index.service.ts       NetworkIndex: segments prepared, a LineSegment per (segment, line, period)
 │   ├── timeline.service.ts    Timeline: the history as ordered steps; the state at any cursor
@@ -51,11 +57,11 @@ src/
 │   └── lineDetails.utils.ts   a line's branches and length at a cursor, the stops either side of a station
 ├── changes/
 │   ├── caption.utils.ts       a change in words: what, where, when, in its line's colour
-│   └── growth.utils.ts        where a stretch grows from, and the order its stations come in
-├── route/                     RouteFinder (Dijkstra at a cursor; a reach too), the reach's bands
+│   └── growth.utils.ts        where a stretch grows from, and the order its stations come in (`Timeline.growthOf`)
+├── route/                     RouteFinder (Dijkstra at a cursor; a reach too), the reach's bands and track
 ├── coverage/                  CoverageGrid and CoverageMeasure: a city's outline in cells, its share near a station
-├── plan/facts.utils.ts        what a plan adds
-├── summary/summary.utils.ts   a network summed up, for a list of cities
+├── plan/facts.utils.ts        what a plan adds (`plans()`)
+├── summary/summary.utils.ts   a network summed up, for a list of cities (`summary()`)
 └── core/                      nothing about rail: dates, geometry, `required`, a priority queue
 ```
 

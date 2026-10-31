@@ -2,7 +2,7 @@ import type { LngLat } from '@railtime/schema/network.types';
 import { distanceKm } from '../core/geometry.utils';
 import type { TrackSegment } from '../network/index.types';
 import { pushTo } from '../network/timeline.utils';
-import type { Growth } from './growth.types';
+import type { Growth } from '../network/timeline.types';
 
 /**
  * The unsettled station nearest the growth's start.

@@ -23,18 +23,25 @@ rule here broken changes this file first.
 
 ## `network`: the facts
 
-`NetworkModel.create(network, { plan, today })` is the network, its history and every question about
-it. Pure: no map, no clock, so the app, `data` and the tests use it alike, before any map exists.
+`NetworkFacts.create(network, { plan, today })` is a city's network as stored, its history, its plans
+and every fact about them: made once, and asked by everyone. Pure: no map, no clock, so the app,
+`data` and the tests use it alike, before any map exists.
 
 ```ts
-const model = NetworkModel.create(network, { plan, today });
-model.range; // { start, end, today }
-model.lines(theme);
-model.changes(theme);
-model.change(index, theme);
-model.growth();
-model.hasHistory();
-const then = model.asOf(time, theme); // time: { cursor, time }, as the map's `time` event gives it
+const facts = NetworkFacts.create(network, { plan, today }); // the network as stored; a plan built on it, if asked for
+facts.range; // { start, end, today }
+facts.plan; // the plan built, or null
+facts.planOnly; // never built: only plans
+facts.plans(); // every plan, with what it would add
+facts.summary(); // the city summed up, for a list of cities
+facts.find('station', id); // { id, name }, or null
+facts.lines();
+facts.changes();
+facts.change(index);
+facts.growth();
+facts.hasHistory();
+facts.today(); // the questions below, for today
+const then = facts.asOf(time); // time: { cursor, time }, as the map's `time` event gives it
 then.stations();
 then.station(id);
 then.line(id);
@@ -43,20 +50,26 @@ then.records(5);
 then.stats();
 then.route(from, to, preference);
 then.reach(from);
-model.coverage(boundary).info(cursor);
-model.coverage(boundary).history();
-networkSummary(network);
-planFacts(network, plan);
+facts.coverage(boundary).info(cursor);
+facts.coverage(boundary).history();
 ```
 
-Every question takes the moment and the theme it is about as arguments. A Vue computed over
-`model.asOf(store.time, store.theme)` changes when they do, and at no other time: nothing is read
-only so that something re-runs.
+Every question takes the moment it is about as an argument. A Vue computed over
+`facts.asOf(store.time)` changes when it does, and at no other time: nothing is read only so that
+something re-runs. No answer depends on the theme: a line's colour comes in both (`LineColor`,
+`{ light, dark }`), and what shows it picks one (the renderer by its `theme` prop, the app by CSS
+`light-dark()`, `lineColor`).
+
+The package has two doors. `facts.service`, `facts.types` and `date.utils` are for everyone.
+`engine/*` is the raw network the renderer plays and draws: the index (track, stations), the timeline
+(its steps, and each opening's growth), geometry and `required`. ESLint keeps `web` and `data` from
+importing it. What the renderer draws over the network comes as answers, as the app's do: a route's
+segments, a reach's `track` in its `bands`, coverage's `cells(cursor)`; it works no fact out itself.
 
 ## `renderer`: the contract
 
 Everything an app does with the map goes through exactly one of three channels; questions go to the
-model. A feature picks its channel by what it is.
+network's `NetworkFacts`. A feature picks its channel by what it is.
 
 | Channel      | What goes through it                                           | Who owns it  | Shape               |
 | ------------ | -------------------------------------------------------------- | ------------ | ------------------- |
@@ -110,7 +123,7 @@ hears it (`time`) and asks to move it.
 ### Lifecycle
 
 ```ts
-const map = new TransitMap({ container, model, props, on: { time, step, … }, view, minimapContainer });
+const map = new TransitMap({ container, facts, props, on: { time, step, … }, view, minimapContainer });
 ```
 
 Loading, then ready (the style loaded, the layers drawn as the props say), then destroyed (`destroy`:
@@ -141,13 +154,15 @@ whole on the stand-in map (`test/unit/transitMap.test.ts`).
 - **One adapter** (`map/transitMap.composable.ts`) is the only code that touches the map: it makes it
   with `mapProps` and listeners that write what it says into the store, gives it each change of
   `mapProps`, and destroys it.
-- **The panels** are computeds over `model.asOf(store.time, store.theme)`.
+- **The store makes the facts**: `open(network, plan, address, opening)` calls `NetworkFacts.create`;
+  `plan`, `planOnly` and `plans` are computeds over them.
+- **The panels** are computeds over `facts.asOf(store.time)`.
 
 ## Ownership
 
 | Fact                                               | Owner                         | Others                                |
 | -------------------------------------------------- | ----------------------------- | ------------------------------------- |
-| The network, its plan, its history, every answer   | `NetworkModel` (`network`)    | —                                     |
+| The network, its plans, its history, every answer  | `NetworkFacts` (`network`)    | —                                     |
 | The clock, the cursor, playing, the step playing   | `Player` (`renderer`)         | the store: a copy from `time`, `step` |
 | How the map is set (`MapProps`)                    | the store (`web`)             | `TransitMap`: the props last applied  |
 | The camera between commands                        | MapLibre, and the user's hand | the store: a copy from `view`         |
@@ -157,7 +172,7 @@ whole on the stand-in map (`test/unit/transitMap.test.ts`).
 
 | You want                                    | Do                                                                                                                              | Never                                        |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| A number, a list, an answer about a network | a method on `NetworkModel` (or `asOf`), or a util in `network`, tested                                                          | working it out in `web` or `data`            |
+| A number, a list, an answer about a network | a method on `NetworkFacts` (or `asOf`), tested in `network`                                                                     | working it out in `web` or `data`            |
 | A setting the user sees on the map          | a field in `MapProps`, its effect in `TransitMap`, a test; in the store's `mapPropsOf`                                          | a `setX` method; a watcher in the app        |
 | A new way to move through time              | a `Player` command, then a `TransitMap` command over it, a store action                                                         | the app driving the clock                    |
 | Something drawn over the network            | a kind of `OverlayRequest`/`OverlayResult`, in `OverlayController`                                                              | a layer the app shows and hides by hand      |

@@ -1,5 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { StationCloseStep } from '@railtime/network/timeline.types';
+import type { StationCloseStep } from '@railtime/network/engine/timeline.types';
 import { STATION_CLOSE_DRAW_SECONDS, STATION_CLOSE_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';

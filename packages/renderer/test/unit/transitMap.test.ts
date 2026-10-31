@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/network/date.utils';
 import type { FeatureCollection } from '../../src/layers/features.types';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
-import { NetworkModel } from '@railtime/network/model.service';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { TransitMap } from '../../src/transitMap.service';
 import { OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
@@ -33,7 +33,7 @@ const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}) => {
   );
   const map = new TransitMap({
     container: {} as HTMLElement,
-    model: NetworkModel.create(tinyNetwork(), { today: toTimestamp('2026-01-01') }),
+    facts: NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01') }),
     props,
     on: recordAll,
     createMap: () => fake.map,

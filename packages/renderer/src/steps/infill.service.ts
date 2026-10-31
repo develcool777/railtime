@@ -1,5 +1,5 @@
 import type { LngLat } from '@railtime/schema/network.types';
-import type { InfillStep } from '@railtime/network/timeline.types';
+import type { InfillStep } from '@railtime/network/engine/timeline.types';
 import { INFILL_DRAW_SECONDS, INFILL_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';

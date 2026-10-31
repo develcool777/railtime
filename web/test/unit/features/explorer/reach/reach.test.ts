@@ -15,6 +15,7 @@ const reach: ReachInfo = {
     { upTo: 30, label: '15–30 min', color: '#000002' },
     { upTo: null, label: 'Over 30 min', color: '#000003' },
   ],
+  track: [],
 };
 
 describe('ReachUtils', () => {

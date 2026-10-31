@@ -15,7 +15,7 @@ const change = (index: number, year: number | null): ChangeInfo => ({
   kind: 'open',
   time: year === null ? null : Date.UTC(year, 5, 1),
   title: `Change ${index}`,
-  color: '#000000',
+  color: { light: '#000000', dark: '#000000' },
   stations: [],
 });
 

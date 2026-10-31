@@ -25,6 +25,7 @@
   import { computed, ref } from 'vue';
 
   import { CITIES } from '~/constants/city.constants';
+  import { lineColor } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
     /** The stations on the map on the date shown. */
@@ -48,7 +49,7 @@
         ? props.stations.map(station => ({
             label: station.name,
             otherNames: station.otherNames,
-            colors: station.colors,
+            colors: station.colors.map(lineColor),
             meta: station.colors.length === 1 ? '1 line' : `${station.colors.length} lines`,
             onSelect: () => emit('station', station.id),
           }))
@@ -57,7 +58,7 @@
     {
       id: 'lines',
       label: 'Lines',
-      items: props.lines.map(line => ({ label: line.name, colors: [line.color], meta: line.networkName, onSelect: () => emit('line', line.id) })),
+      items: props.lines.map(line => ({ label: line.name, colors: [lineColor(line.color)], meta: line.networkName, onSelect: () => emit('line', line.id) })),
     },
     {
       id: 'cities',

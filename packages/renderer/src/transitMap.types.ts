@@ -1,5 +1,5 @@
 import type { CoverageInfo, NetworkStats, ReachInfo, RouteInfo, RoutePreference, StepInfo, Theme } from '@railtime/network/facts.types';
-import type { NetworkModel } from '@railtime/network/model.service';
+import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat } from '@railtime/schema/network.types';
 import type { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
@@ -65,8 +65,8 @@ export type TransitMapListeners = { [Name in keyof TransitMapEvents]?: (payload:
 /** What a `TransitMap` is made with. */
 export type TransitMapOptions = {
   container: HTMLElement;
-  /** The network to draw, and its history: one model, shared with the app. */
-  model: NetworkModel;
+  /** The network to draw, its history and every fact about it: one instance, shared with the app. */
+  facts: NetworkFacts;
   /** How it is set at first; what is left out, the defaults (`DEFAULT_MAP_PROPS`). */
   props?: Partial<MapProps>;
   /** Its listeners, from the start. */

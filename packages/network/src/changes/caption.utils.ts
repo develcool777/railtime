@@ -1,9 +1,8 @@
 import { DAY_MS } from '../core/date.utils';
 import { required } from '../core/required.utils';
-import type { StepInfo } from '../model/facts.types';
+import type { LineColor, StepInfo } from '../facts/facts.types';
 import type { CloseStep, IdentityStep, InfillStep, OpenStep, RenameStep, Step, StationCloseStep } from '../network/timeline.types';
 import type { CaptionContext } from './caption.types';
-import { planGrowth } from './growth.utils';
 
 /**
  * A station's name on a step's date.
@@ -23,7 +22,7 @@ const nameOn = (context: CaptionContext, station: string, time: number): string 
  * @param line - The line id.
  * @returns The line it is drawn as, and its colour.
  */
-const drawnAs = (context: CaptionContext, step: Step, line: string): { id: string; color: string } => {
+const drawnAs = (context: CaptionContext, step: Step, line: string): { id: string; color: LineColor } => {
   const id = context.timeline.identityOf(line, step.index).id;
   return { id, color: context.colorOf(id) };
 };
@@ -37,7 +36,7 @@ const drawnAs = (context: CaptionContext, step: Step, line: string): { id: strin
  */
 const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 'time'> => {
   const { index, timeline } = context;
-  const { reach } = planGrowth(step.segments, timeline.stationsOnMap(step.index), station => index.coordOf(station), index.centre);
+  const { reach } = timeline.growthOf(step);
   const existed = index.lineSegments.some(
     lineSegment => timeline.isOpen(lineSegment, step.index) && timeline.identityOf(lineSegment.line, step.index).id === step.line,
   );
@@ -105,7 +104,7 @@ const renameCaption = (step: RenameStep, context: CaptionContext): Omit<StepInfo
     kind: 'rename',
     title: `${nameOn(context, step.station, step.time - DAY_MS)} renamed`,
     subtitle: `now ${now}`,
-    color: first ? context.colorOf(first.line) : '#ffffff',
+    color: first ? context.colorOf(first.line) : { light: '#ffffff', dark: '#ffffff' },
     stations: [now],
   };
 };

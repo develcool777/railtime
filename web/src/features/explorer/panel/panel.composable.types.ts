@@ -1,10 +1,10 @@
-import type { ChangeInfo, LineDetails, LineDirection, LineInfo, StationInfo, StationSummary } from '@railtime/network/facts.types';
+import type { ChangeInfo, LineColor, LineDetails, LineDirection, LineInfo, StationInfo, StationSummary } from '@railtime/network/facts.types';
 import type { ComputedRef } from 'vue';
 
 import type { SectionEntry } from '~/features/explorer/explorer.types';
 import type { PanelTopContent } from '~/features/explorer/panel/panel.types';
 
-/** The panel's content, read from the network's model for what the store has open. */
+/** The panel's content, read from the network's facts for what the store has open. */
 export type ExplorerPanel = {
   /** The rail's sections: Plans only for a city with plans. */
   sections: ComputedRef<SectionEntry[]>;
@@ -21,7 +21,7 @@ export type ExplorerPanel = {
   /** The stations on the map at the moment shown; none while playing. */
   stations: ComputedRef<StationSummary[]>;
   /** Each station's lines' colours, to mark a line's interchanges. */
-  stationColors: ComputedRef<Map<string, string[]>>;
+  stationColors: ComputedRef<Map<string, LineColor[]>>;
   /** The stops either side of the station whose view is open, on each of its lines, by line. */
   stationDirections: ComputedRef<Map<string, LineDirection[]>>;
   /** The lines shown on the map. */

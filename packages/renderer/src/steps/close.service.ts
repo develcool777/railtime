@@ -1,8 +1,8 @@
 import type { LngLat } from '@railtime/schema/network.types';
 import { lineFeature } from '../layers/features.utils';
 import { offsetFor, resolveLine } from '../layers/lineStyle.utils';
-import { sliceAlong } from '@railtime/network/geometry.utils';
-import type { CloseStep } from '@railtime/network/timeline.types';
+import { sliceAlong } from '@railtime/network/engine/geometry.utils';
+import type { CloseStep } from '@railtime/network/engine/timeline.types';
 import { CLOSE_DRAW_SECONDS, CLOSE_HOLD_SECONDS } from './animation.constants';
 import { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing, StepFrame } from './animation.types';

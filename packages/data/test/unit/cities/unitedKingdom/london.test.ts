@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../../../renderer/src/layers/snapshot.utils';
 import { toTimestamp } from '@railtime/network/date.utils';
-import { NetworkIndex } from '@railtime/network/index.service';
-import type { TrackSegment } from '@railtime/network/index.types';
-import { Timeline } from '@railtime/network/timeline.service';
+import { NetworkIndex } from '@railtime/network/engine/index.service';
+import type { TrackSegment } from '@railtime/network/engine/index.types';
+import { Timeline } from '@railtime/network/engine/timeline.service';
 import { playbackOf, renderStateOf } from '../../../../../renderer/test/support/playback.utils';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 

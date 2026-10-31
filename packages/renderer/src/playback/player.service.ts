@@ -1,7 +1,7 @@
 import { YEAR_MS } from '@railtime/network/date.utils';
-import type { NetworkModel } from '@railtime/network/model.service';
-import type { Timeline } from '@railtime/network/timeline.service';
-import type { Step } from '@railtime/network/timeline.types';
+import type { NetworkFacts } from '@railtime/network/facts.service';
+import type { Timeline } from '@railtime/network/engine/timeline.service';
+import type { Step } from '@railtime/network/engine/timeline.types';
 import { clamp, easeInOut } from '../core/easing.utils';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
 import type { PlayFrom, SeekTarget } from '../transitMap.types';
@@ -36,8 +36,8 @@ export class Player {
   /** Builds each step's animation as it starts. */
   private readonly createAnimation: AnimationFactory;
 
-  public constructor(model: Pick<NetworkModel, 'timeline' | 'range'>, createAnimation: AnimationFactory) {
-    const { timeline, range } = model;
+  public constructor(facts: Pick<NetworkFacts, 'timeline' | 'range'>, createAnimation: AnimationFactory) {
+    const { timeline, range } = facts;
     const today = range.today;
     this.timeline = timeline;
     this.today = today;

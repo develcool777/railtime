@@ -1,6 +1,6 @@
-import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan, isPlanOnly } from '@railtime/schema/plan.utils';
+import type { NetworkSummary } from '../facts/facts.types';
 
 /**
  * A network summed up, for a list of cities: its brands, when it began, how many plans, lines and
@@ -9,7 +9,7 @@ import { buildPlan, isPlanOnly } from '@railtime/schema/plan.utils';
  * @param network - The network.
  * @returns Its summary.
  */
-export const networkSummary = (network: Network): Omit<CityIndexEntry, 'name' | 'country'> => {
+export const networkSummary = (network: Network): NetworkSummary => {
   const planOnly = isPlanOnly(network);
   const shown = planOnly ? buildPlan(network, Object.keys(network.plans ?? {})[0] ?? '').network : network;
   const opened = network.segments.flatMap(segment => Object.values(segment.lines).map(dates => dates.open)).sort()[0];

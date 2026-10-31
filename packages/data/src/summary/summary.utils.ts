@@ -1,18 +1,22 @@
 import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import type { Network } from '@railtime/schema/network.types';
-import { networkSummary } from '@railtime/network/summary.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { writeFileSync } from 'node:fs';
 import { SUMMARIES_PATH, cities, readNetwork } from '../city.utils.ts';
 
 /**
  * One city, summed up for the landing page: its name and country, and its network's summary
- * (`networkSummary`). Its picture is drawn apart, by `pnpm data:previews`.
+ * (`NetworkFacts.summary`). Its picture is drawn apart, by `pnpm data:previews`.
  *
  * @param network - The city's network.
  * @param country - Its country's folder in `cities/`.
  * @returns The city's entry.
  */
-export const summaryOf = (network: Network, country: string): CityIndexEntry => ({ name: network.meta.city, country, ...networkSummary(network) });
+export const summaryOf = (network: Network, country: string): CityIndexEntry => ({
+  name: network.meta.city,
+  country,
+  ...NetworkFacts.create(network).summary(),
+});
 
 /**
  * The summaries as `cities/cities.json` keeps them: one city per line, so it diffs city by city.

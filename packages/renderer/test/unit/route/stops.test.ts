@@ -5,7 +5,7 @@ import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
 /**
  * A ride on a line through stops named by their ids.
  *
- * @param color - The line's colour, which is its id too.
+ * @param color - The line's colour in the light theme, which is its id too; in the dark, upper case.
  * @param stops - The stops' ids, from where it is boarded.
  * @returns The leg.
  */
@@ -13,7 +13,7 @@ const ride = (color: string, stops: string[]): RouteLegInfo => ({
   kind: 'ride',
   line: color,
   lineName: color,
-  color,
+  color: { light: color, dark: color.toUpperCase() },
   stops: stops.map(id => ({ id, name: id.toUpperCase() })),
   minutes: 0,
   km: 0,
@@ -39,7 +39,7 @@ const routeOf = (legs: RouteLegInfo[], to: string): RouteInfo => ({
 describe('RouteStopsUtils', () => {
   describe('routeStopMarks', () => {
     test('rings where each ride begins, passes the stops between, ends at the last', () => {
-      const marks = routeStopMarks(routeOf([ride('red', ['a', 'b', 'c']), ride('blue', ['c', 'd', 'e'])], 'e'));
+      const marks = routeStopMarks(routeOf([ride('red', ['a', 'b', 'c']), ride('blue', ['c', 'd', 'e'])], 'e'), 'light');
       expect(marks.map(entry => [entry.station, entry.kind, entry.color])).toEqual([
         ['a', 'board', 'red'],
         ['b', 'pass', 'red'],
@@ -49,9 +49,14 @@ describe('RouteStopsUtils', () => {
       ]);
     });
 
+    test("colours each mark in its line's colour for the theme asked for", () => {
+      const marks = routeStopMarks(routeOf([ride('red', ['a', 'b'])], 'b'), 'dark');
+      expect(marks.map(entry => entry.color)).toEqual(['RED', 'RED']);
+    });
+
     test('rings both ends of a walk, as changes', () => {
       const walk: RouteLegInfo = { kind: 'walk', from: { id: 'c', name: 'C' }, to: { id: 'x', name: 'X' }, minutes: 3 };
-      const marks = routeStopMarks(routeOf([ride('red', ['a', 'c']), walk, ride('blue', ['x', 'e'])], 'e'));
+      const marks = routeStopMarks(routeOf([ride('red', ['a', 'c']), walk, ride('blue', ['x', 'e'])], 'e'), 'light');
       expect(marks.map(entry => [entry.station, entry.kind])).toEqual([
         ['a', 'board'],
         ['c', 'board'],

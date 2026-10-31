@@ -1,4 +1,4 @@
-import type { LineDetails, LineDirection, StopToward } from '../model/facts.types';
+import type { LineDetails, LineDirection, StopToward } from '../facts/facts.types';
 import type { NetworkIndex } from './index.service';
 import type { LineSegment } from './index.types';
 import type { Timeline } from './timeline.service';
