@@ -228,7 +228,7 @@
   const range = computed(() => (store.facts ?? opened).range);
   watch(
     () => props.plan,
-    next => void store.showPlan(props.network, next),
+    next => void store.showPlan(next),
   );
   const {
     section,

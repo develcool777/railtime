@@ -80,8 +80,8 @@ export const useExplorerStore = defineStore('explorer', () => {
   const facts = shallowRef<NetworkFacts | null>(null);
   /** The optional networks shown beside the city's own, as its facts have them. */
   const shownNetworks = ref<string[]>([]);
-  /** The city's network as stored, every optional network in it: made again with another shown. */
-  let storedNetwork: Network | null = null;
+  /** The city's network as stored, every plan and optional network in it: its facts are made from it. */
+  const network = shallowRef<Network | null>(null);
   /** The map, once mounted: for its commands. */
   const map = shallowRef<TransitMap | null>(null);
   /** What the map owes credit to, once mounted. */
@@ -136,15 +136,15 @@ export const useExplorerStore = defineStore('explorer', () => {
    * Sets everything for a page opening: the network's facts, and what the address says; the rest as
    * a page opens. A station or line the network does not have is a stale link, left out.
    *
-   * @param network - The city's network, as stored.
+   * @param stored - The city's network, as stored.
    * @param shownPlan - The plan to show built on it, if any.
    * @param address - What the address asks for.
    * @param opening - The section to open on without one in the address: Plans for a plan, else Lines.
    * @returns The network's facts.
    */
-  const open = (network: Network, shownPlan: string | undefined, address: ExplorerUrlState, opening: Section): NetworkFacts => {
-    const opened = markRaw(NetworkFacts.create(network, { ...(shownPlan ? { plan: shownPlan } : {}), networks: address.networks ?? [] }));
-    storedNetwork = network;
+  const open = (stored: Network, shownPlan: string | undefined, address: ExplorerUrlState, opening: Section): NetworkFacts => {
+    const opened = markRaw(NetworkFacts.create(stored, { ...(shownPlan ? { plan: shownPlan } : {}), networks: address.networks ?? [] }));
+    network.value = markRaw(stored);
     facts.value = opened;
     shownNetworks.value = opened.networks;
     const line = address.line && opened.find('line', address.line) ? address.line : undefined;
@@ -175,13 +175,13 @@ export const useExplorerStore = defineStore('explorer', () => {
    * map, the map drawing it where it looks, at its today. What was open stays where the new network has
    * it; lines hidden stay hidden, and new lines show.
    *
-   * @param network - The city's network.
    * @param shownPlan - The plan to show built on it; none for the network as built.
    * @param networks - The optional networks to show.
    */
-  const remake = (network: Network, shownPlan: string | undefined, networks: string[]) => {
+  const remake = (shownPlan: string | undefined, networks: string[]) => {
+    if (!network.value) return;
     const previous = facts.value;
-    const next = markRaw(NetworkFacts.create(network, { ...(shownPlan ? { plan: shownPlan } : {}), networks }));
+    const next = markRaw(NetworkFacts.create(network.value, { ...(shownPlan ? { plan: shownPlan } : {}), networks }));
     facts.value = next;
     shownNetworks.value = next.networks;
     views.value = views.value.filter(view => next.find(view.kind, view.id));
@@ -207,11 +207,10 @@ export const useExplorerStore = defineStore('explorer', () => {
   /**
    * Shows another plan, or the network as built, at the plan's future (else today).
    *
-   * @param network - The city's network.
    * @param shownPlan - The plan to show built on it; none for the network as built.
    */
-  const showPlan = async (network: Network, shownPlan: string | undefined) => {
-    remake(network, shownPlan, shownNetworks.value);
+  const showPlan = async (shownPlan: string | undefined) => {
+    remake(shownPlan, shownNetworks.value);
     // Once the map has the new network (it opens at its today), on to the plan built.
     await nextTick();
     if (shownPlan) map.value?.seek('future');
@@ -220,13 +219,12 @@ export const useExplorerStore = defineStore('explorer', () => {
   /**
    * Shows an optional network beside the city's own, or leaves it off, on the day shown.
    *
-   * @param network - The optional network's id.
+   * @param optional - The optional network's id.
    * @param shown - Whether to show it.
    */
-  const showNetwork = async (network: string, shown: boolean) => {
-    if (!storedNetwork) return;
+  const showNetwork = async (optional: string, shown: boolean) => {
     const day = time.value && !isAtRest(time.value, plan.value !== undefined) ? time.value.time : undefined;
-    remake(storedNetwork, plan.value, shown ? [...shownNetworks.value, network] : shownNetworks.value.filter(id => id !== network));
+    remake(plan.value, shown ? [...shownNetworks.value, optional] : shownNetworks.value.filter(id => id !== optional));
     // The new network opens at its today: back to the day shown, if it was another.
     await nextTick();
     if (day !== undefined) map.value?.seek({ time: day });

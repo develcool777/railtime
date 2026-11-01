@@ -32,8 +32,8 @@ At the top, what every part shares or what ties them together:
   open (the section and the views pushed over it, the time control's mode, the panel, the sheet, map
   only, the dialog, a route's ends, a reach's start, the lines shown); how the map is seen (3D, names,
   the player's settings); what the map says (the time, the change playing, what the overlay came to,
-  where it looks); the network's facts (`NetworkFacts`, made by `open`, and again by `showPlan` for
-  another plan, shown on the same page and map). `mapProps` is everything the map shows, the network
+  where it looks); the network as stored, and its facts (`NetworkFacts`, made by `open`, and again from it by `showPlan` and `showNetwork` for
+  another plan or optional network, shown on the same page and map). `mapProps` is everything the map shows, the network
   with it, worked out from it;
   `chrome`, what shows around the map. Every button and key calls its actions, the time ones sending
   the map its commands. Its rules are pure, in `explorer.utils.ts` (`withStation`, `chromeOf`,
