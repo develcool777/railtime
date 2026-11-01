@@ -71,8 +71,8 @@ export const stationsByLetter = (stations: StationSummary[]): StationGroup[] => 
  * @returns The rows, each with a key of its own.
  */
 export const stationRows = (groups: StationGroup[]): StationRow[] =>
-  groups.flatMap(({ letter, stations }, group) =>
-    stations.map((station, position) => ({ key: station.id, station, letter: letter && position === 0 ? letter : null, first: group === 0 && position === 0 })),
+  groups.flatMap(({ letter, stations }) =>
+    stations.map((station, position) => ({ key: station.id, station, letter, heading: letter !== '' && position === 0 })),
   );
 
 /**

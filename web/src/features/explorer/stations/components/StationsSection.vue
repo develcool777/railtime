@@ -1,11 +1,14 @@
 <template>
-  <div class="flex flex-col gap-2 px-4 pb-6">
+  <div class="px-4 pb-6">
     <PanelSearch v-model="query" placeholder="Search stations" />
-    <UEmpty v-if="stations.length === 0" icon="i-lucide-map-pin-off" title="No station open" description="None is open on the date shown." />
-    <UEmpty v-else-if="rows.length === 0" icon="i-lucide-search-x" title="No station matches" description="Try another name." />
-    <PanelList v-else label="Stations" :rows :estimate>
+    <UEmpty v-if="stations.length === 0" class="mt-2" icon="i-lucide-map-pin-off" title="No station open" description="None is open on the date shown." />
+    <UEmpty v-else-if="rows.length === 0" class="mt-2" icon="i-lucide-search-x" title="No station matches" description="Try another name." />
+    <PanelList v-else label="Stations" :rows :estimate :covered="PANEL_SEARCH_HEIGHT">
+      <template #sticky="{ row }">
+        <div v-if="row.letter" class="eyebrow text-muted bg-default -mx-2 px-4 pt-2 pb-1">{{ row.letter }}</div>
+      </template>
       <template #row="{ row }">
-        <h3 v-if="row.letter" class="eyebrow text-muted px-2 pb-1" :class="{ 'pt-2': !row.first }">{{ row.letter }}</h3>
+        <h3 v-if="row.heading" class="eyebrow text-muted px-2 pt-2 pb-1">{{ row.letter }}</h3>
         <div class="-mx-2">
           <ListRow @click="emit('open', row.station.id)">
             <span class="flex w-[22px] flex-none flex-wrap gap-0.5">
@@ -28,6 +31,7 @@
   import type { StationSummary } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
+  import { PANEL_SEARCH_HEIGHT } from '~/features/explorer/panel/panel.constants';
   import { LETTER_HEADING_ESTIMATE, STATION_ROW_ESTIMATE } from '~/features/explorer/stations/station.constants';
   import type { StationGroup, StationRow } from '~/features/explorer/stations/station.types';
   import { findStations, stationRows, stationsByLetter } from '~/features/explorer/stations/station.utils';
@@ -54,5 +58,5 @@
    * @param row - The row.
    * @returns Pixels.
    */
-  const estimate = (row: StationRow) => STATION_ROW_ESTIMATE + (row.letter ? LETTER_HEADING_ESTIMATE : 0);
+  const estimate = (row: StationRow) => STATION_ROW_ESTIMATE + (row.heading ? LETTER_HEADING_ESTIMATE : 0);
 </script>

@@ -3,22 +3,15 @@
     <PanelSearch v-model="query" placeholder="Search changes" />
     <UEmpty v-if="changes.length === 0" icon="i-lucide-history" title="No changes yet" description="Nothing has opened or closed by the date shown." />
     <UEmpty v-else-if="rows.length === 0" icon="i-lucide-search-x" title="No change matches" description="Try a line, a station or a year." />
-    <template v-else>
-      <!-- The decade of the change at the top, under the search, over the list's own heading for it: no room of its own, and read once, from the list. -->
-      <div class="sticky top-13 z-1 h-0" aria-hidden="true">
-        <div class="eyebrow text-muted bg-default pt-1 pb-2">{{ topDecade }}</div>
-      </div>
-      <PanelList ref="list" label="Changes" :rows :estimate :covered="PANEL_SEARCH_HEIGHT">
-        <template #row="{ row }">
-          <h3 v-if="row.heading" class="eyebrow text-muted pt-1 pb-2">{{ row.decade }}</h3>
-          <ChangeTimelineItem
-            :change="row.change"
-            :state="changeState(row.change.index, current)"
-            :last="row.last"
-            @select="emit('select', row.change.index)" />
-        </template>
-      </PanelList>
-    </template>
+    <PanelList v-else ref="list" label="Changes" :rows :estimate :covered="PANEL_SEARCH_HEIGHT">
+      <template #sticky="{ row }">
+        <div class="eyebrow text-muted bg-default pt-1 pb-2">{{ row.decade }}</div>
+      </template>
+      <template #row="{ row }">
+        <h3 v-if="row.heading" class="eyebrow text-muted pt-1 pb-2">{{ row.decade }}</h3>
+        <ChangeTimelineItem :change="row.change" :state="changeState(row.change.index, current)" :last="row.last" @select="emit('select', row.change.index)" />
+      </template>
+    </PanelList>
   </div>
 </template>
 
@@ -43,8 +36,6 @@
   const list = useTemplateRef('list');
   const query = ref('');
   const rows = computed(() => changeRows(changesByDecade(findChanges(props.changes, query.value))));
-  /** The decade of the row at the top, under the search. */
-  const topDecade = computed(() => rows.value[list.value?.topRow ?? 0]?.decade);
 
   /**
    * How tall a row is likely to stand before it is measured.

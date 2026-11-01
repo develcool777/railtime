@@ -1,6 +1,10 @@
 <template>
   <!-- A long list that builds only the rows in sight, and a few past them: as tall as all of them, each placed where it falls, and each saying where it stands in the whole. -->
   <div ref="root" class="relative" :style="{ height: `${virtualizer.getTotalSize() - scrollMargin}px` }">
+    <!-- The heading of the row at the top, stuck under what covers the panel's top, over the row's own: no room of its own, and read once, from the list. -->
+    <div v-if="slots.sticky && topRow !== null" class="sticky z-1 h-0" :style="{ top: `${covered}px` }" aria-hidden="true">
+      <slot name="sticky" :row="rows[topRow]!" />
+    </div>
     <div
       role="list"
       :aria-label="label"
@@ -33,10 +37,15 @@
     rows: Row[];
     /** How tall a row is likely to stand before it is measured, pixels. */
     estimate: (row: Row) => number;
-    /** Pixels at the top of the panel that something stuck there covers: the top row is the one under them. */
-    covered?: number;
+    /** Pixels at the top of the panel that something stuck there covers (the search): the top row is the one under them. */
+    covered: number;
   }>();
-  defineSlots<{ row: (scope: { row: Row; index: number }) => unknown }>();
+  const slots = defineSlots<{
+    /** A row. */
+    row: (scope: { row: Row; index: number }) => unknown;
+    /** The heading of the row at the top, kept in sight as the list scrolls. */
+    sticky?: (scope: { row: Row }) => unknown;
+  }>();
 
   const root = useTemplateRef<HTMLElement>('root');
   /** The panel's body, which scrolls the list. */
@@ -90,12 +99,11 @@
 
   /** The row at the top of what shows, under whatever is stuck there; `null` with no rows. */
   const topRow = computed(() => {
-    const offset = (virtualizer.value.scrollOffset ?? 0) + (props.covered ?? 0);
+    const offset = (virtualizer.value.scrollOffset ?? 0) + props.covered;
     return virtualizer.value.getVirtualItemForOffset(offset)?.index ?? null;
   });
 
   defineExpose({
-    topRow,
     /**
      * Scrolls a row into the middle of what shows.
      *

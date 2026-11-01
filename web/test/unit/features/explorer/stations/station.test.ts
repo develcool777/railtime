@@ -64,18 +64,22 @@ describe('StationUtils', () => {
     });
   });
   describe('stationRows', () => {
-    test('puts each letter’s heading over its first station, only the list’s first with no room above it', () => {
-      const rows = stationRows(stationsByLetter(STATIONS.slice(0, 3)));
-      expect(rows.map(row => [row.station.name, row.letter, row.first])).toEqual([
+    test('puts each letter’s heading over its first station, every station knowing its letter', () => {
+      const rows = stationRows(stationsByLetter([...STATIONS.slice(0, 3), STATIONS[3]!]));
+      expect(rows.map(row => [row.station.name, row.letter, row.heading])).toEqual([
         ['Dalston Kingsland', 'D', true],
+        ['Khreshchatyk', 'K', true],
         ["King's Cross St. Pancras", 'K', false],
-        ['Náměstí Míru', 'N', false],
+        ['Náměstí Míru', 'N', true],
       ]);
     });
 
     test('puts no heading over what a search found', () => {
       const rows = stationRows([{ letter: '', stations: STATIONS.slice(0, 2) }]);
-      expect(rows.map(row => row.letter)).toEqual([null, null]);
+      expect(rows.map(row => [row.letter, row.heading])).toEqual([
+        ['', false],
+        ['', false],
+      ]);
     });
   });
 
