@@ -11,7 +11,9 @@
     class="text-highlighted hover:bg-elevated h-8 w-auto min-w-0 rounded-lg px-2 text-sm font-semibold"
     :ui="{
       content: 'max-h-[min(26rem,var(--reka-combobox-content-available-height,26rem))] w-72 rounded-lg shadow-[0_8px_30px_rgba(21,32,48,0.12)]',
+      // Each city set in under its country's name.
       label: 'text-muted pt-2 text-xs font-medium',
+      item: 'ps-4',
       leadingIcon: 'text-muted size-4',
       trailingIcon: 'text-dimmed size-4',
     }"
