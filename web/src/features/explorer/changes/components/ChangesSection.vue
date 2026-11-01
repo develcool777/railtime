@@ -49,23 +49,28 @@
    * Brings the current change to the middle of the list.
    *
    * @param behavior - At once, or smoothly.
+   * @returns Whether there was one to bring.
    */
-  const centreCurrent = (behavior: 'auto' | 'smooth') => {
+  const centreCurrent = (behavior: 'auto' | 'smooth'): boolean => {
     const index = rows.value.findIndex(row => row.change.index === props.current);
     if (index !== -1) list.value?.centre(index, behavior);
+    return index !== -1;
   };
+  /** The list has opened on the change shown: on a page just opened, only once the map has said which it is. */
+  let openedOnCurrent = false;
 
-  // Opens on the change shown; while playing, follows each as it starts.
+  // Opens on the change shown, as soon as there is one; while playing, follows each as it starts.
   onMounted(async () => {
     await nextTick();
-    centreCurrent('auto');
+    openedOnCurrent = centreCurrent('auto');
   });
   watch(
     () => props.current,
     async () => {
-      if (!props.playing) return;
+      if (!props.playing && openedOnCurrent) return;
       await nextTick();
-      centreCurrent('smooth');
+      if (props.playing) centreCurrent('smooth');
+      else openedOnCurrent = centreCurrent('auto');
     },
   );
 </script>
