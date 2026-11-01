@@ -5,7 +5,7 @@ import { yearOf } from '@railtime/core/date.utils';
 
 import { decadeHeading } from '~/features/explorer/format.utils';
 import { foldName } from '~/features/explorer/stations/station.utils';
-import type { ChangeGroup } from '~/features/explorer/changes/changes.types';
+import type { ChangeGroup, ChangeRow, ChangeState } from '~/features/explorer/changes/changes.types';
 
 /**
  * The changes under a heading for each decade, in order; a plan's last, under "Future".
@@ -62,18 +62,26 @@ export const currentChangeIndex = (changes: ChangeInfo[], time: TimeState | null
 };
 
 /**
- * Where a run of changes stands against the current one, as a timeline's position: the current
- * change's place in it; past its end when every change in it came before (all done); none when the
- * current one is still ahead, or there is none.
+ * How a change's row is drawn against the current one: done once the map has passed it, active at
+ * it, plain while it is still ahead or there is none.
  *
- * @param indices - The run's changes, by their position in the timeline, in order.
+ * @param index - The change's position in the timeline.
  * @param current - The current change's position; `null` for none.
- * @returns The position to mark active: `-1` for none, `indices.length` for all done.
+ * @returns Its state, as the timeline marks it.
  */
-export const timelinePosition = (indices: number[], current: number | null): number => {
-  if (current === null) return -1;
-  const here = indices.indexOf(current);
-  if (here !== -1) return here;
-  const last = indices.at(-1);
-  return last !== undefined && last < current ? indices.length : -1;
+export const changeState = (index: number, current: number | null): ChangeState => {
+  if (current === null || index > current) return undefined;
+  return index === current ? 'active' : 'completed';
 };
+
+/**
+ * The Changes list as rows, one a change: the first of each decade under its heading, the last of
+ * each with no line on to the next.
+ *
+ * @param groups - The changes under their decades, in order.
+ * @returns The rows, each with a key of its own.
+ */
+export const changeRows = (groups: ChangeGroup[]): ChangeRow[] =>
+  groups.flatMap(({ decade, changes }) =>
+    changes.map((change, position) => ({ key: String(change.index), change, decade, heading: position === 0, last: position === changes.length - 1 })),
+  );

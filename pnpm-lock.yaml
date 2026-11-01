@@ -186,6 +186,9 @@ importers:
       '@tanstack/charts':
         specifier: 1.1.0
         version: 1.1.0(vue@3.5.44(typescript@6.0.3))
+      '@tanstack/vue-virtual':
+        specifier: 3.13.49
+        version: 3.13.49(vue@3.5.44(typescript@6.0.3))
       maplibre-gl:
         specifier: ^6.16.0
         version: 6.16.0
