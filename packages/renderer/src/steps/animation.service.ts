@@ -1,68 +1,84 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { CloseStep, Growth, IdentityStep, InfillStep, OpenStep, RenameStep, SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
-import type { StepContext, StepDrawing, StepFrame } from './animation.types';
-import { pushTo } from '@railtime/core/collection.utils';
+import type { CloseStep, SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
+import type { Opening, StepContext, StepDrawing, StepFrame } from './animation.types';
 import { lineFeature, pointFeature } from '../layers/snapshot.utils';
 import { offsetFor, resolveLine } from '../layers/style.utils';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { easeInOut } from '../support/drawing.utils';
-import { chaseAlong, frontKmAt, growthSeconds, mainPathOf } from './growth.utils';
-import {
-  CLOSE_DRAW_SECONDS,
-  CLOSE_HOLD_SECONDS,
-  GROWTH_PACE,
-  IDENTITY_DRAW_SECONDS,
-  IDENTITY_HOLD_SECONDS,
-  INFILL_DRAW_SECONDS,
-  INFILL_HOLD_SECONDS,
-  MIN_DRAW_SECONDS,
-  OPEN_HOLD_SECONDS,
-  RENAME_DRAW_SECONDS,
-  RENAME_HOLD_SECONDS,
-  STATION_CLOSE_DRAW_SECONDS,
-  STATION_CLOSE_HOLD_SECONDS,
-} from './animation.constants';
+import { chaseAlong, frontKmAt, growthSeconds, openingOf } from './animation.utils';
+import { GROWTH_PACE, MIN_DRAW_SECONDS, OPEN_HOLD_SECONDS, STEP_TIMES } from './animation.constants';
 
 /**
- * How one kind of step plays: how long it takes, what the camera frames, and
- * what it draws each frame. One subclass per kind of step; the player and the map only ever talk
- * to this base class.
+ * How a step plays, whatever its kind: how long it takes, what the camera frames, and what it draws
+ * each frame. A stretch opening grows along its track as a train runs, linking its interchanges as it
+ * gets there; track closing retracts; a station appears, fades, or pulses under a new name; lines
+ * blend into their own colours. Each kind's times are `STEP_TIMES`'s, an opening's its stretch's.
  */
-export abstract class StepAnimation<Kind extends Step = Step> {
+export class StepAnimation {
   /** The step being played. */
-  public readonly step: Kind;
+  public readonly step: Step;
   /** Seconds at 1× for the change to animate. */
-  public abstract readonly drawSeconds: number;
-  /** Seconds at 1× the result stays highlighted afterwards. */
-  public abstract readonly holdSeconds: number;
+  public readonly drawSeconds: number;
+  /** Seconds at 1× what changed stays marked afterwards. */
+  public readonly holdSeconds: number;
+  /** An opening's stretch, how it grows: `null` for any other kind. */
+  public readonly opening: Opening | null;
   /** The network as it stood when the step started. */
-  protected readonly context: StepContext;
+  private readonly context: StepContext;
 
-  protected constructor(step: Kind, context: StepContext) {
+  public constructor(step: Step, context: StepContext) {
     this.step = step;
     this.context = context;
+    const opening = step.kind === 'open' ? openingOf(step, context) : null;
+    this.opening = opening;
+    const times =
+      step.kind === 'open'
+        ? {
+            drawSeconds: Math.max(MIN_DRAW_SECONDS, opening ? growthSeconds(opening.stops, opening.growth.totalKm, GROWTH_PACE[context.view]) : 0),
+            holdSeconds: OPEN_HOLD_SECONDS,
+          }
+        : STEP_TIMES[step.kind];
+    this.drawSeconds = times.drawSeconds;
+    this.holdSeconds = times.holdSeconds;
   }
 
   /** Whether the step changes what lines are drawn as: the map then redraws every frame while it plays. */
   public get changesIdentity(): boolean {
-    return false;
+    return this.step.kind === 'identity';
   }
 
   /**
-   * The points the camera should frame.
+   * The points the camera should frame: the new or closing track, the station, or every segment of
+   * the lines changing colour.
    *
    * @returns Points around the change.
    */
-  public abstract cameraPoints(): LngLat[];
+  public cameraPoints(): LngLat[] {
+    const { step } = this;
+    const { index } = this.context;
+    switch (step.kind) {
+      case 'open':
+        return step.segments.flatMap(segment => segment.coordinates);
+      case 'close':
+        return step.lineSegments.flatMap(lineSegment => lineSegment.segment.coordinates);
+      case 'identity':
+        return index.lineSegments.filter(lineSegment => step.lines.includes(lineSegment.line)).flatMap(lineSegment => lineSegment.segment.coordinates);
+      default:
+        return [index.coordOf(step.station)];
+    }
+  }
 
   /**
-   * Where the change starts on the map, for a camera that follows it as it is drawn: its first point,
-   * unless it grows from somewhere of its own.
+   * Where the change starts on the map, for a camera that follows it as it is drawn: where a stretch
+   * starts growing, else the first point it frames.
    *
    * @returns The point, or `null` for a change with none.
    */
   public startPoint(): LngLat | null {
-    return this.cameraPoints()[0] ?? null;
+    if (!this.opening) return this.cameraPoints()[0] ?? null;
+    const first = this.opening.path[0];
+    if (!first) return null;
+    return (first.fromStationA ? first.segment.coordinates[0] : first.segment.reversedCoordinates[0]) ?? null;
   }
 
   /**
@@ -71,118 +87,85 @@ export abstract class StepAnimation<Kind extends Step = Step> {
    * @param frame - The frame.
    * @param drawing - What the step adds to the map; filled in place.
    */
-  public abstract draw(frame: StepFrame, drawing: StepDrawing): void;
-
-  /**
-   * Marks a station as reached by a line this frame, unless the line is hidden or the station has
-   * not opened on it yet.
-   *
-   * @param frame - The frame.
-   * @param drawing - The drawing to mark it in.
-   * @param station - The station id.
-   * @param line - The line reaching it.
-   */
-  protected reach(frame: StepFrame, drawing: StepDrawing, station: string, line: string): void {
-    const { state } = frame;
-    if (!state.visibleLines.has(line) || !state.timeline.servesStation(station, line, state.cursor)) return;
-    const resolved = resolveLine(state, line);
-    const served = drawing.reached.get(station) ?? new Map();
-    served.set(resolved.id, resolved.color);
-    drawing.reached.set(station, served);
-  }
-
-  /** The step's date for a caption: `null` for a planned step, which has none. */
-  protected get date(): number | null {
-    return this.step.planned ? null : this.step.time;
-  }
-
-  /**
-   * A station's name on the step's date.
-   *
-   * @param station - The station id.
-   * @param time - When; the step's own date by default.
-   * @returns Its display name then.
-   */
-  protected nameOf(station: string, time = this.step.time): string {
-    return this.context.index.stationName(station, time);
-  }
-}
-
-/**
- * A stretch of line opening: it grows out of the network along the real track at one speed, and the
- * front stops at each new station as it pops in, pulses and is labelled. A long stretch takes longer,
- * never faster; a short one is quick, never drawn out.
- */
-export class OpenStepAnimation extends StepAnimation<OpenStep> {
-  /** Seconds at 1×: each run between stops at the view's pace, as a train runs it, and a stop at each new station. */
-  public readonly drawSeconds: number;
-  /** Seconds at 1× its new stations stay highlighted. */
-  public readonly holdSeconds = OPEN_HOLD_SECONDS;
-  /** Where the stretch grows from and in what order its stations appear. */
-  public readonly growth: Growth;
-  /** Where along the stretch the front stops: each new station, km. */
-  private readonly stops: number[];
-  /** The one way through the stretch a camera follows. */
-  private readonly path: SegmentPlan[];
-  /** The lines of the step on each of its segments. */
-  private readonly linesBySegment = new Map<number, string[]>();
-  /** The lines of the step at each of its stations. */
-  private readonly linesByStation = new Map<string, string[]>();
-
-  public constructor(step: OpenStep, context: StepContext) {
-    super(step, context);
-    this.growth = context.timeline.growthOf(step);
-    this.stops = this.growth.reach.filter(reached => reached.isNew).map(reached => reached.km);
-    this.path = mainPathOf(this.growth.plans);
-    const pace = GROWTH_PACE[context.view];
-    this.drawSeconds = Math.max(MIN_DRAW_SECONDS, growthSeconds(this.stops, this.growth.totalKm, pace));
-    for (const { segment, line } of step.lineSegments) {
-      pushTo(this.linesBySegment, segment.index, line);
-      for (const station of [segment.stationA, segment.stationB]) pushTo(this.linesByStation, station, line);
+  public draw(frame: StepFrame, drawing: StepDrawing): void {
+    const { step } = this;
+    switch (step.kind) {
+      case 'open':
+        return this.drawOpening(frame, drawing);
+      case 'close':
+        return this.drawClosing(step, frame, drawing);
+      case 'infill': {
+        // Its lines call there once this step has played: asked of the network as it stands after it.
+        const after = { ...frame, state: { ...frame.state, cursor: step.index + 1 } };
+        for (const line of step.lines) this.reach(after, drawing, step.station, line);
+        if (drawing.reached.has(step.station)) drawing.highlighted.add(step.station);
+        return;
+      }
+      case 'stationClose':
+        return this.drawStationClosing(step, frame, drawing);
+      case 'rename':
+        // The map labels it with its name on the step's date, the new one, over the one it had.
+        if (!frame.snapshot.stations.has(step.station)) return;
+        drawing.highlighted.add(step.station);
+        drawing.renamed.set(step.station, step.from);
+        return;
+      case 'identity':
+        // The network layer draws the blend, redrawing every frame while `changesIdentity`.
+        return;
     }
   }
 
   /**
-   * Frames the new stretch.
-   *
-   * @returns Every point of its track.
-   */
-  public cameraPoints(): LngLat[] {
-    return this.step.segments.flatMap(segment => segment.coordinates);
-  }
-
-  /**
-   * Where the stretch starts growing: the end of its first segment the growth leaves from.
-   *
-   * @returns The point.
-   */
-  public override startPoint(): LngLat | null {
-    const first = this.growth.plans.reduce<SegmentPlan | null>((earliest, plan) => (!earliest || plan.startKm < earliest.startKm ? plan : earliest), null);
-    if (!first) return null;
-    return (first.fromStationA ? first.segment.coordinates[0] : first.segment.reversedCoordinates[0]) ?? null;
-  }
-
-  /**
-   * Draws each segment up to the growth front, a glowing head where it is still growing, marks the
-   * stations the front has passed, and links each to the stations it changes to, as it gets there.
+   * An opening: each segment drawn up to the growth front, a glowing head where it is still growing,
+   * the stations the front has passed marked, each linked to the stations it changes to as it gets
+   * there, and where a camera following it looks from.
    *
    * @param frame - The frame.
    * @param drawing - Filled in place.
    */
-  public draw(frame: StepFrame, drawing: StepDrawing): void {
-    const frontKm = frontKmAt(frame.progress * this.drawSeconds, this.stops, this.growth.totalKm, GROWTH_PACE[this.context.view]);
-    for (const plan of this.growth.plans) this.drawSegment(frame, drawing, plan, frontKm);
-    if (this.path.length > 0) drawing.chase = chaseAlong(this.path, frontKm);
-    for (const reached of this.growth.reach) {
+  private drawOpening(frame: StepFrame, drawing: StepDrawing): void {
+    if (!this.opening) return;
+    const { growth, stops, path, linesByStation } = this.opening;
+    const frontKm = frontKmAt(frame.progress * this.drawSeconds, stops, growth.totalKm, GROWTH_PACE[this.context.view]);
+    for (const plan of growth.plans) this.drawSegment(frame, drawing, plan, frontKm);
+    if (path.length > 0) drawing.chase = chaseAlong(path, frontKm);
+    for (const reached of growth.reach) {
       if (reached.km > frontKm + 1e-9) break;
-      for (const line of this.linesByStation.get(reached.station) ?? []) this.reach(frame, drawing, reached.station, line);
+      for (const line of linesByStation.get(reached.station) ?? []) this.reach(frame, drawing, reached.station, line);
       if (reached.isNew && drawing.reached.has(reached.station)) drawing.highlighted.add(reached.station);
     }
     this.linkTransfers(frame, drawing);
   }
 
   /**
-   * Links each station the front has reached to the stations it changes to, on the map or reached
+   * Draws one segment of an opening as far as the growth front has got along it.
+   *
+   * @param frame - The frame.
+   * @param drawing - Filled in place.
+   * @param plan - The segment's plan.
+   * @param frontKm - How far the growth front has travelled.
+   */
+  private drawSegment(frame: StepFrame, drawing: StepDrawing, plan: SegmentPlan, frontKm: number): void {
+    const { segment } = plan;
+    const lines = (this.opening?.linesBySegment.get(segment.index) ?? []).filter(line => frame.state.visibleLines.has(line));
+    const drawnKm = Math.min(segment.lengthKm, frontKm - plan.startKm);
+    if (lines.length === 0 || drawnKm <= 0) return;
+    const coordinates = plan.fromStationA
+      ? sliceAlong(segment.coordinates, segment.distances, drawnKm)
+      : sliceAlong(segment.reversedCoordinates, segment.reversedDistances, drawnKm);
+    const resolved = new Map(lines.map(line => resolveLine(frame.state, line)).map(line => [line.id, line.color]));
+    // Offsets are relative to the direction the points run, so a segment drawn B→A flips its side.
+    const direction = plan.fromStationA ? 1 : -1;
+    const highlight = 1 - frame.holdProgress;
+    for (const [lineId, color] of resolved)
+      drawing.lines.features.push(lineFeature(coordinates, color, offsetFor(frame.snapshot.sideBySide, segment, lineId) * direction, highlight));
+    const tip = coordinates.at(-1);
+    const tipColor = [...resolved.values()][0];
+    if (drawnKm < segment.lengthKm && tip && tipColor) drawing.heads.features.push(pointFeature(tip, { color: tipColor }));
+  }
+
+  /**
+   * Links each station an opening has reached to the stations it changes to, on the map or reached
    * too, where the map had no link yet: the interchange shows as the front gets there, not once the
    * whole stretch has drawn.
    *
@@ -204,63 +187,17 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
   }
 
   /**
-   * Draws one segment as far as the growth front has got along it.
+   * Track closing: each segment retracts towards the end that stays on the map, leaving a dashed
+   * ghost, and stations left with no line fade.
    *
-   * @param frame - The frame.
-   * @param drawing - Filled in place.
-   * @param plan - The segment's plan.
-   * @param frontKm - How far the growth front has travelled.
-   */
-  private drawSegment(frame: StepFrame, drawing: StepDrawing, plan: SegmentPlan, frontKm: number): void {
-    const { segment } = plan;
-    const lines = (this.linesBySegment.get(segment.index) ?? []).filter(line => frame.state.visibleLines.has(line));
-    const drawnKm = Math.min(segment.lengthKm, frontKm - plan.startKm);
-    if (lines.length === 0 || drawnKm <= 0) return;
-    const coordinates = plan.fromStationA
-      ? sliceAlong(segment.coordinates, segment.distances, drawnKm)
-      : sliceAlong(segment.reversedCoordinates, segment.reversedDistances, drawnKm);
-    const resolved = new Map(lines.map(line => resolveLine(frame.state, line)).map(line => [line.id, line.color]));
-    // Offsets are relative to the direction the points run, so a segment drawn B→A flips its side.
-    const direction = plan.fromStationA ? 1 : -1;
-    const highlight = 1 - frame.holdProgress;
-    for (const [lineId, color] of resolved)
-      drawing.lines.features.push(lineFeature(coordinates, color, offsetFor(frame.snapshot.sideBySide, segment, lineId) * direction, highlight));
-    const tip = coordinates.at(-1);
-    const tipColor = [...resolved.values()][0];
-    if (drawnKm < segment.lengthKm && tip && tipColor) drawing.heads.features.push(pointFeature(tip, { color: tipColor }));
-  }
-}
-
-/** Sections closing: the track retracts towards the end that stays on the map, leaving a dashed ghost. */
-export class CloseStepAnimation extends StepAnimation<CloseStep> {
-  /** Seconds at 1× for the track to retract. */
-  public readonly drawSeconds = CLOSE_DRAW_SECONDS;
-  /** Seconds at 1× before the next step. */
-  public readonly holdSeconds = CLOSE_HOLD_SECONDS;
-
-  public constructor(step: CloseStep, context: StepContext) {
-    super(step, context);
-  }
-
-  /**
-   * Frames the closing track.
-   *
-   * @returns Every point of it.
-   */
-  public cameraPoints(): LngLat[] {
-    return this.step.lineSegments.flatMap(lineSegment => lineSegment.segment.coordinates);
-  }
-
-  /**
-   * Draws what is left of each closing segment, and fades stations left with no line.
-   *
+   * @param step - The step.
    * @param frame - The frame.
    * @param drawing - Filled in place.
    */
-  public draw(frame: StepFrame, drawing: StepDrawing): void {
+  private drawClosing(step: CloseStep, frame: StepFrame, drawing: StepDrawing): void {
     const { closingOnly, sideBySide } = frame.snapshot;
     const stays = (station: string) => !closingOnly.has(station);
-    for (const { segment, line } of this.step.lineSegments) {
+    for (const { segment, line } of step.lineSegments) {
       const remainingKm = (1 - easeInOut(frame.progress)) * segment.lengthKm;
       if (!frame.state.visibleLines.has(line) || remainingKm <= 0) continue;
       const fromStationA = stays(segment.stationA) || !stays(segment.stationB);
@@ -272,160 +209,46 @@ export class CloseStepAnimation extends StepAnimation<CloseStep> {
     }
     for (const station of closingOnly) drawing.fading.set(station, 1 - easeInOut(frame.progress));
   }
-}
-
-/** A station opening on track its lines already run over: it pops in on the line. */
-export class InfillStepAnimation extends StepAnimation<InfillStep> {
-  /** Seconds at 1× for the station to appear. */
-  public readonly drawSeconds = INFILL_DRAW_SECONDS;
-  /** Seconds at 1× it stays highlighted. */
-  public readonly holdSeconds = INFILL_HOLD_SECONDS;
-
-  public constructor(step: InfillStep, context: StepContext) {
-    super(step, context);
-  }
 
   /**
-   * Frames the station.
+   * Lines stop calling at a station they still run through: the track stays, and the dot fades
+   * unless another line still calls there.
    *
-   * @returns Its coordinate.
-   */
-  public cameraPoints(): LngLat[] {
-    return [this.context.index.coordOf(this.step.station)];
-  }
-
-  /**
-   * Adds the station to its lines and highlights it. Its lines call there once this step has played,
-   * so it is asked of the network as it stands after it.
-   *
+   * @param step - The step.
    * @param frame - The frame.
    * @param drawing - Filled in place.
    */
-  public draw(frame: StepFrame, drawing: StepDrawing): void {
-    const after = { ...frame, state: { ...frame.state, cursor: this.step.index + 1 } };
-    for (const line of this.step.lines) this.reach(after, drawing, this.step.station, line);
-    if (drawing.reached.has(this.step.station)) drawing.highlighted.add(this.step.station);
-  }
-}
-
-/**
- * Lines stop calling at a station they still run through: the track stays, and
- * the dot fades out unless another line still calls there.
- */
-export class StationCloseStepAnimation extends StepAnimation<StationCloseStep> {
-  /** Seconds at 1× for the station to fade. */
-  public readonly drawSeconds = STATION_CLOSE_DRAW_SECONDS;
-  /** Seconds at 1× before the next step. */
-  public readonly holdSeconds = STATION_CLOSE_HOLD_SECONDS;
-
-  public constructor(step: StationCloseStep, context: StepContext) {
-    super(step, context);
-  }
-
-  /**
-   * Frames the station.
-   *
-   * @returns Its coordinate.
-   */
-  public cameraPoints(): LngLat[] {
-    return [this.context.index.coordOf(this.step.station)];
-  }
-
-  /**
-   * Fades the station out where no other line still calls there.
-   *
-   * @param frame - The frame.
-   * @param drawing - Filled in place.
-   */
-  public draw(frame: StepFrame, drawing: StepDrawing): void {
-    const { station } = this.step;
+  private drawStationClosing(step: StationCloseStep, frame: StepFrame, drawing: StepDrawing): void {
+    const { station } = step;
     const { state } = frame;
     // By the lines themselves, not as drawn: a line drawn as a closing one may still call here.
     const staysServed = this.context.index
       .lineSegmentsAt(station)
       .some(
         lineSegment =>
-          !this.step.lines.includes(lineSegment.line) &&
+          !step.lines.includes(lineSegment.line) &&
           state.visibleLines.has(lineSegment.line) &&
           state.timeline.isOpen(lineSegment, state.cursor) &&
           state.timeline.servesStation(station, lineSegment.line, state.cursor),
       );
     if (frame.snapshot.stations.has(station) && !staysServed) drawing.fading.set(station, 1 - easeInOut(frame.progress));
   }
-}
-
-/** A station takes a new name: it pulses, labelled with its new name over its old. */
-export class RenameStepAnimation extends StepAnimation<RenameStep> {
-  /** Seconds at 1× before the station pulses. */
-  public readonly drawSeconds = RENAME_DRAW_SECONDS;
-  /** Seconds at 1× it stays highlighted under its new name. */
-  public readonly holdSeconds = RENAME_HOLD_SECONDS;
-
-  public constructor(step: RenameStep, context: StepContext) {
-    super(step, context);
-  }
 
   /**
-   * Frames the station.
-   *
-   * @returns Its coordinate.
-   */
-  public cameraPoints(): LngLat[] {
-    return [this.context.index.coordOf(this.step.station)];
-  }
-
-  /**
-   * Highlights the station, which the map labels with its name on the step's date, the new one,
-   * and the one it had.
+   * Marks a station as reached by a line this frame, unless the line is hidden or the station has
+   * not opened on it yet.
    *
    * @param frame - The frame.
-   * @param drawing - Filled in place.
+   * @param drawing - The drawing to mark it in.
+   * @param station - The station id.
+   * @param line - The line reaching it.
    */
-  public draw(frame: StepFrame, drawing: StepDrawing): void {
-    if (!frame.snapshot.stations.has(this.step.station)) return;
-    drawing.highlighted.add(this.step.station);
-    drawing.renamed.set(this.step.station, this.step.from);
-  }
-}
-
-/**
- * Lines taking their own identity (one line splitting into several): their track, already on the
- * map, changes colour and separates. The colour blend is drawn by the network layer, which redraws
- * every frame while `changesIdentity` is true; this step adds nothing of its own.
- */
-export class IdentityStepAnimation extends StepAnimation<IdentityStep> {
-  /** Seconds at 1× for the colour change. */
-  public readonly drawSeconds = IDENTITY_DRAW_SECONDS;
-  /** Seconds at 1× before the next step. */
-  public readonly holdSeconds = IDENTITY_HOLD_SECONDS;
-
-  public constructor(step: IdentityStep, context: StepContext) {
-    super(step, context);
-  }
-
-  /** Always: this step is a change of identity. */
-  public override get changesIdentity(): boolean {
-    return true;
-  }
-
-  /**
-   * Frames every segment of the lines changing.
-   *
-   * @returns Every point of their track.
-   */
-  public cameraPoints(): LngLat[] {
-    return this.context.index.lineSegments
-      .filter(lineSegment => this.step.lines.includes(lineSegment.line))
-      .flatMap(lineSegment => lineSegment.segment.coordinates);
-  }
-
-  /**
-   * Nothing to add: the network layer draws the blend.
-   *
-   * @param _frame - Unused.
-   * @param _drawing - Unused.
-   */
-  public draw(_frame: StepFrame, _drawing: StepDrawing): void {
-    // The colour change is the network layer redrawing with blended colours.
+  private reach(frame: StepFrame, drawing: StepDrawing, station: string, line: string): void {
+    const { state } = frame;
+    if (!state.visibleLines.has(line) || !state.timeline.servesStation(station, line, state.cursor)) return;
+    const resolved = resolveLine(state, line);
+    const served = drawing.reached.get(station) ?? new Map();
+    served.set(resolved.id, resolved.color);
+    drawing.reached.set(station, served);
   }
 }

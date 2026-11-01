@@ -22,7 +22,7 @@ import { CameraDirector } from './playback/camera.service';
 import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
 import type { PlayerEvent } from './playback/player.types';
-import { createStepAnimation } from './steps/animation.utils';
+import { StepAnimation } from './steps/animation.service';
 import { DEFAULT_MAP_PROPS, END_OVERVIEW_MS, FIT_NETWORK_MS, MAX_FRAME_SECONDS, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from './transitMap.constants';
 import type { Credit, FrameScheduler, MapProps, MapView, Padding, PlayFrom, SeekTarget, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
@@ -418,9 +418,9 @@ export class TransitMap {
    * @param step - The step.
    * @returns Its animation.
    */
-  private createAnimation(step: Step): ReturnType<typeof createStepAnimation> {
+  private createAnimation(step: Step): StepAnimation {
     const { index, timeline } = this.engine;
-    return createStepAnimation(step, { index, timeline, view: this.props.current.viewMode });
+    return new StepAnimation(step, { index, timeline, view: this.props.current.viewMode });
   }
 
   /** Redraws at once after a jump in time, nothing pulsing and no caption. */

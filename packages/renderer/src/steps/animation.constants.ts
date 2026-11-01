@@ -1,5 +1,6 @@
 import type { ViewMode } from '../transitMap.types';
-import type { GrowthPace } from './animation.types';
+import type { Step } from '@railtime/network/engine.types';
+import type { GrowthPace, StepTimes } from './animation.types';
 
 /**
  * How fast a new stretch grows, by how the map is seen: the same for every stretch, however long and
@@ -17,35 +18,22 @@ export const OPEN_HOLD_SECONDS = 1.2;
 /** The shortest any change takes to draw, seconds at 1×: only for one with nothing to draw. */
 export const MIN_DRAW_SECONDS = 0.2;
 
-/** Time closing track takes to retract, seconds at 1×. */
-export const CLOSE_DRAW_SECONDS = 1.6;
-
-/** Pause after a closure, its stations' names still up, marked closed, seconds at 1×. */
-export const CLOSE_HOLD_SECONDS = 1.4;
-
-/** Time an infill station takes to appear, seconds at 1×. */
-export const INFILL_DRAW_SECONDS = 0.8;
-
-/** Time an infill station stays highlighted, seconds at 1×. */
-export const INFILL_HOLD_SECONDS = 1.2;
-
-/** Time a station takes to fade when its lines stop calling, seconds at 1×. */
-export const STATION_CLOSE_DRAW_SECONDS = 1;
-
-/** Pause after a station closes, its name still up, marked closed, seconds at 1×. */
-export const STATION_CLOSE_HOLD_SECONDS = 1.6;
-
-/** Time before a renamed station pulses, seconds at 1×. */
-export const RENAME_DRAW_SECONDS = 0.5;
-
-/** Time a renamed station stays labelled with its new name over its old, so both can be read, seconds at 1×. */
-export const RENAME_HOLD_SECONDS = 2.4;
-
-/** Time an identity change's colour blend takes, seconds at 1×. */
-export const IDENTITY_DRAW_SECONDS = 2.2;
-
-/** Pause after an identity change, seconds at 1×. */
-export const IDENTITY_HOLD_SECONDS = 0.6;
+/**
+ * How long each kind of change but an opening takes, seconds at 1×: to draw, then held. An opening's
+ * time is its stretch's (`GROWTH_PACE`).
+ */
+export const STEP_TIMES: Record<Exclude<Step['kind'], 'open'>, StepTimes> = {
+  // Track retracts; then held, its stations' names still up, marked closed.
+  close: { drawSeconds: 1.6, holdSeconds: 1.4 },
+  // A station appears on a line already running through it.
+  infill: { drawSeconds: 0.8, holdSeconds: 1.2 },
+  // A station fades as its lines stop calling; then held, its name still up, marked closed.
+  stationClose: { drawSeconds: 1, holdSeconds: 1.6 },
+  // A beat before the station pulses; then held, its new name over its old, so both can be read.
+  rename: { drawSeconds: 0.5, holdSeconds: 2.4 },
+  // Lines' colours blend into their own.
+  identity: { drawSeconds: 2.2, holdSeconds: 0.6 },
+};
 
 /**
  * Following a growing line, the camera sits on its middle over this far either side of the front,

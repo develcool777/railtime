@@ -178,11 +178,11 @@ whole on the stand-in map (`test/unit/transitMap.test.ts`).
 
 ## Adding a feature
 
-| You want                                    | Do                                                                                                                              | Never                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| A number, a list, an answer about a network | a method on `NetworkFacts` (or `asOf`), tested in `network`                                                                     | working it out in `web` or `data`            |
-| A setting the user sees on the map          | a field in `MapProps`, its effect in `TransitMap`, a test; in the store's `mapPropsOf`                                          | a `setX` method; a watcher in the app        |
-| A new way to move through time              | a `Player` command, then a `TransitMap` command over it, a store action                                                         | the app driving the clock                    |
-| Something drawn over the network            | a kind of `OverlayRequest`/`OverlayResult`, in `OverlayController`                                                              | a layer the app shows and hides by hand      |
-| A new kind of change in the history         | `network`: its step in the timeline and its caption; `renderer`: a `StepAnimation` subclass and a line in `createStepAnimation` | a branch in the player or the frame          |
-| Something a button opens or sets            | state and an action in the store; the button calls the action                                                                   | a ref in a component that another part reads |
+| You want                                    | Do                                                                                                                       | Never                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| A number, a list, an answer about a network | a method on `NetworkFacts` (or `asOf`), tested in `network`                                                              | working it out in `web` or `data`            |
+| A setting the user sees on the map          | a field in `MapProps`, its effect in `TransitMap`, a test; in the store's `mapPropsOf`                                   | a `setX` method; a watcher in the app        |
+| A new way to move through time              | a `Player` command, then a `TransitMap` command over it, a store action                                                  | the app driving the clock                    |
+| Something drawn over the network            | a kind of `OverlayRequest`/`OverlayResult`, in `OverlayController`                                                       | a layer the app shows and hides by hand      |
+| A new kind of change in the history         | `network`: its step in the timeline and its caption; `renderer`: its times in `STEP_TIMES` and a case in `StepAnimation` | a branch in the player or the frame          |
+| Something a button opens or sets            | state and an action in the store; the button calls the action                                                            | a ref in a component that another part reads |

@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { NetworkEngine } from '@railtime/network/engine.service';
+import type { Growth, SegmentPlan } from '@railtime/network/engine.types';
 import type { FeatureCollection, HeadProperties, LineFeature, NetworkSnapshot, PointFeature, StationLines } from '../layers/snapshot.types';
 import type { RenderState } from '../layers/style.types';
 import type { ViewMode } from '../transitMap.types';
@@ -10,6 +11,25 @@ export type StepContext = {
   timeline: NetworkEngine['timeline'];
   /** How the map is seen as the step plays: a stretch grows more slowly followed up close in 3D. */
   view: ViewMode;
+};
+
+/** How long a kind of change takes, seconds at 1×. */
+export type StepTimes = {
+  /** To animate. */
+  drawSeconds: number;
+  /** Held afterwards, what changed still marked. */
+  holdSeconds: number;
+};
+
+/** An opening's own: how its stretch grows, where it stops, the way a camera follows, its lines by segment and station. */
+export type Opening = {
+  growth: Growth;
+  /** Where along the stretch the front stops: each new station, km. */
+  stops: number[];
+  /** The one way through the stretch a camera follows. */
+  path: SegmentPlan[];
+  linesBySegment: Map<number, string[]>;
+  linesByStation: Map<string, string[]>;
 };
 
 /** How fast a new stretch grows: its time is its length and its stations, never squeezed or stretched. */
