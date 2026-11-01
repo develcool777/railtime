@@ -60,11 +60,13 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
  * Plays a network's whole history at 1×, from its first day, drawing frames as the map would.
  *
  * @param network - The network.
- * @param plan - One of its plans, built on it and played after its history.
+ * @param shown - What is shown of it.
+ * @param shown.plan - One of its plans, built on it and played after its history.
+ * @param shown.networks - Its optional networks to show; the rest are left off, as the app opens it.
  * @returns How it went.
  */
-export const playWholeHistory = (network: Network, plan?: string): PlayedHistory => {
-  const playback = playbackOf(network, plan);
+export const playWholeHistory = (network: Network, shown: { plan?: string; networks?: readonly string[] } = {}): PlayedHistory => {
+  const playback = playbackOf(network, shown);
   playback.player.seek({ time: playback.timeline.start });
   return playOut(playback, 0);
 };
@@ -74,10 +76,11 @@ export const playWholeHistory = (network: Network, plan?: string): PlayedHistory
  *
  * @param network - The network.
  * @param plan - One of its plans.
+ * @param networks - Its optional networks to show, the plan built on them too.
  * @returns How it went, counting the steps from today alone.
  */
-export const playPlan = (network: Network, plan: string): PlayedHistory => {
-  const playback = playbackOf(network, plan);
+export const playPlan = (network: Network, plan: string, networks: readonly string[] = []): PlayedHistory => {
+  const playback = playbackOf(network, { plan, networks });
   // The player opens at today: whatever is dated after it plays first, as in the app.
   return playOut(playback, playback.player.cursor);
 };
@@ -104,10 +107,11 @@ const piecesOf = (lineSegments: LineSegment[]): number => {
  * is history; a segment dated wrong is a bug that looks just the same, so a city lists each one.
  *
  * @param network - The network.
+ * @param networks - Its optional networks to show, their lines counted too.
  * @returns `<line> <date>: <n> pieces`, in date order.
  */
-export const lineSplits = (network: Network): string[] => {
-  const { index, timeline } = playbackOf(network);
+export const lineSplits = (network: Network, networks: readonly string[] = []): string[] => {
+  const { index, timeline } = playbackOf(network, { networks });
   const dated = timeline.steps.slice(0, timeline.datedCount);
   const pieces = new Map<string, number>();
   const splits: string[] = [];

@@ -121,7 +121,19 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
 };
 
 /**
- * Checks a segment: its stations and lines exist, its track reaches its stations, its dates are in order.
+ * Where a line's timeline starts: its network's own start, an optional network older than the city, or the city's.
+ *
+ * @param network - The network.
+ * @param lineId - One of its lines.
+ * @returns The date.
+ */
+const startOf = (network: Network, lineId: string): string => {
+  const info = network.networks[network.lines[lineId]?.network ?? ''];
+  return (info?.optional && info.start) || network.meta.start;
+};
+
+/**
+ * Checks a segment: its stations and lines exist, its track reaches its stations, its dates are in order, none before its timeline starts.
  *
  * @param network - The network, its shape already valid.
  * @param segment - One of its segments.
@@ -149,6 +161,9 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
     problem(`${name}: its track turns ${Math.round(sharpest.degrees)}° at point ${sharpest.position}, sharper than its trains can`);
   for (const [lineId, dates] of Object.entries(segment.lines)) {
     if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);
+    // Before its timeline starts, a line's opening would never play.
+    const start = startOf(network, lineId);
+    if (dates.open < start) problem(`${name}: ${lineId} opens before its timeline starts, ${start}`);
     if (dates.close && dates.close <= dates.open) problem(`${name}: ${lineId} closes before it opens`);
     // Open, then each spell's start and end, then close: each after the one before.
     const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
@@ -223,6 +238,11 @@ const checkThroughStations = (network: Network, problem: (message: string) => vo
  * @param problem - Reports one problem.
  */
 export const checkNetwork = (network: Network, problem: (message: string) => void): void => {
+  for (const [networkId, info] of Object.entries(network.networks)) {
+    // Only an optional network may start apart, and only before the city: the city's own history starts with it.
+    if (info.start && (!info.optional || info.start >= network.meta.start))
+      problem(`network ${networkId}: a start of its own, ${info.start}, but it is not an optional network older than the city`);
+  }
   for (const [lineId, line] of Object.entries(network.lines)) {
     if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
     for (const alias of line.aliases ?? []) {

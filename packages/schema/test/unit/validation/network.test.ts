@@ -162,6 +162,29 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual(['line red: alias to green, of the optional network rail']);
   });
 
+  test('refuses a line opening before its timeline starts, and a start of its own on a network that is not optional or no older than the city', () => {
+    const network = plannedNetwork();
+    network.segments[0]!.lines.red = { open: '1890-01-01' };
+    network.networks.metro = { ...network.networks.metro!, start: '1880-01-01' };
+    network.networks.rail = { name: 'Rail', optional: true, start: '1900-01-01' };
+    expect(problemsOf(network)).toEqual([
+      'network metro: a start of its own, 1880-01-01, but it is not an optional network older than the city',
+      'network rail: a start of its own, 1900-01-01, but it is not an optional network older than the city',
+      'segment a – c: red opens before its timeline starts, 1899-01-01',
+      // The plan's station splits it: both halves open as early.
+      'plan extension: segment a – b: red opens before its timeline starts, 1899-01-01',
+      'plan extension: segment b – c: red opens before its timeline starts, 1899-01-01',
+    ]);
+  });
+
+  test('accepts an optional network older than the city, from its own start', () => {
+    const network = plannedNetwork();
+    network.networks.rail = { name: 'Rail', optional: true, start: '1850-01-01' };
+    network.lines.green = { name: 'Green', network: 'rail', mode: 'suburban-rail', color: '#00aa00' };
+    network.segments[0]!.lines.green = { open: '1860-01-01' };
+    expect(problemsOf(network)).toEqual([]);
+  });
+
   test("refuses a station closing on a line that isn't, or before it opened there, and former names out of order", () => {
     const network = plannedNetwork();
     network.stations.a = {

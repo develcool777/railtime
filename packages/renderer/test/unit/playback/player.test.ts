@@ -17,7 +17,7 @@ describe('Player', () => {
   });
 
   test("opens at today; plays a plan's steps after every dated one, the clock standing at the end", () => {
-    const { timeline, player } = playbackOf(tinyNetwork(), 'extension');
+    const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
     expect(player.clock).toBe(player.today);
     expect(player.cursor).toBe(timeline.datedCount);
     expect(player.inFuture).toBe(false);
@@ -33,7 +33,7 @@ describe('Player', () => {
   });
 
   test('jumps to the end, the plan built', () => {
-    const { timeline, player } = playbackOf(tinyNetwork(), 'extension');
+    const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
     player.seek('future');
     expect(player.cursor).toBe(timeline.steps.length);
     expect(player.inFuture).toBe(true);
@@ -50,7 +50,7 @@ describe('Player', () => {
   });
 
   test('jumps to just before a step, so playing starts it, or just past it, on its date', () => {
-    const { timeline, player } = playbackOf(tinyNetwork(), 'extension');
+    const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
     const dated = timeline.steps[2]!;
     player.seek({ change: 2 });
     expect(player.cursor).toBe(3);
@@ -173,7 +173,7 @@ describe('Player', () => {
       history.play('start');
       expect(history.clock).toBe(toTimestamp('1899-01-01'));
       expect(history.playing).toBe(true);
-      const plan = playbackOf(tinyNetwork(), 'extension').player;
+      const plan = playbackOf(tinyNetwork(), { plan: 'extension' }).player;
       plan.play('start');
       expect(plan.clock).toBe(plan.today);
     });

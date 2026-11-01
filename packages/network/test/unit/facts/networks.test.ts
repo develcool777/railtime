@@ -17,11 +17,21 @@ describe('NetworksUtils', () => {
       expect(Object.keys(shown.plans ?? {})).toEqual(['extension']);
     });
 
-    test('keeps a station only it served where a plan builds on it', () => {
+    test("makes a station only it served the plan's own where a plan builds on it, its place and name alone", () => {
       const network = optionalNetwork();
+      network.stations.x = { ...network.stations.x!, formerNames: [{ name: 'Old X', until: '1960-01-01' }] };
       network.plans!.extension!.sections.push({ line: 'red', stations: ['e', 'x'] });
       const shown = withNetworksShown(network, []);
-      expect(shown.stations.x).toEqual({ name: 'X', coordinate: [0.0576, 51.5] });
+      expect(shown.stations).not.toHaveProperty('x');
+      expect(shown.plans?.extension?.stations?.x).toEqual({ name: 'X', coordinate: [0.0576, 51.5] });
+    });
+
+    test("starts the timeline at an older network shown, and at the city's own with it off", () => {
+      const network = optionalNetwork();
+      network.networks.rail = { ...network.networks.rail!, start: '1850-01-01' };
+      expect(withNetworksShown(network, ['rail']).meta.start).toBe('1850-01-01');
+      expect(withNetworksShown(network, []).meta.start).toBe('1899-01-01');
+      expect(network.meta.start).toBe('1899-01-01');
     });
 
     test('keeps one asked for whole, and a network with nothing optional as it is', () => {

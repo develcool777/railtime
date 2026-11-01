@@ -23,7 +23,7 @@ describe('NetworkSnapshotUtils', () => {
     });
 
     test("draws a plan's track as planned, and a station only it reaches", () => {
-      const playback = playbackOf(tinyNetwork(), 'extension');
+      const playback = playbackOf(tinyNetwork(), { plan: 'extension' });
       playback.player.seek('future');
       const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
       const extension = playback.index.segments.at(-1)!.coordinates;

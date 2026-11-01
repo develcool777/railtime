@@ -26,6 +26,8 @@ export type NetworkInfo = {
    * main-line suburban trains are beside a metro. Off, it is as if it were not there.
    */
   optional?: boolean;
+  /** An optional network older than the city's own: where the timeline starts while it is shown, before the city's `start`. */
+  start?: IsoDate;
 };
 
 /** Until `until`, the line is drawn and named as line `as`: a branch shown as its parent line until it became its own. */

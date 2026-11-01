@@ -178,8 +178,10 @@ its own laid over theirs, which draws one line on top of the other.
 A network beside the city's own (main-line suburban trains beside a metro) is `optional`: in the city's
 data, with its history, but off until shown (the Lines panel's switch, `?with=<network>`). Off, it is
 as if it were not there: `NetworkFacts` leaves out its lines, the track and stations only it has, and
-its plans, so counts, history and the city list are the city's own. No line outside it may lean on
-one of its lines (an alias).
+its plans, so counts, history and the city list are the city's own; a station only it has that a plan
+builds on is the plan's own again. No line outside it may lean on one of its lines (an alias). One
+older than the city gives its own `start`, where the timeline starts while it is shown; the schema
+refuses a line opening before its timeline starts, which would never play.
 
 Each city's test lists every date a line comes apart (`lineSplits` in `test/support/history.utils.ts`),
 with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just
