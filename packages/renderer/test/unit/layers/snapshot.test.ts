@@ -46,7 +46,7 @@ describe('NetworkSnapshotUtils', () => {
       expect([...linked.linked].sort()).toEqual(['a', 'd']);
     });
 
-    test('draws a closed section as a ghost, but not while its line is back there', () => {
+    test('draws a suspended section as a ghost until its line is back there, and none once it has closed for good', () => {
       const playback = playbackOf(tinyNetwork());
       const ghostsOn = (date: string) => {
         playback.player.seek({ time: toTimestamp(date) });
@@ -54,7 +54,7 @@ describe('NetworkSnapshotUtils', () => {
       };
       expect(ghostsOn('1942-01-01')).toBe(1);
       expect(ghostsOn('1947-01-01')).toBe(0);
-      expect(ghostsOn('1960-01-01')).toBe(1);
+      expect(ghostsOn('1960-01-01')).toBe(0);
     });
   });
 
