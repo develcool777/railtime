@@ -17,3 +17,9 @@ export const MINIMAP_LAYERS = {
 
 /** Room around the city in the minimap, pixels. */
 export const MINIMAP_PADDING = 8;
+
+/**
+ * The least time between two updates of what changes every frame (the line growing, the view's box),
+ * ms: a small inset needs no more than ten a second, and each is a whole map redrawn.
+ */
+export const MINIMAP_UPDATE_MS = 100;

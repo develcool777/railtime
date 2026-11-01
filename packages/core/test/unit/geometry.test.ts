@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { LngLat } from '../../src/geometry.types';
-import { boundsOf, cumulativeDistances, distanceKm, latitudeOf, mercatorY, offsetKm, sliceAlong } from '../../src/geometry.utils';
+import { boundsOf, cumulativeDistances, distanceKm, latitudeOf, mercatorY, offsetKm, sliceAlong, turnDegrees } from '../../src/geometry.utils';
 
 /** Km in a degree of longitude on the equator, where these tracks run. */
 const KM_PER_DEGREE = 111.32;
@@ -21,6 +21,15 @@ const TRACK: LngLat[] = [
 const rounded = (points: LngLat[]): LngLat[] => points.map(([longitude, latitude]) => [Number(longitude.toFixed(6)) + 0, Number(latitude.toFixed(6)) + 0]);
 
 describe('GeometryUtils', () => {
+  describe('turnDegrees', () => {
+    test('measures a turn from straight on, 0°, to straight back, 180°', () => {
+      expect(turnDegrees([0, 51], [0, 51.01], [0, 51.02])).toBeCloseTo(0);
+      expect(turnDegrees([0, 51], [0, 51.01], [0.0143, 51.01])).toBeCloseTo(90, 0);
+      expect(turnDegrees([0, 51], [0, 51.01], [0, 51.005])).toBeCloseTo(180);
+      expect(turnDegrees([0, 51], [0, 51], [0, 51.01])).toBe(0);
+    });
+  });
+
   describe('distanceKm', () => {
     test('measures a degree of latitude the same anywhere', () => {
       expect(distanceKm([-0.1, 51], [-0.1, 52])).toBeCloseTo(110.57, 1);

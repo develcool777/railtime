@@ -201,7 +201,12 @@ export class Timeline {
   public growthOf(step: OpenStep): Growth {
     const known = this.growths.get(step);
     if (known) return known;
-    const growth = planGrowth(step.segments, this.stationsOnMap(step.index), station => this.index.coordOf(station), this.index.centre);
+    const planned = planGrowth(step.segments, this.stationsOnMap(step.index), station => this.index.coordOf(station), this.index.centre);
+    const calledAt = (station: string) =>
+      step.lineSegments.some(
+        ({ segment, line }) => (segment.stationA === station || segment.stationB === station) && this.servesStation(station, line, step.index + 1),
+      );
+    const growth = { ...planned, reach: planned.reach.map(reached => ({ ...reached, isNew: reached.isNew && calledAt(reached.station) })) };
     this.growths.set(step, growth);
     return growth;
   }

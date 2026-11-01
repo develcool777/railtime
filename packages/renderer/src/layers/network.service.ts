@@ -134,7 +134,10 @@ export class NetworkLayer extends MapLayer {
   }
 }
 
-/** What the playing step draws: track growing or retracting, wider while new, with a glowing head at each growing tip. */
+/**
+ * What the playing step draws: track growing or retracting, wider while new, with a glowing head at
+ * each growing tip, and the transfers it links as it reaches them, drawn as the network's are.
+ */
 export class ActiveStepLayer extends MapLayer {
   /** The map shows a drawing with something in it: an empty one clears it once, then sends nothing. */
   private drawn = false;
@@ -147,6 +150,7 @@ export class ActiveStepLayer extends MapLayer {
   public install(): void {
     this.addSource(SOURCES.active);
     this.addSource(SOURCES.heads);
+    this.addSource(SOURCES.activeTransfers);
     this.map.addLayer({
       id: LAYERS.activeGlow,
       type: 'line',
@@ -168,6 +172,20 @@ export class ActiveStepLayer extends MapLayer {
       paint: { 'circle-color': ['get', 'color'], 'circle-radius': byZoom(8, 16), 'circle-blur': 1, 'circle-opacity': 0.9 },
     });
     this.map.addLayer({ id: LAYERS.headCore, type: 'circle', source: SOURCES.heads, paint: { 'circle-color': '#ffffff', 'circle-radius': byZoom(2, 4) } });
+    this.map.addLayer({
+      id: LAYERS.activeTransferCasing,
+      type: 'line',
+      source: SOURCES.activeTransfers,
+      layout: LINE_LAYOUT,
+      paint: { 'line-width': byZoom(5, 11) },
+    });
+    this.map.addLayer({
+      id: LAYERS.activeTransferCore,
+      type: 'line',
+      source: SOURCES.activeTransfers,
+      layout: LINE_LAYOUT,
+      paint: { 'line-color': '#ffffff', 'line-width': byZoom(2.5, 6) },
+    });
   }
 
   /**
@@ -177,6 +195,7 @@ export class ActiveStepLayer extends MapLayer {
    */
   public applyPalette(palette: Palette): void {
     this.map.setPaintProperty(LAYERS.activeGlow, 'line-opacity', palette.glowOpacity);
+    this.map.setPaintProperty(LAYERS.activeTransferCasing, 'line-color', palette.interchangeRing);
   }
 
   /**
@@ -186,10 +205,11 @@ export class ActiveStepLayer extends MapLayer {
    * @param drawing - What the step draws now.
    */
   public update(drawing: StepDrawing): void {
-    const drawn = drawing.lines.features.length > 0 || drawing.heads.features.length > 0;
+    const drawn = drawing.lines.features.length > 0 || drawing.heads.features.length > 0 || drawing.links.features.length > 0;
     if (!drawn && !this.drawn) return;
     this.drawn = drawn;
     this.setData(SOURCES.active, drawing.lines);
     this.setData(SOURCES.heads, drawing.heads);
+    this.setData(SOURCES.activeTransfers, drawing.links);
   }
 }

@@ -21,12 +21,12 @@ const captionAfter = (network: Network, date: string) => {
 describe('CaptionUtils', () => {
   describe('captionOf', () => {
     test('says a line opens, extended from the station it grows from to the last, naming the stations it opens as they were called then', () => {
-      // D opened in 1910 under its name then, Old D; C is an infill station, named as the front passes it.
+      // D opened in 1910 under its name then, Old D; red runs through C, but calls there only from 1920.
       expect(captionAfter(tinyNetwork(), '1905-01-01')).toMatchObject({
         kind: 'open',
         title: 'Red line extended',
         subtitle: 'B – Old D',
-        stations: ['C', 'Old D'],
+        stations: ['Old D'],
       });
     });
 

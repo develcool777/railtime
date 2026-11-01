@@ -1,7 +1,7 @@
-import { distanceKm } from '@railtime/core/geometry.utils';
+import { distanceKm, turnDegrees } from '@railtime/core/geometry.utils';
 import type { Network, Plan, Segment, SegmentLine, Station } from '../format/network.types';
 import { buildPlan } from '../plan/build.utils.ts';
-import { STATION_GAP_METRES } from './checks.constants.ts';
+import { MAX_TURN_DEGREES, STATION_GAP_METRES } from './checks.constants.ts';
 
 /**
  * A line's dates on each of its segments at a station.
@@ -93,6 +93,12 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
     const place = network.stations[station]?.coordinate;
     const gap = place && end ? distanceKm(place, end) * 1000 : 0;
     if (gap > STATION_GAP_METRES) problem(`${name}: its track ends ${Math.round(gap)} m from ${station}`);
+  }
+  // No track doubles back: up close, in 3D, a spike shows the line missing its station.
+  const { coordinates } = segment;
+  for (const [position, corner] of coordinates.entries()) {
+    const [before, after] = [coordinates[position - 1], coordinates[position + 1]];
+    if (before && after && turnDegrees(before, corner, after) > MAX_TURN_DEGREES) problem(`${name}: its track doubles back at point ${position}`);
   }
   for (const [lineId, dates] of Object.entries(segment.lines)) {
     if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);

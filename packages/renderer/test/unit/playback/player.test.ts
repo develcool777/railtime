@@ -87,7 +87,7 @@ describe('Player', () => {
 
   test('plays a step through its phases at their exact edges: a beat for the camera, the change drawn, then held', () => {
     const { player } = playbackOf(tinyNetwork());
-    // Red's 1910 stretch: 1 s for the camera, 1 s to draw its 2 km, held 1.2 s for its two new stations.
+    // Red's 1910 stretch: 1 s for the camera, then drawn (its 2 km, and a stop at D), then held 1.2 s.
     player.seek({ time: toTimestamp('1905-01-01') });
     expect([player.phase, player.progress, player.holdProgress]).toEqual([null, 0, 0]);
     player.skip();
@@ -100,10 +100,13 @@ describe('Player', () => {
     player.tick(0.5);
     expect(player.phase).toBe('draw');
     expect(player.progress).toBeCloseTo(0);
-    player.tick(0.5);
+    const drawSeconds = player.active!.animation.drawSeconds;
+    player.tick(drawSeconds / 2);
+    // Linear: each kind of step eases it as it draws.
     expect(player.progress).toBeCloseTo(0.5);
-    player.tick(0.5);
-    expect([player.phase, player.progress, player.holdProgress]).toEqual(['hold', 1, 0]);
+    player.tick(drawSeconds / 2);
+    expect([player.phase, player.progress]).toEqual(['hold', 1]);
+    expect(player.holdProgress).toBeCloseTo(0, 6);
     player.tick(0.6);
     expect(player.holdProgress).toBeCloseTo(0.5);
     expect(player.tick(0.6).map(event => event.type)).toEqual(['stepEnd']);

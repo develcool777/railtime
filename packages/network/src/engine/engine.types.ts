@@ -88,6 +88,10 @@ export type Growth = {
   plans: SegmentPlan[];
   /** How far the growth front travels in all. */
   totalKm: number;
-  /** Every station of the stretch in the order the front reaches it; `isNew` if it was not on the map before. */
+  /**
+   * Every station of the stretch in the order the front reaches it; `isNew` if it opens with it: not
+   * on the map before, and a line of the stretch calls there once it plays (track only passing a
+   * station that opens later is no new station).
+   */
   reach: { station: string; km: number; isNew: boolean }[];
 };

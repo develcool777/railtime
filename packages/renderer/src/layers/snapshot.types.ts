@@ -76,6 +76,10 @@ export type StationProperties = {
   color: string;
   /** Opened in the step playing now: pulses, and is labelled at any zoom. */
   highlighted: boolean;
+  /** The name it had, while the step playing renames it: labelled under the new; `''` for none. */
+  former: string;
+  /** Closing in the step playing: labelled at any zoom, marked closed, as its dot fades. */
+  closing: boolean;
   /** Only planned track reaches it: drawn hollow. */
   planned: boolean;
 };

@@ -14,6 +14,8 @@ export type StationFrame = {
   highlighted: Set<string>;
   /** Station → opacity while it closes. */
   fading: Map<string, number>;
+  /** Station → the name it had, while it is renamed. */
+  renamed: Map<string, string>;
   /** Opacity of new stations' labels: fades out at the end of their step. */
   newLabelOpacity: number;
   /** Show every station at once, with no pop-in (after a jump in time, a toggle or a theme change). */

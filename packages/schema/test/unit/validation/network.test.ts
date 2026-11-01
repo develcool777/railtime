@@ -76,6 +76,24 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual(['segment a – c: its track ends 55 m from a', 'plan extension: segment a – b: its track ends 55 m from a']);
   });
 
+  test('refuses track that doubles back on itself: a point run past a station, pulled back to it', () => {
+    const network = plannedNetwork();
+    // About 35 m past C, then back.
+    network.segments[0]!.coordinates = [
+      [0, 51.5],
+      [0.0205, 51.5],
+      [0.02, 51.5],
+    ];
+    expect(problemsOf(network)).toContain('segment a – c: its track doubles back at point 1');
+    // A bend is track.
+    network.segments[0]!.coordinates = [
+      [0, 51.5],
+      [0.01, 51.502],
+      [0.02, 51.5],
+    ];
+    expect(problemsOf(network).filter(message => message.includes('doubles back'))).toEqual([]);
+  });
+
   test('refuses a malformed part: a date, a colour, a language code, track of one point', () => {
     const network = plannedNetwork();
     network.meta.start = '1899-1-1';

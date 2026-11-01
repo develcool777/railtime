@@ -4,12 +4,13 @@ import type { FeatureCollection, LineFeature, NetworkSnapshot } from './layers/s
 import { emptyCollection } from './layers/snapshot.utils';
 import type { Palette } from './layers/theme.types';
 import type { Bounds } from '@railtime/core/geometry.types';
-import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES } from './minimap.constants';
+import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS } from './minimap.constants';
 
 /**
  * A small, fixed overview of the whole city: the network so far, the change happening now, and a
  * box showing where the main camera is looking. Updates sent before its style loads are kept and
- * applied once it has.
+ * applied once it has; the line growing and the box, which change every frame, at most ten times a
+ * second.
  */
 export class Minimap {
   /** The minimap's own non-interactive map. */
@@ -20,8 +21,12 @@ export class Minimap {
   private ready = false;
   /** The theme's colours. */
   private palette: Palette;
-  /** The latest data for each source, until the style has loaded. */
+  /** The latest data for each source, until the style has loaded or the next update is due. */
   private readonly pending = new Map<string, object>();
+  /** The next update of what changes every frame, if one is due. */
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  /** When what changes every frame was last sent, ms. */
+  private flushedAt = -Infinity;
 
   public constructor(container: HTMLElement, style: string, bounds: Bounds, palette: Palette) {
     this.palette = palette;
@@ -59,7 +64,7 @@ export class Minimap {
    * @param lines - The playing step's line features.
    */
   public setActive(lines: FeatureCollection<LineFeature>): void {
-    this.setData(MINIMAP_SOURCES.active, lines);
+    this.setSoon(MINIMAP_SOURCES.active, lines);
   }
 
   /**
@@ -69,7 +74,7 @@ export class Minimap {
    */
   public setViewport(bounds: Bounds): void {
     const [[west, south], [east, north]] = bounds;
-    this.setData(MINIMAP_SOURCES.viewport, {
+    this.setSoon(MINIMAP_SOURCES.viewport, {
       type: 'Feature',
       properties: {},
       geometry: {
@@ -99,6 +104,7 @@ export class Minimap {
 
   /** Removes the minimap and stops watching its container. */
   public destroy(): void {
+    if (this.flushTimer !== null) clearTimeout(this.flushTimer);
     this.resizeObserver.disconnect();
     this.map.remove();
   }
@@ -133,6 +139,33 @@ export class Minimap {
       paint: { 'line-color': this.palette.viewport, 'line-width': 1.5 },
     });
     this.ready = true;
+    for (const [source, data] of this.pending) this.setData(source, data);
+    this.pending.clear();
+  }
+
+  /**
+   * Replaces a source's data that changes every frame: at once if the last update was long enough
+   * ago, else, its latest, when the next is due.
+   *
+   * @param source - The source id.
+   * @param data - GeoJSON.
+   */
+  private setSoon(source: string, data: object): void {
+    if (!this.ready) {
+      this.pending.set(source, data);
+      return;
+    }
+    this.pending.set(source, data);
+    if (this.flushTimer !== null) return;
+    const wait = this.flushedAt + MINIMAP_UPDATE_MS - performance.now();
+    if (wait <= 0) this.flush();
+    else this.flushTimer = setTimeout(() => this.flush(), wait);
+  }
+
+  /** Sends what is waiting. */
+  private flush(): void {
+    this.flushTimer = null;
+    this.flushedAt = performance.now();
     for (const [source, data] of this.pending) this.setData(source, data);
     this.pending.clear();
   }
