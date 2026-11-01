@@ -3,7 +3,7 @@ import type { ChangeInfo } from '@railtime/network/facts.types';
 import { FUTURE_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/explorer/time/time.constants';
 import { yearOf } from '@railtime/core/date.utils';
 import { lineColor } from '~/features/explorer/format.utils';
-import type { TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
+import type { TickMark, TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
 import type { TimeState } from '@railtime/renderer/transitMap.types';
 
 /**
@@ -42,8 +42,19 @@ export const thumbPosition = (scale: TimelineScale, time: number, cursor: number
 };
 
 /**
- * One mark per change but renames: a dated one on its date, stacked over others of its year; a
- * planned one where the thumb stands once it is built.
+ * How a change's mark looks.
+ *
+ * @param kind - The change's kind.
+ * @returns A closure's (a line or a station closing), a rename's, or an opening's for the rest.
+ */
+const markOf = (kind: ChangeInfo['kind']): TickMark => {
+  if (kind === 'close' || kind === 'stationClose') return 'closure';
+  return kind === 'rename' ? 'rename' : 'opening';
+};
+
+/**
+ * One mark per change: a dated one on its date, stacked over others of its year; a planned one
+ * where the thumb stands once it is built.
  *
  * @param scale - The timeline's scale.
  * @param changes - Every change, in timeline order.
@@ -51,27 +62,24 @@ export const thumbPosition = (scale: TimelineScale, time: number, cursor: number
  */
 export const timelineTicks = (scale: TimelineScale, changes: ChangeInfo[]): TimelineTick[] => {
   const perYear = new Map<number, number>();
-  return changes
-    .filter(change => change.kind !== 'rename')
-    .map(change => {
-      if (change.time === null) {
-        const built = change.index - scale.datedCount + 1;
-        const left = 1 - FUTURE_SHARE + (FUTURE_SHARE * built) / Math.max(1, scale.plannedCount);
-        return { index: change.index, left, level: 0, color: lineColor(change.color), closure: false, label: `Future · ${change.title}` };
-      }
-      const year = yearOf(change.time);
-      const level = perYear.get(year) ?? 0;
-      perYear.set(year, level + 1);
-      const closure = change.kind === 'close' || change.kind === 'stationClose';
-      return {
-        index: change.index,
-        left: positionOf(scale, change.time),
-        level: Math.min(level, MAX_TICK_LEVEL),
-        color: lineColor(change.color),
-        closure,
-        label: `${year} · ${change.title}`,
-      };
-    });
+  return changes.map(change => {
+    if (change.time === null) {
+      const built = change.index - scale.datedCount + 1;
+      const left = 1 - FUTURE_SHARE + (FUTURE_SHARE * built) / Math.max(1, scale.plannedCount);
+      return { index: change.index, left, level: 0, color: lineColor(change.color), mark: markOf(change.kind), label: `Future · ${change.title}` };
+    }
+    const year = yearOf(change.time);
+    const level = perYear.get(year) ?? 0;
+    perYear.set(year, level + 1);
+    return {
+      index: change.index,
+      left: positionOf(scale, change.time),
+      level: Math.min(level, MAX_TICK_LEVEL),
+      color: lineColor(change.color),
+      mark: markOf(change.kind),
+      label: `${year} · ${change.title}`,
+    };
+  });
 };
 
 /**

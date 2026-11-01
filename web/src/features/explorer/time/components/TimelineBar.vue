@@ -25,8 +25,8 @@
     <span
       v-for="tick in ticks"
       :key="tick.index"
-      class="tick absolute -translate-x-1/2 rounded-sm"
-      :class="tick.closure ? 'bg-dimmed size-[3px]' : 'h-2 w-[3px]'"
+      class="tick absolute w-[3px] -translate-x-1/2 rounded-sm"
+      :class="TICK_LOOK[tick.mark]"
       :style="{ left: percent(tick.left), bottom: `${32 + tick.level * 5}px`, background: tickColor(tick) }"
       :title="tick.label" />
 
@@ -53,7 +53,7 @@
   import type { TimeState } from '@railtime/renderer/transitMap.types';
   import { computed, ref, useTemplateRef } from 'vue';
 
-  import { FUTURE_SHARE } from '~/features/explorer/time/time.constants';
+  import { FUTURE_SHARE, TICK_LOOK } from '~/features/explorer/time/time.constants';
   import { YEAR_MS, yearOf } from '@railtime/core/date.utils';
   import { clamp } from '@railtime/core/number.utils';
   import type { TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
@@ -88,9 +88,8 @@
     return props.time.future ? 'Future' : String(yearOf(props.time.time));
   });
 
-  /** A tick's colour: its line's, but grey for a closure, or while playing for a change still to come. */
-  const tickColor = (tick: TimelineTick): string | undefined => {
-    if (tick.closure) return undefined;
+  /** A tick's colour: its line's, and while playing grey for a change still to come. */
+  const tickColor = (tick: TimelineTick): string => {
     if (props.playing && props.time && tick.index >= props.time.cursor) return 'var(--ui-border-accented)';
     return tick.color;
   };

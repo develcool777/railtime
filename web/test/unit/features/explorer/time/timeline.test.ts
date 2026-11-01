@@ -38,17 +38,18 @@ describe('TimelineUtils', () => {
   });
 
   describe('timelineTicks', () => {
-    test('marks each change but renames, stacking a year, closures small, planned ones in the zone', () => {
+    test('marks every change, stacking a year, each kind its look, planned ones in the zone', () => {
       const ticks = timelineTicks(PLANNED, [
         change(0, Date.UTC(1950, 2, 1)),
         change(1, Date.UTC(1950, 5, 1), 'close'),
         change(2, Date.UTC(1960, 0, 1), 'rename'),
         change(3, null),
       ]);
-      expect(ticks.map(tick => tick.index)).toEqual([0, 1, 3]);
-      expect(ticks.map(tick => tick.level)).toEqual([0, 1, 0]);
-      expect(ticks[1]).toMatchObject({ closure: true, label: '1950 · Change 1' });
-      expect(ticks[2]).toMatchObject({ left: expect.closeTo(0.88), label: 'Future · Change 3' });
+      expect(ticks.map(tick => tick.index)).toEqual([0, 1, 2, 3]);
+      expect(ticks.map(tick => tick.level)).toEqual([0, 1, 0, 0]);
+      expect(ticks.map(tick => tick.mark)).toEqual(['opening', 'closure', 'rename', 'opening']);
+      expect(ticks[1]).toMatchObject({ label: '1950 · Change 1' });
+      expect(ticks[3]).toMatchObject({ left: expect.closeTo(0.88), label: 'Future · Change 3' });
     });
   });
 
