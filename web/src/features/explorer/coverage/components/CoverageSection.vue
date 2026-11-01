@@ -9,11 +9,11 @@
     <template v-else>
       <UTabs
         :modelValue="distance"
-        :items="DISTANCES"
+        :items="COVERAGE_DISTANCE_ITEMS"
         :content="false"
         class="self-start"
         aria-label="Walk from a station"
-        @update:modelValue="emit('distance', Number($event) as CoverageDistance)" />
+        @update:modelValue="pick" />
 
       <div class="flex flex-col gap-2">
         <p class="text-highlighted text-2xl leading-8 font-bold tabular-nums">{{ formatShare(coverage.share) }}</p>
@@ -68,12 +68,12 @@
 </template>
 
 <script setup lang="ts">
-  import { COVERAGE_DISTANCES } from '@railtime/network/coverage.constants';
   import type { CoverageDistance, CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
   import type { BoundaryState } from '~/features/explorer/coverage/coverage.composable.types';
-  import { formatArea, formatShare, formatWalk } from '~/features/explorer/coverage/coverage.utils';
+  import { COVERAGE_DISTANCE_ITEMS } from '~/features/explorer/coverage/coverage.constants';
+  import { coverageDistanceOf, formatArea, formatShare, formatWalk } from '~/features/explorer/coverage/coverage.utils';
 
   const props = defineProps<{
     /** Where the city's outline is. */
@@ -87,8 +87,15 @@
   }>();
   const emit = defineEmits<{ year: [year: number]; distance: [metres: CoverageDistance] }>();
 
-  /** The distances coverage may count within, for the switch. */
-  const DISTANCES = COVERAGE_DISTANCES.map(metres => ({ label: formatWalk(metres), value: metres }));
+  /**
+   * A distance picked on the switch.
+   *
+   * @param value - The tab's value.
+   */
+  const pick = (value: string | number) => {
+    const metres = coverageDistanceOf(value);
+    if (metres) emit('distance', metres);
+  };
 
   const points = computed(() => props.history.map(entry => ({ year: entry.year, percent: entry.share * 100 })));
   const summary = computed(() => {

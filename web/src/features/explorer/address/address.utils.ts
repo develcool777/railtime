@@ -1,5 +1,6 @@
-import { COVERAGE_DEFAULT_METRES, COVERAGE_DISTANCES } from '@railtime/network/coverage.constants';
+import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import { toIsoDate } from '@railtime/core/date.utils';
+import { coverageDistanceOf } from '~/features/explorer/coverage/coverage.utils';
 import type { ExplorerQuery, ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
 import type { Section } from '~/features/explorer/explorer.types';
@@ -67,7 +68,7 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
   const plan = single(query.plan);
   const networks = (single(query.with) ?? '').split(',').filter(network => SLUG.test(network));
   const section = parseSection(single(query.tab));
-  const walk = COVERAGE_DISTANCES.find(metres => metres !== COVERAGE_DEFAULT_METRES && String(metres) === single(query.walk));
+  const walk = coverageDistanceOf(single(query.walk));
   const line = single(query.line);
   return {
     ...(date === undefined ? {} : { date }),
@@ -76,7 +77,7 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
     ...(plan && SLUG.test(plan) ? { plan } : {}),
     ...(networks.length > 0 ? { networks } : {}),
     ...(section ? { section } : {}),
-    ...(walk ? { walk } : {}),
+    ...(walk && walk !== COVERAGE_DEFAULT_METRES ? { walk } : {}),
     ...(line && SLUG.test(line) ? { line } : {}),
     ...(single(query.view) === '3d' ? { viewMode: '3d' as const } : {}),
     ...(single(query.names) === 'off' ? { stationNames: false as const } : {}),
