@@ -17,23 +17,23 @@
     <template #content>
       <nav class="flex flex-none gap-1 px-2 pt-1 pb-2" aria-label="Sections">
         <UButton
-          v-for="section in sections"
-          :key="section.id"
+          v-for="tab in sections"
+          :key="tab.id"
           color="neutral"
           variant="ghost"
-          :active="section.id === shown"
+          :active="tab.id === shown"
           activeColor="primary"
           activeVariant="soft"
           class="min-w-0 flex-1 flex-col justify-center gap-0.5 px-0"
-          :class="[tabLabels ? 'h-13' : 'h-11', { 'text-muted': section.id !== shown }]"
-          :aria-label="tabLabels ? undefined : section.label"
-          :aria-pressed="section.id === shown"
-          :aria-description="marks[section.id]"
-          @click="emit('pick', section.id)">
-          <UChip :show="!!marks[section.id]" size="md">
-            <UIcon :name="section.icon" class="size-5" />
+          :class="[tabLabels ? 'h-13' : 'h-11', { 'text-muted': tab.id !== shown }]"
+          :aria-label="tabLabels ? undefined : tab.label"
+          :aria-pressed="tab.id === shown"
+          :aria-description="marks[tab.id]"
+          @click="emit('pick', tab.id)">
+          <UChip :show="!!marks[tab.id]" size="md">
+            <UIcon :name="tab.icon" class="size-5" />
           </UChip>
-          <span v-if="tabLabels" class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
+          <span v-if="tabLabels" class="text-[11px] leading-4 font-semibold">{{ tab.label }}</span>
         </UButton>
       </nav>
       <div v-show="snap !== 'peek'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
