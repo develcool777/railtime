@@ -71,8 +71,9 @@ landing page's pictures in Chrome).
   files named for what they are, not the folder again (`overlay/route.service.ts`, `RouteLayer`),
   but for the folder's main class and its one shared types, constants or utils file, which take
   its name (`engine/engine.service.ts`, `overlay/overlay.utils.ts`). Classes keep their full names.
-- **A new kind of step** is a `StepAnimation` subclass in `steps/animation.service.ts` plus one line
-  in `createStepAnimation`.
+- **A new kind of step** is its times in `STEP_TIMES` and a case in `StepAnimation`'s `cameraPoints`
+  and `draw` (`steps/animation.service.ts`): one class for every kind, its pure parts in
+  `animation.utils.ts`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
 - **The web app** follows the investors site's layout, in `web/src/`:
 
