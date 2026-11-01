@@ -1,16 +1,18 @@
 import { type GeoJSONSource, type LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
-import { recolorBasemap } from './layers/basemap.utils';
-import type { FeatureCollection, LineFeature, NetworkSnapshot } from './layers/snapshot.types';
-import { emptyCollection } from './layers/snapshot.utils';
-import type { Palette } from './layers/theme.types';
+import { recolorBasemap } from '../layers/basemap.utils';
+import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../layers/snapshot.types';
+import { emptyCollection } from '../layers/snapshot.utils';
+import type { Palette } from '../layers/theme.types';
 import type { Bounds } from '@railtime/core/geometry.types';
-import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS } from './minimap.constants';
+import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from './minimap.constants';
+import { viewportBox } from './minimap.utils';
 
 /**
  * A small, fixed overview of the whole city: the network so far, the change happening now, and a
  * box showing where the main camera is looking. Updates sent before its style loads are kept and
- * applied once it has; the line growing and the box, which change every frame, at most ten times a
- * second.
+ * applied once it has; the line growing, which changes every frame, at most thirty times a second.
+ * The box is an element over the map, styled by `transitMap.css`, not its data: following the camera
+ * every frame, it costs no redraw.
  */
 export class Minimap {
   /** The minimap's own non-interactive map. */
@@ -29,6 +31,10 @@ export class Minimap {
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   /** When what changes every frame was last sent, ms. */
   private flushedAt = -Infinity;
+  /** The box outlining the main camera's view. */
+  private readonly box: HTMLDivElement;
+  /** What the box outlines: the main map's visible bounds, once known. */
+  private viewport: Bounds | null = null;
 
   public constructor(container: HTMLElement, style: string, bounds: Bounds, palette: Palette) {
     this.palette = palette;
@@ -42,6 +48,12 @@ export class Minimap {
       attributionControl: false,
     });
     this.map.on('style.load', () => this.install());
+    this.box = document.createElement('div');
+    this.box.className = MINIMAP_VIEWPORT_CLASS;
+    this.box.style.setProperty(MINIMAP_VIEWPORT_COLOR, palette.viewport);
+    container.append(this.box);
+    // The minimap's own camera moves only to frame the city again: the box goes with it.
+    this.map.on('move', () => this.placeViewport());
     // Created hidden, it first fitted the city into nothing: fit it again whenever it gets a size.
     this.resizeObserver = new ResizeObserver(() => {
       if (container.clientWidth === 0 || container.clientHeight === 0) return;
@@ -86,21 +98,8 @@ export class Minimap {
    * @param bounds - The main map's visible bounds.
    */
   public setViewport(bounds: Bounds): void {
-    const [[west, south], [east, north]] = bounds;
-    this.setSoon(MINIMAP_SOURCES.viewport, {
-      type: 'Feature',
-      properties: {},
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [west, south],
-          [east, south],
-          [east, north],
-          [west, north],
-          [west, south],
-        ],
-      },
-    });
+    this.viewport = bounds;
+    this.placeViewport();
   }
 
   /**
@@ -110,16 +109,26 @@ export class Minimap {
    */
   public setPalette(palette: Palette): void {
     this.palette = palette;
+    this.box.style.setProperty(MINIMAP_VIEWPORT_COLOR, palette.viewport);
     if (!this.ready) return;
     recolorBasemap(this.map, palette, { labels: false });
-    this.map.setPaintProperty(MINIMAP_LAYERS.viewport, 'line-color', palette.viewport);
   }
 
   /** Removes the minimap and stops watching its container. */
   public destroy(): void {
     if (this.flushTimer !== null) clearTimeout(this.flushTimer);
     this.resizeObserver.disconnect();
+    this.box.remove();
     this.map.remove();
+  }
+
+  /** Puts the box over the main camera's view, as the minimap projects it. */
+  private placeViewport(): void {
+    if (!this.viewport) return;
+    const [[west, south], [east, north]] = this.viewport;
+    const { left, top, width, height } = viewportBox(this.map.project([west, north]), this.map.project([east, south]));
+    Object.assign(this.box.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
+    this.box.dataset.shown = '';
   }
 
   /** Adds sources and layers once the style has loaded, then applies what arrived before. */
@@ -154,12 +163,6 @@ export class Minimap {
       source: MINIMAP_SOURCES.active,
       filter: ['get', 'planned'],
       paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1.5] },
-    });
-    this.map.addLayer({
-      id: MINIMAP_LAYERS.viewport,
-      type: 'line',
-      source: MINIMAP_SOURCES.viewport,
-      paint: { 'line-color': this.palette.viewport, 'line-width': 1.5 },
     });
     this.ready = true;
     for (const [source, data] of this.pending) this.setData(source, data);

@@ -1,5 +1,5 @@
 import type { NetworkEngine } from '@railtime/network/engine.service';
-import type { Minimap } from '../minimap.service';
+import type { Minimap } from '../minimap/minimap.service';
 import type { ChaseTarget } from '../steps/animation.types';
 import type { Player } from '../playback/player.service';
 import type { StationLayer } from './stations.service';

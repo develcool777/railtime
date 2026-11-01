@@ -8,7 +8,7 @@ import { LAYERS } from './layers/ids.constants';
 import type { MapLayer } from './layers/layer.service';
 import { FrameRenderer } from './layers/frame.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from './layers/theme.constants';
-import { Minimap } from './minimap.service';
+import { Minimap } from './minimap/minimap.service';
 import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { NetworkTime } from '@railtime/network/facts.types';

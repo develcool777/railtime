@@ -39,8 +39,8 @@ stretched, and every stretch, 500 m or 5 km, moves alike. A station the track on
 later, is no stop. In 3D the camera follows the front at one zoom (`CHASE_ZOOM`), so the streets pass
 at the line's pace on every stretch: it sits on the line's middle over a short stretch round the
 front, so a sharp bend is rounded, and faces from a little behind the front to a little ahead, so
-it turns before a bend, smoothly, never in it (`chaseAlong`). The minimap, a second map, takes what
-changes every frame at most ten times a second. A station reached is linked to those it changes to as the front
+it turns before a bend, smoothly, never in it (`chaseAlong`). The minimap, a second map, takes the line
+growing at most thirty times a second, and outlines the camera's view with an element over it, placed every frame. A station reached is linked to those it changes to as the front
 gets there, ringed as an interchange from then. A closed stretch plays the same way backwards
 (`retreatOf`): one front retracts from its far end to the network that stays, at the same pace,
 over the dashed ghost of what closes, the 3D camera following it facing the way it runs, and each
@@ -87,7 +87,8 @@ runs in the unit tests as it is; the layers, and `TransitMap` whole, run on a st
 ```text
 src/
 ├── transitMap.service.ts      TransitMap: the facade; owns MapLibre, the frame loop and the event queue
-├── minimap.service.ts         Minimap: the overview inset
+├── minimap/                   Minimap: the overview inset, and the box over it outlining the camera's view
+│                              (`minimap.utils.ts` places it)
 ├── playback/
 │   ├── player.service.ts      Player: the clock and each step's phases, moved by its commands; pure
 │   └── camera.service.ts      CameraDirector: framing a step; in 3D, following its line as it grows

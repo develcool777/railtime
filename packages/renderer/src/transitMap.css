@@ -1,2 +1,16 @@
 /* MapLibre's control and canvas styles. Import once from the app: @railtime/renderer/transitMap.css */
 @import 'maplibre-gl/dist/maplibre-gl.css';
+
+/* The minimap's box outlining where the main camera looks (Minimap): an element over
+   the inset, shown once it has bounds, in the theme's colour. */
+.rt-minimap-viewport {
+  position: absolute;
+  display: none;
+  box-sizing: border-box;
+  border: 1.5px solid var(--rt-minimap-viewport);
+  pointer-events: none;
+}
+
+.rt-minimap-viewport[data-shown] {
+  display: block;
+}
