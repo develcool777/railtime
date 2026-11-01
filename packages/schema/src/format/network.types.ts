@@ -65,6 +65,8 @@ export type Station = {
   infill?: Record<string, IsoDate>;
   /** Lines that stopped calling here while still running through: line id to date. */
   closed?: Record<string, IsoDate>;
+  /** Lines whose trains end here and go back the way they came, from two directions: their track may turn back at it. */
+  reverses?: string[];
   /** Its earlier names, oldest first. */
   formerNames?: FormerName[];
 };
