@@ -78,9 +78,10 @@ animates `steps[k]`. On one date the order is:
    opening on the same day play one after another, not at once.
 3. **close**: one step per line and per connected stretch, as openings. Its track retracts as one
    front, the stretch's growth (`retreatOf`) played backwards, from its far end to the stations that
-   stay on the map, leaving a dashed ghost. A line
+   stay on the map, over a dashed ghost of it. A line
    `suspended` on a segment closes there and opens again: each period is its
-   own `LineSegment`, the reopening's caption says "reopens" and the ghost goes once the line is back.
+   own `LineSegment`, the reopening's caption says "reopens", and the ghost stays until the line is back;
+   track closed for good leaves none.
 4. **infill**: a station opening on track already drawn. One that opened after a line had left its
    track for good was never a stop on that line: no step, and the line is not listed there.
 5. **stationClose**: lines stop calling at a station but keep running through it (`closed` in the

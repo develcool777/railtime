@@ -43,7 +43,7 @@ it turns before a bend, smoothly, never in it (`chaseAlong`). The minimap, a sec
 growing at most thirty times a second, and outlines the camera's view with an element over it, placed every frame. A station reached is linked to those it changes to as the front
 gets there, ringed as an interchange from then. A closed stretch plays the same way backwards
 (`retreatOf`): one front retracts from its far end to the network that stays, at the same pace,
-over the dashed ghost of what closes, the 3D camera following it facing the way it runs, and each
+over the dashed ghost of what closes (a suspended stretch's ghost stays until its line is back; one closed for good goes), the 3D camera following it facing the way it runs, and each
 station it takes off the map fading while the front stops there. A plan's stretch grows dashed, as
 the map draws a plan (`planned` on its features). The player's `progress` is linear: each kind of step moves through its time its own way. A renamed station is labelled with its new name over `formerly <old>`; a closing one
 stays named, marked `closed`, as its dot fades and a ring closes in on it.
