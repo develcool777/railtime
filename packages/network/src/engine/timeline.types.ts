@@ -22,5 +22,15 @@ export type DayChanges = {
   identities: { line: string; text: string }[];
 };
 
+/** When a line calls at a station on its track, where that is not simply while it runs there. */
+export type StopSteps = {
+  /** The step the station opens on it at (`infill`); -1 for from the start. */
+  opens: number;
+  /** The step it stops calling at (`closed`); `Infinity` for never. */
+  closes: number;
+  /** It never calls there: the station opened after it left, closed before it came, or it passes. */
+  never: boolean;
+};
+
 /** The step at which a line stops being drawn as `as`. */
 export type AliasEnd = { step: number; as: string };

@@ -63,7 +63,8 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   const lines: LineFeature[] = [];
   const planned: LineFeature[] = [];
   const ghosts: LineFeature[] = [];
-  const drawn = new Set<string>();
+  // The lines drawn on each segment: a line drawn as another is drawn once.
+  const drawn = new Map<number, Set<string>>();
   const stations = new Map<string, StationLines>();
   const stayingStations = new Set<string>();
   const builtStations = new Set<string>();
@@ -73,15 +74,17 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   for (const lineSegment of visible) {
     const { segment } = lineSegment;
     // Closed track is a ghost until its line returns there.
+    const closing = closingNow(lineSegment);
     const returned = lineSegment.next !== null && (timeline.isOpen(lineSegment.next, cursor) || timeline.hasClosed(lineSegment.next, cursor));
-    if ((timeline.hasClosed(lineSegment, cursor) || closingNow(lineSegment)) && !returned)
+    if ((closing || timeline.hasClosed(lineSegment, cursor)) && !returned)
       ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0, 0, lineSegment.line));
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
-    const key = `${segment.index}|${line.id}`;
     const isPlanned = lineSegment.section !== null;
-    if (!closingNow(lineSegment) && !drawn.has(key)) {
-      drawn.add(key);
+    const drawnHere = drawn.get(segment.index) ?? new Set<string>();
+    if (!closing && !drawnHere.has(line.id)) {
+      drawnHere.add(line.id);
+      drawn.set(segment.index, drawnHere);
       (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id), 0, lineSegment.line, isPlanned));
     }
     segmentsOnMap.add(segment.index);
@@ -91,7 +94,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
       const served = stations.get(station) ?? new Map();
       served.set(line.id, line.color);
       stations.set(station, served);
-      if (!closingNow(lineSegment)) stayingStations.add(station);
+      if (!closing) stayingStations.add(station);
       if (!isPlanned) builtStations.add(station);
     }
   }

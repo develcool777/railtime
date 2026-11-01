@@ -2,8 +2,8 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import type { NetworkIndex } from './index.service';
 import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
-import { connectedStretches, planGrowth } from './timeline.utils.ts';
-import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
+import { connectedStretches, forkedParts, planGrowth } from './timeline.utils.ts';
+import type { AliasEnd, DayChanges, LineIdentity, StepDraft, StopSteps } from './timeline.types';
 
 /**
  * The network's history as an ordered list of steps.
@@ -12,8 +12,8 @@ import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.t
  * mode sits on a cursor; playback moves it one step at a time, animating `steps[cursor]`.
  *
  * On one date the order is: identity changes, then openings (line by line, one connected stretch
- * per step), then closures, then stations opening on existing track, then stations closing on it,
- * then renames.
+ * per step, a stretch that forks a step per branch), then stations opening on existing track, then
+ * stations closing on it, then closures, then renames.
  *
  * A plan built on the network follows every dated step, undated: each section's openings, then its
  * stations opening on existing track. Its steps are `planned`, at time `Infinity`.
@@ -29,12 +29,8 @@ export class Timeline {
   private readonly openStep = new Map<LineSegment, number>();
   /** The step at which each line segment closes, if it does. */
   private readonly closeStep = new Map<LineSegment, number>();
-  /** The step at which a station opens on a line it sits on: key `station|line`. */
-  private readonly infillStep = new Map<string, number>();
-  /** The step at which a line stops calling at a station it still runs through: key `station|line`. */
-  private readonly stationCloseStep = new Map<string, number>();
-  /** Lines that never called at a station on their track: it opened after they left, or closed before they came. Key `station|line`. */
-  private readonly neverServed = new Set<string>();
+  /** By station, then line: when the line calls there, where it does not simply call while it runs there. */
+  private readonly stops = new Map<string, Map<string, StopSteps>>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
   /** Each opening's growth and each closure's retreat, worked out the first time it is asked for. */
@@ -47,9 +43,10 @@ export class Timeline {
       const day = days.get(time)!;
       this.addIdentitySteps(time, day.identities);
       this.addOpenSteps(time, day.opens);
-      this.addCloseSteps(time, day.closes);
       this.addInfillSteps(time, day.infills);
+      // A station closes on its line while the line runs there: before the day's track closes under it.
       this.addStationCloseSteps(time, day.stationCloses);
+      this.addCloseSteps(time, day.closes);
       for (const rename of day.renames) this.addStep({ kind: 'rename', time, ...rename });
     }
     this.datedCount = this.steps.length;
@@ -140,21 +137,20 @@ export class Timeline {
    * @returns True if the station is a stop on the line.
    */
   public servesStation(station: string, line: string, cursor: number): boolean {
-    const key = `${station}|${line}`;
-    if (this.neverServed.has(key)) return false;
-    return (this.infillStep.get(key) ?? -1) < cursor && (this.stationCloseStep.get(key) ?? Infinity) >= cursor;
+    const stop = this.stops.get(station)?.get(line);
+    return !stop || (!stop.never && stop.opens < cursor && stop.closes >= cursor);
   }
 
   /**
    * Whether a line ever called at a station on its track: not if the station opened after the line
-   * had left (`infill` later than the line's last day there).
+   * had left (`infill` later than the line's last day there), nor where the line passes (`passes`).
    *
    * @param station - The station id.
    * @param line - The line id.
    * @returns True if the station was a stop on the line at some point.
    */
   public everServes(station: string, line: string): boolean {
-    return !this.neverServed.has(`${station}|${line}`);
+    return !this.stops.get(station)?.get(line)?.never;
   }
 
   /**
@@ -179,12 +175,37 @@ export class Timeline {
    * The stations on the map at a cursor: the ones a new stretch grows out of.
    *
    * @param cursor - The cursor.
+   * @param leaving - Line segments to leave out: a closure's own, for the network that stays.
    * @returns Their ids.
    */
-  public stationsOnMap(cursor: number): Set<string> {
+  public stationsOnMap(cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+    return this.stationsOf(cursor, lineSegment => !leaving.has(lineSegment));
+  }
+
+  /**
+   * The stations on the map on one line, as drawn on a date: an opening of it grows out of them first.
+   *
+   * @param line - The id of the line as drawn.
+   * @param time - The date, which says what each line is drawn as.
+   * @param cursor - The cursor.
+   * @param leaving - Line segments to leave out: a closure's own.
+   * @returns Their ids.
+   */
+  private stationsOnLine(line: string, time: number, cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+    return this.stationsOf(cursor, lineSegment => !leaving.has(lineSegment) && this.identityOn(lineSegment.line, time) === line);
+  }
+
+  /**
+   * The ends of the line segments open at a cursor that a filter keeps.
+   *
+   * @param cursor - The cursor.
+   * @param keeps - Whether a line segment counts.
+   * @returns The stations' ids.
+   */
+  private stationsOf(cursor: number, keeps: (lineSegment: LineSegment) => boolean): Set<string> {
     const stations = new Set<string>();
     for (const lineSegment of this.index.lineSegments) {
-      if (!this.isOpen(lineSegment, cursor)) continue;
+      if (!keeps(lineSegment) || !this.isOpen(lineSegment, cursor)) continue;
       stations.add(lineSegment.segment.stationA);
       stations.add(lineSegment.segment.stationB);
     }
@@ -201,12 +222,14 @@ export class Timeline {
   public growthOf(step: OpenStep): Growth {
     const known = this.growths.get(step);
     if (known) return known;
-    const planned = planGrowth(step.segments, this.stationsOnMap(step.index), station => this.index.coordOf(station), this.index.centre);
-    const calledAt = (station: string) =>
-      step.lineSegments.some(
-        ({ segment, line }) => (segment.stationA === station || segment.stationB === station) && this.servesStation(station, line, step.index + 1),
-      );
-    const growth = { ...planned, reach: planned.reach.map(reached => ({ ...reached, isNew: reached.isNew && calledAt(reached.station) })) };
+    const planned = planGrowth(
+      step.segments,
+      this.stationsOnMap(step.index),
+      station => this.index.coordOf(station),
+      this.index.centre,
+      this.stationsOnLine(step.line, step.time, step.index),
+    );
+    const growth = this.calledAtOnly(planned, step.lineSegments, step.index + 1);
     this.growths.set(step, growth);
     return growth;
   }
@@ -214,7 +237,7 @@ export class Timeline {
   /**
    * How a closure retracts: its stretch planned as it would grow from the stations still on the map
    * after it (else the end nearest the centre), played backwards, so its front runs back to the
-   * network that stays. A station `isNew` leaves the map with it.
+   * network that stays. A station `isNew` leaves the map with it, where its lines called.
    *
    * @param step - The closure.
    * @returns Its retreat as a growth, worked out once.
@@ -223,9 +246,47 @@ export class Timeline {
     const known = this.growths.get(step);
     if (known) return known;
     const segments = [...new Map(step.lineSegments.map(({ segment }) => [segment.index, segment])).values()];
-    const growth = planGrowth(segments, this.stationsOnMap(step.index + 1), station => this.index.coordOf(station), this.index.centre);
+    const planned = planGrowth(
+      segments,
+      this.stationsOnMap(step.index + 1),
+      station => this.index.coordOf(station),
+      this.index.centre,
+      this.stationsOnLine(step.line, step.time, step.index + 1),
+    );
+    // While its closing step plays, a line still calls where it called.
+    const growth = this.calledAtOnly(planned, step.lineSegments, step.index);
     this.growths.set(step, growth);
     return growth;
+  }
+
+  /**
+   * A stretch's growth with only the stations its lines call at counted new: track running past a
+   * station not yet open on them, or closed on them, is no stop.
+   *
+   * @param planned - The growth as planned on the track.
+   * @param lineSegments - The stretch's line segments.
+   * @param cursor - The cursor its lines' stops are asked at.
+   * @returns The growth.
+   */
+  private calledAtOnly(planned: Growth, lineSegments: LineSegment[], cursor: number): Growth {
+    const calledAt = (station: string) =>
+      lineSegments.some(({ segment, line }) => (segment.stationA === station || segment.stationB === station) && this.servesStation(station, line, cursor));
+    return { ...planned, reach: planned.reach.map(reached => ({ ...reached, isNew: reached.isNew && calledAt(reached.station) })) };
+  }
+
+  /**
+   * A line's stops at a station, made the first time one is set.
+   *
+   * @param station - The station id.
+   * @param line - The line id.
+   * @returns Its record, to set in place.
+   */
+  private stopOf(station: string, line: string): StopSteps {
+    const byLine = this.stops.get(station) ?? new Map<string, StopSteps>();
+    this.stops.set(station, byLine);
+    const stop = byLine.get(line) ?? { opens: -1, closes: Infinity, never: false };
+    byLine.set(line, stop);
+    return stop;
   }
 
   /**
@@ -251,13 +312,15 @@ export class Timeline {
         // A station opening where its line had already gone for good is no event: the line passed by before it.
         const lineLater = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line && (lineSegment.closes ?? Infinity) > time);
         if (lineLater) day(time).infills.push({ station, line });
-        else this.neverServed.add(`${station}|${line}`);
+        else this.stopOf(station, line).never = true;
       }
       for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
+      for (const line of info.passes ?? []) this.stopOf(station, line).never = true;
       for (const [position, former] of (info.formerNames ?? []).entries()) {
         const time = toTimestamp(former.until);
-        // A name changed before the station opened is no event: it opens under the later name.
-        if (!this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.opens < time)) continue;
+        // A name changed while no line runs there is no event: the station opens, or comes back, under the later name.
+        const onMap = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.opens < time && (lineSegment.closes ?? Infinity) > time);
+        if (!onMap) continue;
         day(time).renames.push({ station, from: former.name, to: info.formerNames?.[position + 1]?.name ?? info.name });
       }
     }
@@ -316,35 +379,48 @@ export class Timeline {
   }
 
   /**
-   * One step per line and connected stretch. Lines drawn as the same line (aliases) open together.
+   * One step per line and connected stretch, and per branch where it forks: each grows as one front.
+   * Lines drawn as the same line (aliases) open together.
    *
    * @param time - The date.
    * @param opens - That day's openings.
    */
   private addOpenSteps(time: number, opens: LineSegment[]): void {
+    const coordOf = (station: string) => this.index.coordOf(station);
     const byLine = new Map<string, LineSegment[]>();
     for (const lineSegment of opens) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const line of [...byLine.keys()].sort(this.index.compareLines)) {
-      for (const stretch of connectedStretches(byLine.get(line)!, station => this.index.coordOf(station), this.index.centre)) {
-        const step = this.addStep({ kind: 'open', time, line, lineSegments: stretch, segments: [...new Set(stretch.map(item => item.segment))] });
-        for (const lineSegment of stretch) this.openStep.set(lineSegment, step);
+      for (const stretch of connectedStretches(byLine.get(line)!, coordOf, this.index.centre)) {
+        const onMap = this.stationsOnMap(this.steps.length);
+        for (const part of forkedParts(stretch, onMap, coordOf, this.index.centre, this.stationsOnLine(line, time, this.steps.length))) {
+          const step = this.addStep({ kind: 'open', time, line, lineSegments: part, segments: [...new Set(part.map(item => item.segment))] });
+          for (const lineSegment of part) this.openStep.set(lineSegment, step);
+        }
       }
     }
   }
 
   /**
-   * One step per line and connected stretch closing that day: each retracts as one front, as an opening grows.
+   * One step per line and connected stretch closing that day, and per branch where it forks: each
+   * retracts as one front, as an opening grows, its branches back to the fork before the way they leave.
    *
    * @param time - The date.
    * @param closes - That day's closures.
    */
   private addCloseSteps(time: number, closes: LineSegment[]): void {
+    const coordOf = (station: string) => this.index.coordOf(station);
     const byLine = new Map<string, LineSegment[]>();
     for (const lineSegment of closes) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const [line, lineSegments] of byLine) {
-      for (const stretch of connectedStretches(lineSegments, station => this.index.coordOf(station), this.index.centre)) {
-        const step = this.addStep({ kind: 'close', time, line, lineSegments: stretch });
-        for (const lineSegment of stretch) this.closeStep.set(lineSegment, step);
+      for (const stretch of connectedStretches(lineSegments, coordOf, this.index.centre)) {
+        const closing = new Set(stretch);
+        const staying = this.stationsOnMap(this.steps.length, closing);
+        // Split as the stretch would open from the network that stays, played backwards: its last branch first.
+        const stayingOnLine = this.stationsOnLine(line, time, this.steps.length, closing);
+        for (const part of forkedParts(stretch, staying, coordOf, this.index.centre, stayingOnLine).reverse()) {
+          const step = this.addStep({ kind: 'close', time, line, lineSegments: part });
+          for (const lineSegment of part) this.closeStep.set(lineSegment, step);
+        }
       }
     }
   }
@@ -360,7 +436,7 @@ export class Timeline {
     for (const { station, line } of infills) pushTo(byStation, station, line);
     for (const [station, lines] of byStation) {
       const step = this.addStep({ kind: 'infill', time, station, lines });
-      for (const line of lines) this.infillStep.set(`${station}|${line}`, step);
+      for (const line of lines) this.stopOf(station, line).opens = step;
     }
   }
 
@@ -375,7 +451,7 @@ export class Timeline {
     for (const { station, line } of closes) pushTo(byStation, station, line);
     for (const [station, lines] of byStation) {
       const step = this.addStep({ kind: 'stationClose', time, station, lines });
-      for (const line of lines) this.stationCloseStep.set(`${station}|${line}`, step);
+      for (const line of lines) this.stopOf(station, line).closes = step;
     }
   }
 
@@ -390,7 +466,7 @@ export class Timeline {
       const before = new Set(atStation.filter(lineSegment => lineSegment.opens < lastClose).map(lineSegment => lineSegment.line));
       // A line that came earlier still calls there: the station never closed for good.
       if ([...before].some(line => !(line in closed))) continue;
-      for (const { line } of atStation) if (!before.has(line)) this.neverServed.add(`${station}|${line}`);
+      for (const { line } of atStation) if (!before.has(line)) this.stopOf(station, line).never = true;
     }
   }
 

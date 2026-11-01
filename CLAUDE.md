@@ -171,7 +171,9 @@ directions and go back the way they came, the station says so (`reverses`); nowh
 turn back through it. A plan's station on track already built sits on that track: the plan splits it there.
 A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
 says the line never called there); its `closed` while the line runs there. The schema refuses
-any other.
+any other. A line's fast track beside another's stopping one runs on the same segments, drawn side
+by side, and each station it runs through without calling says so (`passes`): never a segment of
+its own laid over theirs, which draws one line on top of the other.
 
 Each city's test lists every date a line comes apart (`lineSplits` in `test/support/history.utils.ts`),
 with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just

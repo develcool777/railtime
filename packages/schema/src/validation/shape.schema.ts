@@ -30,6 +30,7 @@ const stationSchema = z.object({
   infill: z.record(z.string(), isoDate).optional(),
   closed: z.record(z.string(), isoDate).optional(),
   reverses: z.array(z.string()).optional(),
+  passes: z.array(z.string()).optional(),
   formerNames: z.array(z.object({ name: z.string().min(1), names: names.optional(), until: isoDate })).optional(),
 });
 

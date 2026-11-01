@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkEngine } from '@railtime/network/engine.service';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TrackSegment } from '@railtime/network/engine.types';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
@@ -18,11 +19,13 @@ describe('London', () => {
       'metropolitan 1884-10-01: 2 pieces',
       'district 1884-10-01: 2 pieces',
       // The Metropolitan took over the Aylesbury & Buckingham a year before its own line reached Aylesbury.
-      'metropolitan 1891-07-01: 3 pieces',
+      'metropolitan 1891-07-01: 2 pieces',
       // The City & South London's north end closed for rebuilding while its south ran on.
       'northern 1922-08-08: 2 pieces',
       // The Piccadilly took Ealing–South Harrow; an isolated District service ran on to Uxbridge until 1933.
       'district 1932-07-04: 2 pieces',
+      // The bomb at Balham closed Clapham South–Tooting Bec; Morden's end ran on alone until January.
+      'northern 1940-10-15: 2 pieces',
       // The Jubilee extension opened from Stratford first, joined to the rest that autumn.
       'jubilee 1999-05-14: 2 pieces',
       // The East London line reopened before it joined the North London; then the West Anglia lines and Romford–Upminster joined, apart.
@@ -31,6 +34,62 @@ describe('London', () => {
       // TfL Rail took over Paddington–Heathrow, apart from Liverpool Street–Shenfield until the tunnel opened.
       'tfl-rail 2018-05-20: 2 pieces',
     ]);
+  });
+
+  test('suspends the District past the future Hounslow East in 1905 without a stop there: it opened only in 1909', () => {
+    const suspended = stepsOn('1905-06-13').find(step => step.kind === 'close');
+    if (suspended?.kind !== 'close') throw new Error('the District leaves its direct Hounslow line on 13 June 1905');
+    expect(timeline.retreatOf(suspended).reach.filter(reached => reached.isNew)).toEqual([]);
+  });
+
+  test('opens the Hampstead tube in 1907 a branch at a time: to Golders Green, then from Camden Town to Highgate', () => {
+    const opened = stepsOn('1907-06-22').filter(step => step.kind === 'open');
+    const ends = opened.map(step => (step.kind === 'open' ? new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB])) : new Set()));
+    expect(ends.map(stations => ['golders-green', 'archway'].filter(station => stations.has(station)))).toEqual([['golders-green'], ['archway']]);
+  });
+
+  test('closes the East London line in 2007 a branch at a time: New Cross Gate back to Surrey Quays, then the rest', () => {
+    const closed = stepsOn('2007-12-23').filter(step => step.kind === 'close');
+    const reaches = closed.map(step =>
+      step.kind === 'close' ? step.lineSegments.some(({ segment }) => segment.stationB === 'new-cross-gate' || segment.stationA === 'new-cross-gate') : null,
+    );
+    expect(reaches).toEqual([true, false]);
+  });
+
+  test('extends the Central line in 1920 out of its Wood Lane loop to Ealing Broadway, named from Wood Lane', () => {
+    const facts = NetworkFacts.create(london, { today: toTimestamp('2026-01-01') });
+    const extended = stepsOn('1920-08-03').find(step => step.kind === 'open' && step.line === 'central');
+    if (extended?.kind !== 'open') throw new Error('the Central line reaches Ealing Broadway on 3 August 1920');
+    expect(timeline.growthOf(extended).reach[0]?.station).toBe('white-city');
+    expect(facts.change(extended.index).subtitle).toBe('Wood Lane – Ealing Broadway');
+  });
+
+  test('closes City Road in 1922 on its running line, then suspends the City & South London under it', () => {
+    const day = stepsOn('1922-08-08');
+    const closing = day.find(step => step.kind === 'stationClose' && step.station === 'city-road');
+    const suspended = day.find(step => step.kind === 'close' && step.line === 'northern');
+    if (!closing || !suspended) throw new Error('City Road closes as the Northern line is suspended on 8 August 1922');
+    expect(closing.index).toBeLessThan(suspended.index);
+    // As it closes, its line still runs through it: there is a station to fade.
+    const track = index.lineSegmentsAt('city-road').filter(lineSegment => lineSegment.line === 'northern');
+    expect(track.some(lineSegment => timeline.isOpen(lineSegment, closing.index))).toBe(true);
+    expect(timeline.servesStation('city-road', 'northern', closing.index)).toBe(true);
+  });
+
+  test('runs fast lines beside the stopping ones they pass, on the same track, never on track of their own over it', () => {
+    const passing = [
+      ['metropolitan', ['west-hampstead', 'kilburn', 'willesden-green', 'dollis-hill', 'neasden']],
+      ['piccadilly', ['west-kensington', 'ravenscourt-park', 'stamford-brook', 'chiswick-park']],
+    ] as const;
+    for (const [line, stations] of passing)
+      for (const station of stations) {
+        expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line)).toBe(true);
+        expect(timeline.everServes(station, line)).toBe(false);
+      }
+  });
+
+  test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {
+    expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'windsor-and-eton-central')).toBe(false);
   });
 
   test('reaches Rickmansworth on the Metropolitan in 1887, not with the 1925 Watford branch', () => {

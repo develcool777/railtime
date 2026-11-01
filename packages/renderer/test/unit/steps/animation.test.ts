@@ -287,6 +287,15 @@ describe('StepAnimation, a station renamed', () => {
 });
 
 describe('StepAnimation, lines taking their own colour', () => {
+  test('frames only the track on the map as a line takes its own colour, not track it opens later', () => {
+    const network = tinyNetwork();
+    // Pink reaches C – D only in 2000, after it took its own colour.
+    network.segments[2]!.lines.pink = { open: '2000-01-01' };
+    const { animation, playback } = stepAfter(network, '1989-01-01');
+    expect(animation.step.kind).toBe('identity');
+    expect(animation.cameraPoints()).toEqual(playback.index.segments[0]!.coordinates);
+  });
+
   test('frames the line taking its own identity, and leaves the blend to the network layer', () => {
     const { animation, draw, playback } = stepAfter(tinyNetwork(), '1989-01-01');
     expect(animation.step.kind).toBe('identity');

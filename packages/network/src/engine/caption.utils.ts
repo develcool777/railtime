@@ -28,6 +28,38 @@ const drawnAs = (context: CaptionContext, step: Step, line: string): { id: strin
 };
 
 /**
+ * An end of a stretch as a passenger knew it: the station itself where the line calls there, else the
+ * nearest one along the line's track that it calls at (an extension leaving the line at a junction is
+ * named from the station before it, one ending at a junction by the station after it); else the
+ * station itself.
+ *
+ * @param context - The network.
+ * @param station - The stretch's end.
+ * @param line - The id of the line, as drawn.
+ * @param cursor - The cursor the line is asked at.
+ * @returns The station id.
+ */
+const stopNear = (context: CaptionContext, station: string, line: string, cursor: number): string => {
+  const { index, timeline } = context;
+  const onLine = (stop: string) =>
+    index.lineSegmentsAt(stop).filter(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.identityOf(lineSegment.line, cursor).id === line);
+  const seen = new Set([station]);
+  const queue = [station];
+  for (let current = queue.shift(); current !== undefined; current = queue.shift()) {
+    const here = current;
+    const lineSegments = onLine(here);
+    if (lineSegments.some(lineSegment => timeline.servesStation(here, lineSegment.line, cursor))) return here;
+    for (const { segment } of lineSegments) {
+      const next = segment.stationA === here ? segment.stationB : segment.stationA;
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return station;
+};
+
+/**
  * A line opening, extended or reopening, from the first station it reaches to the last.
  *
  * @param step - The step.
@@ -46,26 +78,30 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
   return {
     kind: 'open',
     title: `${index.lineName(step.line)} ${verb}`,
-    subtitle: `${name(required(reach[0], 'first station reached').station)} – ${name(required(reach.at(-1), 'last station reached').station)}`,
+    // Where it starts, on the line before it; where it ends, on the line it makes.
+    subtitle: `${name(stopNear(context, required(reach[0], 'first station reached').station, step.line, step.index))} – ${name(stopNear(context, required(reach.at(-1), 'last station reached').station, step.line, step.index + 1))}`,
     color: context.colorOf(step.line),
     stations: reach.filter(reached => reached.isNew).map(reached => name(reached.station)),
   };
 };
 
 /**
- * A line's section suspended, or closing for good.
+ * A line's section suspended, or closing for good, from the network that stays to the far end: as
+ * an opening, by its ends, never by track it ran past without calling.
  *
  * @param step - The step.
  * @param context - The network.
  * @returns Its caption.
  */
 const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 'time'> => {
-  const ends = step.lineSegments.flatMap(({ segment }) => [nameOn(context, segment.stationA, step.time), nameOn(context, segment.stationB, step.time)]);
+  const { reach } = context.timeline.retreatOf(step);
+  const name = (station: string) => nameOn(context, station, step.time);
   const returns = step.lineSegments.every(lineSegment => lineSegment.next !== null);
   return {
     kind: 'close',
     title: `${context.index.lineName(step.line)}: section ${returns ? 'suspended' : 'closes'}`,
-    subtitle: [...new Set(ends)].join(' – '),
+    // Where it starts, on the line that stays; where it ends, on the line before it closes.
+    subtitle: `${name(stopNear(context, required(reach[0], 'first station left').station, step.line, step.index + 1))} – ${name(stopNear(context, required(reach.at(-1), 'last station left').station, step.line, step.index))}`,
     color: context.colorOf(step.line),
     stations: [],
   };

@@ -30,6 +30,31 @@ describe('CaptionUtils', () => {
       });
     });
 
+    test('names an extension leaving its line where it does not call from the station before', () => {
+      // Blue runs B – C from 1930 but never calls at C: its 1935 extension on to E is named from B.
+      const network = tinyNetwork();
+      network.stations.e = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
+      network.segments.push({
+        stationA: 'c',
+        stationB: 'e',
+        lines: { blue: { open: '1935-01-01' } },
+        coordinates: [network.stations.c!.coordinate, network.stations.e.coordinate],
+      });
+      expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
+    });
+
+    test('names an extension ending where its line does not call yet by its last stop', () => {
+      // Blue on from C, where it never calls, by E to F, a station only from 1960: named B – E.
+      const network = tinyNetwork();
+      network.stations.e = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
+      network.stations.f = { name: 'F', coordinate: [2 * 0.0144, 51.518], infill: { blue: '1960-01-01' } };
+      network.segments.push(
+        { stationA: 'c', stationB: 'e', lines: { blue: { open: '1935-01-01' } }, coordinates: [network.stations.c!.coordinate, network.stations.e.coordinate] },
+        { stationA: 'e', stationB: 'f', lines: { blue: { open: '1935-01-01' } }, coordinates: [network.stations.e.coordinate, network.stations.f.coordinate] },
+      );
+      expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
+    });
+
     test('says a line opens though another already runs there, and one back on track it left reopens', () => {
       // B and C are both on the map: the stretch grows one way, from C, nearer the centre.
       expect(captionAfter(tinyNetwork(), '1929-01-01')).toMatchObject({ title: 'Blue line opens', subtitle: 'C – B' });
@@ -41,11 +66,11 @@ describe('CaptionUtils', () => {
         kind: 'close',
         time: toTimestamp('1940-01-01'),
         title: 'Blue line: section suspended',
-        subtitle: 'B – C',
+        subtitle: 'C – B',
         color: { light: '#0000ff', dark: '#0000ff' },
         stations: [],
       });
-      expect(captionAfter(tinyNetwork(), '1949-01-01')).toMatchObject({ title: 'Blue line: section closes', subtitle: 'B – C' });
+      expect(captionAfter(tinyNetwork(), '1949-01-01')).toMatchObject({ title: 'Blue line: section closes', subtitle: 'C – B' });
     });
 
     test('says a station opens on its line, and on every line it opens on', () => {
