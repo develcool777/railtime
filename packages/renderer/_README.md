@@ -41,7 +41,11 @@ at the line's pace on every stretch: it sits on the line's middle over a short s
 front, so a sharp bend is rounded, and faces from a little behind the front to a little ahead, so
 it turns before a bend, smoothly, never in it (`chaseAlong`). The minimap, a second map, takes what
 changes every frame at most ten times a second. A station reached is linked to those it changes to as the front
-gets there, ringed as an interchange from then. The player's `progress` is linear: each kind of step moves through its time its own way. A renamed station is labelled with its new name over `formerly <old>`; a closing one
+gets there, ringed as an interchange from then. A closed stretch plays the same way backwards
+(`retreatOf`): one front retracts from its far end to the network that stays, at the same pace,
+over the dashed ghost of what closes, the 3D camera following it facing the way it runs, and each
+station it takes off the map fading while the front stops there. A plan's stretch grows dashed, as
+the map draws a plan (`planned` on its features). The player's `progress` is linear: each kind of step moves through its time its own way. A renamed station is labelled with its new name over `formerly <old>`; a closing one
 stays named, marked `closed`, as its dot fades and a ring closes in on it.
 
 A frame draws only what changed (`FrameRenderer`): with nothing playing, nothing popping in and the same snapshot, it
@@ -98,7 +102,7 @@ src/
 ```
 
 The player and the map only ever talk to `StepAnimation`, one class for every kind of step: each kind's
-times are a row of `STEP_TIMES` (an opening's, its stretch's), and `cameraPoints` and `draw` a case each.
+times are a row of `STEP_TIMES` (an opening's or a closure's, its stretch's), and `cameraPoints` and `draw` a case each.
 
 ## Limits
 

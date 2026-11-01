@@ -12,6 +12,7 @@ export const MINIMAP_LAYERS = {
   planned: 'mm-planned',
   activeGlow: 'mm-active-glow',
   active: 'mm-active',
+  activePlanned: 'mm-active-planned',
   viewport: 'mm-viewport',
 } as const;
 

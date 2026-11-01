@@ -206,6 +206,29 @@ describe('Timeline', () => {
     expect(planned.reach.find(reached => reached.station === 'c')?.isNew).toBe(true);
     expect(timeline.growthOf(extension)).toBe(growth);
   });
+
+  test('retracts a closure back to the stations still on the map after it, worked out once, new where a station leaves', () => {
+    const network = tinyNetwork();
+    network.stations.e = { name: 'E', coordinate: [4 * 0.0144, 51.5] };
+    network.segments.push({
+      stationA: 'd',
+      stationB: 'e',
+      lines: { blue: { open: '1930-01-01', close: '1950-01-01' } },
+      coordinates: [
+        [3 * 0.0144, 51.5],
+        [4 * 0.0144, 51.5],
+      ],
+    });
+    const { timeline } = timelineOf(network);
+    const closure = timeline.steps.find(step => step.kind === 'close' && step.lineSegments.some(({ segment }) => segment.stationB === 'e'));
+    if (closure?.kind !== 'close') throw new Error('blue closes D–E in 1950');
+    const retreat = timeline.retreatOf(closure);
+    // Played backwards, its front runs from E back to D, which stays on red.
+    const toE = retreat.plans.find(plan => plan.segment.stationB === 'e');
+    expect(toE?.fromStationA).toBe(true);
+    expect(retreat.reach.filter(reached => reached.isNew).map(reached => reached.station)).toEqual(['e']);
+    expect(timeline.retreatOf(closure)).toBe(retreat);
+  });
 });
 
 /**
