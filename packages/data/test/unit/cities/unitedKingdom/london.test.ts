@@ -112,6 +112,17 @@ describe('London', () => {
       expect(stepsOn(date).some(step => step.kind === 'open' && step.line === 'victoria')).toBe(true);
   });
 
+  test('opens the DLR in 1987 and extends it to Bank, Beckton, Lewisham, Woolwich Arsenal and Stratford International', () => {
+    for (const date of ['1987-08-31', '1991-07-29', '1994-03-28', '1995-07-31', '1999-11-20', '2005-12-02', '2009-01-10', '2011-08-31'])
+      expect(stepsOn(date).some(step => step.kind === 'open' && step.line === 'dlr')).toBe(true);
+    // Canary Wharf, Pudding Mill Lane, Canning Town, Cutty Sark and Langdon Park opened on track the DLR already ran.
+    expect(timeline.everServes('canary-wharf-3', 'dlr')).toBe(true);
+    expect(stepsOn('2007-12-09').some(step => step.kind === 'infill' && step.station === 'langdon-park')).toBe(true);
+    // Its stations shared with the Underground, the Overground and the Elizabeth line are one station each.
+    for (const station of ['bank', 'shadwell', 'stratford', 'west-ham', 'canning-town', 'custom-house'])
+      expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === 'dlr')).toBe(true);
+  });
+
   test('turns the Stanmore branch from Bakerloo to Jubilee before the 1979 tunnel opens', () => {
     const steps = stepsOn('1979-05-01');
     expect(steps[0]?.kind).toBe('identity');
@@ -184,8 +195,8 @@ describe('London', () => {
 
   test('is at its known size today', () => {
     const snapshot = snapshotOf(playbackOf(london));
-    expect(snapshot.stats.stations).toBe(384);
-    expect(snapshot.stats.lines).toBe(18);
+    expect(snapshot.stats.stations).toBe(423);
+    expect(snapshot.stats.lines).toBe(19);
   });
 
   test('plays its whole history, every step, drawing frames without errors', () => {

@@ -35,6 +35,8 @@ export type LineAlias = {
 export type Line = {
   /** Its English name, short: "Victoria", shown as "Victoria line". */
   name: string;
+  /** Its name as people say it, where "<name> line" is not: "DLR". */
+  fullName?: string;
   /** Its name in other languages, in full as people say it there: "Святошинсько-Броварська лінія". */
   names?: Names;
   network: string;
