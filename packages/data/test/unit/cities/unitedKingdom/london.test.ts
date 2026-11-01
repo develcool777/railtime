@@ -264,10 +264,23 @@ describe('London', () => {
       expect(stationsOf(moved.find(step => step.kind === 'open'))).toContain('waterloo');
     });
 
+    test('opens the London and Croydon in 1839 on the track the Windrush runs today, the two side by side', () => {
+      const croydon = railSteps.find(step => step.kind === 'open' && step.line === 'southern');
+      expect(croydon?.time).toBe(toTimestamp('1839-06-05'));
+      expect(stationsOf(croydon)).toContain('west-croydon');
+      const { index: railIndex } = playbackOf(london, { networks: shown });
+      const linesOn = new Map<unknown, string[]>();
+      for (const { segment, line } of railIndex.lineSegmentsAt('forest-hill')) linesOn.set(segment, [...(linesOn.get(segment) ?? []), line]);
+      expect([...linesOn.values()].map(lines => lines.sort())).toEqual([
+        ['southern', 'windrush'],
+        ['southern', 'windrush'],
+      ]);
+    });
+
     test('is at its known size today, National Rail with it', () => {
       const snapshot = snapshotOf(playbackOf(london, { networks: shown }));
-      expect(snapshot.stats.stations).toBe(561);
-      expect(snapshot.stats.lines).toBe(23);
+      expect(snapshot.stats.stations).toBe(601);
+      expect(snapshot.stats.lines).toBe(24);
     });
 
     test('plays its whole history, every step, drawing frames without errors', () => {
