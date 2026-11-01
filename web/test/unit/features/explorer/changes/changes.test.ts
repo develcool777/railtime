@@ -1,6 +1,6 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-import { changesByDecade, currentChangeIndex, findChanges, timelinePosition } from '~/features/explorer/changes/changes.utils';
+import { changeRows, changeState, changesByDecade, currentChangeIndex, findChanges } from '~/features/explorer/changes/changes.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
 
 /**
@@ -66,18 +66,31 @@ describe('ChangesUtils', () => {
     });
   });
 
-  describe('timelinePosition', () => {
-    test('marks the current change where it is in the run', () => {
-      expect(timelinePosition([4, 5, 6], 5)).toBe(1);
+  describe('changeState', () => {
+    test('marks the changes the map has passed done, and the current one active', () => {
+      expect([4, 5, 6].map(index => changeState(index, 5))).toEqual(['completed', 'active', undefined]);
     });
 
-    test('marks every change done in a run that all came before', () => {
-      expect(timelinePosition([1, 2, 3], 7)).toBe(3);
+    test('marks a change done though the current one is not in the list searched', () => {
+      expect([1, 3, 5].map(index => changeState(index, 4))).toEqual(['completed', 'completed', undefined]);
     });
 
-    test('marks none in a run still ahead, or with no current change', () => {
-      expect(timelinePosition([8, 9], 5)).toBe(-1);
-      expect(timelinePosition([1, 2], null)).toBe(-1);
+    test('marks none with no current change', () => {
+      expect(changeState(1, null)).toBeUndefined();
+    });
+  });
+
+  describe('changeRows', () => {
+    test('puts each decade’s heading over its first change, the last of each with no line on', () => {
+      const rows = changeRows(changesByDecade(CHANGES));
+      expect(rows.map(row => [row.change.index, row.heading ? row.decade : null, row.last])).toEqual([
+        [0, '1860s', false],
+        [1, null, true],
+        [2, '1930s', false],
+        [3, null, true],
+        [4, 'Future', true],
+      ]);
+      expect(new Set(rows.map(row => row.key)).size).toBe(rows.length);
     });
   });
 });

@@ -1,6 +1,6 @@
 import type { LineDirection, StationSummary, StopToward } from '@railtime/network/facts.types';
 
-import type { StationGroup, StripStop } from '~/features/explorer/stations/station.types';
+import type { StationGroup, StationRow, StripStop } from '~/features/explorer/stations/station.types';
 
 /**
  * A name as a search compares it: lower case, accents and apostrophes dropped, so "kings cross"
@@ -62,6 +62,18 @@ export const stationsByLetter = (stations: StationSummary[]): StationGroup[] => 
   }
   return groups;
 };
+
+/**
+ * The Stations list as rows, one a station: the first of each letter under its heading; what a
+ * search found (no letter) under none.
+ *
+ * @param groups - The stations under their letters, in order.
+ * @returns The rows, each with a key of its own.
+ */
+export const stationRows = (groups: StationGroup[]): StationRow[] =>
+  groups.flatMap(({ letter, stations }, group) =>
+    stations.map((station, position) => ({ key: station.id, station, letter: letter && position === 0 ? letter : null, first: group === 0 && position === 0 })),
+  );
 
 /**
  * The piece of a line a station's view draws, in the line's order: the stop before, the station,

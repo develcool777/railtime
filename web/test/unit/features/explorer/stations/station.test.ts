@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { findStations, foldName, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
+import { findStations, foldName, stationRows, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
 
 /**
  * A station as the map lists it, red.
@@ -63,6 +63,22 @@ describe('StationUtils', () => {
       ]);
     });
   });
+  describe('stationRows', () => {
+    test('puts each letter’s heading over its first station, only the list’s first with no room above it', () => {
+      const rows = stationRows(stationsByLetter(STATIONS.slice(0, 3)));
+      expect(rows.map(row => [row.station.name, row.letter, row.first])).toEqual([
+        ['Dalston Kingsland', 'D', true],
+        ["King's Cross St. Pancras", 'K', false],
+        ['Náměstí Míru', 'N', false],
+      ]);
+    });
+
+    test('puts no heading over what a search found', () => {
+      const rows = stationRows([{ letter: '', stations: STATIONS.slice(0, 2) }]);
+      expect(rows.map(row => row.letter)).toEqual([null, null]);
+    });
+  });
+
   describe('stripAround', () => {
     const HERE = { id: 'c', name: 'C' };
 
