@@ -39,7 +39,7 @@
             @back="store.goBack"
             @fold="panelOpen = false" />
           <div class="min-h-0 flex-1 overflow-y-auto">
-            <StationView v-if="station" :station :directions="stationDirections" :date="shownDate" @select="store.walkTo" @line="store.pushLine" />
+            <StationView v-if="station" :station :directions="stationDirections" @select="store.walkTo" @line="store.pushLine" />
             <LineView
               v-else-if="lineDetails"
               :line="lineDetails"

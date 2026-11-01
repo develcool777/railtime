@@ -21,6 +21,7 @@ export const emptyDrawing = (): StepDrawing => ({
   highlighted: new Set(),
   fading: new Map(),
   renamed: new Map(),
+  spells: new Set(),
   links: emptyCollection(),
   linked: new Set(),
   chase: null,

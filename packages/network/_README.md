@@ -58,6 +58,8 @@ src/
 │   ├── index.service.ts       NetworkIndex: segments prepared, a LineSegment per (segment, line, period)
 │   ├── timeline.service.ts    Timeline: the history as ordered steps; the state at any cursor
 │   ├── timeline.utils.ts      a day's openings cut into stretches, and how a stretch grows (`Timeline.growthOf`)
+│   ├── days.utils.ts          every change in the network gathered by its date, before the timeline cuts it into steps
+│   ├── stops.service.ts       StationStops: when each line calls at each station, through its spells closed
 │   ├── caption.utils.ts       a change in words: what, where, when, in its line's colour
 │   ├── orientation.utils.ts   a consistent direction of travel per segment
 │   ├── history.utils.ts       the network year by year, openings by decade, its size at a cursor
@@ -83,9 +85,11 @@ animates `steps[k]`. On one date the order is:
    own `LineSegment`, the reopening's caption says "reopens", and the ghost stays until the line is back;
    track closed for good leaves none.
 4. **infill**: a station opening on track already drawn. One that opened after a line had left its
-   track for good was never a stop on that line: no step, and the line is not listed there.
+   track for good was never a stop on that line: no step, and the line is not listed there. A station
+   reopening after a spell closed (`suspended` in the schema) is an infill too, `reopening`: its caption
+   says "reopens".
 5. **stationClose**: lines stop calling at a station but keep running through it (`closed` in the
-   schema). The dot fades unless another line still calls there. A line that reaches a station only
+   schema), or stop for a spell (`suspended`: `temporary`, "closes temporarily"). The dot fades unless another line still calls there. A line that reaches a station only
    after it closed on every line it served passes it by, as does one the station says `passes`
    (a fast line on the stopping line's track): never a stop, no step.
 6. **rename**: a station takes a new name (`formerNames`).

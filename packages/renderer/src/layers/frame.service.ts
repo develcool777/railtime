@@ -105,6 +105,7 @@ export class FrameRenderer {
         highlighted: drawing.highlighted,
         fading: drawing.fading,
         renamed: drawing.renamed,
+        spells: drawing.spells,
         newLabelOpacity: clamp((1 - player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
         instant: this.instant,
         stepPlaying: active !== null,

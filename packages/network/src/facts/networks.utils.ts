@@ -1,4 +1,4 @@
-import type { Network, Station } from '@railtime/schema/network.types';
+import type { Network, Station, Suspension } from '@railtime/schema/network.types';
 import type { OptionalNetworkInfo } from './facts.types';
 
 /**
@@ -33,12 +33,16 @@ const stationWithLines = (station: Station, kept: (line: string) => boolean): St
     const left = Object.entries(record ?? {}).filter(([line]) => kept(line));
     return left.length > 0 ? Object.fromEntries(left) : undefined;
   };
+  const spellsByLine = (record: Record<string, Suspension[]> | undefined) => {
+    const left = Object.entries(record ?? {}).filter(([line]) => kept(line));
+    return left.length > 0 ? Object.fromEntries(left) : undefined;
+  };
   const listed = (lines: string[] | undefined) => {
     const left = (lines ?? []).filter(kept);
     return left.length > 0 ? left : undefined;
   };
-  const { infill, closed, passes, reverses, ...rest } = station;
-  const trimmed = { infill: byLine(infill), closed: byLine(closed), passes: listed(passes), reverses: listed(reverses) };
+  const { infill, closed, suspended, passes, reverses, ...rest } = station;
+  const trimmed = { infill: byLine(infill), closed: byLine(closed), suspended: spellsByLine(suspended), passes: listed(passes), reverses: listed(reverses) };
   return { ...rest, ...Object.fromEntries(Object.entries(trimmed).filter(([, value]) => value !== undefined)) };
 };
 

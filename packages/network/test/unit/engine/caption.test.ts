@@ -97,6 +97,13 @@ describe('CaptionUtils', () => {
       });
     });
 
+    test('says a station closes for a spell, and reopens', () => {
+      const network = tinyNetwork();
+      network.stations.b = { ...network.stations.b!, suspended: { red: [{ from: '1915-03-15', until: '1926-07-19' }] } };
+      expect(captionAfter(network, '1915-01-01')).toMatchObject({ kind: 'stationClose', title: 'B closes temporarily', stations: [] });
+      expect(captionAfter(network, '1926-01-01')).toMatchObject({ kind: 'infill', title: 'B reopens', stations: ['B'] });
+    });
+
     test('says what a station was called and is now', () => {
       expect(captionAfter(tinyNetwork(), '1924-01-01')).toEqual({
         kind: 'rename',

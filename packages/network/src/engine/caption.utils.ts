@@ -108,7 +108,18 @@ const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 
 };
 
 /**
- * A station opening, or closing, on lines that run through it.
+ * What a station does on its lines, as a caption says it.
+ *
+ * @param step - A station's opening or closing.
+ * @returns "opens", "reopens", "closes", "closes temporarily".
+ */
+const stationVerb = (step: InfillStep | StationCloseStep): string => {
+  if (step.kind === 'infill') return step.reopening ? 'reopens' : 'opens';
+  return step.temporary ? 'closes temporarily' : 'closes';
+};
+
+/**
+ * A station opening, or closing, on lines that run through it: for good, or for a while.
  *
  * @param step - The step.
  * @param context - The network.
@@ -119,7 +130,7 @@ const stationCaption = (step: InfillStep | StationCloseStep, context: CaptionCon
   const name = nameOn(context, step.station, step.time);
   return {
     kind: step.kind,
-    title: `${name} ${step.kind === 'infill' ? 'opens' : 'closes'}`,
+    title: `${name} ${stationVerb(step)}`,
     subtitle: `on the ${lines.map(line => context.index.lineName(line.id)).join(' and ')}`,
     color: required(lines[0], `line of a ${step.kind} step`).color,
     stations: step.kind === 'infill' ? [name] : [],

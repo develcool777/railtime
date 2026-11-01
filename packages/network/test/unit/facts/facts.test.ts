@@ -200,7 +200,7 @@ describe('NetworkFacts questions, at a moment', () => {
       id: 'd',
       name: 'D',
       otherNames: ['Д'],
-      lines: [{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1910-01-01', closed: '1960-01-01' }],
+      lines: [{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1910-01-01', closed: '1960-01-01', calls: true }],
       formerNames: [{ name: 'Old D', otherNames: ['Старий Д'], until: '1925-01-01' }],
       // Pink is still drawn as red at A: one line.
       transfers: [{ id: 'a', name: 'A', lines: [{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' } }] }],
@@ -211,8 +211,8 @@ describe('NetworkFacts questions, at a moment', () => {
     // A line whose track there closed has closed there; an infill station opened on a line on its own date.
     const later = queriesOn('1955-01-01');
     expect(later.queries.station('c').lines).toEqual([
-      { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1920-06-01' },
-      { id: 'green', name: 'Green line', color: { light: '#00aa00', dark: '#00aa00' }, opened: '1970-01-01' },
+      { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1920-06-01', calls: true },
+      { id: 'green', name: 'Green line', color: { light: '#00aa00', dark: '#00aa00' }, opened: '1970-01-01', calls: false },
     ]);
   });
 
@@ -296,19 +296,29 @@ describe('NetworkFacts questions, at a moment', () => {
     expect(records.longest.map(line => line.id)).toEqual(['red', 'blue']);
   });
 
+  test('says a line does not call at a station through a spell closed, and does again after', () => {
+    const network = tinyNetwork();
+    network.stations.b = { ...network.stations.b!, suspended: { red: [{ from: '1915-03-15', until: '1926-07-19' }] } };
+    const callsAt = (date: string) =>
+      questionsOn(plainFactsOf(network), toTimestamp(date))
+        .station('b')
+        .lines.find(line => line.id === 'red')?.calls;
+    expect(['1915-01-01', '1920-01-01', '1930-01-01'].map(callsAt)).toEqual([true, false, true]);
+  });
+
   test('dates a line closed at a station when all its track there has, before 1970 too', () => {
     // Blue left B – C in 1950, after a spell away in the 1940s.
     const { queries } = queriesOn('1955-01-01');
     expect(queries.station('b').lines).toEqual([
-      { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-01-01' },
-      { id: 'pink', name: 'Pink line', color: { light: '#ff88cc', dark: '#ff88cc' }, opened: '1900-01-01' },
-      { id: 'blue', name: 'Blue line', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1930-01-01', closed: '1950-01-01' },
+      { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-01-01', calls: true },
+      { id: 'pink', name: 'Pink line', color: { light: '#ff88cc', dark: '#ff88cc' }, opened: '1900-01-01', calls: true },
+      { id: 'blue', name: 'Blue line', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1930-01-01', closed: '1950-01-01', calls: false },
     ]);
   });
 
   test("lists a plan's undated line at a station of its own, and a former name from the day it was dropped", () => {
     const queries = questionsOn(plainFactsOf(tinyNetwork(), 'extension'), 'future');
-    expect(queries.station('e').lines).toEqual([{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: null }]);
+    expect(queries.station('e').lines).toEqual([{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: null, calls: true }]);
     const renamed = queriesOn('1925-01-01');
     expect(renamed.queries.station('d').formerNames.map(former => former.name)).toEqual(['Old D']);
   });

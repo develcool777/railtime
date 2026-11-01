@@ -31,6 +31,7 @@ const frameOf = (overrides: Partial<StationFrame>): StationFrame => ({
   highlighted: new Set(),
   fading: new Map(),
   renamed: new Map(),
+  spells: new Set(),
   newLabelOpacity: 1,
   instant: false,
   stepPlaying: false,
@@ -144,7 +145,7 @@ describe('StationLayer', () => {
     expect(fake.layers.get(LAYERS.newLabels)?.filter).toEqual(['any', ['get', 'highlighted'], ['get', 'closing']]);
   });
 
-  test('notes under a label what the step does to its station: renamed, closed, opened, or planned', () => {
+  test('notes under a label what the step does to its station: renamed, closed (for now), opened, reopened, or planned', () => {
     const { fake } = installed();
     const field = fake.layers.get(LAYERS.newLabels)?.layout['text-field'];
     // Read as MapLibre reads it, by the spec's own entry for a label's text, whose JSON is typed loosely.
@@ -154,12 +155,14 @@ describe('StationLayer', () => {
       String(
         parsed.value.evaluate({ zoom: 14 }, {
           type: 1,
-          properties: { name: 'A', former: '', closing: false, highlighted: false, planned: false, ...properties },
+          properties: { name: 'A', former: '', closing: false, highlighted: false, planned: false, spell: false, ...properties },
         } as never),
       );
     expect(label({ highlighted: true, former: 'Old A' })).toBe('A\nformerly Old A');
     expect(label({ closing: true })).toBe('A\nclosed');
     expect(label({ highlighted: true })).toBe('A\nopened');
+    expect(label({ closing: true, spell: true })).toBe('A\nclosed for now');
+    expect(label({ highlighted: true, spell: true })).toBe('A\nreopened');
     expect(label({ highlighted: true, planned: true })).toBe('A\nplanned');
     expect(label({})).toBe('A');
   });

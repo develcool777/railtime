@@ -1,6 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
-import type { Mode, Network, Plan, Segment, SegmentLine, Station } from '../format/network.types';
+import type { Mode, Network, Plan, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
 import { buildPlan } from '../plan/build.utils.ts';
 import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
 
@@ -72,6 +72,35 @@ const infillProblem = (periods: SegmentLine[], date: string): string | null => {
 };
 
 /**
+ * What is wrong with a line's spells of not calling at a station: each while the line runs there and
+ * calls, after the station opened on it and before it closed, ending after it starts, in order.
+ *
+ * @param network - The network.
+ * @param stationId - The station id.
+ * @param station - The station.
+ * @param lineId - The line.
+ * @param spells - Its spells, oldest first.
+ * @returns Each problem, in words.
+ */
+const suspensionProblems = (network: Network, stationId: string, station: Station, lineId: string, spells: Suspension[]): string[] => {
+  if (!network.lines[lineId]) return ['an unknown line'];
+  const periods = linePeriodsAt(network, stationId, lineId);
+  const opened = station.infill?.[lineId];
+  const closed = station.closed?.[lineId];
+  return spells.flatMap(({ from, until }, position) => {
+    const spell = `${from} – ${until}`;
+    const running = periods.some(dates => dates.open < from && !(dates.close && dates.close < until));
+    return [
+      ...(until <= from ? [`${spell}, ending before it starts`] : []),
+      // Within bounds: only past the first spell, which has one before it.
+      ...(position > 0 && from <= spells[position - 1]!.until ? [`${spell}, before the spell ahead of it ends`] : []),
+      ...(running ? [] : [`${spell}, when it doesn't run there`]),
+      ...((opened && from <= opened) || (closed && until >= closed) ? [`${spell}, outside when the station is open on it`] : []),
+    ];
+  });
+};
+
+/**
  * Checks each station's openings and closings on lines that already ran through it: on a line that
  * is there then, or the date does nothing.
  *
@@ -89,10 +118,14 @@ const checkStationLines = (network: Network, stationId: string, station: Station
     const running = linePeriodsAt(network, stationId, lineId).some(dates => dates.open < date && !(dates.close && dates.close <= date));
     if (network.lines[lineId] && !running) problem(`station ${stationId}: closes on ${lineId} on ${date}, when it doesn't run there`);
   }
+  for (const [lineId, spells] of Object.entries(station.suspended ?? {}))
+    for (const wrong of suspensionProblems(network, stationId, station, lineId, spells))
+      problem(`station ${stationId}: closed for a while on ${lineId}, ${wrong}`);
   for (const lineId of station.passes ?? []) {
     if (!network.lines[lineId]) problem(`station ${stationId}: passed by unknown line ${lineId}`);
     else if (linePeriodsAt(network, stationId, lineId).length === 0) problem(`station ${stationId}: passed by ${lineId}, which doesn't run there`);
-    if (station.infill?.[lineId] || station.closed?.[lineId]) problem(`station ${stationId}: passed by ${lineId}, which it also dates calling there`);
+    if (station.infill?.[lineId] || station.closed?.[lineId] || station.suspended?.[lineId])
+      problem(`station ${stationId}: passed by ${lineId}, which it also dates calling there`);
   }
 };
 

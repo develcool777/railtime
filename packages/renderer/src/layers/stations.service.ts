@@ -147,7 +147,8 @@ export class StationLayer extends MapLayer {
 
   /**
    * A station's label: its name, and under it, smaller and quieter, what the step playing does to it:
-   * the name it had while it takes a new one, that it closes, or that it opens (a plan's, planned).
+   * the name it had while it takes a new one, that it closes (for now, for a spell), or that it opens
+   * (a plan's, planned; after a spell, reopened).
    *
    * @returns The label's text, as MapLibre formats it.
    */
@@ -158,9 +159,9 @@ export class StationLayer extends MapLayer {
       ['!=', ['get', 'former'], ''],
       ['format', ['get', 'name'], {}, '\n', {}, ['concat', 'formerly ', ['get', 'former']], note],
       ['get', 'closing'],
-      ['format', ['get', 'name'], {}, '\n', {}, 'closed', note],
+      ['format', ['get', 'name'], {}, '\n', {}, ['case', ['get', 'spell'], 'closed for now', 'closed'], note],
       ['get', 'highlighted'],
-      ['format', ['get', 'name'], {}, '\n', {}, ['case', ['get', 'planned'], 'planned', 'opened'], note],
+      ['format', ['get', 'name'], {}, '\n', {}, ['case', ['get', 'planned'], 'planned', ['get', 'spell'], 'reopened', 'opened'], note],
       ['get', 'name'],
     ];
   }
@@ -306,6 +307,7 @@ export class StationLayer extends MapLayer {
           former: frame.renamed.get(station) ?? '',
           closing,
           planned: frame.planned.has(station),
+          spell: frame.spells.has(station),
         }),
         look: {
           scale: age >= 1 ? 1 : Math.max(0, easeOutBack(clamp(age, 0, 1))),

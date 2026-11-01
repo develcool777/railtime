@@ -80,6 +80,8 @@ export type StationProperties = {
   former: string;
   /** Closing in the step playing: labelled at any zoom, marked closed, as its dot fades. */
   closing: boolean;
+  /** Closing for a spell, or reopening after one, in the step playing: its note says for now. */
+  spell: boolean;
   /** Only planned track reaches it: drawn hollow. */
   planned: boolean;
 };

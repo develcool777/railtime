@@ -16,20 +16,12 @@ export type LineIdentity = { id: string; previousId?: string };
 export type DayChanges = {
   opens: LineSegment[];
   closes: LineSegment[];
-  infills: { station: string; line: string }[];
-  stationCloses: { station: string; line: string }[];
+  /** Stations opening on a line, `reopening` after a spell closed. */
+  infills: { station: string; line: string; reopening: boolean }[];
+  /** Stations closing on a line, `temporary` for a spell. */
+  stationCloses: { station: string; line: string; temporary: boolean }[];
   renames: { station: string; from: string; to: string }[];
   identities: { line: string; text: string }[];
-};
-
-/** When a line calls at a station on its track, where that is not simply while it runs there. */
-export type StopSteps = {
-  /** The step the station opens on it at (`infill`); -1 for from the start. */
-  opens: number;
-  /** The step it stops calling at (`closed`); `Infinity` for never. */
-  closes: number;
-  /** It never calls there: the station opened after it left, closed before it came, or it passes. */
-  never: boolean;
 };
 
 /** The step at which a line stops being drawn as `as`. */

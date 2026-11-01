@@ -56,11 +56,11 @@ export type OpenStep = StepBase & { kind: 'open'; line: string; lineSegments: Li
 /** One line's sections close. */
 export type CloseStep = StepBase & { kind: 'close'; line: string; lineSegments: LineSegment[] };
 
-/** A station opens on track its lines already run over. */
-export type InfillStep = StepBase & { kind: 'infill'; station: string; lines: string[] };
+/** A station opens on track its lines already run over: for the first time, or again after a spell closed (`reopening`). */
+export type InfillStep = StepBase & { kind: 'infill'; station: string; lines: string[]; reopening?: true };
 
-/** Lines stop calling at a station while still running through it. */
-export type StationCloseStep = StepBase & { kind: 'stationClose'; station: string; lines: string[] };
+/** Lines stop calling at a station while still running through it: for good, or for a while (`temporary`). */
+export type StationCloseStep = StepBase & { kind: 'stationClose'; station: string; lines: string[]; temporary?: true };
 
 /** A station takes a new name. */
 export type RenameStep = StepBase & { kind: 'rename'; station: string; from: string; to: string };

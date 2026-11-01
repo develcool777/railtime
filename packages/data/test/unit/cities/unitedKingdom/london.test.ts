@@ -277,6 +277,13 @@ describe('London', () => {
       ]);
     });
 
+    test('closes Deptford through the war in 1915, the Greenwich line running on, and reopens it in 1926', () => {
+      const closed = railStepsOn('1915-03-15').find(step => step.kind === 'stationClose' && step.station === 'deptford');
+      const reopened = railStepsOn('1926-07-19').find(step => step.kind === 'infill' && step.station === 'deptford');
+      expect(closed).toMatchObject({ temporary: true, lines: ['south-eastern'] });
+      expect(reopened).toMatchObject({ reopening: true, lines: ['south-eastern'] });
+    });
+
     test('is at its known size today, National Rail with it', () => {
       const snapshot = snapshotOf(playbackOf(london, { networks: shown }));
       expect(snapshot.stats.stations).toBe(601);

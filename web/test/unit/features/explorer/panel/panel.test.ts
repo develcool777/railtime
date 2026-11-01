@@ -62,8 +62,8 @@ const STATION: StationInfo = {
   name: 'Centre',
   otherNames: [],
   lines: [
-    { id: 'blue', name: 'Blue', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1950-03-01' },
-    { id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-06-01' },
+    { id: 'blue', name: 'Blue', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1950-03-01', calls: true },
+    { id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-06-01', calls: true },
   ],
   formerNames: [],
   transfers: [],
@@ -85,7 +85,7 @@ describe('PanelUtils', () => {
     });
 
     test('is planned when no line has called there yet', () => {
-      const planned = { ...STATION, lines: [{ id: 'green', name: 'Green', color: { light: '#00ff00', dark: '#00ff00' }, opened: null }] };
+      const planned = { ...STATION, lines: [{ id: 'green', name: 'Green', color: { light: '#00ff00', dark: '#00ff00' }, opened: null, calls: false }] };
       expect(stationTop(planned, 'Plans').context).toBe('planned');
     });
   });

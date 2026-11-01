@@ -3,6 +3,20 @@ import { optionalNetworksAsked, optionalNetworksOf, withNetworksShown } from '..
 import { optionalNetwork } from '../../support/factories/optionalNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
+/**
+ * The optional network with C closed for a spell on both its city line and the optional network's.
+ *
+ * @param network - The network.
+ * @returns It, C's spells set.
+ */
+const withSpells = (network: ReturnType<typeof optionalNetwork>) => {
+  network.stations.c = {
+    ...network.stations.c!,
+    suspended: { red: [{ from: '1930-01-01', until: '1931-01-01' }], grey: [{ from: '1960-01-01', until: '1961-01-01' }] },
+  };
+  return network;
+};
+
 describe('NetworksUtils', () => {
   describe('withNetworksShown', () => {
     test('leaves an optional network off as if it were not there: its lines, its own track and stations, its changes and plans', () => {
@@ -13,6 +27,7 @@ describe('NetworksUtils', () => {
       expect(shown.segments.some(segment => segment.stationB === 'x')).toBe(false);
       expect(shown.stations).not.toHaveProperty('x');
       expect(shown.stations.c?.infill).toEqual({ red: '1920-06-01', blue: '1960-06-01' });
+      expect(withNetworksShown(withSpells(optionalNetwork()), []).stations.c?.suspended).toEqual({ red: [{ from: '1930-01-01', until: '1931-01-01' }] });
       expect(shown.transfers?.some(transfer => transfer.stationB === 'x')).toBe(false);
       expect(Object.keys(shown.plans ?? {})).toEqual(['extension']);
     });
