@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { NetworkEngine } from '@railtime/network/engine.service';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TrackSegment } from '@railtime/network/engine.types';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 const london = cityNetwork('london');
-const { index, timeline } = new NetworkEngine(london, null, toTimestamp('2026-01-01'));
+// London as it opens: its optional networks off.
+const { index, timeline } = playbackOf(london);
 const stepsOn = (date: string) => timeline.steps.filter(step => step.time === toTimestamp(date));
 const startOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationA : segment.stationB);
 const endOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationB : segment.stationA);
@@ -231,4 +231,46 @@ describe('London', () => {
       expect(played.cursor).toBe(played.steps);
     },
   );
+
+  describe('with National Rail shown', () => {
+    const shown = ['national-rail'];
+    const railSteps = playbackOf(london, { networks: shown }).timeline.steps;
+    const railStepsOn = (date: string) => railSteps.filter(step => step.time === toTimestamp(date));
+    const stationsOf = (step: (typeof railSteps)[number] | undefined) => {
+      if (step?.kind === 'open') return new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB]));
+      if (step?.kind === 'close') return new Set(step.lineSegments.flatMap(({ segment }) => [segment.stationA, segment.stationB]));
+      return new Set();
+    };
+
+    test('keeps each line in one piece, but where its history parts it', () => {
+      expect(lineSplits(london, shown)).toEqual(lineSplits(london));
+    });
+
+    test('opens the South Western from Nine Elms in 1838, and moves it to Waterloo in 1848', () => {
+      const opened = railStepsOn('1838-05-21').find(step => step.kind === 'open' && step.line === 'south-western');
+      expect([...stationsOf(opened)]).toEqual(expect.arrayContaining(['nine-elms-2', 'wimbledon', 'surbiton']));
+      const moved = railStepsOn('1848-07-11').filter(step => (step.kind === 'open' || step.kind === 'close') && step.line === 'south-western');
+      expect(moved.map(step => step.kind).sort()).toEqual(['close', 'open']);
+      expect(stationsOf(moved.find(step => step.kind === 'open'))).toContain('waterloo');
+    });
+
+    test('is at its known size today, National Rail with it', () => {
+      const snapshot = snapshotOf(playbackOf(london, { networks: shown }));
+      expect(snapshot.stats.stations).toBe(507);
+      expect(snapshot.stats.lines).toBe(22);
+    });
+
+    test('plays its whole history, every step, drawing frames without errors', () => {
+      const played = playWholeHistory(london, { networks: shown });
+      expect(played.started).toBe(played.steps);
+      expect(played.cursor).toBe(played.steps);
+    }, 30_000);
+
+    test.each(['crossrail-2', 'west-london-orbital'])('plays on through its %s plan over National Rail track, section by section', plan => {
+      const played = playPlan(london, plan, shown);
+      expect(played.steps).toBeGreaterThan(0);
+      expect(played.started).toBe(played.steps);
+      expect(played.cursor).toBe(played.steps);
+    });
+  });
 });
