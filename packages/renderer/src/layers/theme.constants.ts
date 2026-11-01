@@ -51,6 +51,9 @@ export const DEFAULT_BASEMAP_CREDITS: Credit[] = [
   { text: '© OpenMapTiles', url: 'https://www.openmaptiles.org' },
 ];
 
+/** The map's data, track and streets alike: credited on every map and still. */
+export const OPENSTREETMAP_CREDIT: Credit = { text: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright' };
+
 /** Used when the basemap has no font of its own to offer. */
 export const FALLBACK_FONT = ['Noto Sans Regular'];
 

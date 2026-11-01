@@ -8,9 +8,9 @@
       center: 'min-w-0 justify-center',
     }">
     <template #left>
-      <NuxtLink to="/" class="flex flex-none items-center gap-2" aria-label="Railtime, all cities">
+      <NuxtLink to="/" class="flex flex-none items-center gap-2" aria-label="RailTime, all cities">
         <LogoMark class="size-6 flex-none" />
-        <span class="text-highlighted text-lg leading-6 font-bold tracking-[-0.01em]" :class="{ 'max-lg:hidden': $slots.context }">railtime</span>
+        <span class="text-highlighted text-lg leading-6 font-bold tracking-[-0.01em]" :class="{ 'max-lg:hidden': $slots.context }">RailTime</span>
       </NuxtLink>
       <!-- Where in the site: on a city's page, the city. -->
       <template v-if="$slots.context">

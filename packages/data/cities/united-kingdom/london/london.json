@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"London","country":"United Kingdom","start":"1862-10-01","built":"2026-10-29","attribution":"© OpenStreetMap and Citylines contributors (ODbL)"},
+  "meta": {"city":"London","country":"United Kingdom","start":"1862-10-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "underground": {"name":"Underground"},
     "overground": {"name":"Overground"},

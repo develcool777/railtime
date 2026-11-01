@@ -7,7 +7,7 @@ import { basemapFont, recolorBasemap } from './layers/basemap.utils';
 import { LAYERS } from './layers/ids.constants';
 import type { MapLayer } from './layers/layer.service';
 import { FrameRenderer } from './layers/frame.service';
-import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, PALETTES } from './layers/theme.constants';
+import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from './layers/theme.constants';
 import { Minimap } from './minimap.service';
 import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { NetworkFacts } from '@railtime/network/facts.service';
@@ -155,10 +155,14 @@ export class TransitMap {
     this.frameRequest = this.scheduler.request(this.renderFrame);
   }
 
-  /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
+  /**
+   * What the map must credit on it: the basemap, then OpenStreetMap, whose data its streets and the
+   * network's track are. A network's other sources are the app's to credit, off the map. Shown by the
+   * app when it turns MapLibre's control off.
+   */
   public get credits(): Credit[] {
     // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
-    return [...(this.basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: this.parts.facts.engine.index.network.meta.attribution }];
+    return [...(this.basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), OPENSTREETMAP_CREDIT];
   }
 
   /** Where the map is in its life: loading until its style has loaded, ready, then destroyed. */

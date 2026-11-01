@@ -164,8 +164,8 @@
               @exit="store.exitHistory" />
           </div>
 
-          <!-- The map's credits stay on it: its licence asks for them. On a phone they fold into a button. -->
-          <MapCredits v-if="chrome.credits === 'line'" :credits class="absolute right-2 bottom-1 max-w-[40%] text-right leading-4" />
+          <!-- The map's credits stay on it: its tiles' licences ask for them; the rest are on the About page. On a phone they fold into a button. -->
+          <MapCredits v-if="chrome.credits === 'line'" :credits about class="absolute right-2 bottom-1 max-w-[40%] text-right leading-4" />
           <UPopover v-else-if="chrome.credits === 'button'">
             <UButton
               icon="i-lucide-info"
@@ -176,7 +176,7 @@
               :class="{ 'top-14': planLegend }"
               aria-label="Credits" />
             <template #content>
-              <MapCredits :credits class="max-w-72 p-3" />
+              <MapCredits :credits about class="max-w-72 p-3" />
             </template>
           </UPopover>
         </main>
