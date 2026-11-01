@@ -1,8 +1,11 @@
 <template>
   <div ref="list" class="px-4 pb-6">
+    <PanelSearch v-model="query" placeholder="Search changes" />
     <UEmpty v-if="changes.length === 0" icon="i-lucide-history" title="No changes yet" description="Nothing has opened or closed by the date shown." />
+    <UEmpty v-else-if="groups.length === 0" icon="i-lucide-search-x" title="No change matches" description="Try a line, a station or a year." />
     <section v-for="group in groups" :key="group.decade">
-      <h3 class="eyebrow text-muted bg-default sticky top-0 z-1 pt-3 pb-2">{{ group.decade }}</h3>
+      <!-- Under the search, which stays at the top too. -->
+      <h3 class="eyebrow text-muted bg-default sticky top-13 z-1 pt-1 pb-2">{{ group.decade }}</h3>
       <ChangeTimeline :changes="group.changes" :current @select="emit('select', $event)" />
     </section>
   </div>
@@ -10,9 +13,9 @@
 
 <script setup lang="ts">
   import type { ChangeInfo } from '@railtime/network/facts.types';
-  import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue';
+  import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
 
-  import { changesByDecade } from '~/features/explorer/changes/changes.utils';
+  import { changesByDecade, findChanges } from '~/features/explorer/changes/changes.utils';
 
   const props = defineProps<{
     changes: ChangeInfo[];
@@ -24,7 +27,8 @@
   const emit = defineEmits<{ select: [index: number] }>();
 
   const list = useTemplateRef<HTMLElement>('list');
-  const groups = computed(() => changesByDecade(props.changes));
+  const query = ref('');
+  const groups = computed(() => changesByDecade(findChanges(props.changes, query.value)));
 
   /** Brings the current change, the timeline's active item, to the middle of the list. */
   const centreCurrent = (behavior: 'instant' | 'smooth') => list.value?.querySelector('[data-state="active"]')?.scrollIntoView({ block: 'center', behavior });

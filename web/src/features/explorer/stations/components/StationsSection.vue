@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
-    <UInput v-model="query" icon="i-lucide-search" placeholder="Search stations" variant="soft" class="w-full" aria-label="Search stations" />
+  <div class="flex flex-col gap-2 px-4 pb-6">
+    <PanelSearch v-model="query" placeholder="Search stations" />
     <UEmpty v-if="stations.length === 0" icon="i-lucide-map-pin-off" title="No station open" description="None is open on the date shown." />
     <UEmpty v-else-if="groups.length === 0" icon="i-lucide-search-x" title="No station matches" description="Try another name." />
     <section v-for="group in groups" :key="group.letter">
