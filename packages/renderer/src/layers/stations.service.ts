@@ -1,8 +1,8 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { Map as MapLibreMap, PointLike, SymbolLayerSpecification } from 'maplibre-gl';
+import type { ExpressionSpecification, Map as MapLibreMap, PointLike, SymbolLayerSpecification } from 'maplibre-gl';
 import { clamp } from '@railtime/core/number.utils';
 import { easeOutBack } from '../support/drawing.utils';
-import type { PointFeature, PulseProperties, StationProperties } from './snapshot.types';
+import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from './snapshot.types';
 import { emptyCollection, pointFeature } from './snapshot.utils';
 import { byZoom } from './style.utils';
 import { BACKDROP_STATION_OPACITY, LABEL_MIN_ZOOM, LAYERS, POP_IN_MS, PULSE_GROWTH, PULSE_MS, SOURCES } from './ids.constants';
@@ -14,16 +14,23 @@ import type { Palette } from './theme.types';
 const ALREADY_SHOWN = -1e9;
 
 /**
- * What a feature looks like, as text: two that look alike have the same. Numbers to a hundredth,
- * finer than an eye sees in a frame.
+ * Some values as text: two alike, to a hundredth (finer than an eye sees in a frame), have the same.
  *
- * @param properties - The feature's properties.
+ * @param values - The values: a feature's properties, or its look.
  * @returns The key.
  */
-const keyOf = (properties: object): string =>
-  Object.values(properties)
+const keyOf = (values: object): string =>
+  Object.values(values)
     .map(value => (typeof value === 'number' ? value.toFixed(2) : String(value)))
     .join('|');
+
+/**
+ * A feature-state value, as the layers read it: what the look says, or, before it is set, as if settled.
+ *
+ * @param name - The look's field.
+ * @returns The expression.
+ */
+const lookOf = (name: string): ExpressionSpecification => ['coalesce', ['feature-state', name], 1];
 
 /**
  * Station dots, their labels, the pulse ring around new stations, and the ring around the selected
@@ -51,8 +58,12 @@ export class StationLayer extends MapLayer {
   private faded = false;
   /** Some dot was still popping in, or some pulse running, when last drawn: the next frame differs. */
   private moving = false;
-  /** What the dots sent last were, and the rings: a frame the same as the last sends MapLibre nothing, so it places no labels again. */
-  private sent = { stations: '', pulses: '' };
+  /**
+   * What the dots and rings sent last were, and how each looked: a frame whose dots are the same sends
+   * MapLibre no data, which would have it cut their tiles and place every label again; one that only
+   * moves their look (a pop-in, a fade, a ring growing) sets their feature state.
+   */
+  private sent = { stations: '', pulses: '', looks: new Map<string, string>() };
 
   public constructor(
     map: MapLibreMap,
@@ -72,9 +83,11 @@ export class StationLayer extends MapLayer {
    * @param font - A font stack the basemap's glyph server has.
    */
   public install(font: string[]): void {
-    for (const source of [SOURCES.pulses, SOURCES.selection, SOURCES.stations]) this.addSource(source);
-    // New sources are empty: whatever comes next is sent.
-    this.sent = { stations: '', pulses: '' };
+    this.addSource(SOURCES.pulses, { promoteId: 'id' });
+    this.addSource(SOURCES.selection);
+    this.addSource(SOURCES.stations, { promoteId: 'id' });
+    // New sources are empty, and their features have no state: whatever comes next is sent.
+    this.sent = { stations: '', pulses: '', looks: new Map() };
     this.map.addLayer({
       id: LAYERS.pulses,
       type: 'circle',
@@ -83,8 +96,8 @@ export class StationLayer extends MapLayer {
         'circle-color': 'rgba(0,0,0,0)',
         'circle-stroke-color': ['get', 'color'],
         'circle-stroke-width': 2.5,
-        'circle-radius': byZoom(['*', ['get', 'radius'], 4], ['*', ['get', 'radius'], 9]),
-        'circle-stroke-opacity': ['get', 'opacity'],
+        'circle-radius': byZoom(['*', lookOf('radius'), 4], ['*', lookOf('radius'), 9]),
+        'circle-stroke-opacity': lookOf('opacity'),
       },
     });
     this.map.addLayer({
@@ -99,8 +112,8 @@ export class StationLayer extends MapLayer {
       source: SOURCES.stations,
       paint: {
         'circle-radius': byZoom(
-          ['*', ['get', 'scale'], ['case', ['get', 'interchange'], 3.6, 2.4]],
-          ['*', ['get', 'scale'], ['case', ['get', 'interchange'], 9, 6]],
+          ['*', lookOf('scale'), ['case', ['get', 'interchange'], 3.6, 2.4]],
+          ['*', lookOf('scale'), ['case', ['get', 'interchange'], 9, 6]],
         ),
         'circle-color': '#ffffff',
         'circle-stroke-width': byZoom(1.2, 2.5),
@@ -164,9 +177,9 @@ export class StationLayer extends MapLayer {
   private applyFade(): void {
     const dots = this.faded ? BACKDROP_STATION_OPACITY : 1;
     // A planned station is a ring: its fill all but gone.
-    this.map.setPaintProperty(LAYERS.stations, 'circle-opacity', ['*', dots, ['get', 'opacity'], ['case', ['get', 'planned'], 0.2, 1]]);
-    this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-opacity', ['*', dots, ['get', 'opacity']]);
-    for (const layer of [LAYERS.labels, LAYERS.newLabels]) this.map.setPaintProperty(layer, 'text-opacity', ['*', this.faded ? 0 : 1, ['get', 'labelOpacity']]);
+    this.map.setPaintProperty(LAYERS.stations, 'circle-opacity', ['*', dots, lookOf('opacity'), ['case', ['get', 'planned'], 0.2, 1]]);
+    this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-opacity', ['*', dots, lookOf('opacity')]);
+    for (const layer of [LAYERS.labels, LAYERS.newLabels]) this.map.setPaintProperty(layer, 'text-opacity', ['*', this.faded ? 0 : 1, lookOf('labelOpacity')]);
   }
 
   /**
@@ -215,19 +228,25 @@ export class StationLayer extends MapLayer {
   public update(frame: StationFrame): void {
     const stations = this.stationFeatures(frame);
     const pulses = this.pulseFeatures(frame);
-    this.moving =
-      pulses.length > 0 ||
-      this.pulsedAt.size > 0 ||
-      this.closedAt.size > 0 ||
-      stations.some(station => station.properties.scale !== 1 || station.properties.opacity < 1);
-    // While a line grows, most frames change no station: sending them again would have MapLibre
-    // re-tile them and place every label anew, each frame.
+    this.moving = pulses.length > 0 || this.pulsedAt.size > 0 || this.closedAt.size > 0 || stations.some(({ look }) => look.scale !== 1 || look.opacity < 1);
     const sent = {
-      stations: stations.map(feature => keyOf(feature.properties)).join('\n'),
-      pulses: pulses.map(feature => keyOf(feature.properties)).join('\n'),
+      stations: stations.map(({ feature }) => keyOf(feature.properties)).join('\n'),
+      pulses: pulses.map(({ feature }) => keyOf(feature.properties)).join('\n'),
+      looks: new Map<string, string>(),
     };
-    if (sent.stations !== this.sent.stations) this.setData(SOURCES.stations, { type: 'FeatureCollection', features: stations });
-    if (sent.pulses !== this.sent.pulses) this.setData(SOURCES.pulses, { type: 'FeatureCollection', features: pulses });
+    if (sent.stations !== this.sent.stations) this.setData(SOURCES.stations, { type: 'FeatureCollection', features: stations.map(({ feature }) => feature) });
+    if (sent.pulses !== this.sent.pulses) this.setData(SOURCES.pulses, { type: 'FeatureCollection', features: pulses.map(({ feature }) => feature) });
+    for (const [source, drawn] of [
+      [SOURCES.stations, stations],
+      [SOURCES.pulses, pulses],
+    ] as const) {
+      for (const { feature, look } of drawn) {
+        const key = `${source}|${feature.properties.id}`;
+        const looks = keyOf(look);
+        sent.looks.set(key, looks);
+        if (this.sent.looks.get(key) !== looks) this.setState(source, feature.properties.id, look);
+      }
+    }
     this.sent = sent;
   }
 
@@ -258,13 +277,13 @@ export class StationLayer extends MapLayer {
   }
 
   /**
-   * Builds the dots: each pops in when it first appears; new ones start a pulse.
+   * Builds the dots, and how each looks: each pops in when it first appears; new ones start a pulse.
    *
    * @param frame - The frame.
-   * @returns The station features.
+   * @returns Each station's feature and look.
    */
-  private stationFeatures(frame: StationFrame): PointFeature<StationProperties>[] {
-    const features: PointFeature<StationProperties>[] = [];
+  private stationFeatures(frame: StationFrame): { feature: PointFeature<StationProperties>; look: StationLook }[] {
+    const features: { feature: PointFeature<StationProperties>; look: StationLook }[] = [];
     for (const [station, lines] of frame.stations) {
       if (lines.size === 0) continue;
       if (!this.appearedAt.has(station)) this.appearedAt.set(station, frame.instant ? ALREADY_SHOWN : frame.now);
@@ -275,13 +294,10 @@ export class StationLayer extends MapLayer {
       const opacity = clamp(age * 3, 0, 1) * (frame.fading.get(station) ?? 1);
       let firstLine = '';
       for (const line of lines.keys()) if (!firstLine || this.compareLines(line, firstLine) < 0) firstLine = line;
-      features.push(
-        pointFeature(this.coordOf(station), {
+      features.push({
+        feature: pointFeature(this.coordOf(station), {
           id: station,
           name: this.nameOf(station),
-          scale: age >= 1 ? 1 : Math.max(0, easeOutBack(clamp(age, 0, 1))),
-          opacity,
-          labelOpacity: this.labelOpacityOf(frame, opacity, highlighted, closing),
           interchange: lines.size > 1 || frame.linked.has(station),
           color: lines.get(firstLine) ?? '#ffffff',
           highlighted,
@@ -289,7 +305,12 @@ export class StationLayer extends MapLayer {
           closing,
           planned: frame.planned.has(station),
         }),
-      );
+        look: {
+          scale: age >= 1 ? 1 : Math.max(0, easeOutBack(clamp(age, 0, 1))),
+          opacity,
+          labelOpacity: this.labelOpacityOf(frame, opacity, highlighted, closing),
+        },
+      });
     }
     for (const station of [...this.appearedAt.keys()]) if (!frame.stations.get(station)?.size) this.appearedAt.delete(station);
     return features;
@@ -329,10 +350,13 @@ export class StationLayer extends MapLayer {
    * it, the other way.
    *
    * @param frame - The frame.
-   * @returns The pulse features.
+   * @returns Each ring's feature and look.
    */
-  private pulseFeatures(frame: StationFrame): PointFeature<PulseProperties>[] {
-    return [...this.ringsOf(frame, this.pulsedAt, age => 1 + age * PULSE_GROWTH), ...this.ringsOf(frame, this.closedAt, age => 1 + (1 - age) * PULSE_GROWTH)];
+  private pulseFeatures(frame: StationFrame): { feature: PointFeature<PulseProperties>; look: PulseLook }[] {
+    return [
+      ...this.ringsOf(frame, 'pulse', this.pulsedAt, age => 1 + age * PULSE_GROWTH),
+      ...this.ringsOf(frame, 'closing', this.closedAt, age => 1 + (1 - age) * PULSE_GROWTH),
+    ];
   }
 
   /**
@@ -340,17 +364,24 @@ export class StationLayer extends MapLayer {
    * station rings at most once a step.
    *
    * @param frame - The frame.
+   * @param kind - Which rings: a station's two kinds are two features.
    * @param startedAt - When each station's ring started.
    * @param radiusAt - Its radius, in dots, by how far it has run, 0..1.
-   * @returns The ring features.
+   * @returns Each ring's feature and look.
    */
-  private ringsOf(frame: StationFrame, startedAt: Map<string, number>, radiusAt: (age: number) => number): PointFeature<PulseProperties>[] {
-    const features: PointFeature<PulseProperties>[] = [];
+  private ringsOf(
+    frame: StationFrame,
+    kind: string,
+    startedAt: Map<string, number>,
+    radiusAt: (age: number) => number,
+  ): { feature: PointFeature<PulseProperties>; look: PulseLook }[] {
+    const features: { feature: PointFeature<PulseProperties>; look: PulseLook }[] = [];
     for (const [station, started] of startedAt) {
       const age = (frame.now - started) / PULSE_MS;
       const lines = frame.stations.get(station);
       const color = lines ? [...lines.values()][0] : undefined;
-      if (age < 1 && color) features.push(pointFeature(this.coordOf(station), { color, radius: radiusAt(age), opacity: 1 - age }));
+      if (age < 1 && color)
+        features.push({ feature: pointFeature(this.coordOf(station), { id: `${kind}|${station}`, color }), look: { radius: radiusAt(age), opacity: 1 - age } });
       else if (age >= 1 && !frame.stepPlaying) startedAt.delete(station);
     }
     return features;

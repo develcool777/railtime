@@ -163,9 +163,10 @@ export class FrameRenderer {
    * @param drawing - What the step draws now.
    */
   private updateMinimapActive(drawing: StepDrawing): void {
-    const hasActive = drawing.lines.features.length > 0;
+    const lines = { type: 'FeatureCollection' as const, features: [...drawing.lines.features, ...drawing.growing.features] };
+    const hasActive = lines.features.length > 0;
     if (!this.parts.minimap || (!hasActive && !this.minimapShowsActive)) return;
-    this.parts.minimap.setActive(drawing.lines);
+    this.parts.minimap.setActive(lines);
     this.minimapShowsActive = hasActive;
   }
 }

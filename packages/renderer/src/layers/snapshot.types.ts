@@ -62,15 +62,13 @@ export type RouteStopProperties = { kind: RouteStopKind; color: string; name: st
 /** A drawn point. */
 export type PointFeature<Properties> = Feature<{ type: 'Point'; coordinates: LngLat }, Properties>;
 
-/** Properties of a station dot. */
+/**
+ * Properties of a station dot: what it is and shows, sent to MapLibre when they change. How it looks
+ * this frame, as it pops in or fades, is its `StationLook`, set as feature state.
+ */
 export type StationProperties = {
   id: string;
   name: string;
-  /** Pop-in scale, 0 → 1 (overshoots a little on the way). */
-  scale: number;
-  opacity: number;
-  /** A new station's label fades at the end of its step while the dot stays. */
-  labelOpacity: number;
   /** Served by more than one (effective) line. */
   interchange: boolean;
   color: string;
@@ -84,8 +82,20 @@ export type StationProperties = {
   planned: boolean;
 };
 
-/** Properties of a pulse ring around a new station. */
-export type PulseProperties = { color: string; radius: number; opacity: number };
+/** How a station dot looks this frame: its feature state, changed with no data sent. */
+export type StationLook = {
+  /** Pop-in scale, 0 → 1 (overshoots a little on the way). */
+  scale: number;
+  opacity: number;
+  /** A new station's label fades at the end of its step while the dot stays. */
+  labelOpacity: number;
+};
+
+/** Properties of a ring round a station: a new one's pulse, or a closing one's, closing in. */
+export type PulseProperties = { id: string; color: string };
+
+/** How a ring looks this frame: its feature state. */
+export type PulseLook = { radius: number; opacity: number };
 
 /** Properties of the glowing dot at a growing line's tip. */
 export type HeadProperties = { color: string };

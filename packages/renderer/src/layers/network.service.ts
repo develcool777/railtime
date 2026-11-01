@@ -1,5 +1,5 @@
-import type { DataDrivenPropertyValueSpecification, Map as MapLibreMap } from 'maplibre-gl';
-import { LAYERS, LINE_LAYOUT, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
+import type { DataDrivenPropertyValueSpecification, FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import { GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
 import { MapLayer } from './layer.service';
 import type { NetworkSnapshot } from './snapshot.types';
 import type { Palette } from './theme.types';
@@ -139,39 +139,60 @@ export class NetworkLayer extends MapLayer {
  * each growing tip, and the transfers it links as it reaches them, drawn as the network's are.
  */
 export class ActiveStepLayer extends MapLayer {
-  /** The map shows a drawing with something in it: an empty one clears it once, then sends nothing. */
-  private drawn = false;
+  /** What each source was sent last: a source whose data is the same is not sent again, so MapLibre cuts none of its tiles. */
+  private readonly sent = new Map<string, string>();
+  /** The highlight's fade the layers were last set to, to a hundredth. */
+  private fade = -1;
 
   public constructor(map: MapLibreMap) {
     super(map);
   }
 
-  /** Adds the growing track and head layers. */
+  /** Adds the layers: the track drawn whole, the track growing and its heads, the links. */
   public install(): void {
     this.addSource(SOURCES.active);
-    this.addSource(SOURCES.heads);
+    this.addSource(SOURCES.growing, { maxzoom: GROWING_SOURCE_MAX_ZOOM });
     this.addSource(SOURCES.activeTransfers);
-    this.map.addLayer({
-      id: LAYERS.activeGlow,
-      type: 'line',
-      source: SOURCES.active,
-      layout: LINE_LAYOUT,
-      paint: { 'line-color': ['get', 'color'], 'line-width': highlightedWidth(6, 18), 'line-blur': byZoom(5, 14), 'line-offset': sideBySideOffset() },
-    });
-    this.map.addLayer({
-      id: LAYERS.activeLines,
-      type: 'line',
-      source: SOURCES.active,
-      layout: LINE_LAYOUT,
-      paint: { 'line-color': ['get', 'color'], 'line-width': highlightedWidth(2.2, 5.5), 'line-offset': sideBySideOffset() },
-    });
+    // New sources are empty: what is sent next is anything but nothing; the fade is set afresh.
+    for (const source of [SOURCES.active, SOURCES.growing, SOURCES.activeTransfers]) this.sent.set(source, '[]');
+    this.fade = -1;
+    const lineString: FilterSpecification = ['==', ['geometry-type'], 'LineString'];
+    for (const [source, glow, line] of [
+      [SOURCES.active, LAYERS.activeGlow, LAYERS.activeLines],
+      [SOURCES.growing, LAYERS.growingGlow, LAYERS.growingLines],
+    ] as const) {
+      this.map.addLayer({
+        id: glow,
+        type: 'line',
+        source,
+        filter: lineString,
+        layout: LINE_LAYOUT,
+        paint: { 'line-color': ['get', 'color'], 'line-width': highlightedWidth(6, 18), 'line-blur': byZoom(5, 14), 'line-offset': sideBySideOffset() },
+      });
+      this.map.addLayer({
+        id: line,
+        type: 'line',
+        source,
+        filter: lineString,
+        layout: LINE_LAYOUT,
+        paint: { 'line-color': ['get', 'color'], 'line-width': highlightedWidth(2.2, 5.5), 'line-offset': sideBySideOffset() },
+      });
+    }
+    const point: FilterSpecification = ['==', ['geometry-type'], 'Point'];
     this.map.addLayer({
       id: LAYERS.headGlow,
       type: 'circle',
-      source: SOURCES.heads,
+      source: SOURCES.growing,
+      filter: point,
       paint: { 'circle-color': ['get', 'color'], 'circle-radius': byZoom(8, 16), 'circle-blur': 1, 'circle-opacity': 0.9 },
     });
-    this.map.addLayer({ id: LAYERS.headCore, type: 'circle', source: SOURCES.heads, paint: { 'circle-color': '#ffffff', 'circle-radius': byZoom(2, 4) } });
+    this.map.addLayer({
+      id: LAYERS.headCore,
+      type: 'circle',
+      source: SOURCES.growing,
+      filter: point,
+      paint: { 'circle-color': '#ffffff', 'circle-radius': byZoom(2, 4) },
+    });
     this.map.addLayer({
       id: LAYERS.activeTransferCasing,
       type: 'line',
@@ -194,22 +215,49 @@ export class ActiveStepLayer extends MapLayer {
    * @param palette - The theme's colours.
    */
   public applyPalette(palette: Palette): void {
-    this.map.setPaintProperty(LAYERS.activeGlow, 'line-opacity', palette.glowOpacity);
+    for (const glow of [LAYERS.activeGlow, LAYERS.growingGlow]) this.map.setPaintProperty(glow, 'line-opacity', palette.glowOpacity);
     this.map.setPaintProperty(LAYERS.activeTransferCasing, 'line-color', palette.interchangeRing);
   }
 
   /**
-   * Draws this frame of the playing step. Between steps the frames are empty: the first clears the
-   * map, the rest send nothing, so MapLibre has nothing to re-tile.
+   * Draws this frame of the playing step: each source sent only when what it holds changed, so MapLibre
+   * re-cuts no tiles for the rest, nor between steps. Each frame the growing piece and its head move,
+   * a few metres sent; the track drawn whole only when a segment is done; the highlight's fade a paint value.
    *
    * @param drawing - What the step draws now.
    */
   public update(drawing: StepDrawing): void {
-    const drawn = drawing.lines.features.length > 0 || drawing.heads.features.length > 0 || drawing.links.features.length > 0;
-    if (!drawn && !this.drawn) return;
-    this.drawn = drawn;
-    this.setData(SOURCES.active, drawing.lines);
-    this.setData(SOURCES.heads, drawing.heads);
-    this.setData(SOURCES.activeTransfers, drawing.links);
+    const fade = Math.round(drawing.highlight * 100) / 100;
+    if (fade !== this.fade) {
+      this.fade = fade;
+      for (const [glow, line] of [
+        [LAYERS.activeGlow, LAYERS.activeLines],
+        [LAYERS.growingGlow, LAYERS.growingLines],
+      ] as const)
+        this.setWidths(glow, line, fade);
+    }
+    const growing = { type: 'FeatureCollection', features: [...drawing.growing.features, ...drawing.heads.features] };
+    for (const [source, data] of [
+      [SOURCES.active, drawing.lines],
+      [SOURCES.growing, growing],
+      [SOURCES.activeTransfers, drawing.links],
+    ] as const) {
+      const key = JSON.stringify(data.features);
+      if (this.sent.get(source) === key) continue;
+      this.sent.set(source, key);
+      this.setData(source, data);
+    }
+  }
+
+  /**
+   * Sets how wide new track stands out, on a glow layer and its line layer.
+   *
+   * @param glow - The glow layer.
+   * @param line - The line layer.
+   * @param fade - How much of the highlight is left, 0..1.
+   */
+  private setWidths(glow: string, line: string, fade: number): void {
+    this.map.setPaintProperty(glow, 'line-width', highlightedWidth(6, 18, fade));
+    this.map.setPaintProperty(line, 'line-width', highlightedWidth(2.2, 5.5, fade));
   }
 }

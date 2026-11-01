@@ -13,6 +13,8 @@ export type FakeMap = {
   images: Map<string, { url: string; coordinates: unknown }>;
   /** How many times each source's data was set. */
   sends: Map<string, number>;
+  /** Each feature's state, by `<source>|<id>`: how it looks this frame. */
+  states: Map<string, Record<string, number>>;
   /** The layers, by id, in the order added. */
   layers: Map<string, FakeLayer>;
   /** Every `fitBounds`, `easeTo` and `jumpTo` asked of the camera, in order. */
@@ -26,6 +28,8 @@ export type FakeMap = {
     cover: { top: number; right: number; bottom: number; left: number };
     /** Whether the camera is moving, as `isMoving` answers. */
     moving: boolean;
+    /** Whether every tile in view has loaded, as `areTilesLoaded` answers. */
+    tilesLoaded: boolean;
   };
   /** What `queryRenderedFeatures` answers. */
   rendered: { properties: Record<string, unknown> }[];

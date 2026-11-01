@@ -47,6 +47,20 @@ stays named, marked `closed`, as its dot fades and a ring closes in on it.
 A frame draws only what changed (`FrameRenderer`): with nothing playing, nothing popping in and the same snapshot, it
 sends MapLibre nothing, so an idle map costs no script time and panning stays smooth.
 
+Every `setData` has MapLibre cut that source's tiles again, in a worker, for every tile in view: at
+street level in 3D, a score of them. So while a line grows:
+
+- the overlay's sources are cut no closer than zoom 14 (`OVERLAY_SOURCE_MAX_ZOOM`), the growing piece
+  13: within a metre, a few tiles in view;
+- the track drawn whole is sent only as a segment is done; each frame, only the piece still growing
+  and its head (`growing`), a few metres;
+- a source is sent only when what it holds changed; the highlight's fade is a paint value;
+- a station's or a ring's look (pop-in, fade, a ring growing) is feature state, never data: the
+  stations are sent only when one is added, gone, or shows something new;
+- the minimap takes what changes every frame at most ten times a second;
+- as a step's camera move ends, it waits for the tiles where it arrived (`MAX_TILE_WAIT_SECONDS`), so
+  the line grows over drawn streets, not a blank filling in.
+
 ### Lines side by side
 
 Where several lines share a segment, each is drawn with a `line-offset` slot (…-1, -0.5, 0, 0.5, 1…)

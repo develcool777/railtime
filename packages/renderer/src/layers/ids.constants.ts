@@ -10,7 +10,7 @@ export const SOURCES = {
   planned: 'rt-planned',
   transfers: 'rt-transfers',
   active: 'rt-active',
-  heads: 'rt-heads',
+  growing: 'rt-growing',
   activeTransfers: 'rt-active-transfers',
   route: 'rt-route',
   routeStops: 'rt-route-stops',
@@ -34,6 +34,8 @@ export const LAYERS = {
   transferCore: 'rt-transfer-core',
   activeGlow: 'rt-active-glow',
   activeLines: 'rt-active-lines',
+  growingGlow: 'rt-growing-glow',
+  growingLines: 'rt-growing-lines',
   headGlow: 'rt-head-glow',
   headCore: 'rt-head-core',
   activeTransferCasing: 'rt-active-transfer-casing',
@@ -66,6 +68,20 @@ export const LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } as cons
 
 /** Ordinary station labels show from this zoom; new stations are labelled at any zoom. */
 export const LABEL_MIN_ZOOM = 12;
+
+/**
+ * The closest zoom the overlay's sources are cut into tiles at: closer, MapLibre stretches those
+ * tiles, still within a metre. A source sent new data each frame (a line growing) is cut again for
+ * every tile in view: at street level in 3D, a score of them at zoom 18, a few at 14.
+ */
+export const OVERLAY_SOURCE_MAX_ZOOM = 14;
+
+/**
+ * The closest zoom the growing piece of a line and its head are cut at: sent every frame, each send
+ * re-cuts every tile of it in view, and a few metres moving need no finer than 0.6 m, under a pixel
+ * at street level.
+ */
+export const GROWING_SOURCE_MAX_ZOOM = 13;
 
 /** How long a station takes to pop in, ms. */
 export const POP_IN_MS = 450;
