@@ -5,18 +5,18 @@ import { pushTo } from '@railtime/core/collection.utils';
 import { lineFeature, pointFeature } from '../layers/snapshot.utils';
 import { offsetFor, resolveLine } from '../layers/style.utils';
 import { sliceAlong } from '@railtime/core/geometry.utils';
-import { clamp } from '@railtime/core/number.utils';
+import { easeInOut } from '../support/drawing.utils';
+import { chaseAlong, frontKmAt, growthSeconds, mainPathOf } from './growth.utils';
 import {
   CLOSE_DRAW_SECONDS,
   CLOSE_HOLD_SECONDS,
   GROWTH_PACE,
-  HOLD_BASE_SECONDS,
-  HOLD_PER_STATION_SECONDS,
   IDENTITY_DRAW_SECONDS,
   IDENTITY_HOLD_SECONDS,
   INFILL_DRAW_SECONDS,
   INFILL_HOLD_SECONDS,
-  MAX_HOLD_SECONDS,
+  MIN_DRAW_SECONDS,
+  OPEN_HOLD_SECONDS,
   RENAME_DRAW_SECONDS,
   RENAME_HOLD_SECONDS,
   STATION_CLOSE_DRAW_SECONDS,
@@ -109,16 +109,21 @@ export abstract class StepAnimation<Kind extends Step = Step> {
 }
 
 /**
- * A stretch of line opening: it grows out of the network along the real track, and each new station
- * pops in, pulses and is labelled as the growth front reaches it.
+ * A stretch of line opening: it grows out of the network along the real track at one speed, and the
+ * front stops at each new station as it pops in, pulses and is labelled. A long stretch takes longer,
+ * never faster; a short one is quick, never drawn out.
  */
 export class OpenStepAnimation extends StepAnimation<OpenStep> {
-  /** Seconds at 1×, by the stretch's length and how the map is seen. */
+  /** Seconds at 1×: each run between stops at the view's pace, as a train runs it, and a stop at each new station. */
   public readonly drawSeconds: number;
-  /** Seconds at 1×, longer for more new stations. */
-  public readonly holdSeconds: number;
+  /** Seconds at 1× its new stations stay highlighted. */
+  public readonly holdSeconds = OPEN_HOLD_SECONDS;
   /** Where the stretch grows from and in what order its stations appear. */
   public readonly growth: Growth;
+  /** Where along the stretch the front stops: each new station, km. */
+  private readonly stops: number[];
+  /** The one way through the stretch a camera follows. */
+  private readonly path: SegmentPlan[];
   /** The lines of the step on each of its segments. */
   private readonly linesBySegment = new Map<number, string[]>();
   /** The lines of the step at each of its stations. */
@@ -127,10 +132,10 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
   public constructor(step: OpenStep, context: StepContext) {
     super(step, context);
     this.growth = context.timeline.growthOf(step);
-    const newStations = this.growth.reach.filter(reached => reached.isNew).length;
+    this.stops = this.growth.reach.filter(reached => reached.isNew).map(reached => reached.km);
+    this.path = mainPathOf(this.growth.plans);
     const pace = GROWTH_PACE[context.view];
-    this.drawSeconds = clamp(this.growth.totalKm / pace.kmPerSecond, pace.minSeconds, pace.maxSeconds);
-    this.holdSeconds = Math.min(MAX_HOLD_SECONDS, HOLD_BASE_SECONDS + HOLD_PER_STATION_SECONDS * newStations);
+    this.drawSeconds = Math.max(MIN_DRAW_SECONDS, growthSeconds(this.stops, this.growth.totalKm, pace));
     for (const { segment, line } of step.lineSegments) {
       pushTo(this.linesBySegment, segment.index, line);
       for (const station of [segment.stationA, segment.stationB]) pushTo(this.linesByStation, station, line);
@@ -158,19 +163,43 @@ export class OpenStepAnimation extends StepAnimation<OpenStep> {
   }
 
   /**
-   * Draws each segment up to the growth front, a glowing head where it is still growing, and marks
-   * the stations the front has passed.
+   * Draws each segment up to the growth front, a glowing head where it is still growing, marks the
+   * stations the front has passed, and links each to the stations it changes to, as it gets there.
    *
    * @param frame - The frame.
    * @param drawing - Filled in place.
    */
   public draw(frame: StepFrame, drawing: StepDrawing): void {
-    const frontKm = frame.progress * this.growth.totalKm;
+    const frontKm = frontKmAt(frame.progress * this.drawSeconds, this.stops, this.growth.totalKm, GROWTH_PACE[this.context.view]);
     for (const plan of this.growth.plans) this.drawSegment(frame, drawing, plan, frontKm);
+    if (this.path.length > 0) drawing.chase = chaseAlong(this.path, frontKm);
     for (const reached of this.growth.reach) {
       if (reached.km > frontKm + 1e-9) break;
       for (const line of this.linesByStation.get(reached.station) ?? []) this.reach(frame, drawing, reached.station, line);
       if (reached.isNew && drawing.reached.has(reached.station)) drawing.highlighted.add(reached.station);
+    }
+    this.linkTransfers(frame, drawing);
+  }
+
+  /**
+   * Links each station the front has reached to the stations it changes to, on the map or reached
+   * too, where the map had no link yet: the interchange shows as the front gets there, not once the
+   * whole stretch has drawn.
+   *
+   * @param frame - The frame.
+   * @param drawing - Filled in place.
+   */
+  private linkTransfers(frame: StepFrame, drawing: StepDrawing): void {
+    const { index } = this.context;
+    const onMap = (station: string) => frame.snapshot.stations.has(station) || drawing.reached.has(station);
+    for (const station of drawing.reached.keys()) {
+      for (const other of index.transfersAt(station)) {
+        const known = frame.snapshot.linked.has(station) && frame.snapshot.linked.has(other);
+        // Each pair once: from the first of the two, or from the one reached if only it is.
+        if (known || !onMap(other) || (drawing.reached.has(other) && other < station)) continue;
+        drawing.links.features.push(lineFeature([index.coordOf(station), index.coordOf(other)], '', 0));
+        drawing.linked.add(station).add(other);
+      }
     }
   }
 
@@ -232,7 +261,7 @@ export class CloseStepAnimation extends StepAnimation<CloseStep> {
     const { closingOnly, sideBySide } = frame.snapshot;
     const stays = (station: string) => !closingOnly.has(station);
     for (const { segment, line } of this.step.lineSegments) {
-      const remainingKm = (1 - frame.progress) * segment.lengthKm;
+      const remainingKm = (1 - easeInOut(frame.progress)) * segment.lengthKm;
       if (!frame.state.visibleLines.has(line) || remainingKm <= 0) continue;
       const fromStationA = stays(segment.stationA) || !stays(segment.stationB);
       const coordinates = fromStationA
@@ -241,7 +270,7 @@ export class CloseStepAnimation extends StepAnimation<CloseStep> {
       const resolved = resolveLine(frame.state, line);
       drawing.lines.features.push(lineFeature(coordinates, resolved.color, offsetFor(sideBySide, segment, resolved.id) * (fromStationA ? 1 : -1)));
     }
-    for (const station of closingOnly) drawing.fading.set(station, 1 - frame.progress);
+    for (const station of closingOnly) drawing.fading.set(station, 1 - easeInOut(frame.progress));
   }
 }
 
@@ -321,11 +350,11 @@ export class StationCloseStepAnimation extends StepAnimation<StationCloseStep> {
           state.timeline.isOpen(lineSegment, state.cursor) &&
           state.timeline.servesStation(station, lineSegment.line, state.cursor),
       );
-    if (frame.snapshot.stations.has(station) && !staysServed) drawing.fading.set(station, 1 - frame.progress);
+    if (frame.snapshot.stations.has(station) && !staysServed) drawing.fading.set(station, 1 - easeInOut(frame.progress));
   }
 }
 
-/** A station takes a new name: it pulses, labelled with it. */
+/** A station takes a new name: it pulses, labelled with its new name over its old. */
 export class RenameStepAnimation extends StepAnimation<RenameStep> {
   /** Seconds at 1× before the station pulses. */
   public readonly drawSeconds = RENAME_DRAW_SECONDS;
@@ -346,13 +375,16 @@ export class RenameStepAnimation extends StepAnimation<RenameStep> {
   }
 
   /**
-   * Highlights the station, which the map labels with its name on the step's date: the new one.
+   * Highlights the station, which the map labels with its name on the step's date, the new one,
+   * and the one it had.
    *
    * @param frame - The frame.
    * @param drawing - Filled in place.
    */
   public draw(frame: StepFrame, drawing: StepDrawing): void {
-    if (frame.snapshot.stations.has(this.step.station)) drawing.highlighted.add(this.step.station);
+    if (!frame.snapshot.stations.has(this.step.station)) return;
+    drawing.highlighted.add(this.step.station);
+    drawing.renamed.set(this.step.station, this.step.from);
   }
 }
 

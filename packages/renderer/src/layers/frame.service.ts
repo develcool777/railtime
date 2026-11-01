@@ -8,6 +8,7 @@ import type { NetworkSnapshot, StationLines } from './snapshot.types';
 import type { FrameOutcome, FrameParts } from './frame.types';
 import type { RenderState } from './style.types';
 import { buildNetworkSnapshot } from './snapshot.utils';
+import { easeInOut } from '../support/drawing.utils';
 
 /**
  * Draws each frame on the layers: the network snapshot when it is stale, then the playing step and
@@ -62,7 +63,14 @@ export class FrameRenderer {
     const { index, timeline, player, baseColor } = this.parts;
     const active = player.active;
     const identityPlaying = active?.animation.changesIdentity === true && player.phase !== 'pre';
-    return { index, timeline, cursor: player.cursor, identityProgress: identityPlaying ? player.progress : null, visibleLines: this.visibleLines, baseColor };
+    return {
+      index,
+      timeline,
+      cursor: player.cursor,
+      identityProgress: identityPlaying ? easeInOut(player.progress) : null,
+      visibleLines: this.visibleLines,
+      baseColor,
+    };
   }
 
   /**
@@ -92,10 +100,11 @@ export class FrameRenderer {
       stationLayer.update({
         now,
         stations,
-        linked: snapshot.linked,
+        linked: drawing.linked.size > 0 ? new Set([...snapshot.linked, ...drawing.linked]) : snapshot.linked,
         planned: snapshot.plannedStations,
         highlighted: drawing.highlighted,
         fading: drawing.fading,
+        renamed: drawing.renamed,
         newLabelOpacity: clamp((1 - player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
         instant: this.instant,
         stepPlaying: active !== null,
@@ -108,7 +117,7 @@ export class FrameRenderer {
     return {
       revealed,
       selectionGone: selected !== null && !snapshot.stations.has(selected) && !drawing.reached.has(selected),
-      tips: drawing.heads.features.map(head => head.geometry.coordinates),
+      chase: drawing.chase,
     };
   }
 

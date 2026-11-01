@@ -1,8 +1,8 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import { clamp } from '@railtime/core/number.utils';
 import { RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
 import { offsetKm } from '@railtime/core/geometry.utils';
-import { CHASE_ZOOM_AT_1KM, CHASE_ZOOM_PER_DOUBLING, CLOSE_UP_MAX_ZOOM, CLOSE_UP_MIN_ZOOM, FOLLOW_RATE, MIN_TURN_KM, TURN_RATE } from './camera.constants';
+import { MIN_TURN_KM, TURN_RATE } from './camera.constants';
+import type { ChaseTarget } from '../steps/animation.types';
 import type { Chase } from './camera.types';
 
 /**
@@ -18,16 +18,6 @@ const bearingBetween = (from: LngLat, to: LngLat): number | null => {
 };
 
 /**
- * How close the 3D camera follows a stretch as it is drawn: a short one from street level, a long one
- * from farther off, so the growing tip crosses the screen at about the same pace.
- *
- * @param lengthKm - The stretch's length.
- * @returns A zoom.
- */
-export const chaseZoomOf = (lengthKm: number): number =>
-  clamp(CHASE_ZOOM_AT_1KM - Math.log2(Math.max(lengthKm, 0.01)) * CHASE_ZOOM_PER_DOUBLING, CLOSE_UP_MIN_ZOOM, CLOSE_UP_MAX_ZOOM);
-
-/**
  * Where the 3D camera waits for a change: where it starts, facing the rest of it.
  *
  * @param start - Where the change starts.
@@ -38,21 +28,19 @@ export const chaseZoomOf = (lengthKm: number): number =>
 export const chaseStartOf = (start: LngLat, towards: LngLat, bearing: number): Chase => ({ center: start, bearing: bearingBetween(start, towards) ?? bearing });
 
 /**
- * The 3D camera's next frame, following a line as it grows: it closes on the growing tips and turns,
- * more slowly, to face the way they move, so it glides after them rather than jumping.
+ * The 3D camera's next frame, following a line as it grows: it sits where the line's path says, which
+ * rounds its bends, and turns, slowly, to face the way the path goes on, so a sharp bend is taken in a
+ * sweep, never a jolt.
  *
  * @param chase - Where it looks from now.
- * @param tips - The growing tips this frame; one at least.
+ * @param target - Where to look from this frame, and which way.
  * @param seconds - The time since the last frame.
  * @returns Where it looks from next.
  */
-export const followOf = (chase: Chase, tips: LngLat[], seconds: number): Chase => {
-  const target: LngLat = [tips.reduce((sum, tip) => sum + tip[0], 0) / tips.length, tips.reduce((sum, tip) => sum + tip[1], 0) / tips.length];
-  const closing = 1 - Math.exp(-seconds * FOLLOW_RATE);
-  const center: LngLat = [chase.center[0] + (target[0] - chase.center[0]) * closing, chase.center[1] + (target[1] - chase.center[1]) * closing];
-  const heading = bearingBetween(chase.center, target);
-  if (heading === null) return { center, bearing: chase.bearing };
+export const followOf = (chase: Chase, target: ChaseTarget, seconds: number): Chase => {
+  const heading = bearingBetween(target.behind, target.ahead);
+  if (heading === null) return { center: target.center, bearing: chase.bearing };
   // The shorter way round, so the camera never spins through a full turn.
   const turn = ((((heading - chase.bearing) % 360) + 540) % 360) - 180;
-  return { center, bearing: chase.bearing + turn * (1 - Math.exp(-seconds * TURN_RATE)) };
+  return { center: target.center, bearing: chase.bearing + turn * (1 - Math.exp(-seconds * TURN_RATE)) };
 };

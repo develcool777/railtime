@@ -46,4 +46,8 @@ export const emptyDrawing = (): StepDrawing => ({
   reached: new Map(),
   highlighted: new Set(),
   fading: new Map(),
+  renamed: new Map(),
+  links: emptyCollection(),
+  linked: new Set(),
+  chase: null,
 });

@@ -158,7 +158,9 @@ regenerate it. The tests read every city through the schema, so one it refuses f
 is read from it), in its own order: a new city goes after the last of its country, and a city's
 folder is its `meta.country` as a slug. A test fails while it is out of date.
 A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
-`packages/schema/src/validation/checks.constants.ts`), or the schema refuses it: the line would miss the station's dot. Where an
+`packages/schema/src/validation/checks.constants.ts`), or the schema refuses it: the line would miss the station's dot.
+Nor does a segment's track double back (a turn sharper than `MAX_TURN_DEGREES`): a point run past a
+station and pulled back to it is a spike, plain up close in 3D. Where an
 interchange's lines run apart underground, each line's track ends at the one station point.
 A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
 says the line never called there); its `closed` while the line runs there. The schema refuses

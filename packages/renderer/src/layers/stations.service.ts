@@ -14,6 +14,18 @@ import type { Palette } from './theme.types';
 const ALREADY_SHOWN = -1e9;
 
 /**
+ * What a feature looks like, as text: two that look alike have the same. Numbers to a hundredth,
+ * finer than an eye sees in a frame.
+ *
+ * @param properties - The feature's properties.
+ * @returns The key.
+ */
+const keyOf = (properties: object): string =>
+  Object.values(properties)
+    .map(value => (typeof value === 'number' ? value.toFixed(2) : String(value)))
+    .join('|');
+
+/**
  * Station dots, their labels, the pulse ring around new stations, and the ring around the selected
  * station. Keeps the timing state those animations need: when each dot appeared and when each pulse
  * started.
@@ -29,12 +41,18 @@ export class StationLayer extends MapLayer {
   private readonly appearedAt = new Map<string, number>();
   /** When each new station's pulse started. */
   private readonly pulsedAt = new Map<string, number>();
+  /** When each closing station's ring started closing in on it. */
+  private readonly closedAt = new Map<string, number>();
+  /** The colour a note under a label is in ("closed", a former name): the basemap's own labels'. */
+  private noteColor = '#888888';
   /** Whether stations are named on the map: kept, so a layer installed later starts the same. */
   private labelsShown = true;
   /** Whether the stations are a backdrop, faded and unnamed, behind a route. */
   private faded = false;
   /** Some dot was still popping in, or some pulse running, when last drawn: the next frame differs. */
   private moving = false;
+  /** What the dots sent last were, and the rings: a frame the same as the last sends MapLibre nothing, so it places no labels again. */
+  private sent = { stations: '', pulses: '' };
 
   public constructor(
     map: MapLibreMap,
@@ -55,6 +73,8 @@ export class StationLayer extends MapLayer {
    */
   public install(font: string[]): void {
     for (const source of [SOURCES.pulses, SOURCES.selection, SOURCES.stations]) this.addSource(source);
+    // New sources are empty: whatever comes next is sent.
+    this.sent = { stations: '', pulses: '' };
     this.map.addLayer({
       id: LAYERS.pulses,
       type: 'circle',
@@ -87,7 +107,7 @@ export class StationLayer extends MapLayer {
       },
     });
     const label: SymbolLayerSpecification['layout'] = {
-      'text-field': ['get', 'name'],
+      'text-field': this.labelText(),
       'text-font': font,
       'text-anchor': 'left',
       visibility: this.labelsShown ? 'visible' : 'none',
@@ -97,7 +117,7 @@ export class StationLayer extends MapLayer {
       type: 'symbol',
       source: SOURCES.stations,
       minzoom: LABEL_MIN_ZOOM,
-      filter: ['!', ['get', 'highlighted']],
+      filter: ['!', ['any', ['get', 'highlighted'], ['get', 'closing']]],
       layout: { ...label, 'text-size': byZoom(11, 14), 'text-offset': [0.9, 0] },
       paint: { 'text-halo-width': 1.5 },
     });
@@ -105,11 +125,29 @@ export class StationLayer extends MapLayer {
       id: LAYERS.newLabels,
       type: 'symbol',
       source: SOURCES.stations,
-      filter: ['get', 'highlighted'],
+      filter: ['any', ['get', 'highlighted'], ['get', 'closing']],
       layout: { ...label, 'text-size': byZoom(13, 16), 'text-offset': [1, 0], 'text-allow-overlap': true, 'text-ignore-placement': true },
       paint: { 'text-halo-width': 2 },
     });
     this.applyFade();
+  }
+
+  /**
+   * A station's label: its name, and under it, smaller and quieter, what the step playing does to it:
+   * the name it had while it takes a new one, or that it closes.
+   *
+   * @returns The label's text, as MapLibre formats it.
+   */
+  private labelText(): NonNullable<SymbolLayerSpecification['layout']>['text-field'] {
+    const note = { 'font-scale': 0.8, 'text-color': this.noteColor };
+    return [
+      'case',
+      ['!=', ['get', 'former'], ''],
+      ['format', ['get', 'name'], {}, '\n', {}, ['concat', 'formerly ', ['get', 'former']], note],
+      ['get', 'closing'],
+      ['format', ['get', 'name'], {}, '\n', {}, 'closed', note],
+      ['get', 'name'],
+    ];
   }
 
   /**
@@ -151,9 +189,11 @@ export class StationLayer extends MapLayer {
   public applyPalette(palette: Palette): void {
     this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-color', ['case', ['get', 'interchange'], palette.interchangeRing, ['get', 'color']]);
     this.map.setPaintProperty(LAYERS.selection, 'circle-stroke-color', palette.label);
+    this.noteColor = palette.basemapText;
     for (const layer of [LAYERS.labels, LAYERS.newLabels]) {
       this.map.setPaintProperty(layer, 'text-color', palette.label);
       this.map.setPaintProperty(layer, 'text-halo-color', palette.labelHalo);
+      this.map.setLayoutProperty(layer, 'text-field', this.labelText());
     }
   }
 
@@ -175,9 +215,20 @@ export class StationLayer extends MapLayer {
   public update(frame: StationFrame): void {
     const stations = this.stationFeatures(frame);
     const pulses = this.pulseFeatures(frame);
-    this.moving = pulses.length > 0 || this.pulsedAt.size > 0 || stations.some(station => station.properties.scale !== 1 || station.properties.opacity < 1);
-    this.setData(SOURCES.stations, { type: 'FeatureCollection', features: stations });
-    this.setData(SOURCES.pulses, { type: 'FeatureCollection', features: pulses });
+    this.moving =
+      pulses.length > 0 ||
+      this.pulsedAt.size > 0 ||
+      this.closedAt.size > 0 ||
+      stations.some(station => station.properties.scale !== 1 || station.properties.opacity < 1);
+    // While a line grows, most frames change no station: sending them again would have MapLibre
+    // re-tile them and place every label anew, each frame.
+    const sent = {
+      stations: stations.map(feature => keyOf(feature.properties)).join('\n'),
+      pulses: pulses.map(feature => keyOf(feature.properties)).join('\n'),
+    };
+    if (sent.stations !== this.sent.stations) this.setData(SOURCES.stations, { type: 'FeatureCollection', features: stations });
+    if (sent.pulses !== this.sent.pulses) this.setData(SOURCES.pulses, { type: 'FeatureCollection', features: pulses });
+    this.sent = sent;
   }
 
   /**
@@ -203,6 +254,7 @@ export class StationLayer extends MapLayer {
   /** Forgets running pulses: after a jump in time they would belong to nothing. */
   public resetPulses(): void {
     this.pulsedAt.clear();
+    this.closedAt.clear();
   }
 
   /**
@@ -217,7 +269,8 @@ export class StationLayer extends MapLayer {
       if (lines.size === 0) continue;
       if (!this.appearedAt.has(station)) this.appearedAt.set(station, frame.instant ? ALREADY_SHOWN : frame.now);
       const highlighted = frame.highlighted.has(station);
-      if (highlighted && !frame.instant && !this.pulsedAt.has(station)) this.pulsedAt.set(station, frame.now);
+      const closing = frame.fading.has(station);
+      this.startRing(frame, station, highlighted, closing);
       const age = (frame.now - this.appearedAt.get(station)!) / POP_IN_MS;
       const opacity = clamp(age * 3, 0, 1) * (frame.fading.get(station) ?? 1);
       let firstLine = '';
@@ -228,10 +281,12 @@ export class StationLayer extends MapLayer {
           name: this.nameOf(station),
           scale: age >= 1 ? 1 : Math.max(0, easeOutBack(clamp(age, 0, 1))),
           opacity,
-          labelOpacity: highlighted ? opacity * frame.newLabelOpacity : opacity,
+          labelOpacity: this.labelOpacityOf(frame, opacity, highlighted, closing),
           interchange: lines.size > 1 || frame.linked.has(station),
           color: lines.get(firstLine) ?? '#ffffff',
           highlighted,
+          former: frame.renamed.get(station) ?? '',
+          closing,
           planned: frame.planned.has(station),
         }),
       );
@@ -241,23 +296,62 @@ export class StationLayer extends MapLayer {
   }
 
   /**
-   * Builds the pulse rings: each expands and fades once.
+   * Starts a station's ring the first frame its step marks it: a new one's, or a closing one's.
+   *
+   * @param frame - The frame.
+   * @param station - The station.
+   * @param highlighted - It is new, or renamed, in the step playing.
+   * @param closing - It closes in the step playing.
+   */
+  private startRing(frame: StationFrame, station: string, highlighted: boolean, closing: boolean): void {
+    if (frame.instant) return;
+    if (highlighted && !this.pulsedAt.has(station)) this.pulsedAt.set(station, frame.now);
+    if (closing && !this.closedAt.has(station)) this.closedAt.set(station, frame.now);
+  }
+
+  /**
+   * How clearly a station's name shows: as its dot, but a step's stations' fade as the step ends, and
+   * a closing station's stays while its dot goes.
+   *
+   * @param frame - The frame.
+   * @param opacity - Its dot's.
+   * @param highlighted - It is new, or renamed, in the step playing.
+   * @param closing - It closes in the step playing.
+   * @returns The label's opacity.
+   */
+  private labelOpacityOf(frame: StationFrame, opacity: number, highlighted: boolean, closing: boolean): number {
+    if (closing) return frame.newLabelOpacity;
+    return highlighted ? opacity * frame.newLabelOpacity : opacity;
+  }
+
+  /**
+   * Builds the pulse rings: a new station's expands and fades once; a closing station's closes in on
+   * it, the other way.
    *
    * @param frame - The frame.
    * @returns The pulse features.
    */
   private pulseFeatures(frame: StationFrame): PointFeature<PulseProperties>[] {
+    return [...this.ringsOf(frame, this.pulsedAt, age => 1 + age * PULSE_GROWTH), ...this.ringsOf(frame, this.closedAt, age => 1 + (1 - age) * PULSE_GROWTH)];
+  }
+
+  /**
+   * The rings of one kind running this frame; a ring done is forgotten once its step ends, so a
+   * station rings at most once a step.
+   *
+   * @param frame - The frame.
+   * @param startedAt - When each station's ring started.
+   * @param radiusAt - Its radius, in dots, by how far it has run, 0..1.
+   * @returns The ring features.
+   */
+  private ringsOf(frame: StationFrame, startedAt: Map<string, number>, radiusAt: (age: number) => number): PointFeature<PulseProperties>[] {
     const features: PointFeature<PulseProperties>[] = [];
-    for (const [station, startedAt] of this.pulsedAt) {
-      const age = (frame.now - startedAt) / PULSE_MS;
+    for (const [station, started] of startedAt) {
+      const age = (frame.now - started) / PULSE_MS;
       const lines = frame.stations.get(station);
       const color = lines ? [...lines.values()][0] : undefined;
-      if (age < 1 && color) {
-        features.push(pointFeature(this.coordOf(station), { color, radius: 1 + age * PULSE_GROWTH, opacity: 1 - age }));
-      } else if (age >= 1 && !frame.stepPlaying) {
-        // Kept until its step ends, so a station does not pulse twice in one step.
-        this.pulsedAt.delete(station);
-      }
+      if (age < 1 && color) features.push(pointFeature(this.coordOf(station), { color, radius: radiusAt(age), opacity: 1 - age }));
+      else if (age >= 1 && !frame.stepPlaying) startedAt.delete(station);
     }
     return features;
   }

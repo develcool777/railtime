@@ -4,7 +4,8 @@ import { createStepAnimation, emptyDrawing } from '../../../src/steps/animation.
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { GROWTH_PACE, HOLD_BASE_SECONDS, HOLD_PER_STATION_SECONDS } from '../../../src/steps/animation.constants';
+import { GROWTH_PACE, OPEN_HOLD_SECONDS } from '../../../src/steps/animation.constants';
+import { frontKmAt, growthSeconds } from '../../../src/steps/growth.utils';
 import {
   CloseStepAnimation,
   IdentityStepAnimation,
@@ -71,27 +72,34 @@ describe('OpenStepAnimation', () => {
     const playback = playbackOf(tinyNetwork(), undefined, '3d');
     playback.player.seek({ time: toTimestamp('1905-01-01') });
     playback.player.skip();
-    // 2 km at 0.8 km a second.
-    expect(playback.player.active?.animation.drawSeconds).toBeCloseTo(2 / GROWTH_PACE['3d'].kmPerSecond, 1);
-    expect(GROWTH_PACE['3d'].kmPerSecond).toBeLessThan(GROWTH_PACE['2d'].kmPerSecond);
+    const pace = GROWTH_PACE['3d'];
+    const animation = playback.player.active!.animation as OpenStepAnimation;
+    // Its 2 km, and a stop at D, the one station it opens.
+    expect(animation.drawSeconds).toBe(growthSeconds([animation.growth.totalKm], animation.growth.totalKm, pace));
+    expect(animation.drawSeconds).toBeGreaterThan(extension().animation.drawSeconds);
+    expect(pace.kmPerSecond).toBeLessThan(GROWTH_PACE['2d'].kmPerSecond);
+    expect(pace.stationSeconds).toBeGreaterThan(GROWTH_PACE['2d'].stationSeconds);
   });
 
-  test('takes as long as its track, a second at least, and holds a little longer for each new station', () => {
-    const { animation } = extension();
-    // 2 km at 2.5 km a second is under the shortest.
-    expect(animation.drawSeconds).toBe(GROWTH_PACE['2d'].minSeconds);
-    expect(animation.holdSeconds).toBeCloseTo(HOLD_BASE_SECONDS + 2 * HOLD_PER_STATION_SECONDS);
+  test('takes as long as its runs between stops at one pace and a stop at each new station, however long, and holds as long as any', () => {
+    const animation = extension().animation as OpenStepAnimation;
+    // The one stop is D, at its end: C opens later.
+    expect(animation.drawSeconds).toBe(growthSeconds([animation.growth.totalKm], animation.growth.totalKm, GROWTH_PACE['2d']));
+    expect(animation.holdSeconds).toBe(OPEN_HOLD_SECONDS);
   });
 
   test('grows out of the network along its track, a head at the front, and frames all of it', () => {
     const { animation, draw, playback } = extension();
+    const { totalKm } = (animation as OpenStepAnimation).growth;
     const quarter = draw(0.25);
     expect(quarter.lines.features).toHaveLength(1);
     const [growing] = quarter.lines.features;
     expect(growing?.geometry.coordinates[0]).toEqual([ONE_KM, 51.5]);
     // A camera following it starts where it grows from: B.
     expect(animation.startPoint()).toEqual([ONE_KM, 51.5]);
-    expect(growing?.geometry.coordinates.at(-1)?.[0]).toBeCloseTo(1.5 * ONE_KM, 6);
+    // A quarter of its time in, as far as the front has run then, east of B.
+    const quarterKm = frontKmAt(animation.drawSeconds / 4, [totalKm], totalKm, GROWTH_PACE['2d']);
+    expect(growing?.geometry.coordinates.at(-1)?.[0]).toBeCloseTo(ONE_KM + (quarterKm / totalKm) * 2 * ONE_KM, 4);
     expect(growing?.properties).toMatchObject({ color: '#ff0000', highlight: 1 });
     expect(quarter.heads.features.map(head => head.geometry.coordinates)).toEqual([growing?.geometry.coordinates.at(-1)]);
     expect(quarter.heads.features[0]?.properties).toEqual({ color: '#ff0000' });
@@ -101,6 +109,30 @@ describe('OpenStepAnimation', () => {
     expect(drawn.heads.features).toEqual([]);
     expect(drawn.lines.features.map(feature => feature.properties.highlight)).toEqual([0.75, 0.75]);
     expect(animation.cameraPoints()).toEqual([...playback.index.segments[1]!.coordinates, ...playback.index.segments[2]!.coordinates]);
+  });
+
+  test('runs through a station that opens later at full pace, and waits at the one it opens, the camera there with it', () => {
+    const { animation, draw } = extension();
+    const pace = GROWTH_PACE['2d'];
+    /** Where the front is after some seconds, km past B: the furthest the track is drawn. */
+    const frontAt = (seconds: number) =>
+      Math.max(...draw(seconds / animation.drawSeconds).lines.features.flatMap(feature => feature.geometry.coordinates.map(point => point[0]))) / ONE_KM - 1;
+    // Past C, a km on, without slowing: a tenth of a second covers a tenth of the pace.
+    expect(frontAt(0.5) - frontAt(0.4)).toBeCloseTo(pace.kmPerSecond / 10, 1);
+    // Waiting at D, the camera still told where it is.
+    expect(frontAt(animation.drawSeconds - pace.stationSeconds / 2)).toBeCloseTo(2, 2);
+    expect(draw(1).chase?.center[0]).toBeCloseTo(3 * ONE_KM, 6);
+  });
+
+  test('links a station it reaches to the one it changes to as the front gets there, not once the stretch is drawn', () => {
+    // D, which red reaches last, changes to A, on the map since 1900.
+    const { draw, playback } = extension();
+    const early = draw(0.3);
+    expect([early.links.features, [...early.linked]]).toEqual([[], []]);
+    const reached = draw(1);
+    expect(reached.links.features.map(link => link.geometry.coordinates)).toEqual([[playback.index.coordOf('d'), playback.index.coordOf('a')]]);
+    expect([...reached.linked].sort()).toEqual(['a', 'd']);
+    expect(draw(1, { hidden: ['red'] }).links.features).toEqual([]);
   });
 
   test('draws nothing of a hidden line, and reaches none of its stations', () => {
@@ -188,7 +220,8 @@ describe('StationCloseStepAnimation', () => {
     // D closes on red in 1960; green comes only in 1970.
     const { animation, draw, playback } = stepAfter(tinyNetwork(), '1959-01-01');
     expect(animation).toBeInstanceOf(StationCloseStepAnimation);
-    expect(draw(0.25).fading).toEqual(new Map([['d', 0.75]]));
+    // Eased: half-way through its time, half gone.
+    expect(draw(0.5).fading).toEqual(new Map([['d', 0.5]]));
     expect(animation.cameraPoints()).toEqual([playback.index.coordOf('d')]);
   });
 
@@ -196,17 +229,18 @@ describe('StationCloseStepAnimation', () => {
     const network = tinyNetwork();
     network.segments[2]!.lines.green!.open = '1955-01-01';
     const { draw } = stepAfter(network, '1959-01-01');
-    expect(draw(0.25).fading.size).toBe(0);
-    expect(draw(0.25, { hidden: ['green'] }).fading).toEqual(new Map([['d', 0.75]]));
+    expect(draw(0.5).fading.size).toBe(0);
+    expect(draw(0.5, { hidden: ['green'] }).fading).toEqual(new Map([['d', 0.5]]));
   });
 });
 
 describe('RenameStepAnimation', () => {
-  test('highlights the station renamed, and frames it', () => {
+  test('highlights the station renamed with the name it had, and frames it', () => {
     const { animation, draw, playback } = stepAfter(tinyNetwork(), '1924-01-01');
     expect(animation).toBeInstanceOf(RenameStepAnimation);
     expect(animation.changesIdentity).toBe(false);
     expect([...draw(0.5).highlighted]).toEqual(['d']);
+    expect(draw(0.5).renamed).toEqual(new Map([['d', 'Old D']]));
     expect(animation.cameraPoints()).toEqual([playback.index.coordOf('d')]);
   });
 });
@@ -218,6 +252,8 @@ describe('IdentityStepAnimation', () => {
     expect(animation.changesIdentity).toBe(true);
     expect(animation.cameraPoints()).toEqual(playback.index.segments[0]!.coordinates);
     const drawing = draw(0.5);
-    expect([drawing.lines.features, drawing.heads.features, [...drawing.reached], [...drawing.highlighted], [...drawing.fading]]).toEqual([[], [], [], [], []]);
+    expect([drawing.lines.features, drawing.heads.features, [...drawing.reached], [...drawing.highlighted], [...drawing.fading], [...drawing.renamed]]).toEqual(
+      [[], [], [], [], [], []],
+    );
   });
 });

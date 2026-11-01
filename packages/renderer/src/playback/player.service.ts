@@ -2,7 +2,6 @@ import type { NetworkEngine } from '@railtime/network/engine.service';
 import { YEAR_MS } from '@railtime/core/date.utils';
 import type { Step } from '@railtime/network/engine.types';
 import { clamp } from '@railtime/core/number.utils';
-import { easeInOut } from '../support/drawing.utils';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
 import type { PlayFrom, SeekTarget } from '../transitMap.types';
 import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './player.types';
@@ -85,10 +84,10 @@ export class Player {
     return active.elapsed < active.preSeconds + active.animation.drawSeconds ? 'draw' : 'hold';
   }
 
-  /** How far the active change has animated, eased: 0 during `pre`, 1 during `hold`. */
+  /** How far through its drawing time the active change is, linear: 0 during `pre`, 1 during `hold`. Each kind of step eases it as it draws. */
   public get progress(): number {
     const active = this.current;
-    return active ? easeInOut(clamp((active.elapsed - active.preSeconds) / active.animation.drawSeconds, 0, 1)) : 0;
+    return active ? clamp((active.elapsed - active.preSeconds) / active.animation.drawSeconds, 0, 1) : 0;
   }
 
   /** How far the active step's highlight has faded: 0 → 1 over `hold`. */

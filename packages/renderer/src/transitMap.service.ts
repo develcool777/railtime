@@ -504,8 +504,8 @@ export class TransitMap {
    */
   private draw(now: number, seconds: number): void {
     const selected = this.props.current.selectedStation;
-    const { revealed, selectionGone, tips } = this.frames.draw(now, selected);
-    this.camera.follow(tips, seconds);
+    const { revealed, selectionGone, chase } = this.frames.draw(now, selected);
+    this.camera.follow(chase, seconds);
     if (revealed !== null) this.notify('stepProgress', revealed);
     if (selected && selectionGone !== this.selectionAway) {
       this.selectionAway = selectionGone;

@@ -29,6 +29,7 @@ const frameOf = (overrides: Partial<StationFrame>): StationFrame => ({
   planned: new Set(),
   highlighted: new Set(),
   fading: new Map(),
+  renamed: new Map(),
   newLabelOpacity: 1,
   instant: false,
   stepPlaying: false,
@@ -107,6 +108,40 @@ describe('StationLayer', () => {
     expect(dots(fake)).toEqual([]);
     layer.update(frameOf({ stations, now: 30 }));
     expect(dots(fake)[0]?.properties.scale).toBeCloseTo(0);
+  });
+
+  test('labels a renamed station with the name it had, and a closing one closed, its name up while its dot goes and a ring closing in', () => {
+    const { fake, layer } = installed();
+    const stations = new Map([
+      ['a', new Map([['red', '#f00']])],
+      ['bb', new Map([['red', '#f00']])],
+    ]);
+    layer.update(frameOf({ stations, instant: true }));
+    const step = { stations, highlighted: new Set(['a']), renamed: new Map([['a', 'Old A']]), fading: new Map([['bb', 0]]), stepPlaying: true };
+    layer.update(frameOf({ ...step, now: 0 }));
+    layer.update(frameOf({ ...step, now: PULSE_MS / 4 }));
+    const [renamed, closing] = dots(fake);
+    expect(renamed?.properties).toMatchObject({ former: 'Old A', closing: false, highlighted: true });
+    expect(closing?.properties).toMatchObject({ former: '', closing: true, opacity: 0, labelOpacity: 1 });
+    // The new station's ring grows; the closing one's shrinks.
+    const radii = pulses(fake).map(pulse => pulse.properties.radius);
+    expect(radii).toHaveLength(2);
+    expect(radii[0]).toBeLessThan(radii[1]!);
+    // Both labelled at any zoom, the rest only when close.
+    expect(fake.layers.get(LAYERS.newLabels)?.filter).toEqual(['any', ['get', 'highlighted'], ['get', 'closing']]);
+  });
+
+  test('sends MapLibre nothing for a frame whose stations look as the last: a growing line changes none most frames', () => {
+    const { fake, layer } = installed();
+    const stations = new Map([['a', new Map([['red', '#f00']])]]);
+    layer.update(frameOf({ stations, instant: true, stepPlaying: true, now: 0 }));
+    const sends = fake.sends.get(SOURCES.stations);
+    layer.update(frameOf({ stations, stepPlaying: true, now: 16 }));
+    layer.update(frameOf({ stations, stepPlaying: true, now: 32 }));
+    expect(fake.sends.get(SOURCES.stations)).toBe(sends);
+    // A station reached: sent.
+    layer.update(frameOf({ stations: new Map([...stations, ['bb', new Map([['red', '#f00']])]]), stepPlaying: true, now: 48 }));
+    expect(fake.sends.get(SOURCES.stations)).toBe(sends! + 1);
   });
 
   test('a jump in time forgets running pulses', () => {

@@ -190,13 +190,20 @@ describe('Timeline', () => {
     expect(timeline.stationsOnMap(timeline.cursorAt(toTimestamp('1955-01-01'))).has('e')).toBe(false);
   });
 
-  test('grows an opening out of the stations on the map before it, worked out once', () => {
+  test('grows an opening out of the stations on the map before it, worked out once, new only where it opens a station', () => {
     const { index, timeline } = timelineOf();
     const extension = timeline.steps.find(step => step.kind === 'open' && step.segments.some(segment => segment.stationB === 'c' || segment.stationA === 'c'));
     if (extension?.kind !== 'open') throw new Error('the tiny network extends red to C');
     const growth = timeline.growthOf(extension);
-    expect(growth).toEqual(planGrowth(extension.segments, timeline.stationsOnMap(extension.index), station => index.coordOf(station), index.centre));
-    expect(growth.reach.some(reached => !reached.isNew)).toBe(true);
+    const planned = planGrowth(extension.segments, timeline.stationsOnMap(extension.index), station => index.coordOf(station), index.centre);
+    expect(growth.plans).toEqual(planned.plans);
+    // B was on the map; red runs through C from 1910 but calls there only from 1920: D alone is new.
+    expect(growth.reach.map(reached => [reached.station, reached.isNew])).toEqual([
+      ['b', false],
+      ['c', false],
+      ['d', true],
+    ]);
+    expect(planned.reach.find(reached => reached.station === 'c')?.isNew).toBe(true);
     expect(timeline.growthOf(extension)).toBe(growth);
   });
 });

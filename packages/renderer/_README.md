@@ -28,9 +28,21 @@ map.destroy();
 ## A step, frame by frame
 
 `Player` gives each step three phases, in seconds at 1×: **pre** (the camera moves, up to 1 s, and never quicker than 0.7 s of real time; a beat where what the change touches is already in view, so the camera stays), **draw**
-(the change animates, 1–6 s by length) and **hold** (new stations stay highlighted, ~1–2.5 s). The
-clock stops on the step's date for all three. Between dates it runs at 4 years/s through quiet
-periods and slows steadily to 1.2 years/s over the last years before the next change.
+(the change animates) and **hold** (what changed stays marked). The clock stops on the step's date
+for all three. Between dates it runs at 4 years/s through quiet periods and slows steadily to 1.2
+years/s over the last years before the next change.
+
+A new stretch grows as a train runs (`steps/growth.utils.ts`): it speeds up out of a station, runs at
+one pace (`GROWTH_PACE`: 2.5 km/s from above, 0.8 km/s in 3D), brakes into the next new station and
+waits there a beat (0.3 s, 0.6 s in 3D). Its time is its length and its stations, never squeezed or
+stretched, and every stretch, 500 m or 5 km, moves alike. A station the track only passes, opening
+later, is no stop. In 3D the camera follows the front at one zoom (`CHASE_ZOOM`), so the streets pass
+at the line's pace on every stretch: it sits on the line's middle over a short stretch round the
+front, so a sharp bend is rounded, and faces from a little behind the front to a little ahead, so
+it turns before a bend, smoothly, never in it (`chaseAlong`). The minimap, a second map, takes what
+changes every frame at most ten times a second. A station reached is linked to those it changes to as the front
+gets there, ringed as an interchange from then. The player's `progress` is linear: each kind of step moves through its time its own way. A renamed station is labelled with its new name over `formerly <old>`; a closing one
+stays named, marked `closed`, as its dot fades and a ring closes in on it.
 
 A frame draws only what changed (`FrameRenderer`): with nothing playing, nothing popping in and the same snapshot, it
 sends MapLibre nothing, so an idle map costs no script time and panning stays smooth.

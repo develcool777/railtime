@@ -1,6 +1,6 @@
 import type { NetworkEngine } from '@railtime/network/engine.service';
-import type { LngLat } from '@railtime/core/geometry.types';
 import type { Minimap } from '../minimap.service';
+import type { ChaseTarget } from '../steps/animation.types';
 import type { Player } from '../playback/player.service';
 import type { StationLayer } from './stations.service';
 import type { ActiveStepLayer, NetworkLayer } from './network.service';
@@ -25,6 +25,6 @@ export type FrameOutcome = {
   revealed: number | null;
   /** The selected station is not on the map this frame: gone, or not yet open. */
   selectionGone: boolean;
-  /** Where the playing step's line is growing this frame: its tips; none when nothing grows. */
-  tips: LngLat[];
+  /** Where a camera following the playing step's line looks from, and which way; `null` when nothing grows. */
+  chase: ChaseTarget | null;
 };

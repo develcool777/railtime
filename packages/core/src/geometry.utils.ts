@@ -25,6 +25,22 @@ export const offsetKm = (from: LngLat, to: LngLat): [number, number] => {
 export const distanceKm = (from: LngLat, to: LngLat): number => Math.hypot(...offsetKm(from, to));
 
 /**
+ * How sharply a path turns at a point: 0° straight on, 180° straight back.
+ *
+ * @param before - The point it comes from.
+ * @param corner - The point it turns at.
+ * @param after - The point it goes on to.
+ * @returns The turn, degrees, 0..180; 0 where two of the points are one.
+ */
+export const turnDegrees = (before: LngLat, corner: LngLat, after: LngLat): number => {
+  const [inEast, inNorth] = offsetKm(before, corner);
+  const [outEast, outNorth] = offsetKm(corner, after);
+  const lengths = Math.hypot(inEast, inNorth) * Math.hypot(outEast, outNorth);
+  if (lengths === 0) return 0;
+  return (Math.acos(Math.max(-1, Math.min(1, (inEast * outEast + inNorth * outNorth) / lengths))) * 180) / Math.PI;
+};
+
+/**
  * The point a fraction of the way from one point to another.
  *
  * @param from - Where the fraction is 0.

@@ -1,11 +1,13 @@
 import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
 import { clamp } from '@railtime/core/number.utils';
-import { boundsOf, distanceKm } from '@railtime/core/geometry.utils';
+import { boundsOf } from '@railtime/core/geometry.utils';
 import type { StepAnimation } from '../steps/animation.service';
+import type { ChaseTarget } from '../steps/animation.types';
 import type { Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';
 import {
+  CHASE_ZOOM,
   FOLLOW_MAX_ZOOM,
   MIN_MOVE_MS,
   OVERVIEW_MAX_ZOOM,
@@ -17,7 +19,7 @@ import {
   ZOOM_SLACK,
 } from './camera.constants';
 import type { CameraSettings, Chase } from './camera.types';
-import { chaseStartOf, chaseZoomOf, followOf } from './camera.utils';
+import { chaseStartOf, followOf } from './camera.utils';
 
 /**
  * Moves the main map's camera for playback. `follow` frames just the change, so a single new
@@ -134,12 +136,12 @@ export class CameraDirector {
    * In 3D, follows the change playing as it is drawn: called each frame with its growing tips. Leaves the
    * camera be on the flat map, in another mode, while it is moving (flying to the change, or dragged), or with no tip.
    *
-   * @param tips - The growing tips this frame.
+   * @param target - Where to look from, and which way, this frame; `null` when nothing grows.
    * @param seconds - The time since the last frame.
    */
-  public follow(tips: LngLat[], seconds: number): void {
-    if (this.viewMode !== '3d' || this.mode !== 'follow' || !this.chase || tips.length === 0 || this.map.isMoving()) return;
-    this.chase = followOf(this.chase, tips, seconds);
+  public follow(target: ChaseTarget | null, seconds: number): void {
+    if (this.viewMode !== '3d' || this.mode !== 'follow' || !this.chase || !target || this.map.isMoving()) return;
+    this.chase = followOf(this.chase, target, seconds);
     this.map.jumpTo({ center: this.chase.center, bearing: this.chase.bearing });
   }
 
@@ -155,8 +157,7 @@ export class CameraDirector {
     const [southWest, northEast] = bounds;
     const middle: LngLat = [(southWest[0] + northEast[0]) / 2, (southWest[1] + northEast[1]) / 2];
     this.chase = chaseStartOf(animation.startPoint() ?? middle, middle, this.map.getBearing());
-    const zoom = chaseZoomOf(distanceKm(southWest, northEast));
-    this.map.easeTo({ center: this.chase.center, bearing: this.chase.bearing, zoom, pitch: VIEW_3D_PITCH, duration: durationMs });
+    this.map.easeTo({ center: this.chase.center, bearing: this.chase.bearing, zoom: CHASE_ZOOM, pitch: VIEW_3D_PITCH, duration: durationMs });
     return durationMs;
   }
 
