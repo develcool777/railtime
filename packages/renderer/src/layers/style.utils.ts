@@ -21,14 +21,17 @@ export const byZoom = (atCityZoom: number | ExpressionSpecification, atStreetZoo
 ];
 
 /**
- * A line width that widens with the feature's `highlight` property: new track stands out until its highlight fades.
+ * A line width that widens with the feature's `highlight` property: new track stands out until its
+ * highlight fades. The fade is the layer's, the same for all of its track, set as a paint value each
+ * frame, so the track's data is not sent again for it.
  *
  * @param atCityZoom - The normal width at zoom 10.
  * @param atStreetZoom - The normal width at zoom 14.
+ * @param fade - How much of the highlight is left, 0..1.
  * @returns A MapLibre expression.
  */
-export const highlightedWidth = (atCityZoom: number, atStreetZoom: number): ExpressionSpecification =>
-  byZoom(['+', atCityZoom, ['*', ['get', 'highlight'], atCityZoom * 0.8]], ['+', atStreetZoom, ['*', ['get', 'highlight'], atStreetZoom * 0.6]]);
+export const highlightedWidth = (atCityZoom: number, atStreetZoom: number, fade = 1): ExpressionSpecification =>
+  byZoom(['+', atCityZoom, ['*', ['get', 'highlight'], atCityZoom * 0.8 * fade]], ['+', atStreetZoom, ['*', ['get', 'highlight'], atStreetZoom * 0.6 * fade]]);
 
 /**
  * The offset that puts lines on shared track side by side: the feature's `offset` slot, about one line width apart.

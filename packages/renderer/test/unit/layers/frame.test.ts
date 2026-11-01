@@ -92,7 +92,9 @@ describe('FrameRenderer', () => {
     }
     // Red reaches D (C is not yet a stop on it); then the step ends and the count goes back.
     expect(revealed).toEqual([1, 0]);
-    expect(fake.sends.get(SOURCES.active)).toBeGreaterThan(10);
+    // The growing piece each frame; the track drawn whole only as each segment is done (B – C, C – D), and cleared.
+    expect(fake.sends.get(SOURCES.growing)).toBeGreaterThan(10);
+    expect(fake.sends.get(SOURCES.active)).toBe(3);
     expect(minimap.active.at(-1)?.features).toEqual([]);
     expect(minimap.active.slice(0, -1).every(drawing => drawing.features.length > 0)).toBe(true);
     // Settled: the pulses run out, then nothing more is sent.

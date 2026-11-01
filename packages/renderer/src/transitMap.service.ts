@@ -23,7 +23,15 @@ import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.c
 import { Player } from './playback/player.service';
 import type { PlayerEvent } from './playback/player.types';
 import { StepAnimation } from './steps/animation.service';
-import { DEFAULT_MAP_PROPS, END_OVERVIEW_MS, FIT_NETWORK_MS, MAX_FRAME_SECONDS, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from './transitMap.constants';
+import {
+  DEFAULT_MAP_PROPS,
+  END_OVERVIEW_MS,
+  FIT_NETWORK_MS,
+  MAX_FRAME_SECONDS,
+  MAX_TILE_WAIT_SECONDS,
+  SELECTED_STATION_ZOOM,
+  SELECT_FLY_MS,
+} from './transitMap.constants';
 import type { Credit, FrameScheduler, MapProps, MapView, Padding, PlayFrom, SeekTarget, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
 
@@ -90,6 +98,8 @@ export class TransitMap {
   private frameRequest = 0;
   /** When the last frame ran. */
   private lastFrameAt = 0;
+  /** Real seconds the playing step has waited, at the end of its camera move, for the map's tiles. */
+  private tileWait = 0;
 
   public constructor(options: TransitMapOptions) {
     // Before the first map: MapLibre starts its workers with it.
@@ -448,6 +458,7 @@ export class TransitMap {
     const active = this.player.active;
     if (!active) return;
     this.frames.stepStarted();
+    this.tileWait = 0;
     const speed = this.player.speed;
     const { index, timeline } = this.engine;
     const moveMs = this.camera.focusStep(
@@ -489,12 +500,30 @@ export class TransitMap {
     if (this.life === 'destroyed') return;
     const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt || now)) / 1000);
     this.lastFrameAt = now;
-    this.handlePlayerEvents(this.player.tick(seconds));
+    this.handlePlayerEvents(this.player.tick(this.waitsForTiles(seconds) ? 0 : seconds));
     if (this.life === 'ready') this.draw(now, seconds);
     this.flush();
     // A listener may have destroyed it.
     if (this.alive()) this.frameRequest = this.scheduler.request(this.renderFrame);
   };
+
+  /**
+   * Whether the playing step waits this frame for the map's tiles: as its camera move ends, where the
+   * camera arrived is not drawn yet (a jump across the city, at street level, on a sharp screen), and
+   * it has not waited `MAX_TILE_WAIT_SECONDS` already. The line then starts growing over streets, not
+   * a blank that fills in as it goes.
+   *
+   * @param seconds - The time since the last frame.
+   * @returns Whether to hold the step this frame.
+   */
+  private waitsForTiles(seconds: number): boolean {
+    const active = this.player.active;
+    if (!active || !this.player.playing || this.life !== 'ready') return false;
+    const arriving = active.elapsed < active.preSeconds && active.elapsed + seconds * this.player.speed >= active.preSeconds;
+    if (!arriving || this.tileWait >= MAX_TILE_WAIT_SECONDS || this.map.areTilesLoaded()) return false;
+    this.tileWait += seconds;
+    return true;
+  }
 
   /**
    * Draws the frame; hides the ring of a selected station the moment took off the map, and says so.

@@ -14,6 +14,8 @@ import type { ChaseTarget, GrowthMove, GrowthPace, Opening, StepContext, StepDra
  */
 export const emptyDrawing = (): StepDrawing => ({
   lines: emptyCollection(),
+  growing: emptyCollection(),
+  highlight: 0,
   heads: emptyCollection(),
   reached: new Map(),
   highlighted: new Set(),

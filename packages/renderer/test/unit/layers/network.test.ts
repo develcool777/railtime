@@ -54,7 +54,7 @@ describe('NetworkLayer', () => {
 });
 
 describe('ActiveStepLayer', () => {
-  test('draws the growing track and its heads, then clears them once and sends nothing more between steps', () => {
+  test('sends each source only when what it holds changes: the line as it grows, never a frame the same, and clears it once between steps', () => {
     const fake = fakeMap();
     const layer = new ActiveStepLayer(fake.map);
     layer.install();
@@ -80,13 +80,18 @@ describe('ActiveStepLayer', () => {
     );
     layer.update(drawing);
     layer.update(drawing);
-    expect(fake.sends.get(SOURCES.active)).toBe(2);
+    expect(fake.sends.get(SOURCES.active)).toBe(1);
     expect(fake.data.get(SOURCES.active)).toBe(drawing.lines);
+    // Its head and links held nothing, and still do: never sent.
+    expect([fake.sends.get(SOURCES.growing), fake.sends.get(SOURCES.activeTransfers)]).toEqual([undefined, undefined]);
+    // Grown: sent again.
+    drawing.lines.features[0]!.geometry.coordinates.push([2, 0]);
+    layer.update(drawing);
+    expect(fake.sends.get(SOURCES.active)).toBe(2);
 
     // The step ends: one empty frame clears the map, the rest are skipped.
     for (let frame = 0; frame < 5; frame++) layer.update(emptyDrawing());
     expect(fake.sends.get(SOURCES.active)).toBe(3);
-    expect(fake.sends.get(SOURCES.heads)).toBe(3);
     expect(fake.data.get(SOURCES.active)).toEqual({ type: 'FeatureCollection', features: [] });
   });
 });

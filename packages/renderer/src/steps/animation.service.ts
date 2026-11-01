@@ -156,9 +156,10 @@ export class StepAnimation {
     const resolved = new Map(lines.map(line => resolveLine(frame.state, line)).map(line => [line.id, line.color]));
     // Offsets are relative to the direction the points run, so a segment drawn B→A flips its side.
     const direction = plan.fromStationA ? 1 : -1;
-    const highlight = 1 - frame.holdProgress;
+    drawing.highlight = 1 - frame.holdProgress;
+    const into = drawnKm < segment.lengthKm ? drawing.growing : drawing.lines;
     for (const [lineId, color] of resolved)
-      drawing.lines.features.push(lineFeature(coordinates, color, offsetFor(frame.snapshot.sideBySide, segment, lineId) * direction, highlight));
+      into.features.push(lineFeature(coordinates, color, offsetFor(frame.snapshot.sideBySide, segment, lineId) * direction, 1));
     const tip = coordinates.at(-1);
     const tipColor = [...resolved.values()][0];
     if (drawnKm < segment.lengthKm && tip && tipColor) drawing.heads.features.push(pointFeature(tip, { color: tipColor }));
@@ -205,7 +206,7 @@ export class StepAnimation {
         ? sliceAlong(segment.coordinates, segment.distances, remainingKm)
         : sliceAlong(segment.reversedCoordinates, segment.reversedDistances, remainingKm);
       const resolved = resolveLine(frame.state, line);
-      drawing.lines.features.push(lineFeature(coordinates, resolved.color, offsetFor(sideBySide, segment, resolved.id) * (fromStationA ? 1 : -1)));
+      drawing.growing.features.push(lineFeature(coordinates, resolved.color, offsetFor(sideBySide, segment, resolved.id) * (fromStationA ? 1 : -1)));
     }
     for (const station of closingOnly) drawing.fading.set(station, 1 - easeInOut(frame.progress));
   }

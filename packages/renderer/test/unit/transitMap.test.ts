@@ -5,7 +5,7 @@ import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { TransitMap } from '../../src/transitMap.service';
-import { OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
+import { MAX_TILE_WAIT_SECONDS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
 import type { MapProps, TransitMapListeners } from '../../src/transitMap.types';
 import { openingOf } from '../../src/transitMap.utils';
 import { fakeMap } from '../support/factories/fakeMap.utils';
@@ -164,6 +164,34 @@ describe('TransitMap', () => {
     const results = named('overlay') as { kind: string; route: unknown }[];
     expect(results.at(0)?.route).not.toBeNull();
     expect(results.at(-1)).toEqual({ kind: 'route', route: null });
+  });
+
+  test('holds a step as its camera arrives until the map there is drawn, but never longer than it may', () => {
+    /**
+     * Frames from the first change's start until its line first grows, the map's tiles loading when told.
+     *
+     * @param loadedAfter - The frame, from the step's start, the tiles are all loaded on.
+     * @returns The frames.
+     */
+    const framesToGrow = (loadedAfter: number) => {
+      const { map, fake, frame, ready, named } = mapOf();
+      ready();
+      map.play();
+      for (let tick = 0; tick < 400 && named('step').length === 0; tick++) frame();
+      let frames = 0;
+      for (; frames < 400 && named('stepProgress').length === 0; frames++) {
+        fake.view.tilesLoaded = frames >= loadedAfter;
+        frame();
+      }
+      return frames;
+    };
+    const drawn = framesToGrow(0);
+    // Never loaded: it waits its longest, 1.5 s at 16 ms a frame, then grows anyway.
+    expect(framesToGrow(Infinity) - drawn).toBeCloseTo((MAX_TILE_WAIT_SECONDS * 1000) / 16, -1);
+    // Loaded half a second late: it waits about that, then grows at once.
+    const late = framesToGrow(drawn + 30) - drawn;
+    expect(late).toBeGreaterThan(0);
+    expect(late).toBeLessThanOrEqual(31);
   });
 
   test('takes it all down once: the map removed, no frames, no events, and every later call does nothing', () => {

@@ -65,7 +65,12 @@ export type StepFrame = {
 
 /** What a playing step adds to the map in one frame. */
 export type StepDrawing = {
+  /** Track drawn whole: changes only when a segment is done, so it is sent to the map that seldom. */
   lines: FeatureCollection<LineFeature>;
+  /** Track still growing or retracting this frame: a few metres, sent every frame. */
+  growing: FeatureCollection<LineFeature>;
+  /** How wide new track still stands out, 0..1, fading as the step holds: the same for all of it, so a paint value, never data. */
+  highlight: number;
   heads: FeatureCollection<PointFeature<HeadProperties>>;
   /** Stations the step has reached so far, with the lines it adds to them. */
   reached: Map<string, StationLines>;

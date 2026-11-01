@@ -49,10 +49,19 @@ const LATITUDE_STRETCH = 1.6;
  * @returns The stand-in and what it keeps.
  */
 export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
-  const view: FakeMap['view'] = { center: [0, 51.5], zoom: 10, width: 1000, height: 600, cover: { top: 0, right: 0, bottom: 0, left: 0 }, moving: false };
+  const view: FakeMap['view'] = {
+    center: [0, 51.5],
+    zoom: 10,
+    width: 1000,
+    height: 600,
+    cover: { top: 0, right: 0, bottom: 0, left: 0 },
+    moving: false,
+    tilesLoaded: true,
+  };
   const data = new Map<string, unknown>();
   const images = new Map<string, { url: string; coordinates: unknown }>();
   const sends = new Map<string, number>();
+  const states = new Map<string, Record<string, number>>();
   const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
   const moves: FakeMap['moves'] = [];
   const rendered: FakeMap['rendered'] = [];
@@ -134,6 +143,10 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       Object.assign(layer, { filter });
       assertValid(layer);
     },
+    setFeatureState: (target: { source: string; id: string }, state: Record<string, number>) => {
+      if (!data.has(target.source)) throw new Error(`no source ${target.source}`);
+      states.set(`${target.source}|${target.id}`, { ...states.get(`${target.source}|${target.id}`), ...state });
+    },
     queryRenderedFeatures: () => rendered,
     getZoom: () => view.zoom,
     getBearing: () => 0,
@@ -158,6 +171,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
     jumpTo: (options: Record<string, unknown>) => moves.push({ kind: 'jump', target: options.center, options }),
     isMoving: () => view.moving,
+    areTilesLoaded: () => view.tilesLoaded,
     // What the renderer needs of a whole map: its events, its canvas, and where it looks.
     on: (event: string, ...rest: unknown[]) => {
       const handler = rest.at(-1) as (payload: unknown) => void;
@@ -188,6 +202,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     data,
     images,
     sends,
+    states,
     layers,
     moves,
     rendered,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { PointFeature, PulseProperties, StationProperties } from '../../../src/layers/snapshot.types';
+import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from '../../../src/layers/snapshot.types';
 import { LAYERS, POP_IN_MS, PULSE_MS, SOURCES } from '../../../src/layers/ids.constants';
 import { StationLayer } from '../../../src/layers/stations.service';
 import type { StationFrame } from '../../../src/layers/stations.types';
@@ -36,8 +36,20 @@ const frameOf = (overrides: Partial<StationFrame>): StationFrame => ({
   ...overrides,
 });
 
-const dots = (fake: ReturnType<typeof fakeMap>) => (fake.data.get(SOURCES.stations) as { features: PointFeature<StationProperties>[] }).features;
-const pulses = (fake: ReturnType<typeof fakeMap>) => (fake.data.get(SOURCES.pulses) as { features: PointFeature<PulseProperties>[] }).features;
+/**
+ * The features a source holds, each with how it looks: its properties and its feature state, as MapLibre draws it.
+ *
+ * @param fake - The stand-in map.
+ * @param source - The source.
+ * @returns The features.
+ */
+const drawnIn = <Properties extends { id: string }, Look>(fake: ReturnType<typeof fakeMap>, source: string): PointFeature<Properties & Look>[] =>
+  (fake.data.get(source) as { features: PointFeature<Properties>[] }).features.map(feature => ({
+    ...feature,
+    properties: { ...feature.properties, ...(fake.states.get(`${source}|${feature.properties.id}`) as Look) },
+  }));
+const dots = (fake: ReturnType<typeof fakeMap>) => drawnIn<StationProperties, StationLook>(fake, SOURCES.stations);
+const pulses = (fake: ReturnType<typeof fakeMap>) => drawnIn<PulseProperties, PulseLook>(fake, SOURCES.pulses);
 
 describe('StationLayer', () => {
   test('draws each station with a line: named, coloured by its first line, an interchange if it has more or a transfer', () => {
@@ -165,10 +177,10 @@ describe('StationLayer', () => {
     expect(fake.layers.get(LAYERS.newLabels)?.layout.visibility).toBe('none');
 
     layer.fade(true);
-    expect(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-opacity']).toEqual(['*', 0.25, ['get', 'opacity']]);
-    expect(fake.layers.get(LAYERS.labels)?.paint['text-opacity']).toEqual(['*', 0, ['get', 'labelOpacity']]);
+    expect(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-opacity']).toEqual(['*', 0.25, ['coalesce', ['feature-state', 'opacity'], 1]]);
+    expect(fake.layers.get(LAYERS.labels)?.paint['text-opacity']).toEqual(['*', 0, ['coalesce', ['feature-state', 'labelOpacity'], 1]]);
     layer.fade(false);
-    expect(fake.layers.get(LAYERS.labels)?.paint['text-opacity']).toEqual(['*', 1, ['get', 'labelOpacity']]);
+    expect(fake.layers.get(LAYERS.labels)?.paint['text-opacity']).toEqual(['*', 1, ['coalesce', ['feature-state', 'labelOpacity'], 1]]);
     expect(fake.layers.get(LAYERS.labels)?.paint['text-color']).toBe(PALETTES.light.label);
   });
 
@@ -184,7 +196,7 @@ describe('StationLayer', () => {
     layer.fade(true);
     layer.install(['Font']);
     expect(fake.layers.get(LAYERS.labels)?.layout.visibility).toBe('none');
-    expect(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-opacity']).toEqual(['*', 0.25, ['get', 'opacity']]);
+    expect(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-opacity']).toEqual(['*', 0.25, ['coalesce', ['feature-state', 'opacity'], 1]]);
     expect(layer.stationAt([0, 0])).toBeNull();
     fake.rendered.push({ properties: { id: 'a' } });
     expect(layer.stationAt([0, 0])).toBe('a');

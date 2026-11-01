@@ -35,7 +35,7 @@ describe('StepAnimation', () => {
           const drawing = emptyDrawing();
           animation.draw({ state, snapshot, progress, holdProgress }, drawing);
           // Whatever it draws is in some line's colour, and a closing station never fades beyond nothing.
-          for (const feature of drawing.lines.features) expect(feature.properties.color).toMatch(/^#[0-9a-f]{6}$/);
+          for (const feature of [...drawing.lines.features, ...drawing.growing.features]) expect(feature.properties.color).toMatch(/^#[0-9a-f]{6}$/);
           for (const opacity of drawing.fading.values()) expect(opacity).toBeGreaterThanOrEqual(0);
         }
       }
@@ -84,8 +84,9 @@ describe('StepAnimation, opening a stretch', () => {
     const { animation, draw, playback } = extension();
     const { totalKm } = animation.opening!.growth;
     const quarter = draw(0.25);
-    expect(quarter.lines.features).toHaveLength(1);
-    const [growing] = quarter.lines.features;
+    // Still growing: the piece sent each frame; nothing yet drawn whole.
+    expect([quarter.lines.features, quarter.growing.features.length]).toEqual([[], 1]);
+    const [growing] = quarter.growing.features;
     expect(growing?.geometry.coordinates[0]).toEqual([ONE_KM, 51.5]);
     // A camera following it starts where it grows from: B.
     expect(animation.startPoint()).toEqual([ONE_KM, 51.5]);
@@ -95,11 +96,11 @@ describe('StepAnimation, opening a stretch', () => {
     expect(growing?.properties).toMatchObject({ color: '#ff0000', highlight: 1 });
     expect(quarter.heads.features.map(head => head.geometry.coordinates)).toEqual([growing?.geometry.coordinates.at(-1)]);
     expect(quarter.heads.features[0]?.properties).toEqual({ color: '#ff0000' });
-    // Fully drawn: both segments, no head; the highlight fades as it holds.
+    // Fully drawn: both segments whole, no head; the highlight fades as it holds, for all of it at once.
     const drawn = draw(1, { holdProgress: 0.25 });
-    expect(drawn.lines.features).toHaveLength(2);
+    expect([drawn.lines.features.length, drawn.growing.features]).toEqual([2, []]);
     expect(drawn.heads.features).toEqual([]);
-    expect(drawn.lines.features.map(feature => feature.properties.highlight)).toEqual([0.75, 0.75]);
+    expect(drawn.highlight).toBe(0.75);
     expect(animation.cameraPoints()).toEqual([...playback.index.segments[1]!.coordinates, ...playback.index.segments[2]!.coordinates]);
   });
 
@@ -108,7 +109,13 @@ describe('StepAnimation, opening a stretch', () => {
     const pace = GROWTH_PACE['2d'];
     /** Where the front is after some seconds, km past B: the furthest the track is drawn. */
     const frontAt = (seconds: number) =>
-      Math.max(...draw(seconds / animation.drawSeconds).lines.features.flatMap(feature => feature.geometry.coordinates.map(point => point[0]))) / ONE_KM - 1;
+      Math.max(
+        ...[...draw(seconds / animation.drawSeconds).lines.features, ...draw(seconds / animation.drawSeconds).growing.features].flatMap(feature =>
+          feature.geometry.coordinates.map(point => point[0]),
+        ),
+      ) /
+        ONE_KM -
+      1;
     // Past C, a km on, without slowing: a tenth of a second covers a tenth of the pace.
     expect(frontAt(0.5) - frontAt(0.4)).toBeCloseTo(pace.kmPerSecond / 10, 1);
     // Waiting at D, the camera still told where it is.
@@ -129,8 +136,7 @@ describe('StepAnimation, opening a stretch', () => {
 
   test('draws nothing of a hidden line, and reaches none of its stations', () => {
     const drawing = extension().draw(1, { hidden: ['red'] });
-    expect(drawing.lines.features).toEqual([]);
-    expect(drawing.heads.features).toEqual([]);
+    expect([drawing.lines.features, drawing.growing.features, drawing.heads.features]).toEqual([[], [], []]);
     expect(drawing.reached.size).toBe(0);
     expect(drawing.highlighted.size).toBe(0);
   });
@@ -166,18 +172,19 @@ describe('StepAnimation, closing track', () => {
   test('retracts each segment towards the end that stays on the map, and fades a station left with no line', () => {
     const { animation, draw, playback } = stepAfter(withBranch(), '1949-01-01');
     const half = draw(0.5);
-    const [main, branch] = half.lines.features.map(feature => feature.geometry.coordinates);
+    // Retracting: track changing every frame.
+    const [main, branch] = half.growing.features.map(feature => feature.geometry.coordinates);
     // B – C keeps its B half; the branch keeps its D half, though it is drawn from E.
     expect(main?.[0]).toEqual([ONE_KM, 51.5]);
     expect(main?.at(-1)?.[0]).toBeCloseTo(1.5 * ONE_KM, 6);
     expect(branch?.[0]).toEqual([3 * ONE_KM, 51.5]);
     expect(branch?.at(-1)?.[0]).toBeCloseTo(3.5 * ONE_KM, 6);
-    expect(half.lines.features.every(feature => feature.properties.color === '#0000ff')).toBe(true);
+    expect(half.growing.features.every(feature => feature.properties.color === '#0000ff')).toBe(true);
     expect(half.fading).toEqual(new Map([['e', 0.5]]));
     // Gone at the end; a hidden line draws nothing, and its station is not on the map to fade.
-    expect(draw(1).lines.features).toEqual([]);
+    expect(draw(1).growing.features).toEqual([]);
     expect(draw(1).fading).toEqual(new Map([['e', 0]]));
-    expect(draw(0.5, { hidden: ['blue'] }).lines.features).toEqual([]);
+    expect(draw(0.5, { hidden: ['blue'] }).growing.features).toEqual([]);
     expect(draw(0.5, { hidden: ['blue'] }).fading.size).toBe(0);
     const branchTrack = playback.index.segments.find(segment => segment.stationA === 'e')!.coordinates;
     expect(animation.cameraPoints()).toEqual([...playback.index.segments[1]!.coordinates, ...branchTrack]);
@@ -244,9 +251,15 @@ describe('StepAnimation, lines taking their own colour', () => {
     expect(animation.changesIdentity).toBe(true);
     expect(animation.cameraPoints()).toEqual(playback.index.segments[0]!.coordinates);
     const drawing = draw(0.5);
-    expect([drawing.lines.features, drawing.heads.features, [...drawing.reached], [...drawing.highlighted], [...drawing.fading], [...drawing.renamed]]).toEqual(
-      [[], [], [], [], [], []],
-    );
+    expect([
+      drawing.lines.features,
+      drawing.growing.features,
+      drawing.heads.features,
+      [...drawing.reached],
+      [...drawing.highlighted],
+      [...drawing.fading],
+      [...drawing.renamed],
+    ]).toEqual([[], [], [], [], [], [], []]);
   });
 });
 
