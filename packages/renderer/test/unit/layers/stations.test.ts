@@ -1,3 +1,4 @@
+import { expression, latest } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, test } from 'vitest';
 import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from '../../../src/layers/snapshot.types';
 import { LAYERS, POP_IN_MS, PULSE_MS, SOURCES } from '../../../src/layers/ids.constants';
@@ -141,6 +142,26 @@ describe('StationLayer', () => {
     expect(radii[0]).toBeLessThan(radii[1]!);
     // Both labelled at any zoom, the rest only when close.
     expect(fake.layers.get(LAYERS.newLabels)?.filter).toEqual(['any', ['get', 'highlighted'], ['get', 'closing']]);
+  });
+
+  test('notes under a label what the step does to its station: renamed, closed, opened, or planned', () => {
+    const { fake } = installed();
+    const field = fake.layers.get(LAYERS.newLabels)?.layout['text-field'];
+    // Read as MapLibre reads it, by the spec's own entry for a label's text, whose JSON is typed loosely.
+    const parsed = expression.createExpression(field, latest.layout_symbol['text-field'] as never);
+    if (parsed.result !== 'success') throw new Error('the label is not an expression MapLibre reads');
+    const label = (properties: Partial<StationProperties>) =>
+      String(
+        parsed.value.evaluate({ zoom: 14 }, {
+          type: 1,
+          properties: { name: 'A', former: '', closing: false, highlighted: false, planned: false, ...properties },
+        } as never),
+      );
+    expect(label({ highlighted: true, former: 'Old A' })).toBe('A\nformerly Old A');
+    expect(label({ closing: true })).toBe('A\nclosed');
+    expect(label({ highlighted: true })).toBe('A\nopened');
+    expect(label({ highlighted: true, planned: true })).toBe('A\nplanned');
+    expect(label({})).toBe('A');
   });
 
   test('sends MapLibre nothing for a frame whose stations look as the last: a growing line changes none most frames', () => {

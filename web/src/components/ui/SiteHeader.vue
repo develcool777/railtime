@@ -8,15 +8,22 @@
       center: 'min-w-0 justify-center',
     }">
     <template #left>
-      <NuxtLink to="/" class="flex flex-none items-center gap-2" aria-label="RailTime, all cities">
+      <!-- Where in the site: on a city's page, the site and then the city, whose menu picks another. -->
+      <UBreadcrumb v-if="$slots.context" :items="[{ slot: 'home' }, { slot: 'context' }]" :ui="{ list: 'gap-1', separatorIcon: 'text-dimmed size-4' }">
+        <template #home>
+          <NuxtLink to="/" class="flex flex-none items-center gap-2" aria-label="RailTime, all cities">
+            <LogoMark class="size-6 flex-none" />
+            <span class="text-highlighted text-lg leading-6 font-bold tracking-[-0.01em] max-lg:hidden">RailTime</span>
+          </NuxtLink>
+        </template>
+        <template #context>
+          <slot name="context" />
+        </template>
+      </UBreadcrumb>
+      <NuxtLink v-else to="/" class="flex flex-none items-center gap-2" aria-label="RailTime, all cities">
         <LogoMark class="size-6 flex-none" />
-        <span class="text-highlighted text-lg leading-6 font-bold tracking-[-0.01em]" :class="{ 'max-lg:hidden': $slots.context }">RailTime</span>
+        <span class="text-highlighted text-lg leading-6 font-bold tracking-[-0.01em]">RailTime</span>
       </NuxtLink>
-      <!-- Where in the site: on a city's page, the city. -->
-      <template v-if="$slots.context">
-        <span class="text-dimmed mx-1 text-lg max-lg:hidden" aria-hidden="true">/</span>
-        <slot name="context" />
-      </template>
     </template>
 
     <slot name="center" />

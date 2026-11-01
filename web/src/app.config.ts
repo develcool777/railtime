@@ -1,3 +1,7 @@
+/** A dropdown's chosen item: its row faintly tinted, a short bar down its left edge (the row's `before` is its hover). */
+const SELECTED_ITEM =
+  "data-[state=checked]:before:bg-primary/5 data-[state=checked]:after:absolute data-[state=checked]:after:inset-y-1.5 data-[state=checked]:after:left-0 data-[state=checked]:after:w-1 data-[state=checked]:after:rounded-full data-[state=checked]:after:bg-primary data-[state=checked]:after:content-['']";
+
 export default defineAppConfig({
   ui: {
     colors: {
@@ -31,6 +35,13 @@ export default defineAppConfig({
     },
     commandPalette: {
       slots: { item: 'items-center' },
+    },
+    // The choice made in a dropdown, as dataroom-ui marks it: a faint tint and a bar at its left edge, no tick.
+    select: {
+      slots: { item: SELECTED_ITEM, itemTrailingIcon: 'hidden' },
+    },
+    selectMenu: {
+      slots: { item: SELECTED_ITEM, itemTrailingIcon: 'hidden' },
     },
     // Nothing to show yet (no station picked, no match): plain on the panel, small.
     empty: {
