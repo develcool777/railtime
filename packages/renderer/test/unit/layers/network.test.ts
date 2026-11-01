@@ -1,12 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES, UNFOCUSED_OPACITY } from '../../../src/layers/ids.constants';
-import { NetworkLayer } from '../../../src/layers/network.service';
-import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
+import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
+import { buildNetworkSnapshot, lineFeature } from '../../../src/layers/snapshot.utils';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
+import { emptyDrawing } from '../../../src/steps/animation.utils';
 
 describe('NetworkLayer', () => {
   test("draws a snapshot's lines, ghosts, plans and transfers", () => {
@@ -49,5 +50,43 @@ describe('NetworkLayer', () => {
     ]);
     layer.focus(null);
     expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toBe(1);
+  });
+});
+
+describe('ActiveStepLayer', () => {
+  test('draws the growing track and its heads, then clears them once and sends nothing more between steps', () => {
+    const fake = fakeMap();
+    const layer = new ActiveStepLayer(fake.map);
+    layer.install();
+    layer.applyPalette(PALETTES.dark);
+    expect(fake.layers.get(LAYERS.activeGlow)?.paint['line-opacity']).toBe(PALETTES.dark.glowOpacity);
+
+    // Nothing playing: nothing to send.
+    layer.update(emptyDrawing());
+    expect(fake.sends.get(SOURCES.active)).toBeUndefined();
+
+    const drawing = emptyDrawing();
+    drawing.lines.features.push(
+      lineFeature(
+        [
+          [0, 0],
+          [1, 0],
+        ],
+        '#ff0000',
+        0,
+        1,
+        'red',
+      ),
+    );
+    layer.update(drawing);
+    layer.update(drawing);
+    expect(fake.sends.get(SOURCES.active)).toBe(2);
+    expect(fake.data.get(SOURCES.active)).toBe(drawing.lines);
+
+    // The step ends: one empty frame clears the map, the rest are skipped.
+    for (let frame = 0; frame < 5; frame++) layer.update(emptyDrawing());
+    expect(fake.sends.get(SOURCES.active)).toBe(3);
+    expect(fake.sends.get(SOURCES.heads)).toBe(3);
+    expect(fake.data.get(SOURCES.active)).toEqual({ type: 'FeatureCollection', features: [] });
   });
 });

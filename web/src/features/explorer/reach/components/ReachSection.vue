@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { ReachInfo, RouteStop, StationSummary } from '@railtime/network/facts.types';
+  import type { ReachInfo, Stop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref, watch } from 'vue';
 
   import { formatMinutes, reachGroups } from '~/features/explorer/reach/reach.utils';
@@ -72,11 +72,11 @@
     /** The stations on the map on the date shown, to pick from. */
     stations: StationSummary[];
     /** The station the reach starts at, once picked. */
-    from: RouteStop | null;
+    from: Stop | null;
     /** Every station reached from it, if any. */
     reach: ReachInfo | null;
   }>();
-  const emit = defineEmits<{ from: [stop: RouteStop | null]; station: [station: string] }>();
+  const emit = defineEmits<{ from: [stop: Stop | null]; station: [station: string] }>();
 
   const groups = computed(() => (props.reach ? reachGroups(props.reach) : []));
   const farthest = computed(() => props.reach?.stations.at(-1));

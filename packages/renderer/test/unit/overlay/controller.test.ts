@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { overlaySubjectOf } from '../../../src/overlay/controller.utils';
+import { overlaySubjectOf } from '../../../src/overlay/controller.service';
 
 describe('ControllerUtils', () => {
   describe('overlaySubjectOf', () => {

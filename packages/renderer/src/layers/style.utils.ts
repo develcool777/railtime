@@ -1,4 +1,7 @@
 import type { ExpressionSpecification } from 'maplibre-gl';
+import type { TrackSegment } from '@railtime/network/engine.types';
+import { channelsOf } from '../support/drawing.utils';
+import type { RenderState, ResolvedLine, SideBySide } from './style.types';
 
 /**
  * A value interpolated by zoom between zoom 10 (the whole city) and zoom 14 (a neighbourhood).
@@ -33,3 +36,53 @@ export const highlightedWidth = (atCityZoom: number, atStreetZoom: number): Expr
  * @returns A MapLibre expression.
  */
 export const sideBySideOffset = (): ExpressionSpecification => byZoom(['*', ['get', 'offset'], 2.4], ['*', ['get', 'offset'], 6]);
+
+/**
+ * A colour part way between two colours.
+ *
+ * @param from - `#rrggbb` at fraction 0.
+ * @param to - `#rrggbb` at fraction 1.
+ * @param fraction - How far, 0..1.
+ * @returns The blended `#rrggbb`.
+ */
+const mixColors = (from: string, to: string, fraction: number): string => {
+  const fromChannels = channelsOf(from);
+  const toChannels = channelsOf(to);
+  return `#${fromChannels
+    .map((value, channel) =>
+      Math.round(value + ((toChannels[channel] ?? value) - value) * fraction)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+};
+
+/**
+ * What a line is drawn as in this frame, and in which colour (blending while its identity changes).
+ *
+ * @param state - The frame's render state.
+ * @param line - The line id.
+ * @returns The line as drawn.
+ */
+export const resolveLine = (state: RenderState, line: string): ResolvedLine => {
+  const identity = state.timeline.identityOf(line, state.cursor, state.identityProgress !== null);
+  const color = identity.previousId
+    ? mixColors(state.baseColor(identity.previousId), state.baseColor(identity.id), state.identityProgress ?? 1)
+    : state.baseColor(identity.id);
+  return { id: identity.id, color };
+};
+
+/**
+ * Where a line sits across shared track, for a line drawn in the segment's stored A→B order: 0 alone,
+ * ±0.5 for two lines, -1/0/+1 for three… Signed by the segment's direction of travel, so a line keeps
+ * to the same side of the corridor from one segment to the next.
+ *
+ * @param sideBySide - The lines on each segment.
+ * @param segment - The segment.
+ * @param lineId - The (effective) line.
+ * @returns The offset slot.
+ */
+export const offsetFor = (sideBySide: SideBySide, segment: TrackSegment, lineId: string): number => {
+  const lines = sideBySide.get(segment.index);
+  return lines ? (lines.indexOf(lineId) - (lines.length - 1) / 2) * segment.travel : 0;
+};

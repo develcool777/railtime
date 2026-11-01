@@ -13,7 +13,8 @@ import eslint from '@eslint/js';
  *
  *   - arrow functions only, never `function`
  *   - no `for (;;)` / `while (true)`: loops say what they loop over
- *   - classes only in `*.service.ts`; helpers in `*.utils.ts`, constants in `*.constants.ts`, types in `*.types.ts`
+ *   - classes only in `*.service.ts` (several of one subject may share one); helpers in `*.utils.ts`,
+ *     constants in `*.constants.ts`, types in `*.types.ts`
  *   - every class member has an access modifier; every class, member and export has JSDoc
  *   - names say what they hold: no one- or two-letter names but a few well-known ones
  */

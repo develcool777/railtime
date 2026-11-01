@@ -1,5 +1,5 @@
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import { emptyCollection } from './features.utils';
+import { emptyCollection } from './snapshot.utils';
 import type { Palette } from './theme.types';
 
 /**

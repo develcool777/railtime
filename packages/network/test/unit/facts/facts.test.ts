@@ -4,6 +4,8 @@ import { NetworkFacts } from '../../../src/facts/facts.service';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf as plainFactsOf, questionsOn } from '../../support/facts.utils';
+import { bandOf, networkSummary, planFacts, reachedSegments } from '../../../src/facts/facts.utils';
+import { REACH_BANDS } from '../../../src/facts/facts.constants';
 
 /** Today, for every network here. */
 const TODAY = toTimestamp('2026-01-01');
@@ -301,5 +303,64 @@ describe('NetworkFacts questions, at a moment', () => {
     network.stations.a!.name = 'Zed';
     const queries = questionsOn(plainFactsOf(network), toTimestamp('1935-01-01'));
     expect(queries.stations().map(station => station.name)).toEqual(['B', 'C', 'D', 'Zed']);
+  });
+});
+
+describe('FactsUtils', () => {
+  describe('planFacts', () => {
+    test('counts the stations and track a plan adds, and the lines it builds', () => {
+      const facts = planFacts(planOnlyNetwork(), 'first');
+      expect(facts.stations).toBe(3);
+      // A–B is 0.01° of longitude at 50° N, B–C a little more: about 2 km in all.
+      expect(facts.km).toBeGreaterThan(1.8);
+      expect(facts.km).toBeLessThan(2.2);
+      expect(facts.lines).toEqual([{ id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff0000' } }]);
+    });
+  });
+
+  describe('networkSummary', () => {
+    test('sums up a network with a history: its brands, when it opened, its plans, lines and stations', () => {
+      expect(networkSummary(tinyNetwork())).toEqual({ networks: ['Metro'], openedYear: 1900, planOnly: false, plans: 1, lines: 4, stations: 4 });
+    });
+
+    test('sums up a network never built by its first plan', () => {
+      expect(networkSummary(planOnlyNetwork())).toMatchObject({ openedYear: null, planOnly: true, plans: 2, lines: 1, stations: 3 });
+    });
+  });
+
+  describe('bandOf', () => {
+    test('puts a time in the first band it fits, its end included', () => {
+      expect(bandOf(0)).toBe(0);
+      expect(bandOf(15)).toBe(0);
+      expect(bandOf(15.5)).toBe(1);
+      expect(bandOf(59)).toBe(3);
+    });
+
+    test('puts anything longer in the last band', () => {
+      expect(bandOf(240)).toBe(REACH_BANDS.length - 1);
+    });
+  });
+
+  describe('reachedSegments', () => {
+    const segments = [
+      { index: 0, stationA: 'a', stationB: 'b' },
+      { index: 1, stationA: 'b', stationB: 'c' },
+      { index: 2, stationA: 'x', stationB: 'y' },
+    ];
+
+    test('times a segment by the mean of its ends, or its one end reached', () => {
+      const minutes = new Map([
+        ['a', 0],
+        ['b', 10],
+      ]);
+      expect(reachedSegments(minutes, segments)).toEqual([
+        { segment: 0, minutes: 5 },
+        { segment: 1, minutes: 10 },
+      ]);
+    });
+
+    test('leaves out a segment with neither end reached', () => {
+      expect(reachedSegments(new Map(), segments)).toEqual([]);
+    });
   });
 });

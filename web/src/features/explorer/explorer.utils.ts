@@ -1,4 +1,4 @@
-import type { RoutePreference, RouteStop, Theme } from '@railtime/network/facts.types';
+import type { RoutePreference, Stop, Theme } from '@railtime/network/facts.types';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 
@@ -76,7 +76,7 @@ type OverlayInput = {
   overlay: MapOverlay | null;
   routeEnds: RouteEnds;
   routePreference: RoutePreference;
-  reachFrom: RouteStop | null;
+  reachFrom: Stop | null;
 };
 
 /**
@@ -166,3 +166,11 @@ export const mapPropsOf = (input: MapPropsInput): MapProps => ({
   padding: input.padding,
   cover: { top: 0, right: 0, bottom: 0, left: input.panelCover },
 });
+
+/**
+ * The section the panel opens on without a tab in the address: Plans with a plan shown, else Lines.
+ *
+ * @param plan - The plan shown, if any.
+ * @returns The section.
+ */
+export const openingSectionOf = (plan: string | undefined): Section => (plan ? 'plans' : 'lines');

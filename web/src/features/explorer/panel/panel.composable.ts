@@ -1,23 +1,27 @@
+import { yearOf } from '@railtime/core/date.utils';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
 import { currentChangeIndex } from '~/features/explorer/changes/changes.utils';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
-import type { PanelView } from '~/features/explorer/explorer.types';
+import type { PanelView, Section } from '~/features/explorer/explorer.types';
+import { formatPlanFacts, formatStats, lineColor } from '~/features/explorer/format.utils';
 import type { ExplorerPanel } from '~/features/explorer/panel/panel.composable.types';
 import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel.utils';
 
 /**
- * The panel's content: what the store has open (the section, the line or station views pushed over
- * it), answered by the network's facts for the moment the map shows, and what its top says. Each is
- * a computed of the store: it changes when the date or what is open does.
+ * What the panel and the page around the map show, as computeds of the store: the section open and
+ * the views pushed over it, the route and the reach the map found, the network's growth and records,
+ * the plan shown, and each section's dot. Answered by the network's facts for the moment the map
+ * shows: each changes when the date or what is open does.
  *
  * @returns What the panel lists.
  */
 export const useExplorerPanel = (): ExplorerPanel => {
   const store = useExplorerStore();
-  const { section, views, openStation, openLine, timeMode, time, step, facts, plan, plans, visibleLines } = storeToRefs(store);
+  const { section, views, openStation, openLine, timeMode, playing, time, step, facts, plan, plans, visibleLines, routeEnds, reachFrom, overlayResult } =
+    storeToRefs(store);
 
   const lines = computed(() => facts.value?.lines() ?? []);
   const changes = computed(() => facts.value?.changes() ?? []);
@@ -79,6 +83,40 @@ export const useExplorerPanel = (): ExplorerPanel => {
     });
   });
 
+  // What the map found for the overlay open.
+  const foundRoute = computed(() => (overlayResult.value?.kind === 'route' ? overlayResult.value.route : null));
+  const foundReach = computed(() => (overlayResult.value?.kind === 'reach' ? overlayResult.value.reach : null));
+
+  // How the network grew (its facts work the years out once), and its records at the moment shown.
+  const growth = computed(() => facts.value?.growth() ?? null);
+  const hasHistory = computed(() => facts.value?.hasHistory() ?? false);
+  const records = computed(() => now.value?.records(5) ?? null);
+  // A plan's future has no year.
+  const shownYear = computed(() => (time.value && !time.value.future ? yearOf(time.value.time) : null));
+
+  // The plan shown: its summary, and the legend for its dashed track while the map shows its future.
+  const chosenPlan = computed(() => plans.value.find(entry => entry.id === plan.value));
+  const planSummary = computed(() =>
+    chosenPlan.value ? { name: chosenPlan.value.name, facts: formatPlanFacts(chosenPlan.value.facts.stations, chosenPlan.value.facts.km) } : undefined,
+  );
+  const planLegend = computed(() => {
+    if (!chosenPlan.value || !time.value?.future || playing.value) return null;
+    const firstLine = chosenPlan.value.facts.lines[0];
+    return { name: chosenPlan.value.name, color: firstLine ? lineColor(firstLine.color) : 'var(--ui-text-highlighted)' };
+  });
+  // The network built today, to set beside a plan; with a plan shown the facts are the plan's, and the card goes without.
+  const builtFacts = computed(() => (facts.value && !plan.value ? formatStats(facts.value.today().stats()) : ''));
+
+  // A dot on each section whose choice is in force while another is open: a plan shown, a route or a reach set.
+  const marks = computed(() => {
+    const shown: Partial<Record<Section, string>> = {};
+    if (plan.value) shown.plans = 'A plan is shown';
+    const { from, to } = routeEnds.value;
+    if (from && to) shown.route = `A route from ${from.name} to ${to.name} is set`;
+    if (reachFrom.value) shown.reach = `How far one gets from ${reachFrom.value.name} is set`;
+    return shown;
+  });
+
   return {
     sections,
     lines,
@@ -94,5 +132,15 @@ export const useExplorerPanel = (): ExplorerPanel => {
     currentChange,
     panelTop,
     shownDate,
+    foundRoute,
+    foundReach,
+    growth,
+    hasHistory,
+    records,
+    shownYear,
+    planSummary,
+    planLegend,
+    builtFacts,
+    marks,
   };
 };

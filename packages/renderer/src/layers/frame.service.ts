@@ -4,10 +4,9 @@ import type { StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
 import type { TimeState } from '../transitMap.types';
-import type { StationLines } from './features.types';
+import type { NetworkSnapshot, StationLines } from './snapshot.types';
 import type { FrameOutcome, FrameParts } from './frame.types';
-import type { RenderState } from './lineStyle.types';
-import type { NetworkSnapshot } from './snapshot.types';
+import type { RenderState } from './style.types';
 import { buildNetworkSnapshot } from './snapshot.utils';
 
 /**

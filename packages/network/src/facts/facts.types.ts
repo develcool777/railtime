@@ -1,10 +1,8 @@
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import type { PlanStatus } from '@railtime/schema/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { IsoDate } from '@railtime/core/date.types';
-import type { DecadeOpenings as ModelDecadeOpenings, YearStats as ModelYearStats } from '../network/history.types';
-import type { GridCorners } from '../coverage/grid.types';
-import type { Step } from '../network/engine.types';
-import type { RoutePreference as ModelRoutePreference } from '../route/finder.types';
+import type { Step } from '../engine/engine.types';
 
 /** The map's colour theme. */
 export type Theme = 'dark' | 'light';
@@ -86,8 +84,8 @@ export type StationSummary = {
   colors: LineColor[];
 };
 
-/** A stop on a line, for a line's panel. */
-export type LineStop = { id: string; name: string };
+/** A station on a line or a route, by its id and its name on the date shown. */
+export type Stop = { id: string; name: string };
 
 /** A line on the date shown, for a line's panel. */
 export type LineDetails = LineInfo & {
@@ -99,16 +97,13 @@ export type LineDetails = LineInfo & {
    * Its stops in the order it runs, as runs of track: the longest first, then each branch, whose
    * first stop is the station it leaves from. Empty when it is not open.
    */
-  branches: LineStop[][];
+  branches: Stop[][];
   /** The changes that are part of its story, by their position in the timeline (`ChangeInfo.index`). */
   changes: number[];
 };
 
 /** What a route is best at: arriving soonest, or changing least, if it takes a little longer. */
-export type RoutePreference = ModelRoutePreference;
-
-/** A station on a route. */
-export type RouteStop = { id: string; name: string };
+export type RoutePreference = 'fastest' | 'fewer-changes';
 
 /** One part of a route: a ride on a line from where it is boarded to where it is left, or a walk between two stations. */
 export type RouteLegInfo =
@@ -118,16 +113,16 @@ export type RouteLegInfo =
       lineName: string;
       color: LineColor;
       /** Its stops, from the one boarded at to the one left at. */
-      stops: RouteStop[];
+      stops: Stop[];
       minutes: number;
       km: number;
     }
-  | { kind: 'walk'; from: RouteStop; to: RouteStop; minutes: number };
+  | { kind: 'walk'; from: Stop; to: Stop; minutes: number };
 
 /** How to get from one station to another on the date shown. */
 export type RouteInfo = {
-  from: RouteStop;
-  to: RouteStop;
+  from: Stop;
+  to: Stop;
   legs: RouteLegInfo[];
   /** About how long it takes, changes and walks included. */
   minutes: number;
@@ -153,7 +148,7 @@ export type ReachStation = { id: string; name: string; minutes: number; band: nu
 
 /** How far one can get from a station on the date shown, and how long it takes. */
 export type ReachInfo = {
-  from: RouteStop;
+  from: Stop;
   /** Every other station reached, soonest first. */
   stations: ReachStation[];
   /** The bands its stations are coloured in, soonest first. */
@@ -199,6 +194,9 @@ export type CoverageInfo = {
   beyond: { share: number; km2: number };
 };
 
+/** The grid's image corners, as MapLibre's image source takes them: top left, top right, bottom right, bottom left. */
+export type GridCorners = [LngLat, LngLat, LngLat, LngLat];
+
 /** A city's coverage at a moment, cell by cell: what a picture of it is drawn from. */
 export type CoverageCells = {
   columns: number;
@@ -218,10 +216,10 @@ export type CoverageCells = {
 export type CoverageYear = { year: number; share: number };
 
 /** The network at the end of one year. */
-export type YearStats = ModelYearStats;
+export type YearStats = { year: number; stations: number; km: number; lines: number };
 
 /** How many stations first opened in a decade. */
-export type DecadeOpenings = ModelDecadeOpenings;
+export type DecadeOpenings = { decade: number; stations: number };
 
 /** The network year by year, and how many stations opened in each decade. Plans have no date and are not in it. */
 export type NetworkGrowth = { years: YearStats[]; decades: DecadeOpenings[] };
@@ -309,10 +307,5 @@ export type FactsAt = {
   directions: (station: string) => Map<string, LineDirection[]>;
 };
 
-/** A moment as the questions take it inside: the steps happened, and the day (for names). */
-export type NetworkMoment = {
-  /** Steps that have happened. */
-  cursor: number;
-  /** The day, as a timestamp: names are the ones stations had then. */
-  clock: number;
-};
+/** A segment of track a reach colours, timed by its ends. */
+export type ReachedSegment = { segment: number; minutes: number };

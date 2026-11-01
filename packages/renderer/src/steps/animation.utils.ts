@@ -1,11 +1,13 @@
-import { emptyCollection } from '../layers/features.utils';
+import { emptyCollection } from '../layers/snapshot.utils';
 import type { Step } from '@railtime/network/engine.types';
-import { CloseStepAnimation } from './close.service';
-import { IdentityStepAnimation } from './identity.service';
-import { InfillStepAnimation } from './infill.service';
-import { OpenStepAnimation } from './open.service';
-import { RenameStepAnimation } from './rename.service';
-import { StationCloseStepAnimation } from './stationClose.service';
+import {
+  CloseStepAnimation,
+  IdentityStepAnimation,
+  InfillStepAnimation,
+  OpenStepAnimation,
+  RenameStepAnimation,
+  StationCloseStepAnimation,
+} from './animation.service';
 import type { StepAnimation } from './animation.service';
 import type { StepContext, StepDrawing } from './animation.types';
 

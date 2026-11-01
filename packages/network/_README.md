@@ -50,21 +50,20 @@ are of the network as stored, whichever plan is built.
 
 ```text
 src/
-├── facts/facts.service.ts     NetworkFacts: every question, for a moment given; facts.types.ts, the answers' types
-├── network/                   the network and its history
+├── facts/                     the front door
+│   ├── facts.service.ts       NetworkFacts: every question, for a moment given; facts.types.ts, the answers' types
+│   └── facts.utils.ts         what a plan adds, the summary, a reach's bands and track; facts.constants.ts, the reach's bands
+├── engine/                    the network through time: what NetworkEngine holds
 │   ├── engine.service.ts      NetworkEngine: the index, the timeline, the range; engine.types.ts, the shapes the renderer sees
 │   ├── index.service.ts       NetworkIndex: segments prepared, a LineSegment per (segment, line, period)
 │   ├── timeline.service.ts    Timeline: the history as ordered steps; the state at any cursor
+│   ├── timeline.utils.ts      a day's openings cut into stretches, and how a stretch grows (`Timeline.growthOf`)
+│   ├── caption.utils.ts       a change in words: what, where, when, in its line's colour
 │   ├── orientation.utils.ts   a consistent direction of travel per segment
 │   ├── history.utils.ts       the network year by year, openings by decade, its size at a cursor
 │   └── lineDetails.utils.ts   a line's branches and length at a cursor, the stops either side of a station
-├── changes/
-│   ├── caption.utils.ts       a change in words: what, where, when, in its line's colour
-│   └── growth.utils.ts        where a stretch grows from, and the order its stations come in (`Timeline.growthOf`)
-├── route/                     RouteFinder (Dijkstra at a cursor; a reach too), the reach's bands and track
-├── coverage/                  CoverageGrid and CoverageMeasure: a city's outline in cells, its share near a station
-├── plan/facts.utils.ts        what a plan adds (`plans()`)
-└── summary/summary.utils.ts   a network summed up, for a list of cities (`summary()`)
+├── route/finder.service.ts    RouteFinder: Dijkstra at a cursor, on its own priority queue; a reach too
+└── coverage/                  CoverageGrid and CoverageMeasure (one file): a city's outline in cells, its share near a station
 ```
 
 ## Steps and cursors
