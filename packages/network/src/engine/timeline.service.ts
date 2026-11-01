@@ -12,8 +12,8 @@ import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.t
  * mode sits on a cursor; playback moves it one step at a time, animating `steps[cursor]`.
  *
  * On one date the order is: identity changes, then openings (line by line, one connected stretch
- * per step, a stretch that forks a step per branch), then closures, then stations opening on existing track, then stations closing on it,
- * then renames.
+ * per step, a stretch that forks a step per branch), then stations opening on existing track, then
+ * stations closing on it, then closures, then renames.
  *
  * A plan built on the network follows every dated step, undated: each section's openings, then its
  * stations opening on existing track. Its steps are `planned`, at time `Infinity`.
@@ -47,9 +47,10 @@ export class Timeline {
       const day = days.get(time)!;
       this.addIdentitySteps(time, day.identities);
       this.addOpenSteps(time, day.opens);
-      this.addCloseSteps(time, day.closes);
       this.addInfillSteps(time, day.infills);
+      // A station closes on its line while the line runs there: before the day's track closes under it.
       this.addStationCloseSteps(time, day.stationCloses);
+      this.addCloseSteps(time, day.closes);
       for (const rename of day.renames) this.addStep({ kind: 'rename', time, ...rename });
     }
     this.datedCount = this.steps.length;

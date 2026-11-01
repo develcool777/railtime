@@ -64,6 +64,18 @@ describe('London', () => {
     expect(facts.change(extended.index).subtitle).toBe('Wood Lane – Ealing Broadway');
   });
 
+  test('closes City Road in 1922 on its running line, then suspends the City & South London under it', () => {
+    const day = stepsOn('1922-08-08');
+    const closing = day.find(step => step.kind === 'stationClose' && step.station === 'city-road');
+    const suspended = day.find(step => step.kind === 'close' && step.line === 'northern');
+    if (!closing || !suspended) throw new Error('City Road closes as the Northern line is suspended on 8 August 1922');
+    expect(closing.index).toBeLessThan(suspended.index);
+    // As it closes, its line still runs through it: there is a station to fade.
+    const track = index.lineSegmentsAt('city-road').filter(lineSegment => lineSegment.line === 'northern');
+    expect(track.some(lineSegment => timeline.isOpen(lineSegment, closing.index))).toBe(true);
+    expect(timeline.servesStation('city-road', 'northern', closing.index)).toBe(true);
+  });
+
   test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {
     expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'windsor-and-eton-central')).toBe(false);
   });
