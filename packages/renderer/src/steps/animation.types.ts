@@ -21,15 +21,20 @@ export type StepTimes = {
   holdSeconds: number;
 };
 
-/** An opening's own: how its stretch grows, where it stops, the way a camera follows, its lines by segment and station. */
-export type Opening = {
+/**
+ * A stretch an opening grows or a closure retracts: how its front runs, where it stops, the way a
+ * camera follows, its lines by segment and station. A closure is its stretch grown backwards.
+ */
+export type Stretch = {
   growth: Growth;
-  /** Where along the stretch the front stops: each new station, km. */
+  /** Where the front stops, km along the way it runs: each station it opens, or takes off the map. */
   stops: number[];
   /** The one way through the stretch a camera follows. */
   path: SegmentPlan[];
   linesBySegment: Map<number, string[]>;
   linesByStation: Map<string, string[]>;
+  /** It retracts: its front runs from the stretch's far end back to the network that stays. */
+  retracts: boolean;
 };
 
 /** How fast a new stretch grows: its time is its length and its stations, never squeezed or stretched. */
@@ -84,6 +89,6 @@ export type StepDrawing = {
   links: FeatureCollection<LineFeature>;
   /** The stations at either end of those links: drawn as interchanges from then on. */
   linked: Set<string>;
-  /** Where a camera following the line looks from this frame, and which way; `null` when nothing grows. */
+  /** Where a camera following the front looks from this frame, and which way; `null` when no front runs. */
   chase: ChaseTarget | null;
 };

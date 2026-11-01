@@ -1,5 +1,5 @@
 import type { DataDrivenPropertyValueSpecification, FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
-import { GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
+import { GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, PLANNED_DASHES, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
 import { MapLayer } from './layer.service';
 import type { NetworkSnapshot } from './snapshot.types';
 import type { Palette } from './theme.types';
@@ -61,7 +61,7 @@ export class NetworkLayer extends MapLayer {
         'line-width': byZoom(2.2, 5.5),
         'line-offset': sideBySideOffset(),
         'line-opacity': FULL_OPACITY[LAYERS.planned],
-        'line-dasharray': [1.2, 1],
+        'line-dasharray': PLANNED_DASHES,
       },
     });
     // A link between two interchange dots: the dots' ring colour round their white fill.
@@ -156,16 +156,18 @@ export class ActiveStepLayer extends MapLayer {
     // New sources are empty: what is sent next is anything but nothing; the fade is set afresh.
     for (const source of [SOURCES.active, SOURCES.growing, SOURCES.activeTransfers]) this.sent.set(source, '[]');
     this.fade = -1;
-    const lineString: FilterSpecification = ['==', ['geometry-type'], 'LineString'];
-    for (const [source, glow, line] of [
-      [SOURCES.active, LAYERS.activeGlow, LAYERS.activeLines],
-      [SOURCES.growing, LAYERS.growingGlow, LAYERS.growingLines],
+    // Built track glows; a plan's is drawn as the network draws it, broken, with no glow.
+    const built: FilterSpecification = ['all', ['==', ['geometry-type'], 'LineString'], ['!', ['get', 'planned']]];
+    const planned: FilterSpecification = ['all', ['==', ['geometry-type'], 'LineString'], ['get', 'planned']];
+    for (const [source, glow, line, plannedLine] of [
+      [SOURCES.active, LAYERS.activeGlow, LAYERS.activeLines, LAYERS.activePlanned],
+      [SOURCES.growing, LAYERS.growingGlow, LAYERS.growingLines, LAYERS.growingPlanned],
     ] as const) {
       this.map.addLayer({
         id: glow,
         type: 'line',
         source,
-        filter: lineString,
+        filter: built,
         layout: LINE_LAYOUT,
         paint: { 'line-color': ['get', 'color'], 'line-width': highlightedWidth(6, 18), 'line-blur': byZoom(5, 14), 'line-offset': sideBySideOffset() },
       });
@@ -173,9 +175,23 @@ export class ActiveStepLayer extends MapLayer {
         id: line,
         type: 'line',
         source,
-        filter: lineString,
+        filter: built,
         layout: LINE_LAYOUT,
         paint: { 'line-color': ['get', 'color'], 'line-width': highlightedWidth(2.2, 5.5), 'line-offset': sideBySideOffset() },
+      });
+      this.map.addLayer({
+        id: plannedLine,
+        type: 'line',
+        source,
+        filter: planned,
+        layout: { 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': highlightedWidth(2.2, 5.5),
+          'line-offset': sideBySideOffset(),
+          'line-opacity': FULL_OPACITY[LAYERS.planned],
+          'line-dasharray': PLANNED_DASHES,
+        },
       });
     }
     const point: FilterSpecification = ['==', ['geometry-type'], 'Point'];
@@ -235,6 +251,7 @@ export class ActiveStepLayer extends MapLayer {
         [LAYERS.growingGlow, LAYERS.growingLines],
       ] as const)
         this.setWidths(glow, line, fade);
+      for (const planned of [LAYERS.activePlanned, LAYERS.growingPlanned]) this.map.setPaintProperty(planned, 'line-width', highlightedWidth(2.2, 5.5, fade));
     }
     const growing = { type: 'FeatureCollection', features: [...drawing.growing.features, ...drawing.heads.features] };
     for (const [source, data] of [

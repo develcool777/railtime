@@ -82,7 +82,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     const isPlanned = lineSegment.section !== null;
     if (!closingNow(lineSegment) && !drawn.has(key)) {
       drawn.add(key);
-      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id), 0, lineSegment.line));
+      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id), 0, lineSegment.line, isPlanned));
     }
     segmentsOnMap.add(segment.index);
     linesOnMap.add(line.id);
@@ -131,11 +131,12 @@ export const emptyCollection = <Item>(): FeatureCollection<Item> => ({ type: 'Fe
  * @param offset - Its side-by-side slot, relative to the direction of `coordinates`.
  * @param highlight - 0 normally, up to 1 for new track.
  * @param line - The line it is drawn for; none for a transfer's link.
+ * @param planned - A plan's track, not built: drawn dashed.
  * @returns The feature.
  */
-export const lineFeature = (coordinates: LngLat[], color: string, offset: number, highlight = 0, line = ''): LineFeature => ({
+export const lineFeature = (coordinates: LngLat[], color: string, offset: number, highlight = 0, line = '', planned = false): LineFeature => ({
   type: 'Feature',
-  properties: { color, offset, highlight, line },
+  properties: { color, offset, highlight, line, planned },
   geometry: { type: 'LineString', coordinates },
 });
 

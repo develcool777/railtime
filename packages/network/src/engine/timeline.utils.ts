@@ -4,10 +4,10 @@ import { distanceKm } from '@railtime/core/geometry.utils';
 import type { Growth, LineSegment, TrackSegment } from './engine.types';
 
 /**
- * Splits one day's openings for one line into connected stretches, nearest the network's centre first.
- * Each stretch plays as its own step.
+ * Splits one day's openings, or closures, for one line into connected stretches, nearest the
+ * network's centre first. Each stretch plays as its own step.
  *
- * @param lineSegments - The line segments opening.
+ * @param lineSegments - The line segments opening or closing.
  * @param coordOf - Where a station is.
  * @param centre - The network's centre.
  * @returns The stretches.

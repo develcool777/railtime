@@ -2,10 +2,10 @@ import { emptyCollection } from '../layers/snapshot.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
-import type { OpenStep, SegmentPlan } from '@railtime/network/engine.types';
+import type { Growth, LineSegment, SegmentPlan } from '@railtime/network/engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
 import { CHASE_AHEAD_KM, CHASE_BEHIND_KM, CHASE_SMOOTHING_KM } from './animation.constants';
-import type { ChaseTarget, GrowthMove, GrowthPace, Opening, StepContext, StepDrawing } from './animation.types';
+import type { ChaseTarget, GrowthMove, GrowthPace, StepDrawing, Stretch } from './animation.types';
 
 /**
  * A drawing with nothing in it, for a frame to fill.
@@ -90,6 +90,26 @@ export const growthSeconds = (stops: number[], totalKm: number, pace: GrowthPace
   movesOf(stops, totalKm).reduce((total, move) => total + runSeconds(move.km, pace) + (move.stops ? pace.stationSeconds : 0), 0);
 
 /**
+ * When the front gets to each stop, where it then waits `stationSeconds`.
+ *
+ * @param stops - Where along the stretch each stop is, km, in order.
+ * @param totalKm - The stretch's length.
+ * @param pace - The pace.
+ * @returns Seconds at 1× from the start, one for each stop.
+ */
+export const arrivalSeconds = (stops: number[], totalKm: number, pace: GrowthPace): number[] => {
+  const arrivals: number[] = [];
+  let seconds = 0;
+  for (const move of movesOf(stops, totalKm)) {
+    seconds += runSeconds(move.km, pace);
+    if (!move.stops) continue;
+    arrivals.push(seconds);
+    seconds += pace.stationSeconds;
+  }
+  return arrivals;
+};
+
+/**
  * How far a stretch's growth front has got: speeding up out of each stop, at the pace between,
  * braking into the next new station, where it waits; so every stretch, long or short, moves alike.
  *
@@ -166,16 +186,17 @@ export const pointAlong = (path: SegmentPlan[], km: number): LngLat => {
 };
 
 /**
- * Where a camera following a growing line looks from, and which way: the line's middle over a short
+ * Where a camera following a front looks from, and which way: the line's middle over a short
  * stretch round the front, so a sharp bend is rounded, not turned on the spot; and the way from a
  * little behind the front to a little ahead of it, so the camera starts turning before the bend.
  * At the path's ends the stretch shrinks to the front itself.
  *
  * @param path - The way the camera follows (`mainPathOf`).
- * @param frontKm - How far the front has grown, from the stretch's start.
+ * @param frontKm - How far along it the front is, from the stretch's start.
+ * @param backwards - The front runs back towards the start, as a closed stretch retracts.
  * @returns The point and the way.
  */
-export const chaseAlong = (path: SegmentPlan[], frontKm: number): ChaseTarget => {
+export const chaseAlong = (path: SegmentPlan[], frontKm: number, backwards = false): ChaseTarget => {
   const first = path[0];
   const last = path.at(-1);
   const lengthKm = first && last ? last.startKm + last.segment.lengthKm - first.startKm : 0;
@@ -186,30 +207,35 @@ export const chaseAlong = (path: SegmentPlan[], frontKm: number): ChaseTarget =>
     samples.reduce((sum, point) => sum + point[0], 0) / samples.length,
     samples.reduce((sum, point) => sum + point[1], 0) / samples.length,
   ];
-  return { center, behind: pointAlong(path, Math.max(0, km - CHASE_BEHIND_KM)), ahead: pointAlong(path, Math.min(lengthKm, km + CHASE_AHEAD_KM)) };
+  const direction = backwards ? -1 : 1;
+  const along = (offsetKm: number) => pointAlong(path, clamp(km + offsetKm * direction, 0, lengthKm));
+  return { center, behind: along(-CHASE_BEHIND_KM), ahead: along(CHASE_AHEAD_KM) };
 };
 
 /**
- * An opening's stretch: how it grows, where its front stops (each station it opens), the way a camera
- * follows, and its lines by segment and station.
+ * A stretch an opening grows or a closure retracts: where its front stops (each station it opens, or
+ * takes off the map), the way a camera follows, and its lines by segment and station. A retreat runs
+ * its growth backwards, so its stops count from the far end.
  *
- * @param step - The opening.
- * @param context - The network as it stands when it starts.
- * @returns Its stretch.
+ * @param growth - How the stretch grows (`growthOf`), or would from the network that stays (`retreatOf`).
+ * @param lineSegments - Its lines' segments.
+ * @param retracts - It is a closure's.
+ * @returns The stretch.
  */
-export const openingOf = (step: OpenStep, context: StepContext): Opening => {
-  const growth = context.timeline.growthOf(step);
+export const stretchOf = (growth: Growth, lineSegments: LineSegment[], retracts: boolean): Stretch => {
   const linesBySegment = new Map<number, string[]>();
   const linesByStation = new Map<string, string[]>();
-  for (const { segment, line } of step.lineSegments) {
+  for (const { segment, line } of lineSegments) {
     pushTo(linesBySegment, segment.index, line);
     for (const station of [segment.stationA, segment.stationB]) pushTo(linesByStation, station, line);
   }
+  const stops = growth.reach.filter(reached => reached.isNew).map(reached => reached.km);
   return {
     growth,
-    stops: growth.reach.filter(reached => reached.isNew).map(reached => reached.km),
+    stops: retracts ? stops.map(km => growth.totalKm - km).reverse() : stops,
     path: mainPathOf(growth.plans),
     linesBySegment,
     linesByStation,
+    retracts,
   };
 };

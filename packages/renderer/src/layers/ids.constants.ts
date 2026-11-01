@@ -34,8 +34,10 @@ export const LAYERS = {
   transferCore: 'rt-transfer-core',
   activeGlow: 'rt-active-glow',
   activeLines: 'rt-active-lines',
+  activePlanned: 'rt-active-planned',
   growingGlow: 'rt-growing-glow',
   growingLines: 'rt-growing-lines',
+  growingPlanned: 'rt-growing-planned',
   headGlow: 'rt-head-glow',
   headCore: 'rt-head-core',
   activeTransferCasing: 'rt-active-transfer-casing',
@@ -65,6 +67,9 @@ export const BACKDROP_STATION_OPACITY = 0.25;
 
 /** Round ends and joins, so segments meet without seams. */
 export const LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } as const;
+
+/** A plan's track, not built: dash and gap, in line widths, on the map and while its step plays. */
+export const PLANNED_DASHES = [1.2, 1];
 
 /** Ordinary station labels show from this zoom; new stations are labelled at any zoom. */
 export const LABEL_MIN_ZOOM = 12;

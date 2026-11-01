@@ -41,7 +41,7 @@ A station's names in other languages (`names`) are on its label, beneath its Eng
 **Plans.** `NetworkFacts.create(network, { plan })` builds one of the network's `plans` on it
 (`buildPlan` in `@railtime/schema`). A plan is undated: the timeline puts its sections after every
 dated step, as `planned` steps at time `Infinity`, and the player plays them one by one once the
-clock reaches its end, the clock standing there. Their track is drawn dashed in its line's colour, a
+clock reaches its end, the clock standing there. Their track is drawn dashed in its line's colour, growing too, a
 station only they reach is a ring, their `StepInfo.time` is `null`, and `TimeState.future` is true
 while one plays or once one has. A different plan is a new `NetworkFacts`; `plans()` and `summary()`
 are of the network as stored, whichever plan is built.
@@ -76,7 +76,9 @@ animates `steps[k]`. On one date the order is:
    its own line, one line splitting into several.
 2. **open**: one step per line and per connected stretch, nearest the centre first. Three lines
    opening on the same day play one after another, not at once.
-3. **close**: track retracts towards the end that stays on the map, leaving a dashed ghost. A line
+3. **close**: one step per line and per connected stretch, as openings. Its track retracts as one
+   front, the stretch's growth (`retreatOf`) played backwards, from its far end to the stations that
+   stay on the map, leaving a dashed ghost. A line
    `suspended` on a segment closes there and opens again: each period is its
    own `LineSegment`, the reopening's caption says "reopens" and the ghost goes once the line is back.
 4. **infill**: a station opening on track already drawn. One that opened after a line had left its

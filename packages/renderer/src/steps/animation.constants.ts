@@ -3,8 +3,8 @@ import type { Step } from '@railtime/network/engine.types';
 import type { GrowthPace, StepTimes } from './animation.types';
 
 /**
- * How fast a new stretch grows, by how the map is seen: the same for every stretch, however long and
- * however many stations it opens. From above, a city at a glance, it grows briskly; in 3D the camera
+ * How fast a stretch grows, or a closed one retracts, by how the map is seen: the same for every
+ * stretch, however long and however many stations it opens or closes. From above, a city at a glance, it grows briskly; in 3D the camera
  * follows it at street level, where the same pace would cross the screen in a blink.
  */
 export const GROWTH_PACE: Record<ViewMode, GrowthPace> = {
@@ -15,16 +15,17 @@ export const GROWTH_PACE: Record<ViewMode, GrowthPace> = {
 /** Time a stretch's new stations stay highlighted once it has grown, seconds at 1×. */
 export const OPEN_HOLD_SECONDS = 1.2;
 
+/** Time a closed stretch is held once it has retracted, its stations' names still up, marked closed, seconds at 1×. */
+export const CLOSE_HOLD_SECONDS = 1.4;
+
 /** The shortest any change takes to draw, seconds at 1×: only for one with nothing to draw. */
 export const MIN_DRAW_SECONDS = 0.2;
 
 /**
- * How long each kind of change but an opening takes, seconds at 1×: to draw, then held. An opening's
- * time is its stretch's (`GROWTH_PACE`).
+ * How long each kind of change but a stretch opening or closing takes, seconds at 1×: to draw, then
+ * held. A stretch's time is its length and stations' (`GROWTH_PACE`).
  */
-export const STEP_TIMES: Record<Exclude<Step['kind'], 'open'>, StepTimes> = {
-  // Track retracts; then held, its stations' names still up, marked closed.
-  close: { drawSeconds: 1.6, holdSeconds: 1.4 },
+export const STEP_TIMES: Record<Exclude<Step['kind'], 'open' | 'close'>, StepTimes> = {
   // A station appears on a line already running through it.
   infill: { drawSeconds: 0.8, holdSeconds: 1.2 },
   // A station fades as its lines stop calling; then held, its name still up, marked closed.

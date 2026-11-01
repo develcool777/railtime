@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { chaseAlong, emptyDrawing, frontKmAt, growthSeconds, mainPathOf, pointAlong } from '../../../src/steps/animation.utils';
+import { arrivalSeconds, chaseAlong, emptyDrawing, frontKmAt, growthSeconds, mainPathOf, pointAlong } from '../../../src/steps/animation.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { GROWTH_PACE, OPEN_HOLD_SECONDS } from '../../../src/steps/animation.constants';
+import { CLOSE_HOLD_SECONDS, GROWTH_PACE, OPEN_HOLD_SECONDS } from '../../../src/steps/animation.constants';
 import { StepAnimation } from '../../../src/steps/animation.service';
 import { stepAfter } from '../../support/stepFrames.utils';
 import type { Network } from '@railtime/schema/network.types';
@@ -41,6 +41,25 @@ describe('StepAnimation', () => {
       }
       expect(kinds).toEqual(new Set(['open', 'close', 'infill', 'stationClose', 'rename', 'identity']));
     });
+
+    test("draws a plan's stretch as the map draws a plan, dashed, while it grows and once it has", () => {
+      const playback = playbackOf(tinyNetwork(), 'extension');
+      const { index, timeline } = playback;
+      const state = renderStateOf(playback);
+      const plannedOf = (step: (typeof timeline.steps)[number]) => {
+        playback.player.seek({ beforeChange: step.index });
+        const drawing = emptyDrawing();
+        new StepAnimation(step, { index, timeline, view: '2d' }).draw(
+          { state, snapshot: buildNetworkSnapshot(state, true), progress: 0.5, holdProgress: 0 },
+          drawing,
+        );
+        return [...drawing.lines.features, ...drawing.growing.features].map(feature => feature.properties.planned);
+      };
+      const openings = timeline.steps.filter(step => step.kind === 'open');
+      expect(openings.filter(step => step.planned).flatMap(plannedOf)).toContain(true);
+      expect(openings.filter(step => step.planned).flatMap(plannedOf)).not.toContain(false);
+      expect(openings.filter(step => !step.planned).flatMap(plannedOf)).not.toContain(true);
+    });
   });
 });
 
@@ -67,7 +86,7 @@ describe('StepAnimation, opening a stretch', () => {
     const pace = GROWTH_PACE['3d'];
     const animation = playback.player.active!.animation;
     // Its 2 km, and a stop at D, the one station it opens.
-    expect(animation.drawSeconds).toBe(growthSeconds([animation.opening!.growth.totalKm], animation.opening!.growth.totalKm, pace));
+    expect(animation.drawSeconds).toBe(growthSeconds([animation.stretch!.growth.totalKm], animation.stretch!.growth.totalKm, pace));
     expect(animation.drawSeconds).toBeGreaterThan(extension().animation.drawSeconds);
     expect(pace.kmPerSecond).toBeLessThan(GROWTH_PACE['2d'].kmPerSecond);
     expect(pace.stationSeconds).toBeGreaterThan(GROWTH_PACE['2d'].stationSeconds);
@@ -76,13 +95,13 @@ describe('StepAnimation, opening a stretch', () => {
   test('takes as long as its runs between stops at one pace and a stop at each new station, however long, and holds as long as any', () => {
     const animation = extension().animation;
     // The one stop is D, at its end: C opens later.
-    expect(animation.drawSeconds).toBe(growthSeconds([animation.opening!.growth.totalKm], animation.opening!.growth.totalKm, GROWTH_PACE['2d']));
+    expect(animation.drawSeconds).toBe(growthSeconds([animation.stretch!.growth.totalKm], animation.stretch!.growth.totalKm, GROWTH_PACE['2d']));
     expect(animation.holdSeconds).toBe(OPEN_HOLD_SECONDS);
   });
 
   test('grows out of the network along its track, a head at the front, and frames all of it', () => {
     const { animation, draw, playback } = extension();
-    const { totalKm } = animation.opening!.growth;
+    const { totalKm } = animation.stretch!.growth;
     const quarter = draw(0.25);
     // Still growing: the piece sent each frame; nothing yet drawn whole.
     expect([quarter.lines.features, quarter.growing.features.length]).toEqual([[], 1]);
@@ -169,25 +188,48 @@ describe('StepAnimation, closing track', () => {
     expect(stepAfter(tinyNetwork(), '1949-01-01').animation.step.kind).toBe('close');
   });
 
-  test('retracts each segment towards the end that stays on the map, and fades a station left with no line', () => {
-    const { animation, draw, playback } = stepAfter(withBranch(), '1949-01-01');
-    const half = draw(0.5);
-    // Retracting: track changing every frame.
-    const [main, branch] = half.growing.features.map(feature => feature.geometry.coordinates);
-    // B – C keeps its B half; the branch keeps its D half, though it is drawn from E.
-    expect(main?.[0]).toEqual([ONE_KM, 51.5]);
-    expect(main?.at(-1)?.[0]).toBeCloseTo(1.5 * ONE_KM, 6);
-    expect(branch?.[0]).toEqual([3 * ONE_KM, 51.5]);
-    expect(branch?.at(-1)?.[0]).toBeCloseTo(3.5 * ONE_KM, 6);
+  test('retracts a stretch as one front, from its far end back to the network that stays, at the pace an opening grows', () => {
+    // Blue closes D – E alone in 1951: E leaves the map, D stays on red.
+    const network = withBranch();
+    network.segments.at(-1)!.lines.blue!.close = '1951-01-01';
+    const { animation, draw, playback } = stepAfter(network, '1950-06-01');
+    const pace = GROWTH_PACE['2d'];
+    // A stop at E as it fades, then 1 km back to D.
+    expect(animation.drawSeconds).toBeCloseTo(growthSeconds([0], 1, pace));
+    expect(animation.holdSeconds).toBe(CLOSE_HOLD_SECONDS);
+    expect(animation.startPoint()).toEqual(playback.index.coordOf('e'));
+    const after = (seconds: number) => draw(seconds / animation.drawSeconds);
+    // Waiting at E: the track still whole, E half faded.
+    const waiting = after(pace.stationSeconds / 2);
+    expect(waiting.lines.features.map(feature => feature.geometry.coordinates[0])).toEqual([[3 * ONE_KM, 51.5]]);
+    expect(waiting.growing.features).toEqual([]);
+    expect(waiting.fading.get('e')).toBeCloseTo(0.5);
+    // Half-way back: what is left runs from D, and the camera faces D, the way the front goes.
+    const half = after(pace.stationSeconds + growthSeconds([], 1, pace) / 2);
+    const [left] = half.growing.features.map(feature => feature.geometry.coordinates);
+    expect(left?.[0]).toEqual([3 * ONE_KM, 51.5]);
+    // D – E is a hair short of 1 km.
+    expect(left?.at(-1)?.[0]).toBeCloseTo(3.5 * ONE_KM, 4);
     expect(half.growing.features.every(feature => feature.properties.color === '#0000ff')).toBe(true);
-    expect(half.fading).toEqual(new Map([['e', 0.5]]));
+    expect(half.chase?.ahead[0]).toBeLessThan(half.chase?.behind[0] ?? 0);
+    // Closing track never stands out as new track does.
+    expect(half.highlight).toBe(0);
+    expect(half.fading.get('e')).toBe(0);
     // Gone at the end; a hidden line draws nothing, and its station is not on the map to fade.
     expect(draw(1).growing.features).toEqual([]);
-    expect(draw(1).fading).toEqual(new Map([['e', 0]]));
+    expect(draw(1).lines.features).toEqual([]);
     expect(draw(0.5, { hidden: ['blue'] }).growing.features).toEqual([]);
     expect(draw(0.5, { hidden: ['blue'] }).fading.size).toBe(0);
-    const branchTrack = playback.index.segments.find(segment => segment.stationA === 'e')!.coordinates;
-    expect(animation.cameraPoints()).toEqual([...playback.index.segments[1]!.coordinates, ...branchTrack]);
+  });
+
+  test('plays each connected stretch closing on one day as its own step', () => {
+    // Blue closes B – C and D – E in 1950: two stretches, apart.
+    const { playback } = stepAfter(withBranch(), '1949-01-01');
+    const closes = playback.timeline.steps.filter(step => step.kind === 'close' && step.time === toTimestamp('1950-01-01'));
+    expect(closes.map(step => step.kind === 'close' && step.lineSegments.map(({ segment }) => `${segment.stationA}–${segment.stationB}`))).toEqual([
+      ['b–c'],
+      ['e–d'],
+    ]);
   });
 });
 
@@ -285,6 +327,14 @@ describe('StepAnimationUtils', () => {
     });
   });
 
+  describe('arrivalSeconds', () => {
+    test('gets to each stop after the runs and the waits before it', () => {
+      // 6 km in 4 s; a second there; 6 km more in 4 s.
+      expect(arrivalSeconds([6, 12], 12, PACE)).toEqual([4, 9]);
+      expect(arrivalSeconds([], 12, PACE)).toEqual([]);
+    });
+  });
+
   describe('frontKmAt', () => {
     test('speeds up out of a stop, runs at the pace, and brakes into the next station, where it waits', () => {
       const frontAt = (seconds: number) => frontKmAt(seconds, [6], 6, PACE);
@@ -314,7 +364,7 @@ describe('StepAnimationUtils', () => {
 
   describe('mainPathOf', () => {
     test('runs from where the stretch starts growing, each segment on from where the last ended', () => {
-      const { growth } = stepAfter(tinyNetwork(), '1905-01-01').animation.opening!;
+      const { growth } = stepAfter(tinyNetwork(), '1905-01-01').animation.stretch!;
       expect(mainPathOf(growth.plans).map(plan => [plan.segment.stationA, plan.segment.stationB])).toEqual([
         ['b', 'c'],
         ['c', 'd'],
@@ -347,6 +397,16 @@ describe('StepAnimationUtils', () => {
       expect(target.ahead[1]).toBeGreaterThan(corner[1]);
     });
 
+    test('faces back the way it came for a front running backwards, as a closed stretch retracts', () => {
+      const { growth, context } = cornered();
+      const path = mainPathOf(growth.plans);
+      const corner = context.index.coordOf('c');
+      const target = chaseAlong(path, path[0]!.segment.lengthKm, true);
+      // From past the corner, north, towards before it, west.
+      expect(target.behind[1]).toBeGreaterThan(corner[1]);
+      expect(target.ahead[0]).toBeLessThan(corner[0]);
+    });
+
     test('sits on the front itself where the stretch starts and ends', () => {
       const { growth, context } = cornered();
       const path = mainPathOf(growth.plans);
@@ -368,5 +428,5 @@ const cornered = () => {
   network.stations.d!.coordinate = north;
   network.segments[2]!.coordinates = [corner, north];
   const animation = stepAfter(network, '1905-01-01').animation;
-  return { growth: animation.opening!.growth, context: animation['context'] };
+  return { growth: animation.stretch!.growth, context: animation['context'] };
 };

@@ -1,6 +1,6 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { NetworkIndex } from './index.service';
-import type { Growth, LineSegment, OpenStep, Step } from './engine.types';
+import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
 import { connectedStretches, planGrowth } from './timeline.utils.ts';
 import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
@@ -37,8 +37,8 @@ export class Timeline {
   private readonly neverServed = new Set<string>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
-  /** Each opening's growth, worked out the first time it is asked for. */
-  private readonly growths = new WeakMap<OpenStep, Growth>();
+  /** Each opening's growth and each closure's retreat, worked out the first time it is asked for. */
+  private readonly growths = new WeakMap<OpenStep | CloseStep, Growth>();
 
   public constructor(index: NetworkIndex) {
     this.index = index;
@@ -212,6 +212,23 @@ export class Timeline {
   }
 
   /**
+   * How a closure retracts: its stretch planned as it would grow from the stations still on the map
+   * after it (else the end nearest the centre), played backwards, so its front runs back to the
+   * network that stays. A station `isNew` leaves the map with it.
+   *
+   * @param step - The closure.
+   * @returns Its retreat as a growth, worked out once.
+   */
+  public retreatOf(step: CloseStep): Growth {
+    const known = this.growths.get(step);
+    if (known) return known;
+    const segments = [...new Map(step.lineSegments.map(({ segment }) => [segment.index, segment])).values()];
+    const growth = planGrowth(segments, this.stationsOnMap(step.index + 1), station => this.index.coordOf(station), this.index.centre);
+    this.growths.set(step, growth);
+    return growth;
+  }
+
+  /**
    * Gathers every change in the network by its date.
    *
    * @returns The changes of each day, by timestamp.
@@ -316,7 +333,7 @@ export class Timeline {
   }
 
   /**
-   * One step per line closing sections that day.
+   * One step per line and connected stretch closing that day: each retracts as one front, as an opening grows.
    *
    * @param time - The date.
    * @param closes - That day's closures.
@@ -325,8 +342,10 @@ export class Timeline {
     const byLine = new Map<string, LineSegment[]>();
     for (const lineSegment of closes) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const [line, lineSegments] of byLine) {
-      const step = this.addStep({ kind: 'close', time, line, lineSegments });
-      for (const lineSegment of lineSegments) this.closeStep.set(lineSegment, step);
+      for (const stretch of connectedStretches(lineSegments, station => this.index.coordOf(station), this.index.centre)) {
+        const step = this.addStep({ kind: 'close', time, line, lineSegments: stretch });
+        for (const lineSegment of stretch) this.closeStep.set(lineSegment, step);
+      }
     }
   }
 

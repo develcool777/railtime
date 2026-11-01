@@ -120,17 +120,27 @@ export class Minimap {
       source: MINIMAP_SOURCES.planned,
       paint: { 'line-color': ['get', 'color'], 'line-width': 1.2, 'line-dasharray': [2, 1.5] },
     });
+    // The playing step's track: built track glowing, a plan's broken, as on the map.
     this.map.addLayer({
       id: MINIMAP_LAYERS.activeGlow,
       type: 'line',
       source: MINIMAP_SOURCES.active,
+      filter: ['!', ['get', 'planned']],
       paint: { 'line-color': ['get', 'color'], 'line-width': 7, 'line-blur': 4, 'line-opacity': 0.8 },
     });
     this.map.addLayer({
       id: MINIMAP_LAYERS.active,
       type: 'line',
       source: MINIMAP_SOURCES.active,
+      filter: ['!', ['get', 'planned']],
       paint: { 'line-color': ['get', 'color'], 'line-width': 2.5 },
+    });
+    this.map.addLayer({
+      id: MINIMAP_LAYERS.activePlanned,
+      type: 'line',
+      source: MINIMAP_SOURCES.active,
+      filter: ['get', 'planned'],
+      paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1.5] },
     });
     this.map.addLayer({
       id: MINIMAP_LAYERS.viewport,

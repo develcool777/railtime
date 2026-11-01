@@ -39,6 +39,8 @@ type LineProperties = {
   highlight: number;
   /** The line it is drawn for, so the app can bring some lines forward (`focusLines`); empty for a transfer's link. */
   line: string;
+  /** A plan's track, not built: drawn dashed, growing as it stands. */
+  planned: boolean;
 };
 
 /** A drawn line. */
