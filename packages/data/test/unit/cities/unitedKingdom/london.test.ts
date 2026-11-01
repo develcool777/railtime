@@ -18,11 +18,13 @@ describe('London', () => {
       'metropolitan 1884-10-01: 2 pieces',
       'district 1884-10-01: 2 pieces',
       // The Metropolitan took over the Aylesbury & Buckingham a year before its own line reached Aylesbury.
-      'metropolitan 1891-07-01: 3 pieces',
+      'metropolitan 1891-07-01: 2 pieces',
       // The City & South London's north end closed for rebuilding while its south ran on.
       'northern 1922-08-08: 2 pieces',
       // The Piccadilly took Ealing–South Harrow; an isolated District service ran on to Uxbridge until 1933.
       'district 1932-07-04: 2 pieces',
+      // The bomb at Balham closed Clapham South–Tooting Bec; Morden's end ran on alone until January.
+      'northern 1940-10-15: 2 pieces',
       // The Jubilee extension opened from Stratford first, joined to the rest that autumn.
       'jubilee 1999-05-14: 2 pieces',
       // The East London line reopened before it joined the North London; then the West Anglia lines and Romford–Upminster joined, apart.
