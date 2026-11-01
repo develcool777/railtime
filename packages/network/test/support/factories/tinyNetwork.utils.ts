@@ -52,7 +52,7 @@ const segmentAt = (stationA: string, stationB: string, position: number, lines: 
  * @returns The network.
  */
 export const tinyNetwork = (): Network => ({
-  meta: { city: 'Test', start: '1899-01-01', built: '2026-01-01', attribution: '' },
+  meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
   networks: { metro: { name: 'Metro', names: { uk: 'Метро' } } },
   lines: {
     red: { name: 'Red', names: { uk: 'Червона лінія' }, network: 'metro', mode: 'metro', color: '#ff0000' },

@@ -16,7 +16,8 @@
     "./geometry.types": "./src/geometry.types.ts",
     "./geometry.utils": "./src/geometry.utils.ts",
     "./number.utils": "./src/number.utils.ts",
-    "./required.utils": "./src/required.utils.ts"
+    "./required.utils": "./src/required.utils.ts",
+    "./text.utils": "./src/text.utils.ts"
   },
   "devDependencies": {
     "vitest": "^5.0.5"

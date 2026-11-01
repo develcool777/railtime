@@ -6,7 +6,7 @@ import type { Network } from '@railtime/schema/network.types';
  * @returns The network.
  */
 export const planOnlyNetwork = (): Network => ({
-  meta: { city: 'Test', start: '1980-01-01', built: '2026-01-01', attribution: '' },
+  meta: { city: 'Test', country: 'Testland', start: '1980-01-01', built: '2026-01-01', attribution: '' },
   networks: { metro: { name: 'Metro' } },
   lines: {},
   stations: {},

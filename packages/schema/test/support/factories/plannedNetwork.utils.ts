@@ -7,7 +7,7 @@ import type { Network } from '../../../src/format/network.types';
  * @returns The network.
  */
 export const plannedNetwork = (): Network => ({
-  meta: { city: 'Test', start: '1899-01-01', built: '2026-01-01', attribution: '' },
+  meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
   networks: { metro: { name: 'Metro' } },
   lines: { red: { name: 'Red', network: 'metro', mode: 'metro', color: '#ff0000' } },
   stations: { a: { name: 'A', coordinate: [0, 51.5] }, c: { name: 'C', coordinate: [0.02, 51.5] } },

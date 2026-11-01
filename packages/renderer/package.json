@@ -14,7 +14,8 @@
     "./transitMap.css": "./src/transitMap.css",
     "./basemapStill.service": "./src/still/basemap.service.ts",
     "./basemapStill.types": "./src/still/basemap.types.ts",
-    "./basemapStill.constants": "./src/still/basemap.constants.ts"
+    "./basemapStill.constants": "./src/still/basemap.constants.ts",
+    "./testing/playback": "./test/support/playback.utils.ts"
   },
   "dependencies": {
     "@railtime/core": "workspace:*",

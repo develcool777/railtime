@@ -136,6 +136,8 @@ export type Plan = {
 export type Network = {
   meta: {
     city: string;
+    /** Its country, as a list of cities shows it; its folder in `cities/` is this in lower case, hyphenated. */
+    country: string;
     /** Where the timeline starts. */
     start: IsoDate;
     built: IsoDate;

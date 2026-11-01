@@ -35,7 +35,7 @@ const segment = (stationA: string, stationB: string, line: string, through: [num
  * @returns The network.
  */
 export const routeNetwork = (): Network => ({
-  meta: { city: 'Test', start: '1899-01-01', built: '2026-01-01', attribution: '' },
+  meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
   networks: { metro: { name: 'Metro' } },
   lines: Object.fromEntries(['red', 'blue', 'green', 'yellow'].map(line => [line, { name: line, network: 'metro', mode: 'metro' as const, color: '#000000' }])),
   stations: {

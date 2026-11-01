@@ -27,11 +27,12 @@
 
 <script setup lang="ts">
   import { definePageMeta, navigateTo, useFetch, useRoute, useRuntimeConfig } from '#imports';
+  import { NetworkFacts } from '@railtime/network/facts.service';
   import type { Network } from '@railtime/schema/network.types';
   import { computed } from 'vue';
 
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
-  import { cityNameOf, citySummaryOf, isCity, networkUrlOf, planToOpen, previewUrlOf } from '~/utils/city.utils';
+  import { cityNameOf, citySummaryOf, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
   import { citySeo } from '~/features/seo/seo.utils';
 
   // Only cities with a dataset have a page: any other address is a 404. Each city is a page of its
@@ -53,7 +54,7 @@
 
   // A plan rebuilds the map: the page keys the explorer on it, so a new one mounts where the old one looked.
   // A network never built always shows a plan: its first, unless the address names another.
-  const plan = computed(() => (network.value ? planToOpen(network.value, route.query.plan) : undefined));
+  const plan = computed(() => (network.value ? NetworkFacts.planToOpen(network.value, route.query.plan) : undefined));
 
   const selectCity = (next: string) => navigateTo(`/${next}`);
   // A plan is chosen on Plans: the explorer, mounted afresh for it, opens there again.

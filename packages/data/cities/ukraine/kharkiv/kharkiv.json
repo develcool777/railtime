@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Kharkiv","start":"1975-08-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Kharkiv","country":"Ukraine","start":"1975-08-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Kharkiv Metro","names":{"uk":"Харківський метрополітен"}}
   },

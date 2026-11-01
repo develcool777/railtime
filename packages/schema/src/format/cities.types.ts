@@ -7,7 +7,7 @@
 export type CityIndexEntry = {
   /** The city's name, as its network gives it. */
   name: string;
-  /** Its country's folder, beside the city's own. */
+  /** Its country, as its network names it: its folder, beside the city's own, is this as a slug. */
   country: string;
   /** The brands its lines run under. */
   networks: string[];
@@ -22,5 +22,5 @@ export type CityIndexEntry = {
   stations: number;
 };
 
-/** Every city, by the id of its folder. */
+/** Every city, by the id of its folder, in the order a list shows them: the one list of cities. */
 export type CityIndex = Record<string, CityIndexEntry>;

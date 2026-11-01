@@ -2,10 +2,8 @@ import type { Network } from '@railtime/schema/network.types';
 import { globSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { toIsoDate } from '@railtime/core/date.utils';
-import { buildNetworkSnapshot } from '../../../renderer/src/layers/snapshot.utils';
 import type { LineSegment } from '@railtime/network/engine.types';
-import { emptyDrawing } from '../../../renderer/src/steps/animation.utils';
-import { playbackOf, renderStateOf } from '../../../renderer/test/support/playback.utils';
+import { drawnStep, playbackOf } from '@railtime/renderer/testing/playback';
 
 /** The package's `cities/` folder: each country's cities, `<country>/<city>/<city>.json`. */
 const DATA = fileURLToPath(new URL('../../cities/', import.meta.url));
@@ -52,11 +50,8 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
     started += player.tick(frameSeconds).filter(event => event.type === 'stepStart').length;
     seconds += frameSeconds;
     frame += 1;
-    if (frame % 5 !== 0 || !player.active || player.phase === 'pre') continue;
-    const state = renderStateOf(playback);
-    const drawing = emptyDrawing();
-    player.active.animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress: player.progress, holdProgress: player.holdProgress }, drawing);
-    mostHighlighted = Math.max(mostHighlighted, drawing.highlighted.size);
+    if (frame % 5 !== 0 || player.phase === 'pre') continue;
+    mostHighlighted = Math.max(mostHighlighted, drawnStep(playback)?.highlighted.size ?? 0);
   }
   return { steps: timeline.steps.length - skipped, started, cursor: player.cursor - skipped, mostHighlighted, seconds };
 };

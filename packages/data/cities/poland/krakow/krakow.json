@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Kraków","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Kraków","country":"Poland","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Kraków Metro","names":{"pl":"Metro w Krakowie"}}
   },

@@ -32,12 +32,14 @@ and every fact about them: made once, and asked by everyone. Pure: no map, no cl
 `data` and the tests use it alike, before any map exists.
 
 ```ts
+NetworkFacts.planToOpen(network, asked); // the plan a city opens on, before its facts are made with it
 const facts = NetworkFacts.create(network, { plan, today }); // the network as stored; a plan built on it, if asked for
 facts.range; // { start, end, today }
 facts.plan; // the plan built, or null
 facts.planOnly; // never built: only plans
 facts.plans(); // every plan, with what it would add
 facts.summary(); // the city summed up, for a list of cities
+facts.sketch(); // each line's track today (a network never built: its first plan's), for a picture
 facts.find('station', id); // { id, name }, or null
 facts.lines();
 facts.changes();
@@ -120,7 +122,8 @@ hears it (`time`) and asks to move it.
 `stationClick`, `selectionGone`, `overlay` (what the overlay came to), `view`.
 
 - **Delivered at the end of a frame, never inside a call.** A listener may call any method.
-- **Given at construction**, so nothing the map says while starting is missed.
+- **Given at construction, and only then** (`on`), so nothing the map says while starting is missed:
+  the map has no `on()` to subscribe later.
 - **`time` first comes once the map is ready**, its stats the network's, never zeros.
 - **An event is a fact, not a request.** `selectionGone`: the station left the map at this moment;
   its ring is hidden while it is away; the prop stays the app's.

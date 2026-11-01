@@ -1,25 +1,26 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
-import { isPlanOnly } from '@railtime/schema/plan.utils';
+import { firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { required } from '@railtime/core/required.utils';
 import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
-import { REACH_BANDS } from './facts.constants';
-import { bandOf, networkSummary, planFacts, reachedSegments } from './facts.utils';
-import { RouteFinder } from '../route/finder.service';
+import { REACH_BANDS } from './facts.constants.ts';
+import { bandOf, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf } from './facts.utils.ts';
+import { RouteFinder } from '../route/finder.service.ts';
 import type { NetworkHistory } from '../engine/history.types';
-import { networkAt, networkHistory, openingsByDecade, statsAt } from '../engine/history.utils';
-import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../engine/lineDetails.utils';
-import { CoverageMeasure } from '../coverage/coverage.service';
+import { networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
+import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../engine/lineDetails.utils.ts';
+import { CoverageMeasure } from '../coverage/coverage.service.ts';
 import type { NetworkIndex } from '../engine/index.service';
-import { NetworkEngine } from '../engine/engine.service';
+import { NetworkEngine } from '../engine/engine.service.ts';
 import type { Timeline } from '../engine/timeline.service';
-import { captionOf } from '../engine/caption.utils';
+import { captionOf } from '../engine/caption.utils.ts';
 import type {
   ChangeInfo,
   FactsAt,
   LineColor,
   LineDetails,
   LineInfo,
+  LineSketch,
   NetworkFactsOptions,
   NetworkGrowth,
   NetworkTime,
@@ -85,6 +86,29 @@ export class NetworkFacts {
    */
   public static create(network: Network, options: NetworkFactsOptions = {}): NetworkFacts {
     return new NetworkFacts(network, options.plan ?? null, options.today ?? todayTimestamp());
+  }
+
+  /**
+   * The plan a city opens on, before its facts are made with it: the one asked for, if it has it;
+   * else, for a network never built, its first.
+   *
+   * @param network - The network, as stored.
+   * @param asked - The plan an address names, if any.
+   * @returns The plan's id, or none.
+   */
+  public static planToOpen(network: Network, asked: unknown): string | undefined {
+    if (typeof asked === 'string' && network.plans?.[asked]) return asked;
+    return isPlanOnly(network) ? firstPlanOf(network) : undefined;
+  }
+
+  /**
+   * The network at a glance, for a picture of it: each line's track today, or a network never
+   * built, its first plan's, dashed.
+   *
+   * @returns The track by line, bottom first.
+   */
+  public sketch(): LineSketch[] {
+    return sketchOf(this.source);
   }
 
   /**
@@ -340,34 +364,7 @@ export class NetworkFacts {
    */
   private recordsAt(count: number, moment: NetworkTime): NetworkRecords {
     const { firstYears } = this.networkHistory();
-    const { stations } = networkAt(this.index, this.timeline, moment.cursor);
-    const name = (station: string) => this.index.stationName(station, moment.time);
-    const oldest = [...stations.keys()]
-      .flatMap(station => {
-        const year = firstYears.get(station);
-        return year === undefined ? [] : [{ id: station, name: name(station), year }];
-      })
-      .sort((first, second) => first.year - second.year || first.name.localeCompare(second.name))
-      .slice(0, count);
-    const busiest = [...stations]
-      .map(([station, lines]) => ({
-        id: station,
-        name: name(station),
-        lines: [...lines].sort(this.index.compareLines).map(line => ({ id: line, name: this.index.lineName(line), color: this.colorOf(line) })),
-      }))
-      .sort((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
-      .slice(0, count);
-    const longest = this.index.lineIds
-      .map(line => ({
-        id: line,
-        name: this.index.lineName(line),
-        color: this.colorOf(line),
-        km: lineLengthKm(this.index, this.timeline, line, moment.cursor),
-      }))
-      .filter(line => line.km > 0)
-      .sort((first, second) => second.km - first.km)
-      .slice(0, count);
-    return { oldest, busiest, longest };
+    return recordsOf({ index: this.index, timeline: this.timeline, firstYears, colorOf: line => this.colorOf(line) }, count, moment);
   }
 
   /**

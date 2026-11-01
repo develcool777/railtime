@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Chernivtsi","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Chernivtsi","country":"Ukraine","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Chernivtsi Metro","names":{"uk":"Чернівецький метрополітен"}}
   },

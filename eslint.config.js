@@ -27,6 +27,25 @@ const SHARED_SYNTAX = [
   { selector: 'FunctionExpression:not(MethodDefinition > FunctionExpression)', message: 'Use an arrow function.' },
 ];
 
+/** A package is reached through its door (`exports`), never by a path into its folders. */
+const ACROSS_PACKAGES = {
+  regex: '(^|/)(core|schema|network|renderer|data|tooling)/(src|test)/',
+  message: "Import another package by its exports (`@railtime/<package>/…`, its tests' helpers from `@railtime/<package>/testing/…`).",
+};
+
+/** What `@railtime/network/engine.*` is for: the renderer's, never the app's or the data commands'. */
+const NETWORK_ENGINE = {
+  group: ['@railtime/network/engine.*'],
+  message: "Ask NetworkFacts (@railtime/network/facts.service): NetworkEngine is the renderer's.",
+};
+
+/** The data commands run under Node's type stripping, which finds a file only by its whole name. */
+const NAMED_FILE = {
+  regex: '^\\.{1,2}/.*(?<!\\.ts)$',
+  allowTypeImports: true,
+  message: 'A runtime import names its file, `.ts` included: the data commands run this code under Node.',
+};
+
 /** Outside a `*.service.ts`, a class is in the wrong file. */
 const NO_CLASS_OUTSIDE_SERVICE = { selector: 'ClassDeclaration', message: 'Classes live in a `*.service.ts` file.' };
 
@@ -141,21 +160,25 @@ export default defineConfig(
     },
   },
 
-  // ---- What the app and the data ask of the network ------------------------------
+  // ---- What a package may import -------------------------------------------------
+  // Another package only through its exports; the network's engine only in the renderer
+  // (`NetworkEngine` is the raw network it plays and draws, and every fact comes from `NetworkFacts`);
+  // and in the code the data commands run, each file by its whole name.
   {
-    // `@railtime/network/engine.*` (`NetworkEngine`) is the raw network the renderer plays and draws;
-    // the app and the data commands ask `NetworkFacts`, and every fact comes from it.
-    files: ['web/src/**/*.{ts,vue}', 'packages/data/src/**/*.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            { group: ['@railtime/network/engine.*'], message: "Ask NetworkFacts (@railtime/network/facts.service): NetworkEngine is the renderer's." },
-          ],
-        },
-      ],
-    },
+    files: ['packages/**/*.ts', 'web/**/*.{ts,vue}'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES] }] },
+  },
+  {
+    files: ['packages/{core,schema,network}/src/**/*.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NAMED_FILE] }] },
+  },
+  {
+    files: ['web/src/**/*.{ts,vue}'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE] }] },
+  },
+  {
+    files: ['packages/data/src/**/*.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE, NAMED_FILE] }] },
   },
 
   // ---- File names ------------------------------------------------------------

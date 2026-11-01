@@ -44,6 +44,26 @@ describe('NetworkFacts', () => {
     expect(facts.change(0).color).toEqual({ light: '#ff0000', dark: '#ff6666' });
   });
 
+  test('opens a city on the plan asked for, if it has it; a network never built on its first', () => {
+    expect(NetworkFacts.planToOpen(planOnlyNetwork(), 'second')).toBe('second');
+    expect(NetworkFacts.planToOpen(planOnlyNetwork(), 'nowhere')).toBe('first');
+    expect(NetworkFacts.planToOpen(planOnlyNetwork(), undefined)).toBe('first');
+    expect(NetworkFacts.planToOpen(tinyNetwork(), undefined)).toBeUndefined();
+    expect(NetworkFacts.planToOpen(tinyNetwork(), 'extension')).toBe('extension');
+  });
+
+  test("sketches the track open today, a segment by its first line, in both themes' colours", () => {
+    expect(factsOf().sketch()).toEqual([{ line: 'red', color: { light: '#ff0000', dark: '#ff6666' }, paths: expect.any(Array), dashed: false }]);
+    expect(factsOf().sketch()[0]?.paths).toHaveLength(3);
+  });
+
+  test('sketches a network never built by its first plan, dashed', () => {
+    const [red, ...others] = NetworkFacts.create(planOnlyNetwork(), { today: TODAY }).sketch();
+    expect(others).toEqual([]);
+    expect(red).toMatchObject({ line: 'red', dashed: true });
+    expect(red?.paths).toHaveLength(2);
+  });
+
   test('answers for the moment it is asked about, and for no other', () => {
     const facts = factsOf();
     const early = facts.asOf(momentOf(facts, '1905-01-01'));

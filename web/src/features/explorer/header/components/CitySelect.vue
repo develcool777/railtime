@@ -19,17 +19,13 @@
 </template>
 
 <script setup lang="ts">
-  import CITY_INDEX from '@railtime/data/cities.json';
-  import type { CityIndex } from '@railtime/schema/cityIndex.types';
-
-  import { cityMenu } from '~/utils/city.utils';
+  import { cityMenu, citySummaryOf } from '~/utils/city.utils';
 
   defineProps<{ city: string }>();
   const emit = defineEmits<{ city: [city: string] }>();
   /** Whether its menu is open: Esc closes it before anything else on the page. */
   const open = defineModel<boolean>('open', { default: false });
 
-  const INDEX: CityIndex = CITY_INDEX;
   // Each city with its line count on the right.
-  const CITY_MENU = cityMenu().map(group => group.map(item => (item.value ? { ...item, lines: INDEX[item.value]?.lines ?? 0 } : item)));
+  const CITY_MENU = cityMenu().map(group => group.map(item => (item.value ? { ...item, lines: citySummaryOf(item.value).lines } : item)));
 </script>

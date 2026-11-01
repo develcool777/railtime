@@ -1,7 +1,7 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
-import { NetworkIndex } from './index.service';
-import { Timeline } from './timeline.service';
+import { NetworkIndex } from './index.service.ts';
+import { Timeline } from './timeline.service.ts';
 
 /**
  * The raw network through time, as the renderer plays and draws it: its track and stations indexed

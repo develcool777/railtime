@@ -66,7 +66,7 @@ src/
 │                              FrameRenderer, the snapshot, the line styles, the basemap
 ├── overlay/                   OverlayController, and what it draws over the network: RouteLayer, ReachLayer,
 │                              CoverageLayer, and their drawing (`overlay.utils.ts`)
-├── support/                   EventEmitter, PropsReconciler (the props and the effect of each, in order), easing and colour
+├── support/                   EventEmitter (the map's listeners, held private), PropsReconciler (the props and the effect of each, in order), easing and colour
 └── still/basemap.service.ts   BasemapStill: pictures of the basemap with a track over it, for previews
 ```
 

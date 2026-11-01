@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Odesa","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Odesa","country":"Ukraine","start":"1960-01-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Odesa Metro","names":{"uk":"Одеський метрополітен"}}
   },

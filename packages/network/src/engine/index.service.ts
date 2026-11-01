@@ -6,7 +6,7 @@ import { required } from '@railtime/core/required.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { boundsOf, cumulativeDistances } from '@railtime/core/geometry.utils';
 import type { LineSegment, TrackSegment } from './engine.types';
-import { orientSegments } from './orientation.utils';
+import { orientSegments } from './orientation.utils.ts';
 
 /**
  * The network, indexed for drawing: segments with their distances and direction of travel

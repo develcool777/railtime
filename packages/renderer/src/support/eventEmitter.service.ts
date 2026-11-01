@@ -1,12 +1,11 @@
 import type { EventListener, Unsubscribe } from './eventEmitter.types';
 
 /**
- * A typed publish/subscribe base class. A subclass declares its events as a map of event name to
- * payload type, and gets `on` for its users and `emit` for itself.
+ * Typed publish/subscribe, held by what raises the events: its events are a map of event name to
+ * payload type. Kept private, it hands its owner `emit`, and its listeners come in as the owner says.
  *
  * @example
- * class Clock extends EventEmitter<{ tick: number }> { … this.emit('tick', now) … }
- * clock.on('tick', now => …);
+ * private readonly events = new EventEmitter<{ tick: number }>(); … this.events.emit('tick', now) …
  */
 export class EventEmitter<Events extends object> {
   /** Listeners by event name. */
@@ -32,12 +31,12 @@ export class EventEmitter<Events extends object> {
    * @param event - The event's name.
    * @param payload - What the listeners receive.
    */
-  protected emit<Name extends keyof Events>(event: Name, payload: Events[Name]): void {
+  public emit<Name extends keyof Events>(event: Name, payload: Events[Name]): void {
     for (const listener of this.listeners.get(event) ?? []) (listener as EventListener<Events[Name]>)(payload);
   }
 
   /** Drops every listener of every event. */
-  protected removeAllListeners(): void {
+  public clear(): void {
     this.listeners.clear();
   }
 }

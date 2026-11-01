@@ -48,7 +48,10 @@ landing page's pictures in Chrome).
   what went wrong, and closes what it opened. A function in the feature's utils, or a service where it
   holds state (`PreviewRenderer`: a server, Chrome, a page); beside it one types and one constants file.
 - **Erasable TypeScript only** (`erasableSyntaxOnly`): scripts run directly under Node's type
-  stripping, so no enums or constructor parameter properties.
+  stripping, so no enums or constructor parameter properties; and in the code they run (`core`,
+  `schema`, `network`, `data/src`) a runtime import names its file, `.ts` included (ESLint).
+- **A package through its door**: another package is imported by its `exports` (`@railtime/<package>/…`),
+  never by a path into its folders (ESLint); what its tests share, from `@railtime/<package>/testing/…`.
 
 ## Architecture
 
@@ -112,7 +115,8 @@ packages/network/
                             exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
 packages/renderer/
   test/unit/                mirrors src/, as network's; transitMap.test.ts tests the contract whole
-  test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it)
+  test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it, and what
+                            the map draws: `@railtime/renderer/testing/playback` for data's city tests)
 packages/data/
   test/unit/<feature>/      mirrors src/<feature>/: city/ (finding the cities and reading their files),
                             format/, boundary/, preview/ (a command each)
@@ -150,8 +154,9 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 `packages/data/cities/<country>/<city>/<city>.json` is the city's network and its source of truth: edit
 it directly (a date, a station name), keeping its layout (one station or segment per line), never
 regenerate it. The tests read every city through the schema, so one it refuses fails them;
-`pnpm data:summaries` rewrites `cities/cities.json`, the list the landing page reads, and a test fails
-while it is out of date.
+`pnpm data:summaries` rewrites `cities/cities.json`, the site's one list of cities (the app's `CITIES`
+is read from it), in its own order: a new city goes after the last of its country, and a city's
+folder is its `meta.country` as a slug. A test fails while it is out of date.
 A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
 `packages/schema/src/validation/checks.constants.ts`), or the schema refuses it: the line would miss the station's dot. Where an
 interchange's lines run apart underground, each line's track ends at the one station point.

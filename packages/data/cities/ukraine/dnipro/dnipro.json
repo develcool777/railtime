@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Dnipro","start":"1995-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Dnipro","country":"Ukraine","start":"1995-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Dnipro Metro","names":{"uk":"Дніпровський метрополітен"}}
   },
