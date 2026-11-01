@@ -3,7 +3,7 @@ import type { SectionEntry, SheetSnap } from '~/features/explorer/explorer.types
 /** The panel's sections, in the rail's order, each with its icon and what it is for. Plans shows only for a city with plans. */
 export const SECTIONS: SectionEntry[] = [
   { id: 'lines', label: 'Lines', icon: 'i-lucide-train-front', description: 'Every line, to show or hide on the map, and each one’s stops and history' },
-  { id: 'stations', label: 'Stations', icon: 'i-lucide-map-pin', description: 'Every station on the map, by name: its lines, and when each came' },
+  { id: 'stations', label: 'Stations', icon: 'i-lucide-circle-dot', description: 'Every station on the map, by name: its lines, and when each came' },
   { id: 'changes', label: 'Changes', icon: 'i-lucide-history', description: 'Every opening and closure, in order: pick one to see the map just after it' },
   { id: 'route', label: 'Route', icon: 'i-lucide-route', description: 'The way between any two stations, on the date shown' },
   { id: 'reach', label: 'Reach', icon: 'i-lucide-radar', description: 'How far you get from a station, by time' },

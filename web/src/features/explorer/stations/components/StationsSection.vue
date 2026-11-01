@@ -1,7 +1,7 @@
 <template>
   <div class="px-4 pb-6">
     <PanelSearch v-model="query" placeholder="Search stations" />
-    <UEmpty v-if="stations.length === 0" class="mt-2" icon="i-lucide-map-pin-off" title="No station open" description="None is open on the date shown." />
+    <UEmpty v-if="stations.length === 0" class="mt-2" icon="i-lucide-circle-off" title="No station open" description="None is open on the date shown." />
     <UEmpty v-else-if="rows.length === 0" class="mt-2" icon="i-lucide-search-x" title="No station matches" description="Try another name." />
     <PanelList v-else label="Stations" :rows :estimate :covered="PANEL_SEARCH_HEIGHT">
       <template #sticky="{ row }">
