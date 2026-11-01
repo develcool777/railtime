@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Warsaw","country":"Poland","start":"1995-04-01","built":"2026-10-29","attribution":"© OpenStreetMap and Citylines contributors (ODbL)"},
+  "meta": {"city":"Warsaw","country":"Poland","start":"1995-04-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Warsaw Metro","names":{"pl":"Metro warszawskie"}}
   },

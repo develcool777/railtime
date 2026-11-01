@@ -190,6 +190,4 @@ layout, holding more than half its stations.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction
-goes in the network with that source in mind. The track and station points of the cities
-Citylines (citylines.co, ODbL) maps were redrawn from it once, where its track follows ours; their
-`attribution` names it. A new track or station point is checked against it where it has one.
+goes in the network with that source in mind.

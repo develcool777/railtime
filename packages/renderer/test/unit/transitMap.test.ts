@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { FeatureCollection } from '../../src/layers/snapshot.types';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
+import { DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT } from '../../src/layers/theme.constants';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { TransitMap } from '../../src/transitMap.service';
@@ -87,6 +88,11 @@ describe('TransitMapUtils', () => {
 });
 
 describe('TransitMap', () => {
+  test("credits on the map its tiles and OpenStreetMap, as their licences ask, not the network's other sources", () => {
+    const { map } = mapOf();
+    expect(map.credits).toEqual([...DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT]);
+  });
+
   test('keeps props given before it is ready, and draws them all once its style loads', () => {
     const { map, fake, ready } = mapOf({ stationLabels: false });
     map.update({ selectedStation: 'b', viewMode: '3d' });

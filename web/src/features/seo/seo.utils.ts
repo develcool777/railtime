@@ -4,7 +4,7 @@ import type { PageSeo } from './seo.types';
 import { counted } from '~/utils/format.utils';
 
 /** The site's name, as titles end with it. */
-const SITE_NAME = 'Railtime';
+const SITE_NAME = 'RailTime';
 
 /** A social card's size, as `pnpm data:previews` draws it. */
 const SOCIAL_CARD = { width: 1200, height: 630 };
@@ -34,6 +34,17 @@ export const landingSeo = (cities: number): PageSeo => ({
   title: `${SITE_NAME}: metro networks on the real map, on any day since they opened`,
   description: `Explore the metro of ${cities} cities as it is today or on any day since it opened, play its history one opening at a time, or open a plan for what it could become.`,
   jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME },
+});
+
+/**
+ * What the About page says about itself.
+ *
+ * @returns Its SEO.
+ */
+export const aboutSeo = (): PageSeo => ({
+  path: 'about',
+  title: `About ${SITE_NAME}: where its maps and data come from`,
+  description: `What ${SITE_NAME} is, and whose maps, networks and history it is drawn from.`,
 });
 
 /**

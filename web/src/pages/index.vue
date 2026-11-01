@@ -35,17 +35,12 @@
         class="py-16" />
     </UMain>
 
-    <UFooter class="border-default border-t">
-      <template #left>
-        <MapCredits :credits="STILL_CREDITS" />
-      </template>
-    </UFooter>
+    <SiteFooter />
   </div>
 </template>
 
 <script setup lang="ts">
   import { navigateTo, useRoute } from '#imports';
-  import { STILL_CREDITS } from '@railtime/renderer/basemapStill.constants';
   import { computed, ref } from 'vue';
 
   import type { CityFilter } from '~/features/landing/cityFilter.types';

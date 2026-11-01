@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Prague","country":"Czechia","start":"1974-05-01","built":"2026-10-29","attribution":"© OpenStreetMap and Citylines contributors (ODbL)"},
+  "meta": {"city":"Prague","country":"Czechia","start":"1974-05-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Prague Metro","names":{"cs":"Pražské metro"}}
   },
