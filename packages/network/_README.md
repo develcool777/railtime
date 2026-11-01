@@ -24,8 +24,9 @@ then.route('bank', 'oval', 'fastest');
 then.reach('bank');
 then.records(5);
 then.stats();
-facts.coverage(boundary).info(cursor); // how much of the city is within a walk of a station
-facts.coverage(boundary).cells(cursor); // the same, cell by cell in its bands, for a picture
+facts.coverage(boundary).info(cursor, 800); // how much of the city is within 800 m of a station (400, 800 or 1200)
+facts.coverage(boundary).cells(cursor, 800); // the same, cell by cell in its bands, for a picture
+facts.coverage(boundary).history(800); // the share within it, year by year
 ```
 
 Behind it is `NetworkEngine` (`facts.engine`; `engine.service`, `engine.types`): the index, the

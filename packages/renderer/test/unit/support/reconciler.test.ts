@@ -72,7 +72,7 @@ describe('ReconcilerUtils', () => {
       const current = { ...PROPS, visibleLines: ['a', 'b'], overlay: { kind: 'reach' as const, from: 'a' } };
       expect(stateChanges(current, { visibleLines: ['b', 'a'] })).toEqual({ visibleLines: ['b', 'a'] });
       expect(stateChanges(current, { visibleLines: null })).toEqual({ visibleLines: null });
-      expect(stateChanges(current, { overlay: { kind: 'coverage' } })).toEqual({ overlay: { kind: 'coverage' } });
+      expect(stateChanges(current, { overlay: { kind: 'coverage', metres: 800 } })).toEqual({ overlay: { kind: 'coverage', metres: 800 } });
       expect(stateChanges(current, { overlay: null })).toEqual({ overlay: null });
     });
 

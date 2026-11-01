@@ -2,7 +2,8 @@ import { useColorMode, useCookie } from '#imports';
 import { endOfYear } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { RoutePreference, Stop, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { CoverageDistance, RoutePreference, Stop, StepInfo, Theme } from '@railtime/network/facts.types';
+import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
@@ -64,6 +65,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const routeEnds = ref<RouteEnds>({ from: null, to: null });
   const routePreference = ref<RoutePreference>('fastest');
   const reachFrom = ref<Stop | null>(null);
+  const coverageMetres = ref<CoverageDistance>(COVERAGE_DEFAULT_METRES);
   const visibleLines = ref<string[] | null>(null);
   const boundary = shallowRef<CityBoundary | null>(null);
 
@@ -104,7 +106,13 @@ export const useExplorerStore = defineStore('explorer', () => {
   const playing = computed(() => timeMode.value === 'playing');
   const mapOverlay = computed(() => mapOverlayOf(section.value, timeMode.value));
   const overlayRequest = computed(() =>
-    overlayRequestOf({ overlay: mapOverlay.value, routeEnds: routeEnds.value, routePreference: routePreference.value, reachFrom: reachFrom.value }),
+    overlayRequestOf({
+      overlay: mapOverlay.value,
+      routeEnds: routeEnds.value,
+      routePreference: routePreference.value,
+      reachFrom: reachFrom.value,
+      coverageMetres: coverageMetres.value,
+    }),
   );
   const chrome = computed(() =>
     chromeOf({ phone: phone.value, mapOnly: mapOnly.value, sheet: sheet.value, timeMode: timeMode.value, minimap: player.value.minimap }),
@@ -157,6 +165,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     dialog.value = null;
     routeEnds.value = { from: null, to: null };
     routePreference.value = 'fastest';
+    coverageMetres.value = address.walk ?? COVERAGE_DEFAULT_METRES;
     reachFrom.value = null;
     visibleLines.value = null;
     boundary.value = null;
@@ -438,6 +447,14 @@ export const useExplorerStore = defineStore('explorer', () => {
     else map.value?.previousChange();
   };
   /**
+   * Coverage measured within another distance of a station: the panel's figures and the map's shading.
+   *
+   * @param metres - The distance.
+   */
+  const showCoverageWithin = (metres: CoverageDistance) => {
+    coverageMetres.value = metres;
+  };
+  /**
    * A year picked on a chart: the map at its end (today, for this year), the timeline open to say so.
    *
    * @param year - The year.
@@ -463,6 +480,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     routeEnds,
     routePreference,
     reachFrom,
+    coverageMetres,
     visibleLines,
     boundary,
     viewMode,
@@ -521,5 +539,6 @@ export const useExplorerStore = defineStore('explorer', () => {
     pickChange,
     stepTime,
     showYear,
+    showCoverageWithin,
   };
 });

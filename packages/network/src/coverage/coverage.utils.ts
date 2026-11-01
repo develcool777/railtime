@@ -1,6 +1,6 @@
 import { endOfYear } from '@railtime/core/date.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { CoverageBand, CoverageInfo, CoverageYear } from '../facts/facts.types';
+import type { CoverageBand, CoverageDistance, CoverageInfo, CoverageYear } from '../facts/facts.types';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
 import type { CoverageGrid } from './coverage.service';
@@ -20,6 +20,15 @@ export const servedStations = (index: NetworkIndex, timeline: Timeline, cursor: 
       index.lineSegmentsAt(station).some(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.servesStation(station, lineSegment.line, cursor)),
     )
     .map(station => index.coordOf(station));
+
+/**
+ * The bands up to a distance: those drawn and counted when coverage is measured within it.
+ *
+ * @param bands - Every band, nearest first.
+ * @param metres - The distance, one of the bands' far edges.
+ * @returns The bands it takes in, nearest first.
+ */
+export const bandsWithin = (bands: CoverageBand[], metres: CoverageDistance): CoverageBand[] => bands.filter(band => band.upTo <= metres);
 
 /**
  * The band a distance falls in.
@@ -55,7 +64,12 @@ export const cellBands = (grid: CoverageGrid, distances: Float32Array, bands: Co
  * @param metres - The headline distance: the farthest band's that it is the end of.
  * @returns The coverage, its outline's name and source left blank.
  */
-export const coverageOf = (grid: CoverageGrid, distances: Float32Array, bands: CoverageBand[], metres: number): Omit<CoverageInfo, 'name' | 'source'> => {
+export const coverageOf = (
+  grid: CoverageGrid,
+  distances: Float32Array,
+  bands: CoverageBand[],
+  metres: CoverageDistance,
+): Omit<CoverageInfo, 'name' | 'source'> => {
   const km2 = bands.map(() => 0);
   let beyond = 0;
   for (let cell = 0; cell < distances.length; cell++) {
@@ -86,7 +100,13 @@ export const coverageOf = (grid: CoverageGrid, distances: Float32Array, bands: C
  * @param metres - The headline distance.
  * @returns A share for each year, oldest first.
  */
-export const coverageHistory = (index: NetworkIndex, timeline: Timeline, grid: CoverageGrid, years: [number, number], metres: number): CoverageYear[] => {
+export const coverageHistory = (
+  index: NetworkIndex,
+  timeline: Timeline,
+  grid: CoverageGrid,
+  years: [number, number],
+  metres: CoverageDistance,
+): CoverageYear[] => {
   const history: CoverageYear[] = [];
   let lastCursor = -1;
   let share = 0;

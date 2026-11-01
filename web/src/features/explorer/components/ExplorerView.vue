@@ -76,7 +76,14 @@
               :reach="foundReach"
               @from="reachFrom = $event"
               @station="store.pickStation" />
-            <CoverageSection v-else-if="section === 'coverage'" :state="boundaryState" :coverage :history="coverageHistory" @year="store.showYear" />
+            <CoverageSection
+              v-else-if="section === 'coverage'"
+              :state="boundaryState"
+              :coverage
+              :history="coverageHistory"
+              :distance="coverageMetres"
+              @year="store.showYear"
+              @distance="store.showCoverageWithin" />
             <InsightsSection
               v-else-if="section === 'insights'"
               :growth
@@ -248,6 +255,7 @@
     routeEnds,
     routePreference,
     reachFrom,
+    coverageMetres,
     time,
     step,
     credits,

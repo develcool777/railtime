@@ -5,9 +5,9 @@ import { boundsOf, latitudeOf, mercatorY, offsetKm } from '@railtime/core/geomet
 import { yearOf } from '@railtime/core/date.utils';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
-import type { CoverageCells, CoverageInfo, CoverageYear, GridCorners } from '../facts/facts.types';
-import { cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils.ts';
-import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES, MAX_CELLS, MIN_CELL_KM } from './coverage.constants.ts';
+import type { CoverageCells, CoverageDistance, CoverageInfo, CoverageYear, GridCorners } from '../facts/facts.types';
+import { bandsWithin, cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils.ts';
+import { COVERAGE_BANDS, MAX_CELLS, MIN_CELL_KM } from './coverage.constants.ts';
 
 /**
  * A city cut into cells, as the map draws it: columns even in longitude, rows even on the map, the
@@ -152,8 +152,9 @@ export class CoverageGrid {
 }
 
 /**
- * A city's coverage on its network: how much of its outline is within walking distance of a station
- * open at a cursor, what the map draws of it, and how that grew year by year. Pure: it draws nothing.
+ * A city's coverage on its network: how much of its outline is within a walk of a station open at a
+ * cursor, what the map draws of it, and how that grew year by year, each within a distance asked for.
+ * Pure: it draws nothing.
  */
 export class CoverageMeasure {
   /** The city's outline. */
@@ -166,8 +167,8 @@ export class CoverageMeasure {
   private readonly timeline: Timeline;
   /** Today, which the history runs to. */
   private readonly today: number;
-  /** The covered share year by year, worked out the first time it is asked for. */
-  private years: CoverageYear[] | null = null;
+  /** The covered share year by year within each distance, worked out the first time it is asked for. */
+  private readonly years = new Map<CoverageDistance, CoverageYear[]>();
 
   public constructor(boundary: CityBoundary, index: NetworkIndex, timeline: Timeline, today: number) {
     this.boundary = boundary;
@@ -178,26 +179,30 @@ export class CoverageMeasure {
   }
 
   /**
-   * How much of the city is within walking distance of a station open at a cursor.
+   * How much of the city is within a distance of a station open at a cursor.
    *
    * @param cursor - The timeline's cursor.
-   * @returns The share in each band and within the headline distance.
+   * @param metres - The distance.
+   * @returns The share in each band up to it, within it, and farther.
    */
-  public info(cursor: number): CoverageInfo {
+  public info(cursor: number, metres: CoverageDistance): CoverageInfo {
     const { name, source } = this.boundary;
-    return { name, source, ...coverageOf(this.grid, this.distances(cursor), COVERAGE_BANDS, COVERAGE_HEADLINE_METRES) };
+    return { name, source, ...coverageOf(this.grid, this.distances(cursor, metres), bandsWithin(COVERAGE_BANDS, metres), metres) };
   }
 
   /**
-   * The share of the city within the headline distance of a station at the end of each year, from
-   * the timeline's start to today's.
+   * The share of the city within a distance of a station at the end of each year, from the timeline's
+   * start to today's.
    *
+   * @param metres - The distance.
    * @returns A share for each year, oldest first.
    */
-  public history(): CoverageYear[] {
-    const years: [number, number] = [yearOf(this.timeline.start), yearOf(this.today)];
-    this.years ??= coverageHistory(this.index, this.timeline, this.grid, years, COVERAGE_HEADLINE_METRES);
-    return this.years;
+  public history(metres: CoverageDistance): CoverageYear[] {
+    const known = this.years.get(metres);
+    if (known) return known;
+    const years = coverageHistory(this.index, this.timeline, this.grid, [yearOf(this.timeline.start), yearOf(this.today)], metres);
+    this.years.set(metres, years);
+    return years;
   }
 
   /**
@@ -211,24 +216,27 @@ export class CoverageMeasure {
   }
 
   /**
-   * The city cell by cell at a cursor, each in its band: what a picture of its coverage is drawn from.
+   * The city cell by cell at a cursor, each in its band up to a distance, the rest farther: what a
+   * picture of its coverage is drawn from.
    *
    * @param cursor - The timeline's cursor.
+   * @param metres - The distance.
    * @returns The cells, where they lie, and the bands.
    */
-  public cells(cursor: number): CoverageCells {
+  public cells(cursor: number, metres: CoverageDistance): CoverageCells {
     const { columns, rows, corners } = this.grid;
-    return { columns, rows, corners, bands: COVERAGE_BANDS, cells: cellBands(this.grid, this.distances(cursor), COVERAGE_BANDS) };
+    const bands = bandsWithin(COVERAGE_BANDS, metres);
+    return { columns, rows, corners, bands, cells: cellBands(this.grid, this.distances(cursor, metres), bands) };
   }
 
   /**
-   * How far each cell is from the nearest station open at a cursor, up to the farthest band.
+   * How far each cell is from the nearest station open at a cursor, up to a distance.
    *
    * @param cursor - The timeline's cursor.
-   * @returns Metres, cell by cell.
+   * @param metres - The farthest worth knowing.
+   * @returns Metres, cell by cell; `Infinity` farther.
    */
-  private distances(cursor: number): Float32Array {
-    const farthest = COVERAGE_BANDS.at(-1)?.upTo ?? COVERAGE_HEADLINE_METRES;
-    return this.grid.distances(servedStations(this.index, this.timeline, cursor), farthest);
+  private distances(cursor: number, metres: CoverageDistance): Float32Array {
+    return this.grid.distances(servedStations(this.index, this.timeline, cursor), metres);
   }
 }

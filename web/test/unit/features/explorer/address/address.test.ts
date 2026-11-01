@@ -39,6 +39,13 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ with: '' })).toEqual({});
     });
 
+    test("reads coverage's distance, one of its own but the default", () => {
+      expect(parseExplorerQuery({ walk: '400' })).toEqual({ walk: 400 });
+      expect(parseExplorerQuery({ walk: '1200' })).toEqual({ walk: 1200 });
+      expect(parseExplorerQuery({ walk: '800' })).toEqual({});
+      expect(parseExplorerQuery({ walk: '500' })).toEqual({});
+    });
+
     test('reads the tab, the line open, 3D, the names hidden and map only', () => {
       expect(parseExplorerQuery({ tab: 'route', line: 'central', view: '3d', names: 'off', mapOnly: '1' })).toEqual({
         section: 'route',
@@ -76,6 +83,7 @@ describe('ExplorerUrlUtils', () => {
         plan: 'extension',
         networks: ['swr', 'southern'],
         section: 'reach' as const,
+        walk: 1200 as const,
         line: 'victoria',
         viewMode: '3d' as const,
         stationNames: false as const,

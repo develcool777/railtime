@@ -1,3 +1,4 @@
+import type { CoverageDistance } from '@railtime/network/facts.types';
 import type { MapView, ViewMode } from '@railtime/renderer/transitMap.types';
 
 import type { Section } from '~/features/explorer/explorer.types';
@@ -16,6 +17,8 @@ export type ExplorerUrlState = {
   networks?: string[];
   /** The panel's section open; the one the page opens on without one. */
   section?: Section;
+  /** How far from a station coverage counts; the default distance without one. */
+  walk?: CoverageDistance;
   /** The line whose view is open, or under the station's; none without one. */
   line?: string;
   /** In 3D; flat without one. */

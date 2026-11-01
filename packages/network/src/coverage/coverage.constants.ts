@@ -1,4 +1,4 @@
-import type { CoverageBand } from '../facts/facts.types';
+import type { CoverageBand, CoverageDistance } from '../facts/facts.types';
 /** The smallest cell the grid is cut into, km: finer than a walk's precision buys nothing. */
 export const MIN_CELL_KM = 0.1;
 
@@ -15,5 +15,8 @@ export const COVERAGE_BANDS: CoverageBand[] = [
   { upTo: 1200, label: '800 m – 1.2 km', color: '#7fd6cd' },
 ];
 
-/** The headline distance, metres: about a 10-minute walk, the common planning rule. */
-export const COVERAGE_HEADLINE_METRES = 800;
+/** The distances coverage may be measured within, nearest first: each band's far edge. */
+export const COVERAGE_DISTANCES: CoverageDistance[] = [400, 800, 1200];
+
+/** The distance coverage is measured within unless asked otherwise, metres: about a 10-minute walk, the common planning rule. */
+export const COVERAGE_DEFAULT_METRES: CoverageDistance = 800;

@@ -21,3 +21,11 @@ export const formatShare = (share: number): string => {
  * @returns "1,572 km²", "3.4 km²".
  */
 export const formatArea = (km2: number): string => (km2 < 10 ? `${km2.toFixed(1)} km²` : `${formatNumber(km2)} km²`);
+
+/**
+ * A walk from a station, as the coverage switch and its sentences say it.
+ *
+ * @param metres - The distance.
+ * @returns "400 m", "1.2 km".
+ */
+export const formatWalk = (metres: number): string => (metres < 1000 ? `${metres} m` : `${metres / 1000} km`);

@@ -1,3 +1,4 @@
+import { COVERAGE_DEFAULT_METRES, COVERAGE_DISTANCES } from '@railtime/network/coverage.constants';
 import { toIsoDate } from '@railtime/core/date.utils';
 import type { ExplorerQuery, ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
@@ -56,7 +57,7 @@ const parseSection = (text: string | undefined): Section | undefined => SECTIONS
 /**
  * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
  *
- * @param query - The address's query: `date`, `map`, `station`, `plan`, `with`, `tab`, `line`, `view`, `names`, `mapOnly`.
+ * @param query - The address's query: `date`, `map`, `station`, `plan`, `with`, `tab`, `walk`, `line`, `view`, `names`, `mapOnly`.
  * @returns What it asks for.
  */
 export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
@@ -66,6 +67,7 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
   const plan = single(query.plan);
   const networks = (single(query.with) ?? '').split(',').filter(network => SLUG.test(network));
   const section = parseSection(single(query.tab));
+  const walk = COVERAGE_DISTANCES.find(metres => metres !== COVERAGE_DEFAULT_METRES && String(metres) === single(query.walk));
   const line = single(query.line);
   return {
     ...(date === undefined ? {} : { date }),
@@ -74,6 +76,7 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
     ...(plan && SLUG.test(plan) ? { plan } : {}),
     ...(networks.length > 0 ? { networks } : {}),
     ...(section ? { section } : {}),
+    ...(walk ? { walk } : {}),
     ...(line && SLUG.test(line) ? { line } : {}),
     ...(single(query.view) === '3d' ? { viewMode: '3d' as const } : {}),
     ...(single(query.names) === 'off' ? { stationNames: false as const } : {}),
@@ -100,7 +103,7 @@ export const sameQuery = (first: ExplorerQuery, second: ExplorerQuery): boolean 
  * @returns The query.
  */
 export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
-  const { date, view, station, plan, networks, section, line, viewMode, stationNames, mapOnly } = state;
+  const { date, view, station, plan, networks, section, walk, line, viewMode, stationNames, mapOnly } = state;
   return {
     ...(date === undefined ? {} : { date: toIsoDate(date) }),
     ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
@@ -108,6 +111,7 @@ export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, str
     ...(plan ? { plan } : {}),
     ...(networks?.length ? { with: networks.join(',') } : {}),
     ...(section ? { tab: section } : {}),
+    ...(walk ? { walk: String(walk) } : {}),
     ...(line ? { line } : {}),
     ...(viewMode === '3d' ? { view: '3d' } : {}),
     ...(stationNames === false ? { names: 'off' } : {}),

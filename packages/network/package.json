@@ -11,6 +11,7 @@
   "exports": {
     "./facts.service": "./src/facts/facts.service.ts",
     "./facts.types": "./src/facts/facts.types.ts",
+    "./coverage.constants": "./src/coverage/coverage.constants.ts",
     "./engine.service": "./src/engine/engine.service.ts",
     "./engine.types": "./src/engine/engine.types.ts",
     "./testing/tinyNetwork": "./test/support/factories/tinyNetwork.utils.ts",

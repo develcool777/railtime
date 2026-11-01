@@ -1,4 +1,4 @@
-import type { CoverageInfo, NetworkStats, ReachInfo, RouteInfo, RoutePreference, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { CoverageDistance, CoverageInfo, NetworkStats, ReachInfo, RouteInfo, RoutePreference, StepInfo, Theme } from '@railtime/network/facts.types';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat } from '@railtime/core/geometry.types';
@@ -124,9 +124,10 @@ export type TimeState = {
 
 /**
  * What the map draws over the network, worked out again on each date and theme: a route between two
- * stations, how far one gets from a station, or how much of the city is near one.
+ * stations, how far one gets from a station, or how much of the city is within a distance of one.
  */
-export type OverlayRequest = { kind: 'route'; from: string; to: string; preference: RoutePreference } | { kind: 'reach'; from: string } | { kind: 'coverage' };
+export type OverlayRequest =
+  { kind: 'route'; from: string; to: string; preference: RoutePreference } | { kind: 'reach'; from: string } | { kind: 'coverage'; metres: CoverageDistance };
 
 /** What the overlay drawn came to on the date shown, for the app to list: `null` where there is none on the date. */
 export type OverlayResult =
