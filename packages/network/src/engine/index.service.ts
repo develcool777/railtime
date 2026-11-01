@@ -145,10 +145,11 @@ export class NetworkIndex {
    * A line's name as people say it.
    *
    * @param line - A line id.
-   * @returns "<name> line", or a pseudo line's own name as it is.
+   * @returns Its full name where it has one; else "<name> line", or a pseudo line's own name as it is.
    */
   public lineName(line: string): string {
     const info = this.lineOf(line);
+    if (info.fullName) return info.fullName;
     return info.pseudo ? info.name : `${info.name} line`;
   }
 

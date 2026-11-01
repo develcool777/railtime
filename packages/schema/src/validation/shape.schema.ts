@@ -14,6 +14,7 @@ const names = z.record(z.string(), z.string().min(1)).superRefine((byLanguage, c
 
 const lineSchema = z.object({
   name: z.string().min(1),
+  fullName: z.string().min(1).optional(),
   names: names.optional(),
   network: z.string().min(1),
   mode: z.enum(['metro', 'light-metro', 'tram', 'suburban-rail', 'rail', 'cable']),

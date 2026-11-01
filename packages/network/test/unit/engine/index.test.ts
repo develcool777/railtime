@@ -36,6 +36,12 @@ describe('NetworkIndex', () => {
     expect(index.lineName('red')).toBe('Red line');
   });
 
+  test('names a line by its full name where "<name> line" is not what people say', () => {
+    const network = tinyNetwork();
+    network.lines.red = { ...network.lines.red!, fullName: 'Red Light Railway' };
+    expect(new NetworkIndex(network).lineName('red')).toBe('Red Light Railway');
+  });
+
   test('leaves out another name that is the same as the English one', () => {
     const index = new NetworkIndex(tinyNetwork());
     expect(index.otherNames({ name: 'Arena', names: { uk: 'Арена', pl: 'Arena' } })).toEqual(['Арена']);
