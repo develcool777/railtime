@@ -41,11 +41,11 @@ describe('CaptionUtils', () => {
         kind: 'close',
         time: toTimestamp('1940-01-01'),
         title: 'Blue line: section suspended',
-        subtitle: 'B – C',
+        subtitle: 'C – B',
         color: { light: '#0000ff', dark: '#0000ff' },
         stations: [],
       });
-      expect(captionAfter(tinyNetwork(), '1949-01-01')).toMatchObject({ title: 'Blue line: section closes', subtitle: 'B – C' });
+      expect(captionAfter(tinyNetwork(), '1949-01-01')).toMatchObject({ title: 'Blue line: section closes', subtitle: 'C – B' });
     });
 
     test('says a station opens on its line, and on every line it opens on', () => {

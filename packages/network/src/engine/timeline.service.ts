@@ -202,11 +202,7 @@ export class Timeline {
     const known = this.growths.get(step);
     if (known) return known;
     const planned = planGrowth(step.segments, this.stationsOnMap(step.index), station => this.index.coordOf(station), this.index.centre);
-    const calledAt = (station: string) =>
-      step.lineSegments.some(
-        ({ segment, line }) => (segment.stationA === station || segment.stationB === station) && this.servesStation(station, line, step.index + 1),
-      );
-    const growth = { ...planned, reach: planned.reach.map(reached => ({ ...reached, isNew: reached.isNew && calledAt(reached.station) })) };
+    const growth = this.calledAtOnly(planned, step.lineSegments, step.index + 1);
     this.growths.set(step, growth);
     return growth;
   }
@@ -214,7 +210,7 @@ export class Timeline {
   /**
    * How a closure retracts: its stretch planned as it would grow from the stations still on the map
    * after it (else the end nearest the centre), played backwards, so its front runs back to the
-   * network that stays. A station `isNew` leaves the map with it.
+   * network that stays. A station `isNew` leaves the map with it, where its lines called.
    *
    * @param step - The closure.
    * @returns Its retreat as a growth, worked out once.
@@ -223,9 +219,26 @@ export class Timeline {
     const known = this.growths.get(step);
     if (known) return known;
     const segments = [...new Map(step.lineSegments.map(({ segment }) => [segment.index, segment])).values()];
-    const growth = planGrowth(segments, this.stationsOnMap(step.index + 1), station => this.index.coordOf(station), this.index.centre);
+    const planned = planGrowth(segments, this.stationsOnMap(step.index + 1), station => this.index.coordOf(station), this.index.centre);
+    // While its closing step plays, a line still calls where it called.
+    const growth = this.calledAtOnly(planned, step.lineSegments, step.index);
     this.growths.set(step, growth);
     return growth;
+  }
+
+  /**
+   * A stretch's growth with only the stations its lines call at counted new: track running past a
+   * station not yet open on them, or closed on them, is no stop.
+   *
+   * @param planned - The growth as planned on the track.
+   * @param lineSegments - The stretch's line segments.
+   * @param cursor - The cursor its lines' stops are asked at.
+   * @returns The growth.
+   */
+  private calledAtOnly(planned: Growth, lineSegments: LineSegment[], cursor: number): Growth {
+    const calledAt = (station: string) =>
+      lineSegments.some(({ segment, line }) => (segment.stationA === station || segment.stationB === station) && this.servesStation(station, line, cursor));
+    return { ...planned, reach: planned.reach.map(reached => ({ ...reached, isNew: reached.isNew && calledAt(reached.station) })) };
   }
 
   /**

@@ -53,19 +53,21 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
 };
 
 /**
- * A line's section suspended, or closing for good.
+ * A line's section suspended, or closing for good, from the network that stays to the far end: as
+ * an opening, by its ends, never by track it ran past without calling.
  *
  * @param step - The step.
  * @param context - The network.
  * @returns Its caption.
  */
 const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 'time'> => {
-  const ends = step.lineSegments.flatMap(({ segment }) => [nameOn(context, segment.stationA, step.time), nameOn(context, segment.stationB, step.time)]);
+  const { reach } = context.timeline.retreatOf(step);
+  const name = (station: string) => nameOn(context, station, step.time);
   const returns = step.lineSegments.every(lineSegment => lineSegment.next !== null);
   return {
     kind: 'close',
     title: `${context.index.lineName(step.line)}: section ${returns ? 'suspended' : 'closes'}`,
-    subtitle: [...new Set(ends)].join(' – '),
+    subtitle: `${name(required(reach[0], 'first station left').station)} – ${name(required(reach.at(-1), 'last station left').station)}`,
     color: context.colorOf(step.line),
     stations: [],
   };

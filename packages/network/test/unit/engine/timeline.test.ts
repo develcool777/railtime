@@ -246,6 +246,34 @@ describe('Timeline', () => {
     expect(retreat.reach.filter(reached => reached.isNew).map(reached => reached.station)).toEqual(['e']);
     expect(timeline.retreatOf(closure)).toBe(retreat);
   });
+
+  test('stops a closing front only where its line called, not at a station it ran past', () => {
+    const network = tinyNetwork();
+    // Blue runs D – E – F from 1930 to 1950; E opens on it only in 1960, after it left.
+    network.stations.e = { name: 'E', coordinate: [4 * 0.0144, 51.5], infill: { blue: '1960-01-01' } };
+    network.stations.f = { name: 'F', coordinate: [5 * 0.0144, 51.5] };
+    for (const [stationA, stationB, from] of [
+      ['d', 'e', 3],
+      ['e', 'f', 4],
+    ] as const)
+      network.segments.push({
+        stationA,
+        stationB,
+        lines: { blue: { open: '1930-01-01', close: '1950-01-01' } },
+        coordinates: [
+          [from * 0.0144, 51.5],
+          [(from + 1) * 0.0144, 51.5],
+        ],
+      });
+    const { timeline } = timelineOf(network);
+    const closure = timeline.steps.find(step => step.kind === 'close' && step.lineSegments.some(({ segment }) => segment.stationB === 'f'));
+    if (closure?.kind !== 'close') throw new Error('blue closes D–F in 1950');
+    expect(timeline.retreatOf(closure).reach.map(reached => [reached.station, reached.isNew])).toEqual([
+      ['d', false],
+      ['e', false],
+      ['f', true],
+    ]);
+  });
 });
 
 /**

@@ -35,6 +35,12 @@ describe('London', () => {
     ]);
   });
 
+  test('suspends the District past the future Hounslow East in 1905 without a stop there: it opened only in 1909', () => {
+    const suspended = stepsOn('1905-06-13').find(step => step.kind === 'close');
+    if (suspended?.kind !== 'close') throw new Error('the District leaves its direct Hounslow line on 13 June 1905');
+    expect(timeline.retreatOf(suspended).reach.filter(reached => reached.isNew)).toEqual([]);
+  });
+
   test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {
     expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'windsor-and-eton-central')).toBe(false);
   });
