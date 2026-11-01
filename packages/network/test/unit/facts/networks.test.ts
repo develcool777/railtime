@@ -1,0 +1,49 @@
+import { describe, expect, test } from 'vitest';
+import { optionalNetworksAsked, optionalNetworksOf, withNetworksShown } from '../../../src/facts/networks.utils';
+import { optionalNetwork } from '../../support/factories/optionalNetwork.utils';
+import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+
+describe('NetworksUtils', () => {
+  describe('withNetworksShown', () => {
+    test('leaves an optional network off as if it were not there: its lines, its own track and stations, its changes and plans', () => {
+      const shown = withNetworksShown(optionalNetwork(), []);
+      expect(Object.keys(shown.networks)).toEqual(['metro']);
+      expect(Object.keys(shown.lines)).not.toContain('grey');
+      expect(shown.segments.find(segment => segment.stationA === 'c' && segment.stationB === 'd')?.lines).not.toHaveProperty('grey');
+      expect(shown.segments.some(segment => segment.stationB === 'x')).toBe(false);
+      expect(shown.stations).not.toHaveProperty('x');
+      expect(shown.stations.c?.infill).toEqual({ red: '1920-06-01', blue: '1960-06-01' });
+      expect(shown.transfers?.some(transfer => transfer.stationB === 'x')).toBe(false);
+      expect(Object.keys(shown.plans ?? {})).toEqual(['extension']);
+    });
+
+    test('keeps a station only it served where a plan builds on it', () => {
+      const network = optionalNetwork();
+      network.plans!.extension!.sections.push({ line: 'red', stations: ['e', 'x'] });
+      const shown = withNetworksShown(network, []);
+      expect(shown.stations.x).toEqual({ name: 'X', coordinate: [0.0576, 51.5] });
+    });
+
+    test('keeps one asked for whole, and a network with nothing optional as it is', () => {
+      const network = optionalNetwork();
+      expect(withNetworksShown(network, ['rail'])).toBe(network);
+      const tiny = tinyNetwork();
+      expect(withNetworksShown(tiny, [])).toBe(tiny);
+    });
+  });
+
+  describe('optionalNetworksAsked', () => {
+    test('keeps those the city has, in its order', () => {
+      expect(optionalNetworksAsked(optionalNetwork(), ['nowhere', 'rail', 'metro'])).toEqual(['rail']);
+    });
+  });
+
+  describe('optionalNetworksOf', () => {
+    test('lists each with its lines, in both themes, and whether it shows', () => {
+      expect(optionalNetworksOf(optionalNetwork(), [])).toEqual([
+        { id: 'rail', name: 'Rail', shown: false, lines: [{ id: 'grey', name: 'Grey', color: { light: '#888888', dark: '#bbbbbb' } }] },
+      ]);
+      expect(optionalNetworksOf(optionalNetwork(), ['rail'])[0]?.shown).toBe(true);
+    });
+  });
+});

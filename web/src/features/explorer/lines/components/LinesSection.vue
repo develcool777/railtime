@@ -5,8 +5,16 @@
     <section v-for="group in groups" :key="group.network">
       <div class="flex items-center justify-between gap-2 px-2 pb-1">
         <h3 class="eyebrow text-muted truncate">{{ group.name }}</h3>
+        <!-- A network beside the city's own: on or off whole, the city's map without it when off. -->
+        <USwitch
+          v-if="optionalIds.has(group.network)"
+          :modelValue="optional.find(network => network.id === group.network)?.shown ?? false"
+          size="sm"
+          :label="`Show ${group.name}`"
+          :ui="{ label: 'sr-only' }"
+          @update:modelValue="emit('network', group.network, $event)" />
         <!-- The group's lines at once, its eye as each line's: open while every one shows. -->
-        <UTooltip :text="groupToggleLabel(group)">
+        <UTooltip v-else :text="groupToggleLabel(group)">
           <UButton
             :icon="allShown(group.lines) ? 'i-lucide-eye' : 'i-lucide-eye-off'"
             color="neutral"
@@ -41,12 +49,19 @@
           </ListRow>
         </li>
       </ul>
+      <!-- Off, its lines only named, faded: turned on, they are the city's as any other. -->
+      <ul v-if="offLines(group.network).length" role="list" class="opacity-40">
+        <li v-for="line in offLines(group.network)" :key="line.id" class="flex h-9 items-center gap-2.5 pl-8">
+          <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(line.color) }" />
+          <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ line.name }}</span>
+        </li>
+      </ul>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { LineInfo } from '@railtime/network/facts.types';
+  import type { LineInfo, OptionalNetworkInfo } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
   import { yearOf } from '@railtime/core/date.utils';
@@ -55,11 +70,13 @@
 
   const props = defineProps<{
     lines: LineInfo[];
+    /** The networks the city may show or leave off: those off are listed after its own. */
+    optional: OptionalNetworkInfo[];
     visible: Set<string>;
     /** The date shown, as a timestamp; `null` for a plan's future, when every line is open. */
     date: number | null;
   }>();
-  const emit = defineEmits<{ change: [visible: Set<string>]; open: [line: string] }>();
+  const emit = defineEmits<{ change: [visible: Set<string>]; network: [network: string, shown: boolean]; open: [line: string] }>();
 
   const query = ref('');
 
@@ -74,8 +91,26 @@
       group.lines.push(line);
       byNetwork.set(network, group);
     }
+    // Each optional network off still has its group, to turn it on from.
+    for (const network of props.optional)
+      if (!network.shown && network.lines.some(line => !wanted || foldName(line.name).includes(wanted)))
+        byNetwork.set(network.id, { network: network.id, name: network.name, lines: [] });
     return [...byNetwork.values()];
   });
+
+  const optionalIds = computed(() => new Set(props.optional.map(network => network.id)));
+
+  /**
+   * An optional network's lines while it is off, those the search finds.
+   *
+   * @param network - The network.
+   * @returns Its lines; none while it shows.
+   */
+  const offLines = (network: string) => {
+    const wanted = foldName(query.value);
+    const entry = props.optional.find(candidate => candidate.id === network);
+    return entry && !entry.shown ? entry.lines.filter(line => !wanted || foldName(line.name).includes(wanted)) : [];
+  };
 
   /** Whether a line had opened by the date shown. */
   const isOpen = (line: LineInfo): boolean => props.date === null || (line.opened !== null && line.opened <= props.date);

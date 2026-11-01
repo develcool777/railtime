@@ -78,6 +78,10 @@ export const useExplorerStore = defineStore('explorer', () => {
   const overlayResult = shallowRef<OverlayResult | null>(null);
   const view = shallowRef<MapView | null>(null);
   const facts = shallowRef<NetworkFacts | null>(null);
+  /** The optional networks shown beside the city's own, as its facts have them. */
+  const shownNetworks = ref<string[]>([]);
+  /** The city's network as stored, every optional network in it: made again with another shown. */
+  let storedNetwork: Network | null = null;
   /** The map, once mounted: for its commands. */
   const map = shallowRef<TransitMap | null>(null);
   /** What the map owes credit to, once mounted. */
@@ -87,6 +91,8 @@ export const useExplorerStore = defineStore('explorer', () => {
 
   /** The plan shown, if any: its future is what plays, and its built network is "at rest". */
   const plan = computed(() => facts.value?.plan ?? undefined);
+  /** The networks the city may show or leave off, with their lines. */
+  const optionalNetworks = computed(() => facts.value?.optionalNetworks() ?? []);
   /** A network never built: no history, only its plan to play. */
   const planOnly = computed(() => facts.value?.planOnly ?? false);
   /** The city's plans, each with what it would add. */
@@ -137,8 +143,10 @@ export const useExplorerStore = defineStore('explorer', () => {
    * @returns The network's facts.
    */
   const open = (network: Network, shownPlan: string | undefined, address: ExplorerUrlState, opening: Section): NetworkFacts => {
-    const opened = markRaw(NetworkFacts.create(network, shownPlan ? { plan: shownPlan } : {}));
+    const opened = markRaw(NetworkFacts.create(network, { ...(shownPlan ? { plan: shownPlan } : {}), networks: address.networks ?? [] }));
+    storedNetwork = network;
     facts.value = opened;
+    shownNetworks.value = opened.networks;
     const line = address.line && opened.find('line', address.line) ? address.line : undefined;
     const station = address.station && opened.find('station', address.station) ? address.station : undefined;
     section.value = address.section ?? opening;
@@ -163,17 +171,19 @@ export const useExplorerStore = defineStore('explorer', () => {
   };
 
   /**
-   * Shows another plan, or the network as built, on the same page and map: the network's facts made
-   * again with it, the map drawing them where it looks, at the plan's future (else today). What was
-   * open stays where the new network has it; lines hidden stay hidden, and a plan's new lines show.
+   * Shows the network made again, with a plan or none and its optional networks, on the same page and
+   * map, the map drawing it where it looks, at its today. What was open stays where the new network has
+   * it; lines hidden stay hidden, and new lines show.
    *
    * @param network - The city's network.
    * @param shownPlan - The plan to show built on it; none for the network as built.
+   * @param networks - The optional networks to show.
    */
-  const showPlan = async (network: Network, shownPlan: string | undefined) => {
+  const remake = (network: Network, shownPlan: string | undefined, networks: string[]) => {
     const previous = facts.value;
-    const next = markRaw(NetworkFacts.create(network, shownPlan ? { plan: shownPlan } : {}));
+    const next = markRaw(NetworkFacts.create(network, { ...(shownPlan ? { plan: shownPlan } : {}), networks }));
     facts.value = next;
+    shownNetworks.value = next.networks;
     views.value = views.value.filter(view => next.find(view.kind, view.id));
     const keep = (stop: Stop | null) => (stop && next.find('station', stop.id) ? stop : null);
     routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
@@ -192,9 +202,34 @@ export const useExplorerStore = defineStore('explorer', () => {
     }
     timeMode.value = 'rest';
     step.value = null;
+  };
+
+  /**
+   * Shows another plan, or the network as built, at the plan's future (else today).
+   *
+   * @param network - The city's network.
+   * @param shownPlan - The plan to show built on it; none for the network as built.
+   */
+  const showPlan = async (network: Network, shownPlan: string | undefined) => {
+    remake(network, shownPlan, shownNetworks.value);
     // Once the map has the new network (it opens at its today), on to the plan built.
     await nextTick();
     if (shownPlan) map.value?.seek('future');
+  };
+
+  /**
+   * Shows an optional network beside the city's own, or leaves it off, on the day shown.
+   *
+   * @param network - The optional network's id.
+   * @param shown - Whether to show it.
+   */
+  const showNetwork = async (network: string, shown: boolean) => {
+    if (!storedNetwork) return;
+    const day = time.value && !isAtRest(time.value, plan.value !== undefined) ? time.value.time : undefined;
+    remake(storedNetwork, plan.value, shown ? [...shownNetworks.value, network] : shownNetworks.value.filter(id => id !== network));
+    // The new network opens at its today: back to the day shown, if it was another.
+    await nextTick();
+    if (day !== undefined) map.value?.seek({ time: day });
   };
 
   /**
@@ -440,6 +475,8 @@ export const useExplorerStore = defineStore('explorer', () => {
     overlayResult,
     view,
     facts,
+    shownNetworks,
+    optionalNetworks,
     plan,
     planOnly,
     plans,
@@ -455,6 +492,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     panelCover,
     mapProps,
     showPlan,
+    showNetwork,
     open,
     attach,
     detach,

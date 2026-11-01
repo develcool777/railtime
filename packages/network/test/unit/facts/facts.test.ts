@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkFacts } from '../../../src/facts/facts.service';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
+import { optionalNetwork } from '../../support/factories/optionalNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf as plainFactsOf, questionsOn } from '../../support/facts.utils';
 import { bandOf, networkSummary, planFacts, reachedSegments } from '../../../src/facts/facts.utils';
@@ -32,6 +33,20 @@ const factsOf = (plan?: string) => {
 const momentOf = (facts: NetworkFacts, date: string) => ({ cursor: facts.engine.timeline.cursorAt(toTimestamp(date)), time: toTimestamp(date) });
 
 describe('NetworkFacts', () => {
+  test('leaves its optional networks off unless asked for, and lists them either way', () => {
+    const network = optionalNetwork();
+    const plain = NetworkFacts.create(network, { today: TODAY });
+    expect(plain.networks).toEqual([]);
+    expect(plain.lines().map(line => line.id)).not.toContain('grey');
+    expect(plain.find('station', 'x')).toBeNull();
+    expect(plain.optionalNetworks().map(entry => [entry.id, entry.shown])).toEqual([['rail', false]]);
+    const withRail = NetworkFacts.create(network, { today: TODAY, networks: ['rail', 'nowhere'] });
+    expect(withRail.networks).toEqual(['rail']);
+    expect(withRail.lines().map(line => line.id)).toContain('grey');
+    expect(withRail.find('station', 'x')).toEqual({ id: 'x', name: 'X' });
+    expect(withRail.optionalNetworks()[0]?.shown).toBe(true);
+  });
+
   test('runs from its first date to today, or to its last dated change after it', () => {
     expect(factsOf().range).toEqual({ start: toTimestamp('1899-01-01'), end: TODAY, today: TODAY });
   });

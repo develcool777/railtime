@@ -12,6 +12,8 @@ export type ExplorerUrlState = {
   station?: string;
   /** The plan shown on top of the network; none without one. */
   plan?: string;
+  /** The optional networks shown beside the city's own; none without them. */
+  networks?: string[];
   /** The panel's section open; the one the page opens on without one. */
   section?: Section;
   /** The line whose view is open, or under the station's; none without one. */
