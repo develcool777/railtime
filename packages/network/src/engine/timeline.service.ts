@@ -3,7 +3,7 @@ import type { NetworkIndex } from './index.service';
 import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
 import { connectedStretches, forkedParts, planGrowth } from './timeline.utils.ts';
-import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
+import type { AliasEnd, DayChanges, LineIdentity, StepDraft, StopSteps } from './timeline.types';
 
 /**
  * The network's history as an ordered list of steps.
@@ -29,12 +29,8 @@ export class Timeline {
   private readonly openStep = new Map<LineSegment, number>();
   /** The step at which each line segment closes, if it does. */
   private readonly closeStep = new Map<LineSegment, number>();
-  /** The step at which a station opens on a line it sits on: key `station|line`. */
-  private readonly infillStep = new Map<string, number>();
-  /** The step at which a line stops calling at a station it still runs through: key `station|line`. */
-  private readonly stationCloseStep = new Map<string, number>();
-  /** Lines that never called at a station on their track: it opened after they left, closed before they came, or they pass it. Key `station|line`. */
-  private readonly neverServed = new Set<string>();
+  /** By station, then line: when the line calls there, where it does not simply call while it runs there. */
+  private readonly stops = new Map<string, Map<string, StopSteps>>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
   /** Each opening's growth and each closure's retreat, worked out the first time it is asked for. */
@@ -141,9 +137,8 @@ export class Timeline {
    * @returns True if the station is a stop on the line.
    */
   public servesStation(station: string, line: string, cursor: number): boolean {
-    const key = `${station}|${line}`;
-    if (this.neverServed.has(key)) return false;
-    return (this.infillStep.get(key) ?? -1) < cursor && (this.stationCloseStep.get(key) ?? Infinity) >= cursor;
+    const stop = this.stops.get(station)?.get(line);
+    return !stop || (!stop.never && stop.opens < cursor && stop.closes >= cursor);
   }
 
   /**
@@ -155,7 +150,7 @@ export class Timeline {
    * @returns True if the station was a stop on the line at some point.
    */
   public everServes(station: string, line: string): boolean {
-    return !this.neverServed.has(`${station}|${line}`);
+    return !this.stops.get(station)?.get(line)?.never;
   }
 
   /**
@@ -280,6 +275,21 @@ export class Timeline {
   }
 
   /**
+   * A line's stops at a station, made the first time one is set.
+   *
+   * @param station - The station id.
+   * @param line - The line id.
+   * @returns Its record, to set in place.
+   */
+  private stopOf(station: string, line: string): StopSteps {
+    const byLine = this.stops.get(station) ?? new Map<string, StopSteps>();
+    this.stops.set(station, byLine);
+    const stop = byLine.get(line) ?? { opens: -1, closes: Infinity, never: false };
+    byLine.set(line, stop);
+    return stop;
+  }
+
+  /**
    * Gathers every change in the network by its date.
    *
    * @returns The changes of each day, by timestamp.
@@ -302,10 +312,10 @@ export class Timeline {
         // A station opening where its line had already gone for good is no event: the line passed by before it.
         const lineLater = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line && (lineSegment.closes ?? Infinity) > time);
         if (lineLater) day(time).infills.push({ station, line });
-        else this.neverServed.add(`${station}|${line}`);
+        else this.stopOf(station, line).never = true;
       }
       for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
-      for (const line of info.passes ?? []) this.neverServed.add(`${station}|${line}`);
+      for (const line of info.passes ?? []) this.stopOf(station, line).never = true;
       for (const [position, former] of (info.formerNames ?? []).entries()) {
         const time = toTimestamp(former.until);
         // A name changed while no line runs there is no event: the station opens, or comes back, under the later name.
@@ -426,7 +436,7 @@ export class Timeline {
     for (const { station, line } of infills) pushTo(byStation, station, line);
     for (const [station, lines] of byStation) {
       const step = this.addStep({ kind: 'infill', time, station, lines });
-      for (const line of lines) this.infillStep.set(`${station}|${line}`, step);
+      for (const line of lines) this.stopOf(station, line).opens = step;
     }
   }
 
@@ -441,7 +451,7 @@ export class Timeline {
     for (const { station, line } of closes) pushTo(byStation, station, line);
     for (const [station, lines] of byStation) {
       const step = this.addStep({ kind: 'stationClose', time, station, lines });
-      for (const line of lines) this.stationCloseStep.set(`${station}|${line}`, step);
+      for (const line of lines) this.stopOf(station, line).closes = step;
     }
   }
 
@@ -456,7 +466,7 @@ export class Timeline {
       const before = new Set(atStation.filter(lineSegment => lineSegment.opens < lastClose).map(lineSegment => lineSegment.line));
       // A line that came earlier still calls there: the station never closed for good.
       if ([...before].some(line => !(line in closed))) continue;
-      for (const { line } of atStation) if (!before.has(line)) this.neverServed.add(`${station}|${line}`);
+      for (const { line } of atStation) if (!before.has(line)) this.stopOf(station, line).never = true;
     }
   }
 
