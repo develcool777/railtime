@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <UEmpty
       v-if="state === 'missing'"
-      icon="i-lucide-scan"
+      icon="i-lucide-land-plot"
       title="No outline for this city yet"
       description="Coverage needs the city's limits, kept for a few cities so far." />
     <div v-else-if="!coverage" class="text-muted py-8 text-center text-sm">Loading the city's outline…</div>

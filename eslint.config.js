@@ -84,7 +84,7 @@ const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**/app.co
 export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.recommended,
-  ...vuePlugin.configs['flat/essential'],
+  ...vuePlugin.configs['flat/recommended'],
   // What a screen reader or a keyboard needs of a template: labels, roles, keys for what is clicked.
   ...vueAccessibility.configs['flat/recommended'],
   sonarjs.configs.recommended,
@@ -114,6 +114,9 @@ export default defineConfig(
     rules: {
       // Tailwind takes a list's bullets away, and with them Safari's VoiceOver stops calling it a list: `role="list"` gives it back.
       'vuejs-accessibility/no-redundant-roles': ['error', { ul: ['list'], ol: ['list'] }],
+      // Beyond the recommended: what is hidden from a screen reader, or said to be nothing, is never what a keyboard lands on.
+      'vuejs-accessibility/no-aria-hidden-on-focusable': 'error',
+      'vuejs-accessibility/no-role-presentation-on-focusable': 'error',
     },
   },
 
@@ -241,6 +244,33 @@ export default defineConfig(
       'vue/v-bind-style': ['error', 'shorthand', { sameNameShorthand: 'always' }],
       'vue/v-on-style': ['error', 'shorthand'],
       'vue/no-v-html': 'error',
+      // The recommended set's other rules, which it only warns of: what a template means, never how it is laid out.
+      'vue/attributes-order': 'error',
+      'vue/component-definition-name-casing': 'error',
+      'vue/html-end-tags': 'error',
+      'vue/no-lone-template': 'error',
+      'vue/no-multiple-slot-args': 'error',
+      'vue/no-required-prop-with-default': 'error',
+      'vue/no-template-shadow': 'error',
+      'vue/one-component-per-file': 'error',
+      'vue/order-in-components': 'error',
+      'vue/require-default-prop': 'error',
+      'vue/require-explicit-emits': 'error',
+      'vue/require-prop-types': 'error',
+      'vue/this-in-template': 'error',
+      // Prettier lays templates out (`pnpm format-check`): the recommended set's layout rules would argue with it.
+      'vue/first-attribute-linebreak': 'off',
+      'vue/html-closing-bracket-newline': 'off',
+      'vue/html-closing-bracket-spacing': 'off',
+      'vue/html-indent': 'off',
+      'vue/html-quotes': 'off',
+      'vue/html-self-closing': 'off',
+      'vue/max-attributes-per-line': 'off',
+      'vue/multiline-html-element-content-newline': 'off',
+      'vue/mustache-interpolation-spacing': 'off',
+      'vue/no-multi-spaces': 'off',
+      'vue/no-spaces-around-equal-signs-in-attribute': 'off',
+      'vue/singleline-html-element-content-newline': 'off',
     },
   },
 
