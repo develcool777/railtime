@@ -1,12 +1,12 @@
-/** What the help says can be done on the map and in time, each with the icon of the button that does it. */
-export const HELP_TOPICS: { title: string; items: { icon: string; label: string; description: string }[] }[] = [
+/** What the help says can be done on the map and in time, each with the icon of the button that does it, or what it writes. */
+export const HELP_TOPICS: { title: string; items: { icon?: string; text?: string; label: string; description: string }[] }[] = [
   {
     title: 'On the map',
     items: [
       { icon: 'i-lucide-mouse-pointer-click', label: 'A station', description: 'Click one for its lines, when each came, and the stops either side' },
       { icon: 'i-lucide-locate-fixed', label: 'Fit the network', description: 'Back to the whole city' },
-      { icon: 'i-lucide-type', label: 'Station names', description: 'Name the stations, or show only their dots' },
-      { icon: 'i-lucide-box', label: 'See in 3D', description: 'Tilt the map close up, over the city’s buildings' },
+      { icon: 'i-lucide-captions', label: 'Station names', description: 'Name the stations, or show only their dots: crossed out while they are hidden' },
+      { text: '3D', label: 'Flat or 3D', description: 'Tilt the map close up, over the city’s buildings; 2D lays it flat again' },
       { icon: 'i-lucide-maximize-2', label: 'Map only', description: 'Hide everything but the map, full screen' },
     ],
   },

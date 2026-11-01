@@ -11,7 +11,8 @@
           <h3 class="text-highlighted text-sm font-bold">{{ topic.title }}</h3>
           <ul class="flex flex-col gap-2">
             <li v-for="item in topic.items" :key="item.label" class="flex items-start gap-3">
-              <UIcon :name="item.icon" class="text-muted mt-0.5 size-4 flex-none" />
+              <span v-if="item.text" class="text-muted mt-0.5 w-4 flex-none text-[10px] leading-4 font-bold tracking-tight">{{ item.text }}</span>
+              <UIcon v-else :name="item.icon" class="text-muted mt-0.5 size-4 flex-none" />
               <p class="text-sm">
                 <span class="text-highlighted font-semibold">{{ item.label }}</span>
                 <span class="text-muted"> · {{ item.description }}</span>
