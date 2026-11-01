@@ -74,6 +74,8 @@ export type Station = {
   infill?: Record<string, IsoDate>;
   /** Lines that stopped calling here while still running through: line id to date. */
   closed?: Record<string, IsoDate>;
+  /** Spells a line ran through here without calling, the station closed for a while: line id to its spells, oldest first. */
+  suspended?: Record<string, Suspension[]>;
   /** Lines that run through here and never call: a line's fast track beside another's stopping one. */
   passes?: string[];
   /** Lines whose trains end here and go back the way they came, from two directions: their track may turn back at it. */
@@ -82,9 +84,9 @@ export type Station = {
   formerNames?: FormerName[];
 };
 
-/** A spell a line did not run over a segment it later returned to. */
+/** A spell without trains a line later returned from: over a segment, or calling at a station. */
 export type Suspension = {
-  /** The first day without trains. */
+  /** The first day without them. */
   from: IsoDate;
   /** The day they returned. */
   until: IsoDate;

@@ -105,9 +105,11 @@ export class StepAnimation {
         const after = { ...frame, state: { ...frame.state, cursor: step.index + 1 } };
         for (const line of step.lines) this.reach(after, drawing, step.station, line);
         if (drawing.reached.has(step.station)) drawing.highlighted.add(step.station);
+        if (step.reopening) drawing.spells.add(step.station);
         return;
       }
       case 'stationClose':
+        if (step.temporary) drawing.spells.add(step.station);
         return this.drawStationClosing(step, frame, drawing);
       case 'rename':
         // The map labels it with its name on the step's date, the new one, over the one it had.

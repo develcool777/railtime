@@ -275,6 +275,23 @@ describe('StepAnimation, a station closing', () => {
   });
 });
 
+describe('StepAnimation, a station closed for a spell', () => {
+  test('fades it as a closing for now, and brings it back as a reopening', () => {
+    // Both lines calling at B close it for the spell: no line keeps it on the map.
+    const spell = [{ from: '1915-03-15', until: '1926-07-19' }];
+    const network = tinyNetwork();
+    network.stations.b = { ...network.stations.b!, suspended: { red: spell, pink: spell } };
+    const closing = stepAfter(network, '1915-01-01');
+    expect(closing.animation.step).toMatchObject({ kind: 'stationClose', station: 'b', temporary: true });
+    expect(closing.draw(0.5).fading).toEqual(new Map([['b', 0.5]]));
+    expect([...closing.draw(0.5).spells]).toEqual(['b']);
+    const reopening = stepAfter(network, '1926-01-01');
+    expect(reopening.animation.step).toMatchObject({ kind: 'infill', station: 'b', reopening: true });
+    expect([...reopening.draw(0.5).highlighted]).toEqual(['b']);
+    expect([...reopening.draw(0.5).spells]).toEqual(['b']);
+  });
+});
+
 describe('StepAnimation, a station renamed', () => {
   test('highlights the station renamed with the name it had, and frames it', () => {
     const { animation, draw, playback } = stepAfter(tinyNetwork(), '1924-01-01');

@@ -24,12 +24,15 @@ const lineSchema = z.object({
   pseudo: z.boolean().optional(),
 });
 
+const suspension = z.object({ from: isoDate, until: isoDate });
+
 const stationSchema = z.object({
   name: z.string().min(1),
   names: names.optional(),
   coordinate: lngLat,
   infill: z.record(z.string(), isoDate).optional(),
   closed: z.record(z.string(), isoDate).optional(),
+  suspended: z.record(z.string(), z.array(suspension)).optional(),
   reverses: z.array(z.string()).optional(),
   passes: z.array(z.string()).optional(),
   formerNames: z.array(z.object({ name: z.string().min(1), names: names.optional(), until: isoDate })).optional(),
@@ -39,10 +42,7 @@ const segmentSchema = z.object({
   stationA: z.string(),
   stationB: z.string(),
   coordinates: z.array(lngLat).min(2),
-  lines: z.record(
-    z.string(),
-    z.object({ open: isoDate, close: isoDate.optional(), suspended: z.array(z.object({ from: isoDate, until: isoDate })).optional() }),
-  ),
+  lines: z.record(z.string(), z.object({ open: isoDate, close: isoDate.optional(), suspended: z.array(suspension).optional() })),
 });
 
 const transferSchema = z.object({ stationA: z.string(), stationB: z.string() });

@@ -85,6 +85,8 @@ export type StepDrawing = {
   fading: Map<string, number>;
   /** Station → the name it had, while it takes a new one: labelled with both. */
   renamed: Map<string, string>;
+  /** Stations closing for a spell, or reopening after one: labelled for now, not for good. */
+  spells: Set<string>;
   /** Transfers the step has linked so far, a station it reached to one on the map: drawn as the network's are. */
   links: FeatureCollection<LineFeature>;
   /** The stations at either end of those links: drawn as interchanges from then on. */

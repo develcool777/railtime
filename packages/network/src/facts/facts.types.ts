@@ -48,6 +48,8 @@ export type StationLineInfo = {
   /** When it opened here; `null` for a plan's line, which has no date. */
   opened: IsoDate | null;
   closed?: IsoDate;
+  /** Whether it calls here at the moment asked for: its track here open, the station open on it, and not closed for a spell. */
+  calls: boolean;
 };
 
 /** A station, for a station panel. */

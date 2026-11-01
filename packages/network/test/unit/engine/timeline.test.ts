@@ -56,6 +56,25 @@ describe('Timeline', () => {
     expect(timeline.hasClosed(after!, timeline.cursorAt(toTimestamp('1950-01-01')))).toBe(true);
   });
 
+  test('closes a station for a spell and reopens it, its line running on through it', () => {
+    const network = tinyNetwork();
+    network.stations.b = { ...network.stations.b!, suspended: { red: [{ from: '1915-03-15', until: '1926-07-19' }] } };
+    const { timeline } = timelineOf(network);
+    const closing = timeline.steps.find(step => step.kind === 'stationClose' && step.station === 'b');
+    const reopening = timeline.steps.find(step => step.kind === 'infill' && step.station === 'b');
+    expect(closing).toEqual(expect.objectContaining({ time: toTimestamp('1915-03-15'), lines: ['red'], temporary: true }));
+    expect(reopening).toEqual(expect.objectContaining({ time: toTimestamp('1926-07-19'), lines: ['red'], reopening: true }));
+    if (!closing || !reopening) throw new Error('B closes in 1915 and reopens in 1926');
+    // Calls while its closing plays, so it can fade; not again until its reopening has played.
+    expect([closing.index, closing.index + 1, reopening.index, reopening.index + 1].map(cursor => timeline.servesStation('b', 'red', cursor))).toEqual([
+      true,
+      false,
+      false,
+      true,
+    ]);
+    expect(timeline.everServes('b', 'red')).toBe(true);
+  });
+
   test('keeps an infill station off its line until it opens', () => {
     const { timeline } = timelineOf();
     expect(timeline.servesStation('c', 'red', timeline.cursorAt(toTimestamp('1915-01-01')))).toBe(false);

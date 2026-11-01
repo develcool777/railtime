@@ -4,7 +4,7 @@ import { firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { required } from '@railtime/core/required.utils';
 import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { REACH_BANDS } from './facts.constants.ts';
-import { bandOf, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
+import { bandOf, byOpening, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
 import { optionalNetworksAsked, optionalNetworksOf, withNetworksShown } from './networks.utils.ts';
 import { RouteFinder } from '../route/finder.service.ts';
 import type { NetworkHistory } from '../engine/history.types';
@@ -414,7 +414,8 @@ export class NetworkFacts {
 
   /**
    * A station's lines, with when each opened there and, if it has, closed: its track, or its calls
-   * there while the track stays; its former names by the moment, and its transfers then.
+   * there while the track stays, and whether it calls there at the moment; its former names by the
+   * moment, and its transfers then.
    *
    * @param station - The station id.
    * @param moment - The moment.
@@ -422,6 +423,7 @@ export class NetworkFacts {
    */
   private stationAt(station: string, moment: NetworkTime): StationInfo {
     const info = this.index.stationOf(station);
+    const calling = new Set(this.callingAt(station, moment.cursor));
     const lines = [...trackDatesAt(this.index, this.timeline, station).entries()].map(([line, dates]) => {
       // The line stopped calling here, or its track here closed.
       const closed = info.closed?.[line] ?? (dates.allClosed ? toIsoDate(dates.lastClosed) : undefined);
@@ -432,16 +434,14 @@ export class NetworkFacts {
         // A plan's line has no date: Infinity, from its undated line segments.
         opened: info.infill?.[line] ?? (dates.opened === Infinity ? null : toIsoDate(dates.opened)),
         ...(closed ? { closed } : {}),
+        calls: calling.has(line),
       };
     });
     return {
       id: station,
       name: this.index.stationName(station, moment.time),
       otherNames: this.index.otherNames(this.index.namedAt(station, moment.time)),
-      // By opening, a plan's undated lines last.
-      lines: lines.sort(
-        (first, second) => (first.opened === null ? 1 : 0) - (second.opened === null ? 1 : 0) || (first.opened ?? '').localeCompare(second.opened ?? ''),
-      ),
+      lines: lines.sort(byOpening),
       // Only the names it had dropped by the moment.
       formerNames: (info.formerNames ?? [])
         .filter(former => toTimestamp(former.until) <= moment.time)

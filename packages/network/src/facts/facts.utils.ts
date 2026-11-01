@@ -3,7 +3,7 @@ import { cumulativeDistances } from '@railtime/core/geometry.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { pushTo } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
-import type { LineSketch, NetworkRecords, NetworkSummary, NetworkTime, PlanFacts, ReachedSegment, RecordsSource } from './facts.types';
+import type { LineSketch, NetworkRecords, NetworkSummary, NetworkTime, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
 import { networkAt } from '../engine/history.utils.ts';
 import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
@@ -197,3 +197,13 @@ export const trackDatesAt = (
   }
   return byLine;
 };
+
+/**
+ * Orders a station's lines by when they opened there, a plan's undated lines last.
+ *
+ * @param first - One line.
+ * @param second - The other.
+ * @returns Negative if the first comes first.
+ */
+export const byOpening = (first: StationLineInfo, second: StationLineInfo): number =>
+  (first.opened === null ? 1 : 0) - (second.opened === null ? 1 : 0) || (first.opened ?? '').localeCompare(second.opened ?? '');

@@ -1,9 +1,12 @@
 import { toTimestamp } from '@railtime/core/date.utils';
+import { required } from '@railtime/core/required.utils';
 import type { NetworkIndex } from './index.service';
 import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
+import { StationStops } from './stops.service.ts';
+import { collectDays } from './days.utils.ts';
 import { connectedStretches, forkedParts, planGrowth } from './timeline.utils.ts';
-import type { AliasEnd, DayChanges, LineIdentity, StepDraft, StopSteps } from './timeline.types';
+import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
 
 /**
  * The network's history as an ordered list of steps.
@@ -29,8 +32,8 @@ export class Timeline {
   private readonly openStep = new Map<LineSegment, number>();
   /** The step at which each line segment closes, if it does. */
   private readonly closeStep = new Map<LineSegment, number>();
-  /** By station, then line: when the line calls there, where it does not simply call while it runs there. */
-  private readonly stops = new Map<string, Map<string, StopSteps>>();
+  /** When each line calls at each station, where it does not simply call while it runs there. */
+  private readonly stops = new StationStops();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
   /** Each opening's growth and each closure's retreat, worked out the first time it is asked for. */
@@ -38,7 +41,7 @@ export class Timeline {
 
   public constructor(index: NetworkIndex) {
     this.index = index;
-    const days = this.collectDays();
+    const days = collectDays(index, this.stops);
     for (const time of [...days.keys()].sort((first, second) => first - second)) {
       const day = days.get(time)!;
       this.addIdentitySteps(time, day.identities);
@@ -129,7 +132,8 @@ export class Timeline {
 
   /**
    * Whether a line calls at a station on its track: not before the station opens on it (infill), nor
-   * after it stops calling there. While the closing step plays, the line still calls, so it can fade.
+   * after it stops calling there, nor through a spell closed. While a closing step plays, the line
+   * still calls, so it can fade; while a reopening plays, not yet, so it can appear.
    *
    * @param station - The station id.
    * @param line - The line id.
@@ -137,8 +141,7 @@ export class Timeline {
    * @returns True if the station is a stop on the line.
    */
   public servesStation(station: string, line: string, cursor: number): boolean {
-    const stop = this.stops.get(station)?.get(line);
-    return !stop || (!stop.never && stop.opens < cursor && stop.closes >= cursor);
+    return this.stops.serves(station, line, cursor);
   }
 
   /**
@@ -150,7 +153,7 @@ export class Timeline {
    * @returns True if the station was a stop on the line at some point.
    */
   public everServes(station: string, line: string): boolean {
-    return !this.stops.get(station)?.get(line)?.never;
+    return this.stops.ever(station, line);
   }
 
   /**
@@ -275,61 +278,6 @@ export class Timeline {
   }
 
   /**
-   * A line's stops at a station, made the first time one is set.
-   *
-   * @param station - The station id.
-   * @param line - The line id.
-   * @returns Its record, to set in place.
-   */
-  private stopOf(station: string, line: string): StopSteps {
-    const byLine = this.stops.get(station) ?? new Map<string, StopSteps>();
-    this.stops.set(station, byLine);
-    const stop = byLine.get(line) ?? { opens: -1, closes: Infinity, never: false };
-    byLine.set(line, stop);
-    return stop;
-  }
-
-  /**
-   * Gathers every change in the network by its date.
-   *
-   * @returns The changes of each day, by timestamp.
-   */
-  private collectDays(): Map<number, DayChanges> {
-    const days = new Map<number, DayChanges>();
-    const day = (time: number) => {
-      if (!days.has(time)) days.set(time, { opens: [], closes: [], infills: [], stationCloses: [], renames: [], identities: [] });
-      return days.get(time)!;
-    };
-    for (const lineSegment of this.index.lineSegments) {
-      // A plan's are undated: `addPlannedSteps` takes them, section by section.
-      if (lineSegment.section !== null) continue;
-      day(lineSegment.opens).opens.push(lineSegment);
-      if (lineSegment.closes) day(lineSegment.closes).closes.push(lineSegment);
-    }
-    for (const [station, info] of Object.entries(this.index.network.stations)) {
-      for (const [line, date] of Object.entries(info.infill ?? {})) {
-        const time = toTimestamp(date);
-        // A station opening where its line had already gone for good is no event: the line passed by before it.
-        const lineLater = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line && (lineSegment.closes ?? Infinity) > time);
-        if (lineLater) day(time).infills.push({ station, line });
-        else this.stopOf(station, line).never = true;
-      }
-      for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
-      for (const line of info.passes ?? []) this.stopOf(station, line).never = true;
-      for (const [position, former] of (info.formerNames ?? []).entries()) {
-        const time = toTimestamp(former.until);
-        // A name changed while no line runs there is no event: the station opens, or comes back, under the later name.
-        const onMap = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.opens < time && (lineSegment.closes ?? Infinity) > time);
-        if (!onMap) continue;
-        day(time).renames.push({ station, from: former.name, to: info.formerNames?.[position + 1]?.name ?? info.name });
-      }
-    }
-    for (const [line, info] of Object.entries(this.index.network.lines))
-      for (const alias of info.aliases ?? []) day(toTimestamp(alias.until)).identities.push({ line, text: alias.text });
-    return days;
-  }
-
-  /**
    * What a line is drawn as on a date: used to group a day's openings, after that day's identity steps.
    *
    * @param line - The line id.
@@ -361,7 +309,7 @@ export class Timeline {
       this.addOpenSteps(Infinity, bySection.get(position) ?? []);
       this.addInfillSteps(
         Infinity,
-        section.infills.map(station => ({ station, line: section.line })),
+        section.infills.map(station => ({ station, line: section.line, reopening: false })),
       );
     }
   }
@@ -426,32 +374,47 @@ export class Timeline {
   }
 
   /**
-   * One step per station opening on existing track, covering all its lines.
+   * One step per station opening on existing track, covering all its lines: one for those it opens on
+   * for the first time, one for those it reopens on after a spell closed.
    *
    * @param time - The date.
-   * @param infills - That day's infill openings.
+   * @param infills - That day's infill openings and reopenings.
    */
   private addInfillSteps(time: number, infills: DayChanges['infills']): void {
-    const byStation = new Map<string, string[]>();
-    for (const { station, line } of infills) pushTo(byStation, station, line);
-    for (const [station, lines] of byStation) {
-      const step = this.addStep({ kind: 'infill', time, station, lines });
-      for (const line of lines) this.stopOf(station, line).opens = step;
+    for (const reopening of [false, true]) {
+      const byStation = new Map<string, string[]>();
+      for (const infill of infills) if (infill.reopening === reopening) pushTo(byStation, infill.station, infill.line);
+      for (const [station, lines] of byStation) {
+        const step = this.addStep({ kind: 'infill', time, station, lines, ...(reopening ? { reopening: true as const } : {}) });
+        for (const line of lines) {
+          const stop = this.stops.stopOf(station, line);
+          if (!reopening) stop.opens = step;
+          // The spell it ends: the last one closed, in date order.
+          else required(stop.spells.at(-1), `${station}'s spell closed on ${line}`).reopens = step;
+        }
+      }
     }
   }
 
   /**
-   * One step per station that lines stop calling at, covering all those lines.
+   * One step per station that lines stop calling at, covering all those lines: one for those it closes
+   * on for good, one for those it closes on for a spell.
    *
    * @param time - The date.
    * @param closes - That day's station closures.
    */
   private addStationCloseSteps(time: number, closes: DayChanges['stationCloses']): void {
-    const byStation = new Map<string, string[]>();
-    for (const { station, line } of closes) pushTo(byStation, station, line);
-    for (const [station, lines] of byStation) {
-      const step = this.addStep({ kind: 'stationClose', time, station, lines });
-      for (const line of lines) this.stopOf(station, line).closes = step;
+    for (const temporary of [false, true]) {
+      const byStation = new Map<string, string[]>();
+      for (const close of closes) if (close.temporary === temporary) pushTo(byStation, close.station, close.line);
+      for (const [station, lines] of byStation) {
+        const step = this.addStep({ kind: 'stationClose', time, station, lines, ...(temporary ? { temporary: true as const } : {}) });
+        for (const line of lines) {
+          const stop = this.stops.stopOf(station, line);
+          if (temporary) stop.spells.push({ closes: step, reopens: Infinity });
+          else stop.closes = step;
+        }
+      }
     }
   }
 
@@ -466,7 +429,7 @@ export class Timeline {
       const before = new Set(atStation.filter(lineSegment => lineSegment.opens < lastClose).map(lineSegment => lineSegment.line));
       // A line that came earlier still calls there: the station never closed for good.
       if ([...before].some(line => !(line in closed))) continue;
-      for (const { line } of atStation) if (!before.has(line)) this.stopOf(station, line).never = true;
+      for (const { line } of atStation) if (!before.has(line)) this.stops.stopOf(station, line).never = true;
     }
   }
 

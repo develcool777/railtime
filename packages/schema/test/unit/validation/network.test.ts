@@ -185,6 +185,29 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual([]);
   });
 
+  test('accepts a station closed for a while on a line running through it, and refuses a spell out of turn', () => {
+    const network = plannedNetwork();
+    network.stations.c = { ...network.stations.c!, suspended: { red: [{ from: '1915-03-15', until: '1926-07-19' }] } };
+    expect(problemsOf(network)).toEqual([]);
+    network.stations.c.infill = { red: '1920-01-01' };
+    network.stations.c.suspended = {
+      red: [
+        { from: '1930-01-01', until: '1925-01-01' },
+        { from: '1924-01-01', until: '1940-01-01' },
+        { from: '1890-01-01', until: '1895-01-01' },
+      ],
+      blue: [{ from: '1930-01-01', until: '1931-01-01' }],
+    };
+    expect(problemsOf(network)).toEqual([
+      'station c: closed for a while on red, 1930-01-01 – 1925-01-01, ending before it starts',
+      'station c: closed for a while on red, 1924-01-01 – 1940-01-01, before the spell ahead of it ends',
+      'station c: closed for a while on red, 1890-01-01 – 1895-01-01, before the spell ahead of it ends',
+      "station c: closed for a while on red, 1890-01-01 – 1895-01-01, when it doesn't run there",
+      'station c: closed for a while on red, 1890-01-01 – 1895-01-01, outside when the station is open on it',
+      'station c: closed for a while on blue, an unknown line',
+    ]);
+  });
+
   test("refuses a station closing on a line that isn't, or before it opened there, and former names out of order", () => {
     const network = plannedNetwork();
     network.stations.a = {
