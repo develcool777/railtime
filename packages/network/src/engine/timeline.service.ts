@@ -33,7 +33,7 @@ export class Timeline {
   private readonly infillStep = new Map<string, number>();
   /** The step at which a line stops calling at a station it still runs through: key `station|line`. */
   private readonly stationCloseStep = new Map<string, number>();
-  /** Lines that never called at a station on their track: it opened after they left, or closed before they came. Key `station|line`. */
+  /** Lines that never called at a station on their track: it opened after they left, closed before they came, or they pass it. Key `station|line`. */
   private readonly neverServed = new Set<string>();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
   private readonly aliasEnds = new Map<string, AliasEnd[]>();
@@ -148,7 +148,7 @@ export class Timeline {
 
   /**
    * Whether a line ever called at a station on its track: not if the station opened after the line
-   * had left (`infill` later than the line's last day there).
+   * had left (`infill` later than the line's last day there), nor where the line passes (`passes`).
    *
    * @param station - The station id.
    * @param line - The line id.
@@ -305,6 +305,7 @@ export class Timeline {
         else this.neverServed.add(`${station}|${line}`);
       }
       for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
+      for (const line of info.passes ?? []) this.neverServed.add(`${station}|${line}`);
       for (const [position, former] of (info.formerNames ?? []).entries()) {
         const time = toTimestamp(former.until);
         // A name changed while no line runs there is no event: the station opens, or comes back, under the later name.

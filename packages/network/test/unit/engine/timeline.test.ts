@@ -160,6 +160,15 @@ describe('Timeline', () => {
     expect(opens.map(step => step.kind === 'open' && step.line)).toEqual(['blue', 'green']);
   });
 
+  test('never stops a line at a station it passes, though it runs through it', () => {
+    const network = tinyNetwork();
+    network.stations.b = { ...network.stations.b!, passes: ['red'] };
+    const { timeline } = timelineOf(network);
+    expect(timeline.everServes('b', 'red')).toBe(false);
+    expect(timeline.servesStation('b', 'red', timeline.steps.length)).toBe(false);
+    expect(timeline.servesStation('b', 'pink', timeline.steps.length)).toBe(true);
+  });
+
   test('renames no station once its track has closed', () => {
     const network = tinyNetwork();
     // E is only on blue's D – E, closed in 1950: renamed in 1960, it is off the map.

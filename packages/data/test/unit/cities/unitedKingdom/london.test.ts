@@ -76,6 +76,18 @@ describe('London', () => {
     expect(timeline.servesStation('city-road', 'northern', closing.index)).toBe(true);
   });
 
+  test('runs fast lines beside the stopping ones they pass, on the same track, never on track of their own over it', () => {
+    const passing = [
+      ['metropolitan', ['west-hampstead', 'kilburn', 'willesden-green', 'dollis-hill', 'neasden']],
+      ['piccadilly', ['west-kensington', 'ravenscourt-park', 'stamford-brook', 'chiswick-park']],
+    ] as const;
+    for (const [line, stations] of passing)
+      for (const station of stations) {
+        expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line)).toBe(true);
+        expect(timeline.everServes(station, line)).toBe(false);
+      }
+  });
+
   test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {
     expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'windsor-and-eton-central')).toBe(false);
   });

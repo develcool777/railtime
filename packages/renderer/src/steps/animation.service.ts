@@ -50,7 +50,7 @@ export class StepAnimation {
 
   /**
    * The points the camera should frame: the new or closing track, the station, or every segment of
-   * the lines changing colour.
+   * the lines changing colour that is on the map.
    *
    * @returns Points around the change.
    */
@@ -63,7 +63,10 @@ export class StepAnimation {
       case 'close':
         return step.lineSegments.flatMap(lineSegment => lineSegment.segment.coordinates);
       case 'identity':
-        return index.lineSegments.filter(lineSegment => step.lines.includes(lineSegment.line)).flatMap(lineSegment => lineSegment.segment.coordinates);
+        // What changes colour is what is on the map: not track the line has yet to open, or has left.
+        return index.lineSegments
+          .filter(lineSegment => step.lines.includes(lineSegment.line) && this.context.timeline.isOpen(lineSegment, step.index))
+          .flatMap(lineSegment => lineSegment.segment.coordinates);
       default:
         return [index.coordOf(step.station)];
     }

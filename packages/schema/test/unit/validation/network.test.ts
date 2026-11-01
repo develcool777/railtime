@@ -191,6 +191,21 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual([]);
   });
 
+  test('accepts a line passing a station without calling, and refuses one passing where it does not run, an unknown one, or one also dated calling', () => {
+    const network = plannedNetwork();
+    network.stations.a = { ...network.stations.a!, passes: ['red'] };
+    expect(problemsOf(network)).toEqual([]);
+    network.lines.blue = { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' };
+    network.segments[0]!.lines.red!.close = '1950-01-01';
+    network.stations.a = { ...network.stations.a!, passes: ['nowhere', 'blue'] };
+    network.stations.c = { ...network.stations.c!, passes: ['red'], infill: { red: '1960-01-01' } };
+    expect(problemsOf(network)).toEqual([
+      'station a: passed by unknown line nowhere',
+      "station a: passed by blue, which doesn't run there",
+      'station c: passed by red, which it also dates calling there',
+    ]);
+  });
+
   test("refuses a transfer to a station that isn't, or to itself", () => {
     const network = plannedNetwork();
     network.transfers = [

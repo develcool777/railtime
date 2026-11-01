@@ -89,6 +89,11 @@ const checkStationLines = (network: Network, stationId: string, station: Station
     const running = linePeriodsAt(network, stationId, lineId).some(dates => dates.open < date && !(dates.close && dates.close <= date));
     if (network.lines[lineId] && !running) problem(`station ${stationId}: closes on ${lineId} on ${date}, when it doesn't run there`);
   }
+  for (const lineId of station.passes ?? []) {
+    if (!network.lines[lineId]) problem(`station ${stationId}: passed by unknown line ${lineId}`);
+    else if (linePeriodsAt(network, stationId, lineId).length === 0) problem(`station ${stationId}: passed by ${lineId}, which doesn't run there`);
+    if (station.infill?.[lineId] || station.closed?.[lineId]) problem(`station ${stationId}: passed by ${lineId}, which it also dates calling there`);
+  }
 };
 
 /**
