@@ -10,6 +10,9 @@ export type TimelineScale = {
   plannedCount: number;
 };
 
+/** What kind of mark a change has: an opening (or a line taking its own colour), a closure, a rename. */
+export type TickMark = 'opening' | 'closure' | 'rename';
+
 /** A mark on the timeline for one change. */
 export type TimelineTick = {
   /** The change's position in the timeline. */
@@ -19,8 +22,7 @@ export type TimelineTick = {
   /** How many marks of the same year sit under it. */
   level: number;
   color: string;
-  /** A closure: a small grey mark. */
-  closure: boolean;
+  mark: TickMark;
   /** "1907 · Aldwych branch opened", for its tooltip. */
   label: string;
 };

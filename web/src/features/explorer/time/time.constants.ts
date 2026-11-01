@@ -1,4 +1,5 @@
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
+import type { TickMark } from '~/features/explorer/time/timeline.types';
 
 /** Playback speeds offered: half speed to follow a line closely, in 3D above all. */
 export const SPEED_OPTIONS = [0.5, 1, 2, 4].map(speed => ({ label: `${speed}×`, value: speed }));
@@ -21,3 +22,10 @@ export const MAX_TICK_LEVEL = 3;
 
 /** Years between the labels under the timeline. */
 export const TIMELINE_LABEL_YEARS = 25;
+
+/** Each kind of change's mark, all in its line's colour: an opening whole, a closure faded, a rename half as tall. */
+export const TICK_LOOK: Record<TickMark, string> = {
+  opening: 'h-2',
+  closure: 'h-2 opacity-40',
+  rename: 'h-1',
+};
