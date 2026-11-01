@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest';
+import { NetworkFacts } from '@railtime/network/facts.service';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { PropsReconciler, stateChanges } from '../../../src/support/reconciler.service';
 import { DEFAULT_MAP_PROPS } from '../../../src/transitMap.constants';
 import type { MapProps } from '../../../src/transitMap.types';
+
+/** The defaults, on the tiny network: the network first, as the map orders them. */
+const PROPS: MapProps = { facts: NetworkFacts.create(tinyNetwork()), ...DEFAULT_MAP_PROPS };
 
 /**
  * A reconciler whose effects say which props they ran for.
@@ -10,9 +15,9 @@ import type { MapProps } from '../../../src/transitMap.types';
  */
 const recording = () => {
   const ran: (keyof MapProps)[] = [];
-  const keys = Object.keys(DEFAULT_MAP_PROPS) as (keyof MapProps)[];
+  const keys = Object.keys(PROPS) as (keyof MapProps)[];
   const effects = Object.fromEntries(keys.map(key => [key, () => void ran.push(key)])) as Record<keyof MapProps, () => void>;
-  return { reconciler: new PropsReconciler(DEFAULT_MAP_PROPS, effects), ran };
+  return { reconciler: new PropsReconciler(PROPS, effects), ran };
 };
 
 describe('PropsReconciler', () => {
@@ -22,7 +27,7 @@ describe('PropsReconciler', () => {
     expect(ran).toEqual([]);
     expect(reconciler.current).toMatchObject({ viewMode: '3d', selectedStation: 'a' });
     reconciler.start();
-    expect(ran).toEqual(Object.keys(DEFAULT_MAP_PROPS));
+    expect(ran).toEqual(Object.keys(PROPS));
   });
 
   test('once started, runs the effect of each prop that changed, and nothing for the same props again', () => {
@@ -47,9 +52,9 @@ describe('PropsReconciler', () => {
 describe('ReconcilerUtils', () => {
   describe('stateChanges', () => {
     test('gives nothing for the same state, however it was built', () => {
-      expect(stateChanges(DEFAULT_MAP_PROPS, { ...DEFAULT_MAP_PROPS })).toEqual({});
+      expect(stateChanges(PROPS, { ...PROPS })).toEqual({});
       const current = {
-        ...DEFAULT_MAP_PROPS,
+        ...PROPS,
         overlay: { kind: 'route' as const, from: 'a', to: 'b', preference: 'fastest' as const },
         visibleLines: ['a', 'b'],
       };
@@ -57,14 +62,14 @@ describe('ReconcilerUtils', () => {
     });
 
     test('gives only the parts that differ', () => {
-      expect(stateChanges(DEFAULT_MAP_PROPS, { viewMode: '3d', stationLabels: true, cover: { ...DEFAULT_MAP_PROPS.cover, left: 340 } })).toEqual({
+      expect(stateChanges(PROPS, { viewMode: '3d', stationLabels: true, cover: { ...PROPS.cover, left: 340 } })).toEqual({
         viewMode: '3d',
-        cover: { ...DEFAULT_MAP_PROPS.cover, left: 340 },
+        cover: { ...PROPS.cover, left: 340 },
       });
     });
 
     test('tells apart a list in another order, a list from none, and an overlay of another kind', () => {
-      const current = { ...DEFAULT_MAP_PROPS, visibleLines: ['a', 'b'], overlay: { kind: 'reach' as const, from: 'a' } };
+      const current = { ...PROPS, visibleLines: ['a', 'b'], overlay: { kind: 'reach' as const, from: 'a' } };
       expect(stateChanges(current, { visibleLines: ['b', 'a'] })).toEqual({ visibleLines: ['b', 'a'] });
       expect(stateChanges(current, { visibleLines: null })).toEqual({ visibleLines: null });
       expect(stateChanges(current, { overlay: { kind: 'coverage' } })).toEqual({ overlay: { kind: 'coverage' } });
@@ -72,7 +77,13 @@ describe('ReconcilerUtils', () => {
     });
 
     test('leaves out a part given as undefined', () => {
-      expect(stateChanges(DEFAULT_MAP_PROPS, { viewMode: undefined })).toEqual({});
+      expect(stateChanges(PROPS, { viewMode: undefined })).toEqual({});
+    });
+
+    test('tells a network by its instance, never taken apart: the same network is no change, another one is', () => {
+      expect(stateChanges(PROPS, { facts: PROPS.facts })).toEqual({});
+      const another = NetworkFacts.create(tinyNetwork());
+      expect(stateChanges(PROPS, { facts: another })).toEqual({ facts: another });
     });
   });
 });

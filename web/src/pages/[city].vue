@@ -1,7 +1,7 @@
 <template>
   <div class="h-dvh w-full">
     <ClientOnly>
-      <ExplorerView v-if="network" :key="`${city}|${plan ?? ''}`" :network :city :plan @city="selectCity" @plan="selectPlan" />
+      <ExplorerView v-if="network" :key="city" :network :city :plan @city="selectCity" @plan="selectPlan" />
       <div v-else class="text-muted grid h-full place-items-center text-sm">
         {{ error ? `Could not load the network: ${error.message}` : `Loading ${cityName}…` }}
       </div>
@@ -52,12 +52,12 @@
   // is `/`, and the browser would resolve it against the page's own address (/london/data/…).
   const { data: network, error } = useFetch<Network>(() => `${baseURL}${networkUrlOf(city.value)}`, { server: false });
 
-  // A plan rebuilds the map: the page keys the explorer on it, so a new one mounts where the old one looked.
+  // A plan is shown in place, on the same map: the explorer is keyed on the city alone.
   // A network never built always shows a plan: its first, unless the address names another.
   const plan = computed(() => (network.value ? NetworkFacts.planToOpen(network.value, route.query.plan) : undefined));
 
   const selectCity = (next: string) => navigateTo(`/${next}`);
-  // A plan is chosen on Plans: the explorer, mounted afresh for it, opens there again.
+  // A plan is chosen on Plans: it goes in the address, Plans staying open.
   const selectPlan = (next: string | undefined) => {
     const query = Object.fromEntries(Object.entries(route.query).filter(([key]) => key !== 'plan' && key !== 'tab'));
     return navigateTo({ query: { ...query, ...(next ? { plan: next } : {}), tab: 'plans' }, replace: true });

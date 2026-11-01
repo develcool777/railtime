@@ -1,3 +1,4 @@
+import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { RoutePreference, Stop, Theme } from '@railtime/network/facts.types';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
@@ -129,8 +130,9 @@ export const chromeOf = (input: ChromeInput): Chrome => {
   };
 };
 
-/** What the map's props are worked out from: the store's state, and the theme. */
+/** What the map's props are worked out from: the network, the store's state, and the theme. */
 type MapPropsInput = {
+  facts: NetworkFacts;
   theme: Theme;
   viewMode: ViewMode;
   stationNames: boolean;
@@ -153,6 +155,7 @@ type MapPropsInput = {
  * @returns The props.
  */
 export const mapPropsOf = (input: MapPropsInput): MapProps => ({
+  facts: input.facts,
   theme: input.theme,
   viewMode: input.viewMode,
   stationLabels: input.stationNames,

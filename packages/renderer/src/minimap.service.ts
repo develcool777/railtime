@@ -23,6 +23,8 @@ export class Minimap {
   private palette: Palette;
   /** The latest data for each source, until the style has loaded or the next update is due. */
   private readonly pending = new Map<string, object>();
+  /** What it frames: the network's bounds. */
+  private bounds: Bounds;
   /** The next update of what changes every frame, if one is due. */
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   /** When what changes every frame was last sent, ms. */
@@ -30,6 +32,7 @@ export class Minimap {
 
   public constructor(container: HTMLElement, style: string, bounds: Bounds, palette: Palette) {
     this.palette = palette;
+    this.bounds = bounds;
     this.map = new MapLibreMap({
       container,
       style,
@@ -43,9 +46,19 @@ export class Minimap {
     this.resizeObserver = new ResizeObserver(() => {
       if (container.clientWidth === 0 || container.clientHeight === 0) return;
       this.map.resize();
-      this.map.fitBounds(bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
+      this.map.fitBounds(this.bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
     });
     this.resizeObserver.observe(container);
+  }
+
+  /**
+   * Frames another network: the same city with a plan, or without.
+   *
+   * @param bounds - Its bounds.
+   */
+  public frame(bounds: Bounds): void {
+    this.bounds = bounds;
+    this.map.fitBounds(bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
   }
 
   /**

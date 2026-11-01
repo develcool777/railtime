@@ -3,6 +3,9 @@ import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
+import type { FrameRenderer } from './layers/frame.service';
+import type { OverlayController } from './overlay/controller.service';
+import type { Player } from './playback/player.service';
 
 /** `follow` frames each change, `overview` the change plus the network so far, `free` leaves the camera alone. */
 export type CameraMode = 'follow' | 'overview' | 'free';
@@ -22,6 +25,11 @@ export type MapView = { center: LngLat; zoom: number };
  * acts on what changed and never changes it itself.
  */
 export type MapProps = {
+  /**
+   * The network drawn, its history and every fact about it: one instance, shared with the app. Another
+   * (the network with a plan, or without) is drawn on the same map, at its today, the camera left where it is.
+   */
+  facts: NetworkFacts;
   theme: Theme;
   /** Flat from above, or tilted in 3D, the buildings standing; playback then follows from close by. */
   viewMode: ViewMode;
@@ -65,10 +73,8 @@ export type TransitMapListeners = { [Name in keyof TransitMapEvents]?: (payload:
 /** What a `TransitMap` is made with. */
 export type TransitMapOptions = {
   container: HTMLElement;
-  /** The network to draw, its history and every fact about it: one instance, shared with the app. */
-  facts: NetworkFacts;
-  /** How it is set at first; what is left out, the defaults (`DEFAULT_MAP_PROPS`). */
-  props?: Partial<MapProps>;
+  /** How it is set at first: the network it draws, and the rest as given or the defaults (`DEFAULT_MAP_PROPS`). */
+  props: Pick<MapProps, 'facts'> & Partial<MapProps>;
   /** Its listeners, from the start. */
   on?: TransitMapListeners;
   /** Where the map opens. Without one it fits the whole network. */
@@ -88,6 +94,14 @@ export type TransitMapOptions = {
   createMap?: (options: MapOptions) => MapLibreMap;
   /** Asks for frames: `requestAnimationFrame` unless a test steps them by hand. */
   scheduler?: FrameScheduler;
+};
+
+/** What `TransitMap` draws one network with, made again for another: its facts, its player, its overlay and its frames. */
+export type NetworkParts = {
+  facts: NetworkFacts;
+  player: Player;
+  overlay: OverlayController;
+  frames: FrameRenderer;
 };
 
 /** One credit the map owes: the basemap's or the data's. */

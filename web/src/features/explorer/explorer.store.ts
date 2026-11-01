@@ -7,7 +7,7 @@ import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railt
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
-import { computed, markRaw, ref, shallowRef } from 'vue';
+import { computed, markRaw, nextTick, ref, shallowRef } from 'vue';
 import type { WritableComputedRef } from 'vue';
 
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
@@ -105,21 +105,25 @@ export const useExplorerStore = defineStore('explorer', () => {
   );
   const sheetHeight = computed(() => (phone.value ? sheetHeightOf(sheet.value, tabLabels.value) : null));
   const panelCover = computed(() => panelCoverOf({ phone: phone.value, mapOnly: mapOnly.value, panelOpen: panelOpen.value, panelWidth: panelWidth.value }));
+  // None before the network is open.
   const mapProps = computed(() =>
-    mapPropsOf({
-      theme: theme.value,
-      viewMode: viewMode.value,
-      stationNames: stationNames.value,
-      visibleLines: visibleLines.value,
-      timeMode: timeMode.value,
-      openStation: openStation.value,
-      openLine: openLine.value,
-      overlay: overlayRequest.value,
-      boundary: boundary.value,
-      player: player.value,
-      padding: mapPaddingFor(timeMode.value, sheetHeight.value),
-      panelCover: panelCover.value,
-    }),
+    facts.value
+      ? mapPropsOf({
+          facts: facts.value,
+          theme: theme.value,
+          viewMode: viewMode.value,
+          stationNames: stationNames.value,
+          visibleLines: visibleLines.value,
+          timeMode: timeMode.value,
+          openStation: openStation.value,
+          openLine: openLine.value,
+          overlay: overlayRequest.value,
+          boundary: boundary.value,
+          player: player.value,
+          padding: mapPaddingFor(timeMode.value, sheetHeight.value),
+          panelCover: panelCover.value,
+        })
+      : null,
   );
 
   /**
@@ -156,6 +160,41 @@ export const useExplorerStore = defineStore('explorer', () => {
     view.value = address.view ?? null;
     openingDate = address.date;
     return opened;
+  };
+
+  /**
+   * Shows another plan, or the network as built, on the same page and map: the network's facts made
+   * again with it, the map drawing them where it looks, at the plan's future (else today). What was
+   * open stays where the new network has it; lines hidden stay hidden, and a plan's new lines show.
+   *
+   * @param network - The city's network.
+   * @param shownPlan - The plan to show built on it; none for the network as built.
+   */
+  const showPlan = async (network: Network, shownPlan: string | undefined) => {
+    const previous = facts.value;
+    const next = markRaw(NetworkFacts.create(network, shownPlan ? { plan: shownPlan } : {}));
+    facts.value = next;
+    views.value = views.value.filter(view => next.find(view.kind, view.id));
+    const keep = (stop: Stop | null) => (stop && next.find('station', stop.id) ? stop : null);
+    routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
+    reachFrom.value = keep(reachFrom.value);
+    if (visibleLines.value && previous) {
+      const hidden = new Set(
+        previous
+          .lines()
+          .map(line => line.id)
+          .filter(id => !visibleLines.value?.includes(id)),
+      );
+      visibleLines.value = next
+        .lines()
+        .map(line => line.id)
+        .filter(id => !hidden.has(id));
+    }
+    timeMode.value = 'rest';
+    step.value = null;
+    // Once the map has the new network (it opens at its today), on to the plan built.
+    await nextTick();
+    if (shownPlan) map.value?.seek('future');
   };
 
   /**
@@ -415,6 +454,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     chrome,
     panelCover,
     mapProps,
+    showPlan,
     open,
     attach,
     detach,

@@ -18,13 +18,12 @@ export const useTransitMap = (mount: TransitMapMount): void => {
   let map: TransitMap | null = null;
 
   onMounted(() => {
-    const facts = store.facts;
-    if (!facts) return;
+    const props = store.mapProps;
+    if (!props) return;
     map = new TransitMap({
       container: mount.container.value!,
       minimapContainer: mount.minimapContainer.value ?? undefined,
-      facts,
-      props: store.mapProps,
+      props,
       ...(store.view ? { view: store.view } : {}),
       // The page shows the credits itself, in a corner of the map.
       attributionControl: false,
@@ -43,9 +42,10 @@ export const useTransitMap = (mount: TransitMapMount): void => {
     store.attach(map);
   });
 
+  // Another plan's network is one of them: drawn on the same map.
   watch(
     () => store.mapProps,
-    props => map?.update(props),
+    props => props && map?.update(props),
   );
 
   onBeforeUnmount(() => {
