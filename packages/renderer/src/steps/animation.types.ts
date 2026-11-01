@@ -1,7 +1,6 @@
 import type { NetworkEngine } from '@railtime/network/engine.service';
-import type { FeatureCollection, HeadProperties, LineFeature, PointFeature, StationLines } from '../layers/features.types';
-import type { RenderState } from '../layers/lineStyle.types';
-import type { NetworkSnapshot } from '../layers/snapshot.types';
+import type { FeatureCollection, HeadProperties, LineFeature, NetworkSnapshot, PointFeature, StationLines } from '../layers/snapshot.types';
+import type { RenderState } from '../layers/style.types';
 import type { ViewMode } from '../transitMap.types';
 
 /** What a step animation knows about the network, fixed when it starts. */

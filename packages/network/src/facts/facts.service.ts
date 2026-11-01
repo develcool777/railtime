@@ -3,19 +3,17 @@ import type { Network } from '@railtime/schema/network.types';
 import { isPlanOnly } from '@railtime/schema/plan.utils';
 import { required } from '@railtime/core/required.utils';
 import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
-import { REACH_BANDS } from '../route/reach.constants';
-import { bandOf, reachedSegments } from '../route/reach.utils';
+import { REACH_BANDS } from './facts.constants';
+import { bandOf, networkSummary, planFacts, reachedSegments } from './facts.utils';
 import { RouteFinder } from '../route/finder.service';
-import type { NetworkHistory } from '../network/history.types';
-import { networkAt, networkHistory, openingsByDecade, statsAt } from '../network/history.utils';
-import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../network/lineDetails.utils';
-import { CoverageMeasure } from '../coverage/measure.service';
-import type { NetworkIndex } from '../network/index.service';
-import { NetworkEngine } from '../network/engine.service';
-import type { Timeline } from '../network/timeline.service';
-import { captionOf } from '../changes/caption.utils';
-import { planFacts } from '../plan/facts.utils';
-import { networkSummary } from '../summary/summary.utils';
+import type { NetworkHistory } from '../engine/history.types';
+import { networkAt, networkHistory, openingsByDecade, statsAt } from '../engine/history.utils';
+import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../engine/lineDetails.utils';
+import { CoverageMeasure } from '../coverage/coverage.service';
+import type { NetworkIndex } from '../engine/index.service';
+import { NetworkEngine } from '../engine/engine.service';
+import type { Timeline } from '../engine/timeline.service';
+import { captionOf } from '../engine/caption.utils';
 import type {
   ChangeInfo,
   FactsAt,
@@ -24,10 +22,9 @@ import type {
   LineInfo,
   NetworkFactsOptions,
   NetworkGrowth,
-  NetworkMoment,
+  NetworkTime,
   NetworkRecords,
   NetworkSummary,
-  NetworkTime,
   PlanInfo,
   ReachInfo,
   RouteInfo,
@@ -222,16 +219,16 @@ export class NetworkFacts {
    * @returns The questions, each answered for that moment.
    */
   public asOf(moment: NetworkTime): FactsAt {
-    const then: NetworkMoment = { cursor: moment.cursor, clock: moment.time };
     return {
-      stations: () => this.stationsAt(then),
-      station: id => this.stationAt(id, then),
-      line: id => this.lineAt(id, then),
-      records: count => this.recordsAt(count, then),
-      route: (from, to, preference) => this.routeAt(from, to, preference, then),
-      reach: from => this.reachAt(from, then),
+      stations: () => this.stationsAt(moment),
+      station: id => this.stationAt(id, moment),
+      line: id => this.lineAt(id, moment),
+      records: count => this.recordsAt(count, moment),
+      route: (from, to, preference) => this.routeAt(from, to, preference, moment),
+      reach: from => this.reachAt(from, moment),
       stats: () => statsAt(this.index, this.timeline, moment.cursor),
-      directions: station => new Map(this.stationAt(station, then).lines.map(line => [line.id, directionsAt(station, this.lineAt(line.id, then))] as const)),
+      directions: station =>
+        new Map(this.stationAt(station, moment).lines.map(line => [line.id, directionsAt(station, this.lineAt(line.id, moment))] as const)),
     };
   }
 
@@ -256,13 +253,13 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The line's details.
    */
-  private lineAt(line: string, moment: NetworkMoment): LineDetails {
+  private lineAt(line: string, moment: NetworkTime): LineDetails {
     const info = required(
       this.lines().find(candidate => candidate.id === line),
       `line ${line}`,
     );
     const branches = lineBranches(this.index, this.timeline, line, moment.cursor).map(run =>
-      run.map(station => ({ id: station, name: this.index.stationName(station, moment.clock) })),
+      run.map(station => ({ id: station, name: this.index.stationName(station, moment.time) })),
     );
     return {
       ...info,
@@ -283,10 +280,10 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The route, or `null` if the network then has none.
    */
-  private routeAt(from: string, to: string, preference: RoutePreference, moment: NetworkMoment): RouteInfo | null {
+  private routeAt(from: string, to: string, preference: RoutePreference, moment: NetworkTime): RouteInfo | null {
     const route = this.routes.find(from, to, moment.cursor, preference);
     if (!route) return null;
-    const stop = (station: string) => ({ id: station, name: this.index.stationName(station, moment.clock) });
+    const stop = (station: string) => ({ id: station, name: this.index.stationName(station, moment.time) });
     return {
       from: stop(from),
       to: stop(to),
@@ -317,10 +314,10 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The stations it gets to, soonest first, the bands they are coloured in, and the track it colours; `null` if no line calls there then.
    */
-  private reachAt(from: string, moment: NetworkMoment): ReachInfo | null {
+  private reachAt(from: string, moment: NetworkTime): ReachInfo | null {
     const minutes = this.routes.reach(from, moment.cursor);
     if (minutes.size === 0) return null;
-    const name = (station: string) => this.index.stationName(station, moment.clock);
+    const name = (station: string) => this.index.stationName(station, moment.time);
     // The search reaches stations soonest first, so they come in that order.
     const stations = [...minutes].filter(([station]) => station !== from).map(([id, time]) => ({ id, name: name(id), minutes: time, band: bandOf(time) }));
     // Each open segment once, though several lines run on it.
@@ -341,10 +338,10 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The records.
    */
-  private recordsAt(count: number, moment: NetworkMoment): NetworkRecords {
+  private recordsAt(count: number, moment: NetworkTime): NetworkRecords {
     const { firstYears } = this.networkHistory();
     const { stations } = networkAt(this.index, this.timeline, moment.cursor);
-    const name = (station: string) => this.index.stationName(station, moment.clock);
+    const name = (station: string) => this.index.stationName(station, moment.time);
     const oldest = [...stations.keys()]
       .flatMap(station => {
         const year = firstYears.get(station);
@@ -379,15 +376,15 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The stations a line calls at, by name.
    */
-  private stationsAt(moment: NetworkMoment): StationSummary[] {
+  private stationsAt(moment: NetworkTime): StationSummary[] {
     return (
       [...this.timeline.stationsOnMap(moment.cursor)]
         .map(station => {
           const lines = this.callingAt(station, moment.cursor);
           return {
             id: station,
-            name: this.index.stationName(station, moment.clock),
-            otherNames: this.index.otherNames(this.index.namedAt(station, moment.clock)),
+            name: this.index.stationName(station, moment.time),
+            otherNames: this.index.otherNames(this.index.namedAt(station, moment.time)),
             // Lines sharing a colour show it once.
             colors: [...new Map(lines.map(line => this.colorOf(line)).map(color => [`${color.light} ${color.dark}`, color])).values()],
             served: lines.length > 0,
@@ -408,7 +405,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The station's details.
    */
-  private stationAt(station: string, moment: NetworkMoment): StationInfo {
+  private stationAt(station: string, moment: NetworkTime): StationInfo {
     const info = this.index.stationOf(station);
     const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
     for (const lineSegment of this.index.lineSegmentsAt(station)) {
@@ -435,15 +432,15 @@ export class NetworkFacts {
     });
     return {
       id: station,
-      name: this.index.stationName(station, moment.clock),
-      otherNames: this.index.otherNames(this.index.namedAt(station, moment.clock)),
+      name: this.index.stationName(station, moment.time),
+      otherNames: this.index.otherNames(this.index.namedAt(station, moment.time)),
       // By opening, a plan's undated lines last.
       lines: lines.sort(
         (first, second) => (first.opened === null ? 1 : 0) - (second.opened === null ? 1 : 0) || (first.opened ?? '').localeCompare(second.opened ?? ''),
       ),
       // Only the names it had dropped by the moment.
       formerNames: (info.formerNames ?? [])
-        .filter(former => toTimestamp(former.until) <= moment.clock)
+        .filter(former => toTimestamp(former.until) <= moment.time)
         .map(former => ({ name: former.name, otherNames: this.index.otherNames(former), until: former.until })),
       transfers: this.transfersFrom(station, moment),
     };
@@ -471,7 +468,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns Each one on the map then.
    */
-  private transfersFrom(station: string, moment: NetworkMoment): TransferInfo[] {
+  private transfersFrom(station: string, moment: NetworkTime): TransferInfo[] {
     return this.index.transfersAt(station).flatMap(other => {
       // The lines calling there now, each as it is drawn then (a branch still shown as its parent).
       const calling = this.callingAt(other, moment.cursor).map(line => this.timeline.identityOf(line, moment.cursor).id);
@@ -480,7 +477,7 @@ export class NetworkFacts {
       return [
         {
           id: other,
-          name: this.index.stationName(other, moment.clock),
+          name: this.index.stationName(other, moment.time),
           lines: ordered.map(line => ({ id: line, name: this.index.lineName(line), color: this.colorOf(line) })),
         },
       ];

@@ -1,8 +1,7 @@
-import type { LngLat } from '@railtime/core/geometry.types';
+import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
 import { clamp } from '@railtime/core/number.utils';
 import { boundsOf, distanceKm } from '@railtime/core/geometry.utils';
-import type { Bounds } from '@railtime/core/geometry.types';
 import type { StepAnimation } from '../steps/animation.service';
 import type { Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';

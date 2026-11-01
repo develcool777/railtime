@@ -2,7 +2,7 @@ import { useColorMode, useCookie } from '#imports';
 import { endOfYear } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { RoutePreference, RouteStop, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { RoutePreference, Stop, StepInfo, Theme } from '@railtime/network/facts.types';
 import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
@@ -27,7 +27,7 @@ import {
 import { mapPaddingFor, panelCoverOf } from '~/features/explorer/layout.utils';
 import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
-import { isAtRest } from '~/features/explorer/time/time.utils';
+import { isAtRest } from '~/features/explorer/time/timeline.utils';
 
 /**
  * The explorer's state, and what changes it: the one place a button or a key acts, so no click can
@@ -61,7 +61,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const dialog = ref<Dialog | null>(null);
   const routeEnds = ref<RouteEnds>({ from: null, to: null });
   const routePreference = ref<RoutePreference>('fastest');
-  const reachFrom = ref<RouteStop | null>(null);
+  const reachFrom = ref<Stop | null>(null);
   const visibleLines = ref<string[] | null>(null);
   const boundary = shallowRef<CityBoundary | null>(null);
 

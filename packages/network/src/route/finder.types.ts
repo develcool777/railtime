@@ -1,6 +1,3 @@
-/** What a route is best at: arriving soonest, or changing least, if it takes a little longer. */
-export type RoutePreference = 'fastest' | 'fewer-changes';
-
 /** A stretch of a route on one line, from where it is boarded to where it is left. */
 export type RideLeg = {
   kind: 'ride';

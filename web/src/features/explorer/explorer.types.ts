@@ -1,4 +1,4 @@
-import type { RouteStop } from '@railtime/network/facts.types';
+import type { Stop } from '@railtime/network/facts.types';
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
 
 /** One of the panel's sections, as the rail lists them. */
@@ -20,7 +20,7 @@ export type PanelView = { kind: 'line'; id: string } | { kind: 'station'; id: st
 export type MapOverlay = 'route' | 'reach' | 'coverage';
 
 /** A route's ends, once picked. */
-export type RouteEnds = { from: RouteStop | null; to: RouteStop | null };
+export type RouteEnds = { from: Stop | null; to: Stop | null };
 
 /** A dialog over the whole page, one at a time: the search, the help, or the city picker. */
 export type Dialog = 'search' | 'help' | 'cities';

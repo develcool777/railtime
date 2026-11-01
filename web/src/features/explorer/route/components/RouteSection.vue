@@ -115,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { RouteInfo, RouteLegInfo, RoutePreference, RouteStop, StationSummary } from '@railtime/network/facts.types';
+  import type { RouteInfo, RouteLegInfo, RoutePreference, Stop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref, watch } from 'vue';
   import { lineColor } from '~/features/explorer/format.utils';
   import { counted } from '~/utils/format.utils';
@@ -133,14 +133,14 @@
     /** The stations on the map on the date shown, to pick from. */
     stations: StationSummary[];
     /** Where the route starts and ends, once picked. */
-    ends: { from: RouteStop | null; to: RouteStop | null };
+    ends: { from: Stop | null; to: Stop | null };
     preference: RoutePreference;
     /** The route between them, if there is one. */
     route: RouteInfo | null;
   }>();
   const emit = defineEmits<{
-    from: [stop: RouteStop | null];
-    to: [stop: RouteStop | null];
+    from: [stop: Stop | null];
+    to: [stop: Stop | null];
     swap: [];
     preference: [preference: RoutePreference];
     station: [station: string];

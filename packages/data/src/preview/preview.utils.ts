@@ -1,3 +1,4 @@
+import type { Theme } from '@railtime/network/facts.types';
 import type { StillRequest, StillTrack } from '@railtime/renderer/basemapStill.types';
 import type { MapView } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
@@ -6,7 +7,7 @@ import { pushTo } from '@railtime/core/collection.utils';
 import { latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
 import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { MAX_PREVIEW_ZOOM, PREVIEW_PADDING, TILE_SIZE } from './preview.constants.ts';
-import type { PreviewSize, PreviewTheme } from './preview.types.ts';
+import type { PreviewSize } from './preview.types.ts';
 
 /**
  * Where a point lies on the Web Mercator world at zoom 0, as a fraction of its width and height.
@@ -61,7 +62,7 @@ const shownTrack = (network: Network): { coordinates: LngLat[]; lines: string[] 
  * @param theme - The preview's theme.
  * @returns The track by line, bottom first.
  */
-export const previewTrackOf = (network: Network, theme: PreviewTheme): StillTrack[] => {
+export const previewTrackOf = (network: Network, theme: Theme): StillTrack[] => {
   const lines = { ...network.lines, ...network.plans?.[firstPlanOf(network) ?? '']?.lines };
   const lineOrder = Object.keys(lines);
   const dashed = isPlanOnly(network);
@@ -87,7 +88,7 @@ export const previewTrackOf = (network: Network, theme: PreviewTheme): StillTrac
  * @param size - The preview's size, in CSS pixels.
  * @returns The request, or `null` for a network with no track to show.
  */
-export const previewRequestOf = (network: Network, theme: PreviewTheme, size: PreviewSize): StillRequest | null => {
+export const previewRequestOf = (network: Network, theme: Theme, size: PreviewSize): StillRequest | null => {
   const track = previewTrackOf(network, theme);
   const points = track.flatMap(line => line.paths.flat());
   if (points.length === 0) return null;
@@ -101,7 +102,7 @@ export const previewRequestOf = (network: Network, theme: PreviewTheme, size: Pr
  * @param theme - The preview's theme.
  * @returns The path of `<city>.<theme>.webp` beside it.
  */
-export const previewPathOf = (networkPath: string, theme: PreviewTheme): string => networkPath.replace(/\.json$/, `.${theme}.webp`);
+export const previewPathOf = (networkPath: string, theme: Theme): string => networkPath.replace(/\.json$/, `.${theme}.webp`);
 
 /**
  * Where a city's social card is kept: the picture a link to its page shows, beside its network. JPEG,

@@ -1,3 +1,4 @@
+import type { Theme } from '@railtime/network/facts.types';
 import type { StillRequest } from '@railtime/renderer/basemapStill.types';
 import { build } from 'esbuild';
 import { type Browser, chromium, type Page } from 'playwright-core';
@@ -8,7 +9,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { citiesNamed, readNetwork } from '../city.utils.ts';
 import { PREVIEW_PAGE_SCRIPT, PREVIEW_SIZE, PREVIEW_THEMES, PREVIEW_TIMEOUT_MS, SOCIAL_SIZE, SOCIAL_THEME } from './preview.constants.ts';
-import type { PreviewTheme, PreviewWindow, Served } from './preview.types.ts';
+import type { PreviewWindow, Served } from './preview.types.ts';
 import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.ts';
 
 /**
@@ -81,7 +82,7 @@ export class PreviewRenderer {
    * @param request - Where to look, its size, and the track to draw.
    * @returns The picture, WebP unless the request asks for another format.
    */
-  private async render(theme: PreviewTheme, request: StillRequest): Promise<Buffer> {
+  private async render(theme: Theme, request: StillRequest): Promise<Buffer> {
     if (!this.page) throw new Error('the preview page has not started');
     const dataUrl = await this.page.evaluate(
       async ([pictureTheme, pictureRequest]) => {

@@ -1,6 +1,16 @@
 import { describe, expect, test } from 'vitest';
 import type { PanelView } from '~/features/explorer/explorer.types';
-import { chromeOf, mapOverlayOf, openOf, overlayRequestOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import {
+  chromeOf,
+  mapOverlayOf,
+  openingSectionOf,
+  openOf,
+  overlayRequestOf,
+  railSectionOf,
+  walkedTo,
+  withoutStations,
+  withStation,
+} from '~/features/explorer/explorer.utils';
 
 const line = (id: string): PanelView => ({ kind: 'line', id });
 const station = (id: string): PanelView => ({ kind: 'station', id });
@@ -109,6 +119,13 @@ describe('ExplorerUtils', () => {
       const phone = chromeOf({ ...desk, phone: true, timeMode: 'playing' });
       expect(phone).toMatchObject({ rail: false, minimap: false, credits: 'button', timeControl: true });
       expect(chromeOf({ ...desk, phone: true, sheet: 'full' }).timeControl).toBe(false);
+    });
+  });
+
+  describe('openingSectionOf', () => {
+    test('opens on Plans with a plan shown, else on Lines', () => {
+      expect(openingSectionOf('extension')).toBe('plans');
+      expect(openingSectionOf(undefined)).toBe('lines');
     });
   });
 });

@@ -6,7 +6,7 @@ import { formatExplorerQuery, sameQuery } from '~/features/explorer/address/addr
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { Section } from '~/features/explorer/explorer.types';
-import { isDated } from '~/features/explorer/time/time.utils';
+import { isDated } from '~/features/explorer/time/timeline.utils';
 
 /**
  * The address follows what is looked at, so it can be shared: the day and the view, the tab, the line

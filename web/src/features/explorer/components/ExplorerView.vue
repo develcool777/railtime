@@ -191,22 +191,17 @@
   import { useRoute } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { storeToRefs } from 'pinia';
-  import { computed, useTemplateRef } from 'vue';
+  import { useTemplateRef } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
   import { useExplorerStore } from '~/features/explorer/explorer.store';
-  import type { Section } from '~/features/explorer/explorer.types';
+  import { openingSectionOf } from '~/features/explorer/explorer.utils';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
-  import { useExplorerPlan } from '~/features/explorer/plans/plan.composable';
-  import { openingSectionOf } from '~/features/explorer/plans/plan.utils';
-  import { useInsights } from '~/features/explorer/insights/insights.composable';
-  import { useReachFinder } from '~/features/explorer/reach/reach.composable';
   import { useCoverage } from '~/features/explorer/coverage/coverage.composable';
-  import { useRouteFinder } from '~/features/explorer/route/route.composable';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
 
   const props = defineProps<{ network: Network; city: string; plan?: string }>();
@@ -250,7 +245,6 @@
   const { resizing, startResize } = useExplorerLayout(explorer);
   useTransitMap({ container: mapElement, minimapContainer: minimapElement });
 
-  const { planSummary, planLegend, builtFacts, planMark, choosePlan } = useExplorerPlan({ onChoose: id => emit('plan', id) });
   const {
     sections,
     lines,
@@ -266,20 +260,23 @@
     currentChange,
     panelTop,
     shownDate,
+    foundRoute,
+    foundReach,
+    growth,
+    hasHistory,
+    records,
+    shownYear,
+    planSummary,
+    planLegend,
+    builtFacts,
+    marks,
   } = useExplorerPanel();
-  const { foundRoute, routeMark } = useRouteFinder();
-  const { foundReach, reachMark } = useReachFinder();
   const { boundaryState, coverage, history: coverageHistory } = useCoverage(props.city);
-  const { growth, hasHistory, records, shownYear } = useInsights();
 
-  // A dot on each section whose choice is in force while another is open: a plan shown, a route or a reach set.
-  const marks = computed(() => {
-    const shown: Partial<Record<Section, string>> = {};
-    if (planMark) shown.plans = planMark;
-    if (routeMark.value) shown.route = routeMark.value;
-    if (reachMark.value) shown.reach = reachMark.value;
-    return shown;
-  });
+  /** Shows another plan, or the built network: the page mounts the explorer afresh, on Plans. */
+  const choosePlan = (id: string | undefined) => {
+    if (id !== props.plan) emit('plan', id);
+  };
 
   useExplorerAddress(opening, openingSection);
   useExplorerShortcuts(sections);

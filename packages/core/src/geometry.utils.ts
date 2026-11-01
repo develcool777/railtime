@@ -1,6 +1,5 @@
-import type { LngLat } from './geometry.types';
+import type { Bounds, LngLat } from './geometry.types';
 import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from './geometry.constants';
-import type { Bounds } from './geometry.types';
 
 /**
  * How far east and north one point is of another, by an equirectangular approximation at their own

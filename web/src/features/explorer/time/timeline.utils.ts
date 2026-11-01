@@ -4,6 +4,7 @@ import { FUTURE_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/e
 import { yearOf } from '@railtime/core/date.utils';
 import { lineColor } from '~/features/explorer/format.utils';
 import type { TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
+import type { TimeState } from '@railtime/renderer/transitMap.types';
 
 /**
  * The share of the width the dates take: all of it, or what the Future zone leaves.
@@ -111,3 +112,27 @@ export const targetAt = (scale: TimelineScale, fraction: number): TimelineTarget
   }
   return { kind: 'date', time: scale.start + (clamp(fraction, 0, share) / share) * (scale.end - scale.start) };
 };
+
+/**
+ * Whether the map shows the network as it is: today or, with a plan, its future built. Anywhere
+ * else, the timeline is open, so the way back is in sight.
+ *
+ * @param time - Where the map is; `null` before it mounts, which counts as at rest.
+ * @param hasPlan - A plan is shown.
+ * @returns Whether it is at rest.
+ */
+export const isAtRest = (time: TimeState | null, hasPlan: boolean): boolean => {
+  if (!time) return true;
+  return hasPlan ? time.future : time.cursor === time.todayCursor && !time.future;
+};
+
+/**
+ * Whether the address names the date shown: not at today, nor in a plan's future, which has no
+ * date; with a plan, today too, since the plan's default is its future.
+ *
+ * @param time - Where the map is.
+ * @param hasPlan - A plan is shown.
+ * @returns Whether the date goes in the address.
+ */
+export const isDated = (time: TimeState | null, hasPlan: boolean): time is TimeState =>
+  time !== null && !time.future && (hasPlan || time.cursor !== time.todayCursor);

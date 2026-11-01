@@ -11,8 +11,8 @@
   "exports": {
     "./facts.service": "./src/facts/facts.service.ts",
     "./facts.types": "./src/facts/facts.types.ts",
-    "./engine.service": "./src/network/engine.service.ts",
-    "./engine.types": "./src/network/engine.types.ts",
+    "./engine.service": "./src/engine/engine.service.ts",
+    "./engine.types": "./src/engine/engine.types.ts",
     "./testing/tinyNetwork": "./test/support/factories/tinyNetwork.utils.ts",
     "./testing/routeNetwork": "./test/support/factories/routeNetwork.utils.ts",
     "./testing/boundaries": "./test/support/factories/boundaries.utils.ts",

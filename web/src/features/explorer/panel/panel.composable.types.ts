@@ -1,10 +1,22 @@
-import type { ChangeInfo, LineColor, LineDetails, LineDirection, LineInfo, StationInfo, StationSummary } from '@railtime/network/facts.types';
+import type {
+  ChangeInfo,
+  LineColor,
+  LineDetails,
+  LineDirection,
+  LineInfo,
+  NetworkGrowth,
+  NetworkRecords,
+  ReachInfo,
+  RouteInfo,
+  StationInfo,
+  StationSummary,
+} from '@railtime/network/facts.types';
 import type { ComputedRef } from 'vue';
 
-import type { SectionEntry } from '~/features/explorer/explorer.types';
+import type { Section, SectionEntry } from '~/features/explorer/explorer.types';
 import type { PanelTopContent } from '~/features/explorer/panel/panel.types';
 
-/** The panel's content, read from the network's facts for what the store has open. */
+/** What the panel and the page around the map show, read from the store and the network's facts. */
 export type ExplorerPanel = {
   /** The rail's sections: Plans only for a city with plans. */
   sections: ComputedRef<SectionEntry[]>;
@@ -34,4 +46,24 @@ export type ExplorerPanel = {
   panelTop: ComputedRef<PanelTopContent>;
   /** The date shown, for what had opened by then; `null` in a plan's future. */
   shownDate: ComputedRef<number | null>;
+  /** The route between the two stations picked, on the date shown; `null` until both are picked, while it is not drawn, or with none. */
+  foundRoute: ComputedRef<RouteInfo | null>;
+  /** Every station reached from the one picked, on the date shown; `null` until one is picked, while it is not drawn, or when no line calls there. */
+  foundReach: ComputedRef<ReachInfo | null>;
+  /** The network year by year, and the stations each decade opened. */
+  growth: ComputedRef<NetworkGrowth | null>;
+  /** Whether some year has a station on the map: one never built has only its plans. */
+  hasHistory: ComputedRef<boolean>;
+  /** Its records on the date shown. */
+  records: ComputedRef<NetworkRecords | null>;
+  /** The year shown on the map; `null` in a plan's future. */
+  shownYear: ComputedRef<number | null>;
+  /** The plan shown: its name and what it adds, for the time control. */
+  planSummary: ComputedRef<{ name: string; facts: string } | undefined>;
+  /** The legend for the plan's dashed track, while the map shows its future: its first line's colour, as CSS. */
+  planLegend: ComputedRef<{ name: string; color: string } | null>;
+  /** What is built today, for the Plans section's first card. */
+  builtFacts: ComputedRef<string>;
+  /** The dot on each section whose choice is in force while another is open. */
+  marks: ComputedRef<Partial<Record<Section, string>>>;
 };

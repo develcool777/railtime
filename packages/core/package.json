@@ -16,7 +16,6 @@
     "./geometry.types": "./src/geometry.types.ts",
     "./geometry.utils": "./src/geometry.utils.ts",
     "./number.utils": "./src/number.utils.ts",
-    "./priorityQueue.service": "./src/priorityQueue.service.ts",
     "./required.utils": "./src/required.utils.ts"
   },
   "devDependencies": {

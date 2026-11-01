@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import type { FeatureCollection } from '../../src/layers/features.types';
+import type { FeatureCollection } from '../../src/layers/snapshot.types';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';

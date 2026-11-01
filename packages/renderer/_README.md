@@ -57,17 +57,16 @@ runs in the unit tests as it is; the layers, and `TransitMap` whole, run on a st
 ```text
 src/
 ├── transitMap.service.ts      TransitMap: the facade; owns MapLibre, the frame loop and the event queue
-├── state/reconciler.service.ts PropsReconciler: the props, and the effect of each, in their order
-├── overlay/controller.service.ts OverlayController: a route, a reach or coverage at the moment shown
+├── minimap.service.ts         Minimap: the overview inset
 ├── playback/
 │   ├── player.service.ts      Player: the clock and each step's phases, moved by its commands; pure
 │   └── camera.service.ts      CameraDirector: framing a step; in 3D, following its line as it grows
-├── steps/                     one StepAnimation per kind of step: how long it takes, what it frames, what it draws
-├── layers/                    MapLayer, the network's layers, the active step, FrameRenderer, the snapshot, the basemap
-├── stations/layer.service.ts  StationLayer: dots, labels, pop-in, pulses, the selection ring
-├── route/  reach/  coverage/  buildings/   the layers drawn over or under the network
-├── minimap/map.service.ts     Minimap: the overview inset
-├── core/                      EventEmitter, easing
+├── steps/animation.service.ts StepAnimation and its kinds: how long each takes, what it frames, what it draws
+├── layers/                    MapLayer; the network's layers and the active step, the stations, the buildings;
+│                              FrameRenderer, the snapshot, the line styles, the basemap
+├── overlay/                   OverlayController, and what it draws over the network: RouteLayer, ReachLayer,
+│                              CoverageLayer, and their drawing (`overlay.utils.ts`)
+├── support/                   EventEmitter, PropsReconciler (the props and the effect of each, in order), easing and colour
 └── still/basemap.service.ts   BasemapStill: pictures of the basemap with a track over it, for previews
 ```
 

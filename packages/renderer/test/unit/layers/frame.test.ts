@@ -1,12 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { ActiveStepLayer } from '../../../src/layers/activeStep.service';
-import type { FeatureCollection, LineFeature } from '../../../src/layers/features.types';
+import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
+import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../../../src/layers/snapshot.types';
 import { FrameRenderer } from '../../../src/layers/frame.service';
 import { SOURCES } from '../../../src/layers/ids.constants';
-import { NetworkLayer } from '../../../src/layers/network.service';
-import type { NetworkSnapshot } from '../../../src/layers/snapshot.types';
-import { StationLayer } from '../../../src/stations/layer.service';
+import { StationLayer } from '../../../src/layers/stations.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';

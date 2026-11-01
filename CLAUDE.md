@@ -31,9 +31,11 @@ landing page's pictures in Chrome).
 
 - **Arrow functions only.** `const name = (…): Type => …`; no `function`, declaration or expression.
 - **Loops say what they loop over.** No `for (;;)` or `while (true)`.
-- **Classes live in `*.service.ts`**, one role per file: helpers in `*.utils.ts`, constants in
-  `*.constants.ts`, types in `*.types.ts` beside their file (`player.types.ts` next to
-  `player.service.ts`). No `types/` folders, no barrels.
+- **Classes live in `*.service.ts`**, helpers in `*.utils.ts`; a file may hold several classes of
+  one subject (a base and its kinds). Types and constants keep files of their own, beside the code
+  they belong to (`camera.types.ts` next to `camera.service.ts`): when code merges, its types and
+  constants merge into the merged file's. No `types/` folders, no barrels. No file passes ~500
+  lines: a subject that big splits by job, never by role.
 - **Every class member has an access modifier** (`public`, `protected`, `private`), and every class,
   member, exported function, constant and type has a JSDoc comment.
 - **Names say what they hold**: three letters at least, but for `id`, `x`, `y`, `km`, `on`, `to`.
@@ -62,9 +64,12 @@ landing page's pictures in Chrome).
   group is tested on the stand-in map (`test/support/factories/fakeMap.utils.ts`), which refuses what
   MapLibre would: a layer the style spec does not allow, data that is not GeoJSON features, and a
   layer reading (`['get', name]`) a property no feature of its source has.
-- **A folder per subject; files named for what they are, not the folder again**: `reach/layer.service.ts`
-  (`ReachLayer`), `reach/layer.utils.ts`, `reach/layer.constants.ts`. Classes keep their full names.
-- **A new kind of step** is a `StepAnimation` subclass plus one line in `createStepAnimation`.
+- **A folder per subject, of two files or more** (a single file joins the nearest subject's folder);
+  files named for what they are, not the folder again (`overlay/route.service.ts`, `RouteLayer`),
+  but for the folder's main class and its one shared types, constants or utils file, which take
+  its name (`engine/engine.service.ts`, `overlay/overlay.utils.ts`). Classes keep their full names.
+- **A new kind of step** is a `StepAnimation` subclass in `steps/animation.service.ts` plus one line
+  in `createStepAnimation`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
 - **The web app** follows the investors site's layout, in `web/src/`:
 
@@ -84,7 +89,8 @@ landing page's pictures in Chrome).
   `features/`); anything else in a feature is imported by its path
   (`~/features/explorer/time/timeline.utils`), so what one feature or part takes from another can be
   searched for. In the explorer, a part never imports another part's composable: what parts share
-  is in the store.
+  is in the store. A composable earns a file of its own by holding effects (a fetch, a listener, the
+  map); what the panel shows, computed over the store, is `panel/panel.composable.ts`.
   Something one surface uses goes in its feature; it moves to the top when a second needs it.
   The explorer's state (what is open, how it is set) is one Pinia store, `explorer.store.ts`: every
   button calls its actions, and its rules are pure functions in `explorer.utils.ts`; its `mapProps` is
@@ -101,7 +107,7 @@ Each package keeps its tests beside its code, as dataroom-ui does inside its one
 ```text
 packages/network/
   vitest.config.ts          the package's project (`pnpm --filter @railtime/network test-unit`)
-  test/unit/                mirrors src/: test/unit/network/timeline.test.ts tests src/network/timeline.*.ts
+  test/unit/                mirrors src/: test/unit/engine/timeline.test.ts tests src/engine/timeline.*.ts
   test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries:
                             exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
 packages/renderer/

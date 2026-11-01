@@ -1,12 +1,9 @@
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import { coverageDrawing } from '../coverage/layer.utils';
+import { coverageDrawing, reachStops, reachTrack, routeStops, routeTrack } from './overlay.utils';
 import { boundsOf } from '@railtime/core/geometry.utils';
-import { reachStops, reachTrack } from '../reach/layer.utils';
-import { routeStops, routeTrack } from '../route/layer.utils';
 import { OPENING_MAX_ZOOM, ROUTE_NAME_ROOM, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from '../transitMap.constants';
 import type { OverlayRequest } from '../transitMap.types';
 import type { OverlayParts } from './controller.types';
-import { overlaySubjectOf } from './controller.utils';
 
 /**
  * What is drawn over the network: a route, a reach or the city's coverage, as the props ask. Works it
@@ -84,3 +81,17 @@ export class OverlayController {
     if (request && this.parts.moment().cursor !== this.drawnAt) this.draw(request, boundary);
   }
 }
+
+/**
+ * What an overlay is of, for the camera: it frames an overlay when this changes (new ends, a new start,
+ * coverage opened), and leaves the view be as the date or theme changes it.
+ *
+ * @param request - The overlay asked for, or `null`.
+ * @returns Its subject, or `null` for none.
+ */
+export const overlaySubjectOf = (request: OverlayRequest | null): string | null => {
+  if (!request) return null;
+  if (request.kind === 'route') return `route|${request.from}|${request.to}|${request.preference}`;
+  if (request.kind === 'reach') return `reach|${request.from}`;
+  return 'coverage';
+};

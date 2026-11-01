@@ -1,5 +1,5 @@
 import type { Network } from '@railtime/schema/network.types';
-import type { RenderState } from '../../src/layers/lineStyle.types';
+import type { RenderState } from '../../src/layers/style.types';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { FactsAt } from '@railtime/network/facts.types';
 import { Player } from '../../src/playback/player.service';
