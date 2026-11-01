@@ -2,6 +2,7 @@ import checkFile from 'eslint-plugin-check-file';
 import jsdoc from 'eslint-plugin-jsdoc';
 import sonarjs from 'eslint-plugin-sonarjs';
 import vuePlugin from 'eslint-plugin-vue';
+import vueAccessibility from 'eslint-plugin-vuejs-accessibility';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -84,6 +85,8 @@ export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.recommended,
   ...vuePlugin.configs['flat/essential'],
+  // What a screen reader or a keyboard needs of a template: labels, roles, keys for what is clicked.
+  ...vueAccessibility.configs['flat/recommended'],
   sonarjs.configs.recommended,
 
   { ignores: ['**/dist/', '**/node_modules/', '**/.nuxt/', '**/.output/', '**/test-reports/', 'web/public/'] },
@@ -104,6 +107,13 @@ export default defineConfig(
       'prefer-arrow-callback': 'error',
       'no-restricted-syntax': ['error', ...SHARED_SYNTAX],
       'id-length': ['error', { min: 3, exceptions: SHORT_NAMES, properties: 'never' }],
+    },
+  },
+  {
+    files: ['**/*.vue'],
+    rules: {
+      // Tailwind takes a list's bullets away, and with them Safari's VoiceOver stops calling it a list: `role="list"` gives it back.
+      'vuejs-accessibility/no-redundant-roles': ['error', { ul: ['list'], ol: ['list'] }],
     },
   },
 
