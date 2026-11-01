@@ -48,7 +48,15 @@
               @station="store.pickStation"
               @change="store.pick({ kind: 'change', index: $event })" />
             <StationsSection v-else-if="section === 'stations'" :stations @open="store.pickStation" />
-            <LinesSection v-else-if="section === 'lines'" :lines :visible :date="shownDate" @change="setVisible" @open="store.pushLine" />
+            <LinesSection
+              v-else-if="section === 'lines'"
+              :lines
+              :optional="optionalNetworks"
+              :visible
+              :date="shownDate"
+              @change="setVisible"
+              @network="store.showNetwork"
+              @open="store.pushLine" />
             <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="store.pickChange" />
             <RouteSection
               v-else-if="section === 'route'"
@@ -220,7 +228,7 @@
   const range = computed(() => (store.facts ?? opened).range);
   watch(
     () => props.plan,
-    next => void store.showPlan(props.network, next),
+    next => void store.showPlan(next),
   );
   const {
     section,
@@ -245,6 +253,7 @@
     credits,
     planOnly,
     plans,
+    optionalNetworks,
   } = storeToRefs(store);
   const searchOpen = store.dialogOpen('search');
   const helpOpen = store.dialogOpen('help');

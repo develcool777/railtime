@@ -9,6 +9,8 @@ import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { REACH_BANDS } from './facts.constants.ts';
+import type { NetworkIndex } from '../engine/index.service';
+import type { Timeline } from '../engine/timeline.service';
 
 /**
  * The length of a network's track.
@@ -166,4 +168,32 @@ export const recordsOf = (source: RecordsSource, count: number, moment: NetworkT
     .sort((first, second) => second.km - first.km)
     .slice(0, count);
   return { oldest, busiest, longest };
+};
+
+/**
+ * When each line calling at a station opened its track there, and closed it: the first opening, the
+ * last closing, and whether every one of its segments there has closed.
+ *
+ * @param index - The network, indexed.
+ * @param timeline - Its history.
+ * @param station - The station.
+ * @returns Each line's dates there, as timestamps: `Infinity` opened for a plan's undated line.
+ */
+export const trackDatesAt = (
+  index: NetworkIndex,
+  timeline: Timeline,
+  station: string,
+): Map<string, { opened: number; lastClosed: number; allClosed: boolean }> => {
+  const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
+  for (const lineSegment of index.lineSegmentsAt(station)) {
+    if (!timeline.everServes(station, lineSegment.line)) continue;
+    // Timestamps before 1970 are negative: the latest close starts below any of them.
+    const dates = byLine.get(lineSegment.line) ?? { opened: Infinity, lastClosed: -Infinity, allClosed: true };
+    dates.opened = Math.min(dates.opened, lineSegment.opens);
+    dates.lastClosed = Math.max(dates.lastClosed, lineSegment.closes ?? -Infinity);
+    // A line has closed at a station only when every one of its segments there has.
+    dates.allClosed &&= lineSegment.closes !== null;
+    byLine.set(lineSegment.line, dates);
+  }
+  return byLine;
 };

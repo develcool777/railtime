@@ -5,8 +5,16 @@
     <section v-for="group in groups" :key="group.network">
       <div class="flex items-center justify-between gap-2 px-2 pb-1">
         <h3 class="eyebrow text-muted truncate">{{ group.name }}</h3>
+        <!-- A network beside the city's own: on or off whole, the city's map without it when off. -->
+        <USwitch
+          v-if="group.optional"
+          :modelValue="group.shown"
+          size="sm"
+          :label="`Show ${group.name}`"
+          :ui="{ label: 'sr-only' }"
+          @update:modelValue="emit('network', group.network, $event)" />
         <!-- The group's lines at once, its eye as each line's: open while every one shows. -->
-        <UTooltip :text="groupToggleLabel(group)">
+        <UTooltip v-else :text="groupToggleLabel(group)">
           <UButton
             :icon="allShown(group.lines) ? 'i-lucide-eye' : 'i-lucide-eye-off'"
             color="neutral"
@@ -41,41 +49,39 @@
           </ListRow>
         </li>
       </ul>
+      <!-- Off, its lines only named, faded: turned on, they are the city's as any other. -->
+      <ul v-if="group.offLines.length > 0" role="list" class="opacity-40">
+        <li v-for="line in group.offLines" :key="line.id" class="flex h-9 items-center gap-2.5 pl-8">
+          <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(line.color) }" />
+          <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ line.name }}</span>
+        </li>
+      </ul>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { LineInfo } from '@railtime/network/facts.types';
+  import type { LineInfo, OptionalNetworkInfo } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
   import { yearOf } from '@railtime/core/date.utils';
   import { lineColor } from '~/features/explorer/format.utils';
-  import { foldName } from '~/features/explorer/stations/station.utils';
+  import type { LineGroup } from '~/features/explorer/lines/line.types';
+  import { lineGroups } from '~/features/explorer/lines/line.utils';
 
   const props = defineProps<{
     lines: LineInfo[];
+    /** The networks the city may show or leave off: those off are listed after its own. */
+    optional: OptionalNetworkInfo[];
     visible: Set<string>;
     /** The date shown, as a timestamp; `null` for a plan's future, when every line is open. */
     date: number | null;
   }>();
-  const emit = defineEmits<{ change: [visible: Set<string>]; open: [line: string] }>();
+  const emit = defineEmits<{ change: [visible: Set<string>]; network: [network: string, shown: boolean]; open: [line: string] }>();
 
   const query = ref('');
 
-  const groups = computed(() => {
-    const wanted = foldName(query.value);
-    const byNetwork = new Map<string, { network: string; name: string; lines: LineInfo[] }>();
-    for (const line of props.lines) {
-      if (wanted && !foldName(line.name).includes(wanted)) continue;
-      // A plan's own lines come under their own heading, whatever brand they would run as.
-      const network = line.opened === null ? 'planned' : line.network;
-      const group = byNetwork.get(network) ?? { network, name: line.opened === null ? 'Planned' : line.networkName, lines: [] };
-      group.lines.push(line);
-      byNetwork.set(network, group);
-    }
-    return [...byNetwork.values()];
-  });
+  const groups = computed(() => lineGroups(props.lines, props.optional, query.value));
 
   /** Whether a line had opened by the date shown. */
   const isOpen = (line: LineInfo): boolean => props.date === null || (line.opened !== null && line.opened <= props.date);
@@ -91,8 +97,7 @@
   const allShown = (lines: LineInfo[]): boolean => lines.every(line => props.visible.has(line.id));
 
   /** What the group's eye does: hides its lines while all show, else shows them all. */
-  const groupToggleLabel = (group: { name: string; lines: LineInfo[] }): string =>
-    allShown(group.lines) ? `Hide all ${group.name} lines` : `Show all ${group.name} lines`;
+  const groupToggleLabel = (group: LineGroup): string => (allShown(group.lines) ? `Hide all ${group.name} lines` : `Show all ${group.name} lines`);
 
   const toggleGroup = (lines: LineInfo[]) => {
     const next = new Set(props.visible);

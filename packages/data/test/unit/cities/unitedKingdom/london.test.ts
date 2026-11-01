@@ -212,6 +212,7 @@ describe('London', () => {
     expect(snapshot.stats.lines).toBe(21);
   });
 
+  // Every frame of the biggest city: over a second on a laptop, near Vitest's default 5 s on a CI runner.
   test('plays its whole history, every step, drawing frames without errors', () => {
     const played = playWholeHistory(london);
     expect(played.started).toBe(played.steps);
@@ -219,7 +220,7 @@ describe('London', () => {
     expect(played.mostHighlighted).toBeGreaterThan(5);
     // About 24 minutes at 1×: the bound catches a history that never ends.
     expect(played.seconds).toBeLessThan(60 * 60);
-  });
+  }, 30_000);
 
   test.each(['under-construction', 'surrey-canal', 'bakerloo-extension', 'crossrail-2', 'dlr-thamesmead', 'west-london-orbital', 'croxley-rail-link'])(
     'plays on through its %s plan, section by section',

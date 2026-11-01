@@ -225,7 +225,13 @@ const checkThroughStations = (network: Network, problem: (message: string) => vo
 export const checkNetwork = (network: Network, problem: (message: string) => void): void => {
   for (const [lineId, line] of Object.entries(network.lines)) {
     if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
-    for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
+    for (const alias of line.aliases ?? []) {
+      const target = network.lines[alias.as];
+      if (!target) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
+      // An optional network may be left off: a line it does not run must not lean on one of its lines.
+      else if (target.network !== line.network && network.networks[target.network]?.optional)
+        problem(`line ${lineId}: alias to ${alias.as}, of the optional network ${target.network}`);
+    }
   }
   checkStations(network, problem);
   for (const segment of network.segments) checkSegment(network, segment, problem);

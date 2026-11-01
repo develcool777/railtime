@@ -291,8 +291,18 @@ export type NetworkTime = {
 export type NetworkFactsOptions = {
   /** One of the network's plans, built on it: its sections play after every dated change. */
   plan?: string;
+  /** Its optional networks to show; the rest are left off, as if they were not there. */
+  networks?: readonly string[];
   /** Today, as a UTC timestamp at midnight: where the map opens, and where history ends. Defaults to the real today. */
   today?: number;
+};
+
+/** A network a city may show or leave off, with its lines, for a list to turn it on. */
+export type OptionalNetworkInfo = {
+  id: string;
+  name: string;
+  shown: boolean;
+  lines: { id: string; name: string; color: LineColor }[];
 };
 
 /** The network at one moment: every question about it then. */

@@ -21,6 +21,11 @@ export type Mode = 'metro' | 'light-metro' | 'tram' | 'suburban-rail' | 'rail' |
 export type NetworkInfo = {
   name: string;
   names?: Names;
+  /**
+   * Part of the city, but left off its map until asked for: a network beside the city's own, as
+   * main-line suburban trains are beside a metro. Off, it is as if it were not there.
+   */
+  optional?: boolean;
 };
 
 /** Until `until`, the line is drawn and named as line `as`: a branch shown as its parent line until it became its own. */

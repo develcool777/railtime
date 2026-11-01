@@ -154,6 +154,14 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual(['line red: unknown network tram', 'line red: alias to unknown line blue']);
   });
 
+  test('refuses a line leaning on a line of an optional network, which may be left off', () => {
+    const network = plannedNetwork();
+    network.networks.rail = { name: 'Rail', optional: true };
+    network.lines.green = { name: 'Green', network: 'rail', mode: 'suburban-rail', color: '#00aa00' };
+    network.lines.red!.aliases = [{ until: '1950-01-01', as: 'green', text: 'Red becomes its own line' }];
+    expect(problemsOf(network)).toEqual(['line red: alias to green, of the optional network rail']);
+  });
+
   test("refuses a station closing on a line that isn't, or before it opened there, and former names out of order", () => {
     const network = plannedNetwork();
     network.stations.a = {

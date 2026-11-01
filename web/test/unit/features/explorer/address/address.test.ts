@@ -33,6 +33,12 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ plan: 'General Plan' })).toEqual({});
     });
 
+    test('reads the optional networks shown, each an id', () => {
+      expect(parseExplorerQuery({ with: 'swr,southern' })).toEqual({ networks: ['swr', 'southern'] });
+      expect(parseExplorerQuery({ with: 'SWR,,southern' })).toEqual({ networks: ['southern'] });
+      expect(parseExplorerQuery({ with: '' })).toEqual({});
+    });
+
     test('reads the tab, the line open, 3D, the names hidden and map only', () => {
       expect(parseExplorerQuery({ tab: 'route', line: 'central', view: '3d', names: 'off', mapOnly: '1' })).toEqual({
         section: 'route',
@@ -68,6 +74,7 @@ describe('ExplorerUrlUtils', () => {
         view: { center: [-0.12, 51.5] as [number, number], zoom: 11.5 },
         station: 'victoria',
         plan: 'extension',
+        networks: ['swr', 'southern'],
         section: 'reach' as const,
         line: 'victoria',
         viewMode: '3d' as const,

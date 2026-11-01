@@ -4,7 +4,8 @@ import { firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { required } from '@railtime/core/required.utils';
 import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { REACH_BANDS } from './facts.constants.ts';
-import { bandOf, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf } from './facts.utils.ts';
+import { bandOf, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
+import { optionalNetworksAsked, optionalNetworksOf, withNetworksShown } from './networks.utils.ts';
 import { RouteFinder } from '../route/finder.service.ts';
 import type { NetworkHistory } from '../engine/history.types';
 import { networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
@@ -24,6 +25,7 @@ import type {
   NetworkFactsOptions,
   NetworkGrowth,
   NetworkTime,
+  OptionalNetworkInfo,
   NetworkRecords,
   NetworkSummary,
   PlanInfo,
@@ -44,6 +46,8 @@ import type {
 export class NetworkFacts {
   /** The plan built on the network, if one was asked for. */
   public readonly plan: string | null;
+  /** The optional networks shown, in the network's order; the rest are left off. */
+  public readonly networks: string[];
   /** Whether the network was never built: it has only its plans. */
   public readonly planOnly: boolean;
   /** The raw network through time, which every answer comes from: what the renderer plays and draws. */
@@ -62,10 +66,15 @@ export class NetworkFacts {
   private history: NetworkHistory | null = null;
   /** Each outline's coverage, measured the first time it is asked for. */
   private readonly coverages = new WeakMap<CityBoundary, CoverageMeasure>();
-  /** The network as stored, its plans unbuilt. */
+  /** The network as shown, its plans unbuilt. */
   private readonly source: Network;
+  /** The network as stored, every optional network in it. */
+  private readonly stored: Network;
 
-  private constructor(source: Network, plan: string | null, today: number) {
+  private constructor(stored: Network, networks: string[], plan: string | null, today: number) {
+    this.stored = stored;
+    this.networks = networks;
+    const source = withNetworksShown(stored, networks);
     this.source = source;
     this.plan = plan;
     this.planOnly = isPlanOnly(source);
@@ -81,11 +90,20 @@ export class NetworkFacts {
    * A network's facts.
    *
    * @param network - The network, as stored.
-   * @param options - A plan to build on it, and today.
+   * @param options - A plan to build on it, its optional networks to show, and today.
    * @returns Its facts.
    */
   public static create(network: Network, options: NetworkFactsOptions = {}): NetworkFacts {
-    return new NetworkFacts(network, options.plan ?? null, options.today ?? todayTimestamp());
+    return new NetworkFacts(network, optionalNetworksAsked(network, options.networks ?? []), options.plan ?? null, options.today ?? todayTimestamp());
+  }
+
+  /**
+   * The networks the city may show or leave off, each with its lines: shown or not.
+   *
+   * @returns Each, in the network's order.
+   */
+  public optionalNetworks(): OptionalNetworkInfo[] {
+    return optionalNetworksOf(this.stored, this.networks);
   }
 
   /**
@@ -404,18 +422,7 @@ export class NetworkFacts {
    */
   private stationAt(station: string, moment: NetworkTime): StationInfo {
     const info = this.index.stationOf(station);
-    const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
-    for (const lineSegment of this.index.lineSegmentsAt(station)) {
-      if (!this.timeline.everServes(station, lineSegment.line)) continue;
-      // Timestamps before 1970 are negative: the latest close starts below any of them.
-      const dates = byLine.get(lineSegment.line) ?? { opened: Infinity, lastClosed: -Infinity, allClosed: true };
-      dates.opened = Math.min(dates.opened, lineSegment.opens);
-      dates.lastClosed = Math.max(dates.lastClosed, lineSegment.closes ?? -Infinity);
-      // A line has closed at a station only when every one of its segments there has.
-      dates.allClosed &&= lineSegment.closes !== null;
-      byLine.set(lineSegment.line, dates);
-    }
-    const lines = [...byLine.entries()].map(([line, dates]) => {
+    const lines = [...trackDatesAt(this.index, this.timeline, station).entries()].map(([line, dates]) => {
       // The line stopped calling here, or its track here closed.
       const closed = info.closed?.[line] ?? (dates.allClosed ? toIsoDate(dates.lastClosed) : undefined);
       return {

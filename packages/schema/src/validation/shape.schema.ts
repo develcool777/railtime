@@ -61,7 +61,7 @@ const planSchema = z.object({
 /** The network's shape, its references between parts unchecked. */
 export const networkShape = z.object({
   meta: z.object({ city: z.string(), country: z.string(), start: isoDate, built: isoDate, attribution: z.string() }),
-  networks: z.record(z.string(), z.object({ name: z.string(), names: names.optional() })),
+  networks: z.record(z.string(), z.object({ name: z.string(), names: names.optional(), optional: z.boolean().optional() })),
   lines: z.record(z.string(), lineSchema),
   stations: z.record(z.string(), stationSchema),
   segments: z.array(segmentSchema),
