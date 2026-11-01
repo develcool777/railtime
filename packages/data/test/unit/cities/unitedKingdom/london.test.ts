@@ -243,7 +243,17 @@ describe('London', () => {
     };
 
     test('keeps each line in one piece, but where its history parts it', () => {
-      expect(lineSplits(london, shown)).toEqual(lineSplits(london));
+      expect(lineSplits(london, shown)).toEqual([
+        // The Chatham reached Victoria from Herne Hill a year before Herne Hill reached Beckenham; until then its trains came by Crystal Palace, not drawn.
+        'south-eastern 1862-08-25: 2 pieces',
+        ...lineSplits(london),
+      ]);
+    });
+
+    test("opens London's first railway in 1836, Spa Road to Deptford, then into London Bridge", () => {
+      expect(railSteps[0]?.kind === 'open' && railSteps[0].line).toBe('south-eastern');
+      expect([...stationsOf(railStepsOn('1836-02-08')[0])].sort()).toEqual(['deptford', 'spa-road']);
+      expect(stationsOf(railStepsOn('1836-12-14')[0])).toContain('london-bridge');
     });
 
     test('opens the South Western from Nine Elms in 1838, and moves it to Waterloo in 1848', () => {
@@ -256,8 +266,8 @@ describe('London', () => {
 
     test('is at its known size today, National Rail with it', () => {
       const snapshot = snapshotOf(playbackOf(london, { networks: shown }));
-      expect(snapshot.stats.stations).toBe(507);
-      expect(snapshot.stats.lines).toBe(22);
+      expect(snapshot.stats.stations).toBe(561);
+      expect(snapshot.stats.lines).toBe(23);
     });
 
     test('plays its whole history, every step, drawing frames without errors', () => {
