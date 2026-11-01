@@ -256,8 +256,9 @@ export class Timeline {
       for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line });
       for (const [position, former] of (info.formerNames ?? []).entries()) {
         const time = toTimestamp(former.until);
-        // A name changed before the station opened is no event: it opens under the later name.
-        if (!this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.opens < time)) continue;
+        // A name changed while no line runs there is no event: the station opens, or comes back, under the later name.
+        const onMap = this.index.lineSegmentsAt(station).some(lineSegment => lineSegment.opens < time && (lineSegment.closes ?? Infinity) > time);
+        if (!onMap) continue;
         day(time).renames.push({ station, from: former.name, to: info.formerNames?.[position + 1]?.name ?? info.name });
       }
     }

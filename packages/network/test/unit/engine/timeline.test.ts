@@ -160,6 +160,23 @@ describe('Timeline', () => {
     expect(opens.map(step => step.kind === 'open' && step.line)).toEqual(['blue', 'green']);
   });
 
+  test('renames no station once its track has closed', () => {
+    const network = tinyNetwork();
+    // E is only on blue's D – E, closed in 1950: renamed in 1960, it is off the map.
+    network.stations.e = { name: 'E', coordinate: [4 * 0.0144, 51.5], formerNames: [{ name: 'Old E', until: '1960-01-01' }] };
+    network.segments.push({
+      stationA: 'd',
+      stationB: 'e',
+      coordinates: [
+        [3 * 0.0144, 51.5],
+        [4 * 0.0144, 51.5],
+      ],
+      lines: { blue: { open: '1930-01-01', close: '1950-01-01' } },
+    });
+    const { timeline } = timelineOf(network);
+    expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'e')).toBe(false);
+  });
+
   test('renames a station through each of its former names in turn', () => {
     const network = tinyNetwork();
     network.stations.d!.formerNames = [

@@ -35,6 +35,10 @@ describe('London', () => {
     ]);
   });
 
+  test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {
+    expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'windsor-and-eton-central')).toBe(false);
+  });
+
   test('reaches Rickmansworth on the Metropolitan in 1887, not with the 1925 Watford branch', () => {
     const reached = stepsOn('1887-09-01').find(step => step.kind === 'open' && step.line === 'metropolitan');
     const stations = reached?.kind === 'open' ? reached.segments.flatMap(segment => [segment.stationA, segment.stationB]) : [];
