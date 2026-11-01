@@ -4,8 +4,8 @@ import { describe, expect, test } from 'vitest';
 import { distanceKm, latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
 import { CoverageGrid, CoverageMeasure } from '../../../src/coverage/coverage.service';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES } from '../../../src/coverage/coverage.constants';
-import { bandAt, cellBands, coverageHistory, coverageOf, servedStations } from '../../../src/coverage/coverage.utils';
+import { COVERAGE_BANDS, COVERAGE_DEFAULT_METRES } from '../../../src/coverage/coverage.constants';
+import { bandAt, bandsWithin, cellBands, coverageHistory, coverageOf, servedStations } from '../../../src/coverage/coverage.utils';
 import { AROUND_TINY, HOLED, KM_EAST, KM_NORTH, MIDDLE, SQUARE, TINY_WITH_HOLE as CITY } from '../../support/factories/boundaries.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
@@ -172,32 +172,50 @@ describe('CoverageGrid', () => {
 });
 
 describe('CoverageMeasure', () => {
-  test("measures the city on the network at a cursor, named by its outline, as the grid's helpers do", () => {
+  test("measures the city on the network at a cursor within a distance, named by its outline, as the grid's helpers do", () => {
     const { index, timeline } = factsOf(tinyNetwork()).engine;
     const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
     const grid = new CoverageGrid(CITY);
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
-    const distances = grid.distances(servedStations(index, timeline, cursor), COVERAGE_BANDS.at(-1)!.upTo);
-    expect(measure.info(cursor)).toEqual({ name: 'Tiny', source: 'test', ...coverageOf(grid, distances, COVERAGE_BANDS, COVERAGE_HEADLINE_METRES) });
+    const distances = grid.distances(servedStations(index, timeline, cursor), COVERAGE_DEFAULT_METRES);
+    expect(measure.info(cursor, COVERAGE_DEFAULT_METRES)).toEqual({
+      name: 'Tiny',
+      source: 'test',
+      ...coverageOf(grid, distances, bandsWithin(COVERAGE_BANDS, COVERAGE_DEFAULT_METRES), COVERAGE_DEFAULT_METRES),
+    });
     // Before the first line, nothing is near a station.
-    expect(measure.info(0).share).toBe(0);
+    expect(measure.info(0, COVERAGE_DEFAULT_METRES).share).toBe(0);
   });
 
-  test('works out the history from the timeline’s first year to today’s once, frames the city, and draws it cell by cell', () => {
+  test('counts only the bands within the distance asked for, the rest farther', () => {
     const { index, timeline } = factsOf(tinyNetwork()).engine;
     const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
-    const history = measure.history();
+    const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
+    const near = measure.info(cursor, 400);
+    const far = measure.info(cursor, 1200);
+    expect(near.bands.map(band => band.upTo)).toEqual([400]);
+    expect(far.bands.map(band => band.upTo)).toEqual([400, 800, 1200]);
+    expect(near.share).toBeLessThan(far.share);
+    expect(near.share + near.beyond.share).toBeCloseTo(1);
+    expect(measure.cells(cursor, 400).bands).toEqual(bandsWithin(COVERAGE_BANDS, 400));
+  });
+
+  test('works out the history within each distance from the timeline’s first year to today’s once, frames the city, and draws it cell by cell', () => {
+    const { index, timeline } = factsOf(tinyNetwork()).engine;
+    const measure = new CoverageMeasure(CITY, index, timeline, toTimestamp('1925-06-01'));
+    const history = measure.history(COVERAGE_DEFAULT_METRES);
     const first = new Date(timeline.start).getUTCFullYear();
-    expect(history).toEqual(coverageHistory(index, timeline, new CoverageGrid(CITY), [first, 1925], COVERAGE_HEADLINE_METRES));
-    expect(measure.history()).toBe(history);
+    expect(history).toEqual(coverageHistory(index, timeline, new CoverageGrid(CITY), [first, 1925], COVERAGE_DEFAULT_METRES));
+    expect(measure.history(COVERAGE_DEFAULT_METRES)).toBe(history);
+    expect(measure.history(400)).toEqual(coverageHistory(index, timeline, new CoverageGrid(CITY), [first, 1925], 400));
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
     const grid = new CoverageGrid(CITY);
-    expect(measure.cells(cursor)).toEqual({
+    expect(measure.cells(cursor, 1200)).toEqual({
       columns: grid.columns,
       rows: grid.rows,
       corners: grid.corners,
       bands: COVERAGE_BANDS,
-      cells: cellBands(grid, grid.distances(servedStations(index, timeline, cursor), COVERAGE_BANDS.at(-1)!.upTo), COVERAGE_BANDS),
+      cells: cellBands(grid, grid.distances(servedStations(index, timeline, cursor), 1200), COVERAGE_BANDS),
     });
     expect(measure.bounds).toEqual([
       [-2 * KM_EAST, 51.5 - 2 * KM_NORTH],
@@ -207,6 +225,14 @@ describe('CoverageMeasure', () => {
 });
 
 describe('CoverageUtils', () => {
+  describe('bandsWithin', () => {
+    test('takes the bands up to a distance, each ending at or before it', () => {
+      expect(bandsWithin(COVERAGE_BANDS, 400).map(band => band.upTo)).toEqual([400]);
+      expect(bandsWithin(COVERAGE_BANDS, 800).map(band => band.upTo)).toEqual([400, 800]);
+      expect(bandsWithin(COVERAGE_BANDS, 1200)).toEqual(COVERAGE_BANDS);
+    });
+  });
+
   describe('bandAt', () => {
     test('puts a distance in the first band it fits, its end included, and none beyond them', () => {
       expect([0, 400, 401, 800, 1200, 1201, Infinity].map(metres => bandAt(metres, COVERAGE_BANDS))).toEqual([0, 0, 1, 1, 2, -1, -1]);

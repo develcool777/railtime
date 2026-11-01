@@ -79,7 +79,7 @@ describe('CoverageLayerUtils', () => {
   describe('coverageDrawing', () => {
     test("draws the city's picture where it lies, and every ring of the outline", () => {
       const { facts, timeline } = playbackOf(tinyNetwork());
-      const cells = facts.coverage(CITY).cells(timeline.cursorAt(toTimestamp('1915-01-01')));
+      const cells = facts.coverage(CITY).cells(timeline.cursorAt(toTimestamp('1915-01-01')), 1200);
       const drawing = coverageDrawing(cells, CITY);
       expect(drawing.image).toEqual({ width: cells.columns, height: cells.rows, pixels: coverageImage(cells) });
       expect(drawing.corners).toEqual(cells.corners);

@@ -1,5 +1,5 @@
 import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { RoutePreference, Stop, Theme } from '@railtime/network/facts.types';
+import type { CoverageDistance, RoutePreference, Stop, Theme } from '@railtime/network/facts.types';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 
@@ -78,18 +78,19 @@ type OverlayInput = {
   routeEnds: RouteEnds;
   routePreference: RoutePreference;
   reachFrom: Stop | null;
+  coverageMetres: CoverageDistance;
 };
 
 /**
  * What to ask the map to draw over the network: the overlay of the section open, once it has what it
  * needs (a route both its ends, a reach its start).
  *
- * @param input - The overlay, the route's ends and preference, the reach's start.
+ * @param input - The overlay, the route's ends and preference, the reach's start, coverage's distance.
  * @returns The request, or `null` for nothing to draw.
  */
 export const overlayRequestOf = (input: OverlayInput): OverlayRequest | null => {
-  const { overlay, routeEnds, routePreference, reachFrom } = input;
-  if (overlay === 'coverage') return { kind: 'coverage' };
+  const { overlay, routeEnds, routePreference, reachFrom, coverageMetres } = input;
+  if (overlay === 'coverage') return { kind: 'coverage', metres: coverageMetres };
   if (overlay === 'route' && routeEnds.from && routeEnds.to)
     return { kind: 'route', from: routeEnds.from.id, to: routeEnds.to.id, preference: routePreference };
   if (overlay === 'reach' && reachFrom) return { kind: 'reach', from: reachFrom.id };

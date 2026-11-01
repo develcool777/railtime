@@ -46,12 +46,13 @@ export class OverlayController {
 
     const route = request?.kind === 'route' ? then.route(request.from, request.to, request.preference) : null;
     const reach = request?.kind === 'reach' ? then.reach(request.from) : null;
-    const coverage = request?.kind === 'coverage' && boundary ? facts.coverage(boundary) : null;
+    // Coverage is measured within the distance asked for, once the outline is in.
+    const coverage = request?.kind === 'coverage' && boundary ? { measure: facts.coverage(boundary), metres: request.metres } : null;
     const routeLine = routeTrack(facts.engine.index, route, theme);
     const reachStations = reachStops(facts.engine.index, reach);
     routeLayer.update(routeLine, routeStops(facts.engine.index, route, theme));
     reachLayer.update(reachTrack(facts.engine.index, reach), reachStations);
-    coverageLayer.update(coverage ? coverageDrawing(coverage.cells(moment.cursor), coverage.boundary) : null);
+    coverageLayer.update(coverage ? coverageDrawing(coverage.measure.cells(moment.cursor, coverage.metres), coverage.measure.boundary) : null);
 
     const subject = overlaySubjectOf(request);
     if (subject !== this.framed) {
@@ -60,14 +61,14 @@ export class OverlayController {
       const reachBounds = reach && boundsOf(reachStations.map(stop => stop.geometry.coordinates));
       if (routeBounds) camera.fit(routeBounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS, ROUTE_NAME_ROOM);
       else if (reachBounds) camera.fit(reachBounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
-      else if (coverage) camera.fit(coverage.bounds, OPENING_MAX_ZOOM, SELECT_FLY_MS);
+      else if (coverage) camera.fit(coverage.measure.bounds, OPENING_MAX_ZOOM, SELECT_FLY_MS);
       // Framed once there is something to frame: coverage waits for the outline, a route for the date to have one.
       if (route || reach || coverage || !request) this.framed = subject;
     }
 
     if (request?.kind === 'route') this.parts.report({ kind: 'route', route });
     else if (request?.kind === 'reach') this.parts.report({ kind: 'reach', reach });
-    else if (request?.kind === 'coverage') this.parts.report({ kind: 'coverage', coverage: coverage?.info(moment.cursor) ?? null });
+    else if (request?.kind === 'coverage') this.parts.report({ kind: 'coverage', coverage: coverage?.measure.info(moment.cursor, coverage.metres) ?? null });
     else this.parts.report(null);
   }
 
@@ -84,7 +85,7 @@ export class OverlayController {
 
 /**
  * What an overlay is of, for the camera: it frames an overlay when this changes (new ends, a new start,
- * coverage opened), and leaves the view be as the date or theme changes it.
+ * coverage opened), and leaves the view be as the date, the theme or coverage's distance changes it.
  *
  * @param request - The overlay asked for, or `null`.
  * @returns Its subject, or `null` for none.

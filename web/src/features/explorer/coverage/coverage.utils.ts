@@ -1,3 +1,5 @@
+import { COVERAGE_DISTANCES } from '@railtime/network/coverage.constants';
+import type { CoverageDistance } from '@railtime/network/facts.types';
 import { formatNumber } from '~/utils/format.utils';
 
 /**
@@ -21,3 +23,20 @@ export const formatShare = (share: number): string => {
  * @returns "1,572 km²", "3.4 km²".
  */
 export const formatArea = (km2: number): string => (km2 < 10 ? `${km2.toFixed(1)} km²` : `${formatNumber(km2)} km²`);
+
+/**
+ * A walk from a station, as the coverage switch and its sentences say it.
+ *
+ * @param metres - The distance.
+ * @returns "400 m", "1.2 km".
+ */
+export const formatWalk = (metres: number): string => (metres < 1000 ? `${metres} m` : `${metres / 1000} km`);
+
+/**
+ * A distance coverage may count within, from what a link or a switch gives: one of its own, or none.
+ *
+ * @param value - "400", 1200…
+ * @returns The distance, or nothing for anything else.
+ */
+export const coverageDistanceOf = (value: string | number | undefined): CoverageDistance | undefined =>
+  COVERAGE_DISTANCES.find(metres => String(metres) === String(value));

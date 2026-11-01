@@ -1,4 +1,5 @@
 import { useRoute, useRouter } from '#imports';
+import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import { storeToRefs } from 'pinia';
 import { computed, ref, watch } from 'vue';
 
@@ -10,14 +11,15 @@ import { isDated } from '~/features/explorer/time/timeline.utils';
 
 /**
  * The address follows what is looked at, so it can be shared: the day and the view, the tab, the line
- * or station open, 3D, the station names, map only. The store opened on what it said (`open`); from
+ * or station open, coverage's distance, 3D, the station names, map only. The store opened on what it said (`open`); from
  * then on it is written from the store. While playing the day is left as it was, not rewritten every change.
  *
  * @param opening - What the address said when the page opened.
  * @param openingSection - The section a page opens on without a tab in its address: left out of it.
  */
 export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Section): void => {
-  const { section, openStation, openLine, viewMode, stationNames, mapOnly, playing, time, view, plan, shownNetworks } = storeToRefs(useExplorerStore());
+  const { section, openStation, openLine, viewMode, stationNames, mapOnly, playing, time, view, plan, shownNetworks, coverageMetres } =
+    storeToRefs(useExplorerStore());
   const route = useRoute();
   const router = useRouter();
 
@@ -34,6 +36,7 @@ export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Se
       ...(plan.value ? { plan: plan.value } : {}),
       ...(shownNetworks.value.length > 0 ? { networks: shownNetworks.value } : {}),
       ...(section.value === openingSection ? {} : { section: section.value }),
+      ...(coverageMetres.value === COVERAGE_DEFAULT_METRES ? {} : { walk: coverageMetres.value }),
       ...(openLine.value ? { line: openLine.value } : {}),
       ...(viewMode.value === '3d' ? { viewMode: '3d' as const } : {}),
       ...(stationNames.value ? {} : { stationNames: false as const }),
