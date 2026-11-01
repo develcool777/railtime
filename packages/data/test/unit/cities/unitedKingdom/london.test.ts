@@ -130,6 +130,12 @@ describe('London', () => {
     for (const station of ['wimbledon', 'west-croydon']) expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === 'tram')).toBe(true);
   });
 
+  test('opens the cable car across the Thames in 2012, a change from North Greenwich and Royal Victoria', () => {
+    expect(stepsOn('2012-06-28').some(step => step.kind === 'open' && step.line === 'cable-car')).toBe(true);
+    expect(index.transfersAt('greenwich-peninsula')).toEqual(['north-greenwich']);
+    expect(index.transfersAt('royal-docks')).toEqual(['royal-victoria']);
+  });
+
   test('turns the Stanmore branch from Bakerloo to Jubilee before the 1979 tunnel opens', () => {
     const steps = stepsOn('1979-05-01');
     expect(steps[0]?.kind).toBe('identity');
@@ -202,8 +208,8 @@ describe('London', () => {
 
   test('is at its known size today', () => {
     const snapshot = snapshotOf(playbackOf(london));
-    expect(snapshot.stats.stations).toBe(460);
-    expect(snapshot.stats.lines).toBe(20);
+    expect(snapshot.stats.stations).toBe(462);
+    expect(snapshot.stats.lines).toBe(21);
   });
 
   test('plays its whole history, every step, drawing frames without errors', () => {
