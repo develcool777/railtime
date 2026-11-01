@@ -28,12 +28,13 @@ const drawnAs = (context: CaptionContext, step: Step, line: string): { id: strin
 };
 
 /**
- * Where a stretch meets its line, as a passenger knew it: the station itself where the line calls
- * there, else the nearest one along the line's track that it calls at (an extension leaving the line
- * at a junction is named from the station before it); else the station itself.
+ * An end of a stretch as a passenger knew it: the station itself where the line calls there, else the
+ * nearest one along the line's track that it calls at (an extension leaving the line at a junction is
+ * named from the station before it, one ending at a junction by the station after it); else the
+ * station itself.
  *
  * @param context - The network.
- * @param station - The stretch's end on the line.
+ * @param station - The stretch's end.
  * @param line - The id of the line, as drawn.
  * @param cursor - The cursor the line is asked at.
  * @returns The station id.
@@ -77,7 +78,8 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
   return {
     kind: 'open',
     title: `${index.lineName(step.line)} ${verb}`,
-    subtitle: `${name(stopNear(context, required(reach[0], 'first station reached').station, step.line, step.index))} – ${name(required(reach.at(-1), 'last station reached').station)}`,
+    // Where it starts, on the line before it; where it ends, on the line it makes.
+    subtitle: `${name(stopNear(context, required(reach[0], 'first station reached').station, step.line, step.index))} – ${name(stopNear(context, required(reach.at(-1), 'last station reached').station, step.line, step.index + 1))}`,
     color: context.colorOf(step.line),
     stations: reach.filter(reached => reached.isNew).map(reached => name(reached.station)),
   };
@@ -98,7 +100,8 @@ const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 
   return {
     kind: 'close',
     title: `${context.index.lineName(step.line)}: section ${returns ? 'suspended' : 'closes'}`,
-    subtitle: `${name(stopNear(context, required(reach[0], 'first station left').station, step.line, step.index + 1))} – ${name(required(reach.at(-1), 'last station left').station)}`,
+    // Where it starts, on the line that stays; where it ends, on the line before it closes.
+    subtitle: `${name(stopNear(context, required(reach[0], 'first station left').station, step.line, step.index + 1))} – ${name(stopNear(context, required(reach.at(-1), 'last station left').station, step.line, step.index))}`,
     color: context.colorOf(step.line),
     stations: [],
   };

@@ -179,16 +179,11 @@ export class Timeline {
    * The stations on the map at a cursor: the ones a new stretch grows out of.
    *
    * @param cursor - The cursor.
+   * @param leaving - Line segments to leave out: a closure's own, for the network that stays.
    * @returns Their ids.
    */
-  public stationsOnMap(cursor: number): Set<string> {
-    const stations = new Set<string>();
-    for (const lineSegment of this.index.lineSegments) {
-      if (!this.isOpen(lineSegment, cursor)) continue;
-      stations.add(lineSegment.segment.stationA);
-      stations.add(lineSegment.segment.stationB);
-    }
-    return stations;
+  public stationsOnMap(cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+    return this.stationsOf(cursor, lineSegment => !leaving.has(lineSegment));
   }
 
   /**
@@ -201,9 +196,20 @@ export class Timeline {
    * @returns Their ids.
    */
   private stationsOnLine(line: string, time: number, cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+    return this.stationsOf(cursor, lineSegment => !leaving.has(lineSegment) && this.identityOn(lineSegment.line, time) === line);
+  }
+
+  /**
+   * The ends of the line segments open at a cursor that a filter keeps.
+   *
+   * @param cursor - The cursor.
+   * @param keeps - Whether a line segment counts.
+   * @returns The stations' ids.
+   */
+  private stationsOf(cursor: number, keeps: (lineSegment: LineSegment) => boolean): Set<string> {
     const stations = new Set<string>();
     for (const lineSegment of this.index.lineSegments) {
-      if (leaving.has(lineSegment) || this.identityOn(lineSegment.line, time) !== line || !this.isOpen(lineSegment, cursor)) continue;
+      if (!keeps(lineSegment) || !this.isOpen(lineSegment, cursor)) continue;
       stations.add(lineSegment.segment.stationA);
       stations.add(lineSegment.segment.stationB);
     }
@@ -396,11 +402,7 @@ export class Timeline {
     for (const [line, lineSegments] of byLine) {
       for (const stretch of connectedStretches(lineSegments, coordOf, this.index.centre)) {
         const closing = new Set(stretch);
-        const staying = new Set(
-          this.index.lineSegments
-            .filter(lineSegment => !closing.has(lineSegment) && this.isOpen(lineSegment, this.steps.length))
-            .flatMap(({ segment }) => [segment.stationA, segment.stationB]),
-        );
+        const staying = this.stationsOnMap(this.steps.length, closing);
         // Split as the stretch would open from the network that stays, played backwards: its last branch first.
         const stayingOnLine = this.stationsOnLine(line, time, this.steps.length, closing);
         for (const part of forkedParts(stretch, staying, coordOf, this.index.centre, stayingOnLine).reverse()) {

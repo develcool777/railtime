@@ -43,6 +43,18 @@ describe('CaptionUtils', () => {
       expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
     });
 
+    test('names an extension ending where its line does not call yet by its last stop', () => {
+      // Blue on from C, where it never calls, by E to F, a station only from 1960: named B – E.
+      const network = tinyNetwork();
+      network.stations.e = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
+      network.stations.f = { name: 'F', coordinate: [2 * 0.0144, 51.518], infill: { blue: '1960-01-01' } };
+      network.segments.push(
+        { stationA: 'c', stationB: 'e', lines: { blue: { open: '1935-01-01' } }, coordinates: [network.stations.c!.coordinate, network.stations.e.coordinate] },
+        { stationA: 'e', stationB: 'f', lines: { blue: { open: '1935-01-01' } }, coordinates: [network.stations.e.coordinate, network.stations.f.coordinate] },
+      );
+      expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
+    });
+
     test('says a line opens though another already runs there, and one back on track it left reopens', () => {
       // B and C are both on the map: the stretch grows one way, from C, nearer the centre.
       expect(captionAfter(tinyNetwork(), '1929-01-01')).toMatchObject({ title: 'Blue line opens', subtitle: 'C – B' });
