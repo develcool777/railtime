@@ -1,7 +1,48 @@
-import { distanceKm, turnDegrees } from '@railtime/core/geometry.utils';
-import type { Network, Plan, Segment, SegmentLine, Station } from '../format/network.types';
+import type { LngLat } from '@railtime/core/geometry.types';
+import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
+import type { Mode, Network, Plan, Segment, SegmentLine, Station } from '../format/network.types';
 import { buildPlan } from '../plan/build.utils.ts';
-import { MAX_TURN_DEGREES, STATION_GAP_METRES } from './checks.constants.ts';
+import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
+
+/**
+ * The sharpest a line of a mode may turn over `CURVE_SPAN_METRES` either side of a point: as much as
+ * its trains' tightest curve turns over that, and never so much it doubles back.
+ *
+ * @param mode - The line's mode.
+ * @returns The turn, degrees.
+ */
+const maxTurnOf = (mode: Mode): number => Math.min(MAX_TURN_DEGREES, ((2 * CURVE_SPAN_METRES) / MIN_CURVE_RADIUS_METRES[mode]) * (180 / Math.PI));
+
+/**
+ * The point a distance along a track.
+ *
+ * @param track - The track.
+ * @param distances - Its `cumulativeDistances`.
+ * @param atKm - How far along.
+ * @returns The point.
+ */
+const pointAt = (track: LngLat[], distances: number[], atKm: number): LngLat => sliceAlong(track, distances, atKm).at(-1) ?? track[0]!;
+
+/**
+ * The sharpest turn along a track, each point's measured from `CURVE_SPAN_METRES` before it to as far
+ * after (less near the track's ends): the curve a train takes there.
+ *
+ * @param track - The track.
+ * @returns The turn, degrees, and the point it is at; `null` for a track with no point between its ends.
+ */
+const sharpestTurn = (track: LngLat[]): { degrees: number; position: number } | null => {
+  const distances = cumulativeDistances(track);
+  const lengthKm = distances.at(-1) ?? 0;
+  let sharpest: { degrees: number; position: number } | null = null;
+  for (const [position, corner] of track.entries()) {
+    const atKm = distances[position] ?? 0;
+    const spanKm = Math.min(CURVE_SPAN_METRES / 1000, atKm, lengthKm - atKm);
+    if (spanKm <= 0) continue;
+    const degrees = turnDegrees(pointAt(track, distances, atKm - spanKm), corner, pointAt(track, distances, atKm + spanKm));
+    if (!sharpest || degrees > sharpest.degrees) sharpest = { degrees, position };
+  }
+  return sharpest;
+};
 
 /**
  * A line's dates on each of its segments at a station.
@@ -64,6 +105,7 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
       if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
     }
     checkStationLines(network, stationId, station, problem);
+    for (const lineId of station.reverses ?? []) if (!network.lines[lineId]) problem(`station ${stationId}: reverses unknown line ${lineId}`);
     const until = (station.formerNames ?? []).map(former => former.until);
     if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
   }
@@ -94,18 +136,78 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
     const gap = place && end ? distanceKm(place, end) * 1000 : 0;
     if (gap > STATION_GAP_METRES) problem(`${name}: its track ends ${Math.round(gap)} m from ${station}`);
   }
-  // No track doubles back: up close, in 3D, a spike shows the line missing its station.
-  const { coordinates } = segment;
-  for (const [position, corner] of coordinates.entries()) {
-    const [before, after] = [coordinates[position - 1], coordinates[position + 1]];
-    if (before && after && turnDegrees(before, corner, after) > MAX_TURN_DEGREES) problem(`${name}: its track doubles back at point ${position}`);
-  }
+  // No track turns sharper than its trains can: up close, in 3D, a corner or a spike shows the line missing its station.
+  const modes = Object.keys(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []);
+  const sharpest = sharpestTurn(segment.coordinates);
+  const limit = Math.max(0, ...modes.map(maxTurnOf));
+  if (modes.length > 0 && sharpest && sharpest.degrees > limit)
+    problem(`${name}: its track turns ${Math.round(sharpest.degrees)}° at point ${sharpest.position}, sharper than its trains can`);
   for (const [lineId, dates] of Object.entries(segment.lines)) {
     if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);
     if (dates.close && dates.close <= dates.open) problem(`${name}: ${lineId} closes before it opens`);
     // Open, then each spell's start and end, then close: each after the one before.
     const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
     if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`${name}: ${lineId} suspended out of order`);
+  }
+};
+
+/** A line's track leaving a station: one of its segments, from the station's end. */
+type TrackOut = { segment: Segment; dates: SegmentLine; track: LngLat[] };
+
+/**
+ * Whether two of a line's spells on segments overlap: only then do its trains run from one to the other.
+ *
+ * @param first - One spell.
+ * @param second - The other.
+ * @returns Whether they share a day.
+ */
+const overlap = (first: SegmentLine, second: SegmentLine): boolean =>
+  (!second.close || first.open < second.close) && (!first.close || second.open < first.close);
+
+/**
+ * How sharply a line turns through a station, from one segment's track into another's, over
+ * `CURVE_SPAN_METRES` of each (less on a shorter one).
+ *
+ * @param into - The track it leaves the station on, backwards.
+ * @param out - The track it leaves on.
+ * @returns The turn, degrees.
+ */
+const turnThrough = (into: LngLat[], out: LngLat[]): number => {
+  const [intoKm, outKm] = [cumulativeDistances(into), cumulativeDistances(out)];
+  const spanKm = Math.min(CURVE_SPAN_METRES / 1000, intoKm.at(-1) ?? 0, outKm.at(-1) ?? 0);
+  return turnDegrees(pointAt(into, intoKm, spanKm), out[0]!, pointAt(out, outKm, spanKm));
+};
+
+/**
+ * Checks each line runs through its stations as a train can: every track it leaves a station on
+ * carries on smoothly from another it runs on then, unless it ends there or reverses there.
+ *
+ * @param network - The network, its shape already valid.
+ * @param problem - Reports one problem.
+ */
+const checkThroughStations = (network: Network, problem: (message: string) => void): void => {
+  const leaving = new Map<string, TrackOut[]>();
+  for (const segment of network.segments) {
+    for (const [lineId, dates] of Object.entries(segment.lines)) {
+      for (const [station, track] of [
+        [segment.stationA, segment.coordinates],
+        [segment.stationB, segment.coordinates.toReversed()],
+      ] as const) {
+        const key = `${station}|${lineId}`;
+        leaving.set(key, [...(leaving.get(key) ?? []), { segment, dates, track }]);
+      }
+    }
+  }
+  for (const [key, tracks] of leaving) {
+    const [station = '', lineId = ''] = key.split('|');
+    const mode = network.lines[lineId]?.mode;
+    if (!mode || network.stations[station]?.reverses?.includes(lineId)) continue;
+    let sharpest = 0;
+    for (const out of tracks) {
+      const turns = tracks.filter(into => into !== out && overlap(into.dates, out.dates)).map(into => turnThrough(into.track, out.track));
+      if (turns.length > 0) sharpest = Math.max(sharpest, Math.min(...turns));
+    }
+    if (sharpest > maxTurnOf(mode)) problem(`station ${station}: ${lineId} turns ${Math.round(sharpest)}° through it, sharper than its trains can`);
   }
 };
 
@@ -122,6 +224,7 @@ export const checkNetwork = (network: Network, problem: (message: string) => voi
   }
   checkStations(network, problem);
   for (const segment of network.segments) checkSegment(network, segment, problem);
+  checkThroughStations(network, problem);
 };
 
 /**

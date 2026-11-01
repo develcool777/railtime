@@ -84,14 +84,50 @@ describe('NetworkSchema', () => {
       [0.0205, 51.5],
       [0.02, 51.5],
     ];
-    expect(problemsOf(network)).toContain('segment a – c: its track doubles back at point 1');
-    // A bend is track.
+    expect(problemsOf(network)).toContain('segment a – c: its track turns 180° at point 1, sharper than its trains can');
+    // A bend is track: through B, where the plan puts its station.
     network.segments[0]!.coordinates = [
       [0, 51.5],
-      [0.01, 51.502],
+      [0.01, 51.501],
       [0.02, 51.5],
     ];
-    expect(problemsOf(network).filter(message => message.includes('doubles back'))).toEqual([]);
+    expect(problemsOf(network).filter(message => message.includes('sharper'))).toEqual([]);
+  });
+
+  test("refuses a turn sharper than the line's trains take: a metro's corner is a tram's street corner", () => {
+    const network = plannedNetwork();
+    // East, back north-north-west for 95 m, then east again: two corners a metro cannot take.
+    network.segments[0]!.coordinates = [
+      [0, 51.5],
+      [0.012, 51.5],
+      [0.0115, 51.5008],
+      [0.02, 51.5],
+    ];
+    expect(problemsOf(network)).toContainEqual(expect.stringMatching(/^segment a – c: its track turns 1[12]\d° at point 2, sharper than its trains can$/));
+    network.lines.red!.mode = 'tram';
+    expect(problemsOf(network).filter(message => message.includes('sharper'))).toEqual([]);
+  });
+
+  test('refuses a line turning back through a station, unless its trains reverse there or never ran both ways at once', () => {
+    const network = plannedNetwork();
+    network.stations.e = { name: 'E', coordinate: [0.01, 51.5002] };
+    network.segments.push({
+      stationA: 'c',
+      stationB: 'e',
+      lines: { red: { open: '1910-01-01' } },
+      coordinates: [
+        [0.02, 51.5],
+        [0.01, 51.5002],
+      ],
+    });
+    expect(problemsOf(network)).toContainEqual(expect.stringMatching(/^station c: red turns 17\d° through it, sharper than its trains can$/));
+    network.stations.c!.reverses = ['red'];
+    expect(problemsOf(network).filter(message => message.includes('sharper'))).toEqual([]);
+    delete network.stations.c!.reverses;
+    network.segments[0]!.lines.red!.close = '1905-01-01';
+    expect(problemsOf(network).filter(message => message.includes('sharper'))).toEqual([]);
+    network.stations.c!.reverses = ['blue'];
+    expect(problemsOf(network)).toContain('station c: reverses unknown line blue');
   });
 
   test('refuses a malformed part: a date, a colour, a language code, track of one point', () => {

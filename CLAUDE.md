@@ -160,9 +160,15 @@ is read from it), in its own order: a new city goes after the last of its countr
 folder is its `meta.country` as a slug. A test fails while it is out of date.
 A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
 `packages/schema/src/validation/checks.constants.ts`), or the schema refuses it: the line would miss the station's dot.
-Nor does a segment's track double back (a turn sharper than `MAX_TURN_DEGREES`): a point run past a
-station and pulled back to it is a spike, plain up close in 3D. Where an
-interchange's lines run apart underground, each line's track ends at the one station point.
+Nor does track turn sharper than its trains can: measured over `CURVE_SPAN_METRES` either side of each
+point, a turn is held to its mode's tightest curve (`MIN_CURVE_RADIUS_METRES`: a metro's 50 m, a
+tram's 15 m), inside a segment and through a station, from one of a line's segments into another it
+runs on at the same time. A corner, or a point run past a station and pulled back to it, is plain up
+close in 3D. A station sits on its lines' track: where it does not, move the station onto the track,
+never the track out to the station. Where an interchange's lines run apart underground, each line's
+track curves gently to the one station point. Where a line's trains end at a station from two
+directions and go back the way they came, the station says so (`reverses`); nowhere else may a line
+turn back through it. A plan's station on track already built sits on that track: the plan splits it there.
 A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
 says the line never called there); its `closed` while the line runs there. The schema refuses
 any other.
@@ -182,4 +188,6 @@ layout, holding more than half its stations.
 
 There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
 dates are checked against Wikipedia's line, station and railway-company articles; a correction
-goes in the network with that source in mind.
+goes in the network with that source in mind. The track and station points of the cities
+Citylines (citylines.co, ODbL) maps were redrawn from it once, where its track follows ours; their
+`attribution` names it. A new track or station point is checked against it where it has one.
