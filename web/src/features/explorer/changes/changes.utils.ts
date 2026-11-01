@@ -4,6 +4,7 @@ import type { TimeState } from '@railtime/renderer/transitMap.types';
 import { yearOf } from '@railtime/core/date.utils';
 
 import { decadeHeading } from '~/features/explorer/format.utils';
+import { foldName } from '~/features/explorer/stations/station.utils';
 import type { ChangeGroup } from '~/features/explorer/changes/changes.types';
 
 /**
@@ -21,6 +22,22 @@ export const changesByDecade = (changes: ChangeInfo[]): ChangeGroup[] => {
     else groups.push({ decade, changes: [change] });
   }
   return groups;
+};
+
+/**
+ * The changes a search finds: each word typed in its title, what it names or its year ("victoria 1968").
+ *
+ * @param changes - The changes, in order.
+ * @param query - What was typed.
+ * @returns Those that match, in order; all of them for an empty query.
+ */
+export const findChanges = (changes: ChangeInfo[], query: string): ChangeInfo[] => {
+  const words = foldName(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return changes;
+  return changes.filter(change => {
+    const text = foldName([change.title, change.subtitle ?? '', change.time === null ? 'plan' : String(yearOf(change.time))].join(' '));
+    return words.every(word => text.includes(word));
+  });
 };
 
 /**

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import {
+  CHASE_GLIDE_KM,
   CHASE_ZOOM,
   FOLLOW_MAX_ZOOM,
   MIN_MOVE_MS,
@@ -91,6 +92,15 @@ describe('CameraDirector', () => {
     // Nothing growing, nothing to follow.
     camera.follow(null, 0.1);
     expect(fake.moves).toHaveLength(3);
+  });
+
+  test('in 3D, jumps to where a line starts growing from across the city, not gliding there at street level', () => {
+    const { fake, camera, view, animation, coordOf } = stepAfter('1905-01-01');
+    view('3d');
+    // About 1 km of longitude is 0.0144° here: the camera stands farther off than it glides.
+    fake.view.center = [(CHASE_GLIDE_KM + 10) * 0.0144, 51.5];
+    expect(camera.focusStep(animation, new Set(), coordOf, 200)).toBe(0);
+    expect(fake.moves[1]).toMatchObject({ kind: 'jump', target: animation.startPoint(), options: { pitch: VIEW_3D_PITCH, zoom: CHASE_ZOOM } });
   });
 
   test('follows nothing on the flat map, or when not following', () => {

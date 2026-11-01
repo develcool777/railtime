@@ -31,6 +31,13 @@ export const VIEW_TILT_MS = 1200;
  */
 export const CHASE_ZOOM = 15.5;
 
+/**
+ * In 3D, the farthest the camera glides to where a change starts, km: about what street level shows.
+ * Farther, it jumps there: gliding across the city at street level draws every street on the way, and
+ * the map and its minimap stutter through it.
+ */
+export const CHASE_GLIDE_KM = 3;
+
 /** Following a line in 3D, how quickly the camera turns to face the way the tip moves. */
 export const TURN_RATE = 1.5;
 

@@ -1,12 +1,13 @@
 import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
 import { clamp } from '@railtime/core/number.utils';
-import { boundsOf } from '@railtime/core/geometry.utils';
+import { boundsOf, distanceKm } from '@railtime/core/geometry.utils';
 import type { StepAnimation } from '../steps/animation.service';
 import type { ChaseTarget } from '../steps/animation.types';
 import type { Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';
 import {
+  CHASE_GLIDE_KM,
   CHASE_ZOOM,
   FOLLOW_MAX_ZOOM,
   MIN_MOVE_MS,
@@ -146,18 +147,25 @@ export class CameraDirector {
   }
 
   /**
-   * In 3D, flies down to where a change starts, facing the rest of it, close enough to see it drawn.
+   * In 3D, flies down to where a change starts, facing the rest of it, close enough to see it drawn;
+   * from across the city, it jumps there.
    *
    * @param animation - The change's animation.
    * @param bounds - The box round it.
    * @param durationMs - How long the move takes.
-   * @returns How long the move takes, ms.
+   * @returns How long the move takes, ms; 0 for a jump.
    */
   private flyToStart(animation: StepAnimation, bounds: Bounds, durationMs: number): number {
     const [southWest, northEast] = bounds;
     const middle: LngLat = [(southWest[0] + northEast[0]) / 2, (southWest[1] + northEast[1]) / 2];
     this.chase = chaseStartOf(animation.startPoint() ?? middle, middle, this.map.getBearing());
-    this.map.easeTo({ center: this.chase.center, bearing: this.chase.bearing, zoom: CHASE_ZOOM, pitch: VIEW_3D_PITCH, duration: durationMs });
+    const here = this.map.getCenter();
+    const view = { center: this.chase.center, bearing: this.chase.bearing, zoom: CHASE_ZOOM, pitch: VIEW_3D_PITCH };
+    if (distanceKm([here.lng, here.lat], this.chase.center) > CHASE_GLIDE_KM) {
+      this.map.jumpTo(view);
+      return 0;
+    }
+    this.map.easeTo({ ...view, duration: durationMs });
     return durationMs;
   }
 

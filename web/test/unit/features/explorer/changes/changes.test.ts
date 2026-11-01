@@ -1,6 +1,6 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-import { changesByDecade, currentChangeIndex, timelinePosition } from '~/features/explorer/changes/changes.utils';
+import { changesByDecade, currentChangeIndex, findChanges, timelinePosition } from '~/features/explorer/changes/changes.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
 
 /**
@@ -30,6 +30,22 @@ describe('ChangesUtils', () => {
         ['1930s', [2, 3]],
         ['Future', [4]],
       ]);
+    });
+  });
+
+  describe('findChanges', () => {
+    test('finds the changes holding every word typed, in their title, what they name or their year, accents and case aside', () => {
+      const changes = [
+        { ...change(0, 1968), title: 'Victoria line opens', subtitle: 'Walthamstow Central – Highbury & Islington' },
+        { ...change(1, 1969), title: 'Victoria line extended', subtitle: 'Warren Street – Victoria' },
+        { ...change(2, 1990), title: 'Náměstí Míru renamed', subtitle: 'now Náměstí Míru' },
+        change(3, null),
+      ];
+      expect(findChanges(changes, 'victoria 1968').map(found => found.index)).toEqual([0]);
+      expect(findChanges(changes, '  VICTORIA ').map(found => found.index)).toEqual([0, 1]);
+      expect(findChanges(changes, 'namesti miru').map(found => found.index)).toEqual([2]);
+      expect(findChanges(changes, 'plan').map(found => found.index)).toEqual([3]);
+      expect(findChanges(changes, '')).toBe(changes);
     });
   });
 
