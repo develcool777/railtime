@@ -1,5 +1,5 @@
 {
-  "london": {"name":"London","country":"United Kingdom","networks":["Underground","Overground","Elizabeth line","DLR"],"openedYear":1863,"planOnly":false,"plans":7,"lines":21,"stations":460},
+  "london": {"name":"London","country":"United Kingdom","networks":["Underground","Overground","Elizabeth line","DLR","London Trams"],"openedYear":1863,"planOnly":false,"plans":7,"lines":22,"stations":497},
   "manchester": {"name":"Manchester","country":"United Kingdom","networks":["Metrolink"],"openedYear":1992,"planOnly":false,"plans":2,"lines":9,"stations":103},
   "glasgow": {"name":"Glasgow","country":"United Kingdom","networks":["Glasgow Subway"],"openedYear":1896,"planOnly":false,"plans":5,"lines":2,"stations":16},
   "tyne-and-wear": {"name":"Tyne and Wear","country":"United Kingdom","networks":["Metro"],"openedYear":1980,"planOnly":false,"plans":2,"lines":2,"stations":61},

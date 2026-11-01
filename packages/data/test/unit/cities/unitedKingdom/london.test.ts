@@ -123,6 +123,13 @@ describe('London', () => {
       expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === 'dlr')).toBe(true);
   });
 
+  test('opens the trams in May 2000 a route at a time, Centrale added in 2005', () => {
+    for (const date of ['2000-05-10', '2000-05-23', '2000-05-30']) expect(stepsOn(date).some(step => step.kind === 'open' && step.line === 'tram')).toBe(true);
+    expect(stepsOn('2005-12-10').some(step => step.kind === 'infill' && step.station === 'centrale')).toBe(true);
+    // Wimbledon and West Croydon are one station with the District and the Overground.
+    for (const station of ['wimbledon', 'west-croydon']) expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === 'tram')).toBe(true);
+  });
+
   test('turns the Stanmore branch from Bakerloo to Jubilee before the 1979 tunnel opens', () => {
     const steps = stepsOn('1979-05-01');
     expect(steps[0]?.kind).toBe('identity');
@@ -195,8 +202,8 @@ describe('London', () => {
 
   test('is at its known size today', () => {
     const snapshot = snapshotOf(playbackOf(london));
-    expect(snapshot.stats.stations).toBe(423);
-    expect(snapshot.stats.lines).toBe(19);
+    expect(snapshot.stats.stations).toBe(460);
+    expect(snapshot.stats.lines).toBe(20);
   });
 
   test('plays its whole history, every step, drawing frames without errors', () => {
