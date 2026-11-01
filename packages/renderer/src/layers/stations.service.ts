@@ -147,7 +147,7 @@ export class StationLayer extends MapLayer {
 
   /**
    * A station's label: its name, and under it, smaller and quieter, what the step playing does to it:
-   * the name it had while it takes a new one, or that it closes.
+   * the name it had while it takes a new one, that it closes, or that it opens (a plan's, planned).
    *
    * @returns The label's text, as MapLibre formats it.
    */
@@ -159,6 +159,8 @@ export class StationLayer extends MapLayer {
       ['format', ['get', 'name'], {}, '\n', {}, ['concat', 'formerly ', ['get', 'former']], note],
       ['get', 'closing'],
       ['format', ['get', 'name'], {}, '\n', {}, 'closed', note],
+      ['get', 'highlighted'],
+      ['format', ['get', 'name'], {}, '\n', {}, ['case', ['get', 'planned'], 'planned', 'opened'], note],
       ['get', 'name'],
     ];
   }
