@@ -1,24 +1,26 @@
 import { describe, expect, test } from 'vitest';
-import { PANEL_WIDTH, SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
-import { draggedPanelWidth, mapPaddingFor } from '~/features/explorer/layout.utils';
+import { PANEL_WIDTH, SHEET_HEIGHTS, TAB_LABELS_HEIGHT } from '~/features/explorer/explorer.constants';
+import { draggedPanelWidth, mapPaddingFor, sheetHeightOf } from '~/features/explorer/layout.utils';
 
 describe('LayoutUtils', () => {
   describe('mapPaddingFor', () => {
     test('keeps more room at the bottom as the time control grows', () => {
-      const bottoms = (['rest', 'timeline', 'playing'] as const).map(mode => mapPaddingFor(mode, false, 'peek').bottom);
+      const bottoms = (['rest', 'timeline', 'playing'] as const).map(mode => mapPaddingFor(mode, null).bottom);
       expect(bottoms).toEqual([...bottoms].sort((first, second) => first - second));
       expect(new Set(bottoms).size).toBe(3);
     });
 
-    test('on a phone, adds the sheet; at full height, the half it is let down to', () => {
-      const peek = mapPaddingFor('rest', true, 'peek').bottom;
-      const half = mapPaddingFor('rest', true, 'half').bottom;
-      expect(half - peek).toBe(SHEET_HEIGHTS.half - SHEET_HEIGHTS.peek);
-      expect(mapPaddingFor('rest', true, 'full')).toEqual(mapPaddingFor('rest', true, 'half'));
+    test('on a phone, adds what the sheet covers', () => {
+      expect(mapPaddingFor('rest', 200).bottom - mapPaddingFor('rest', 100).bottom).toBe(100);
     });
+  });
 
-    test('beside the map, the sheet does not count', () => {
-      expect(mapPaddingFor('timeline', false, 'peek')).toEqual(mapPaddingFor('timeline', false, 'full'));
+  describe('sheetHeightOf', () => {
+    test("stands the sheet at its snap; at full height, the half it is let down to; taller by its tabs' names where they show", () => {
+      expect(sheetHeightOf('peek', false)).toBe(SHEET_HEIGHTS.peek);
+      expect(sheetHeightOf('peek', true)).toBe(SHEET_HEIGHTS.peek + TAB_LABELS_HEIGHT);
+      expect(sheetHeightOf('half', true)).toBe(SHEET_HEIGHTS.half);
+      expect(sheetHeightOf('full', false)).toBe(SHEET_HEIGHTS.half);
     });
   });
 

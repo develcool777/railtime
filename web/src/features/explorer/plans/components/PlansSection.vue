@@ -1,6 +1,14 @@
 <template>
-  <!-- One plan at a time, or the network as built: a choice of cards. -->
-  <URadioGroup :modelValue="plan ?? BUILT" :items="cards" variant="card" indicator="end" class="p-4" aria-label="Plans" @update:modelValue="choose">
+  <!-- One plan at a time, or the network as built: a choice of cards, the one shown marked by its colour, with no radio dot. -->
+  <URadioGroup
+    :modelValue="plan ?? BUILT"
+    :items="cards"
+    variant="card"
+    indicator="hidden"
+    :ui="{ wrapper: 'items-stretch text-start' }"
+    class="p-4"
+    aria-label="Plans"
+    @update:modelValue="choose">
     <template #label="{ item }">
       <span class="flex items-start justify-between gap-2">
         <span class="text-highlighted text-sm leading-5 font-bold">{{ item.name }}</span>
@@ -14,7 +22,7 @@
           item.description
         }}</span>
         <span v-if="item.colors.length > 0 || item.facts" class="flex items-center gap-2">
-          <span class="flex flex-wrap gap-1">
+          <span v-if="item.colors.length > 0" class="flex flex-wrap gap-1">
             <span v-for="color in item.colors" :key="color" class="h-1.5 w-[22px] rounded-full" :style="{ background: color }" />
           </span>
           <span class="text-muted text-xs tabular-nums">{{ item.facts }}</span>

@@ -21,6 +21,7 @@
           v-if="chrome.panel"
           v-model:snap="sheet"
           :phone
+          :tabLabels
           :open="panelOpen"
           :width="panelWidth"
           :resizing
@@ -126,7 +127,7 @@
             class="pointer-events-none absolute z-10 flex -translate-x-1/2 flex-col gap-3"
             :class="[timeMode === 'rest' ? 'items-center' : 'items-start', resizing ? '' : 'transition-[left,width] duration-200 ease-out']"
             :style="{
-              bottom: phone ? `${SHEET_HEIGHTS[sheet === 'full' ? 'half' : sheet] + 12}px` : '28px',
+              bottom: sheetHeight === null ? '28px' : `${sheetHeight + 12}px`,
               // Centred on what the panel leaves of the map.
               left: `calc(50% + ${panelCover / 2}px)`,
               width: phone ? 'calc(100% - 24px)' : `min(960px, calc(100% - ${32 + panelCover}px))`,
@@ -195,7 +196,6 @@
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
-  import { SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
   import { useExplorerStore } from '~/features/explorer/explorer.store';
   import { openingSectionOf } from '~/features/explorer/explorer.utils';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
@@ -221,7 +221,9 @@
     railSection,
     timeMode,
     phone,
+    tabLabels,
     sheet,
+    sheetHeight,
     panelOpen,
     panelWidth,
     panelCover,
