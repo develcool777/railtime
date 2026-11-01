@@ -33,8 +33,7 @@ const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}) => {
   );
   const map = new TransitMap({
     container: {} as HTMLElement,
-    facts: NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01') }),
-    props,
+    props: { facts: NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01') }), ...props },
     on: recordAll,
     createMap: () => fake.map,
     scheduler: { request: frame => pending.push(frame), cancel: () => (pending.length = 0) },
@@ -140,6 +139,22 @@ describe('TransitMap', () => {
     map.update({ viewMode: '3d', stationLabels: true, theme: 'dark' });
     expect(fake.moves).toHaveLength(moves);
     expect(JSON.stringify([...fake.sends])).toBe(sends);
+  });
+
+  test("draws another network on the same map: the camera where it was, the clock at the new one's today, a plan's track once built", () => {
+    const { map, fake, frame, ready, named } = mapOf();
+    ready();
+    map.seek({ time: toTimestamp('1905-01-01') });
+    frame();
+    const moves = fake.moves.length;
+    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: 'extension', today: toTimestamp('2026-01-01') }) });
+    frame();
+    expect(fake.moves).toHaveLength(moves);
+    expect((named('time').at(-1) as { time: number }).time).toBe(toTimestamp('2026-01-01'));
+    expect(featuresIn(fake, SOURCES.planned)).toHaveLength(0);
+    map.seek('future');
+    frame();
+    expect(featuresIn(fake, SOURCES.planned).length).toBeGreaterThan(0);
   });
 
   test("hides the ring of a station the moment took off the map, says so, and rings it again when it is back: the prop is the app's", () => {

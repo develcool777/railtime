@@ -45,7 +45,8 @@ export class PropsReconciler {
 
 /**
  * Whether two values of the map's state say the same: alike in every part, whatever the order of an
- * object's keys. An array's order counts.
+ * object's keys. An array's order counts. An instance of a class (a network's facts) is the same only
+ * as itself: it is never taken apart.
  *
  * @param first - One value.
  * @param second - The other.
@@ -55,6 +56,7 @@ const sameValue = (first: unknown, second: unknown): boolean => {
   if (first === second) return true;
   if (typeof first !== 'object' || typeof second !== 'object' || first === null || second === null) return false;
   if (Array.isArray(first) !== Array.isArray(second)) return false;
+  if (!Array.isArray(first) && (Object.getPrototypeOf(first) !== Object.prototype || Object.getPrototypeOf(second) !== Object.prototype)) return false;
   const firstEntries = Object.entries(first);
   const secondRecord = second as Record<string, unknown>;
   return firstEntries.length === Object.keys(second).length && firstEntries.every(([key, value]) => key in secondRecord && sameValue(value, secondRecord[key]));

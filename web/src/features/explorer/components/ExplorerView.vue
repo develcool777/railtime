@@ -192,7 +192,7 @@
   import { useRoute } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { storeToRefs } from 'pinia';
-  import { useTemplateRef } from 'vue';
+  import { computed, useTemplateRef, watch } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
@@ -211,11 +211,17 @@
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  // The store makes the network's facts, once for the page, and opens on them and on what the address says.
+  // The store makes the network's facts and opens on them and on what the address says; another plan
+  // is shown on the same page and map (`showPlan`).
   const opening = parseExplorerQuery(useRoute().query);
   const openingSection = openingSectionOf(props.plan);
   const store = useExplorerStore();
-  const { range } = store.open(props.network, props.plan, opening, openingSection);
+  const opened = store.open(props.network, props.plan, opening, openingSection);
+  const range = computed(() => (store.facts ?? opened).range);
+  watch(
+    () => props.plan,
+    next => void store.showPlan(props.network, next),
+  );
   const {
     section,
     railSection,
@@ -275,7 +281,7 @@
   } = useExplorerPanel();
   const { boundaryState, coverage, history: coverageHistory } = useCoverage(props.city);
 
-  /** Shows another plan, or the built network: the page mounts the explorer afresh, on Plans. */
+  /** Shows another plan, or the built network: the page puts it in the address, and the explorer shows it in place. */
   const choosePlan = (id: string | undefined) => {
     if (id !== props.plan) emit('plan', id);
   };

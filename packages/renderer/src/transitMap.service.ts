@@ -32,8 +32,20 @@ import {
   SELECTED_STATION_ZOOM,
   SELECT_FLY_MS,
 } from './transitMap.constants';
-import type { Credit, FrameScheduler, MapProps, MapView, Padding, PlayFrom, SeekTarget, TransitMapEvents, TransitMapOptions } from './transitMap.types';
+import type {
+  Credit,
+  FrameScheduler,
+  MapProps,
+  MapView,
+  NetworkParts,
+  Padding,
+  PlayFrom,
+  SeekTarget,
+  TransitMapEvents,
+  TransitMapOptions,
+} from './transitMap.types';
 import { openingOf } from './transitMap.utils';
+import { emptyCollection } from './layers/snapshot.utils';
 
 /** Frames from the browser, unless a test steps them by hand. */
 const BROWSER_FRAMES: FrameScheduler = {
@@ -47,17 +59,14 @@ const BROWSER_FRAMES: FrameScheduler = {
  * It draws a network's `NetworkFacts` at the player's moment, as its props say. Three channels, and
  * no other: props (`update`: how the map is set, the app's), commands (moving through time, camera
  * moves), and events (what happened, delivered between frames, never inside a call). A fact is asked
- * of the `NetworkFacts` it was made with, never of the map. Made with its props and listeners; `destroy` takes it all down.
+ * of the `NetworkFacts` it draws, never of the map. The network is a prop too: another (a plan shown,
+ * or none) is drawn on the same map, with no new basemap. Made with its props and listeners; `destroy` takes it all down.
  */
 export class TransitMap {
-  /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
-  public readonly credits: Credit[];
-  /** The network, its history and every question about it. */
-  private readonly facts: NetworkFacts;
-  /** The raw network the facts come from: what it plays and draws. */
-  private readonly engine: NetworkEngine;
-  /** The clock and the step playing. */
-  private readonly player: Player;
+  /** The basemap's style. */
+  private readonly basemap: string;
+  /** Everything the network drawn is drawn with, made again for another. */
+  private parts: NetworkParts;
   /** The main map. */
   private readonly map: MapLibreMap;
   /** Asks for frames. */
@@ -82,10 +91,6 @@ export class TransitMap {
   private readonly coverageLayer: CoverageLayer;
   /** The basemap's buildings, standing in 3D. */
   private readonly buildingsLayer: BuildingsLayer;
-  /** A route, a reach or coverage over the network. */
-  private readonly overlay: OverlayController;
-  /** Draws each frame on the layers. */
-  private readonly frames: FrameRenderer;
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
   /** Events raised since the last frame, delivered at its end. */
@@ -105,17 +110,15 @@ export class TransitMap {
     // Before the first map: MapLibre starts its workers with it.
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
     for (const [event, listener] of Object.entries(options.on ?? {})) this.events.on(event as keyof TransitMapEvents, listener as never);
-    this.facts = options.facts;
-    this.engine = options.facts.engine;
-    this.player = new Player(this.engine, step => this.createAnimation(step));
     this.scheduler = options.scheduler ?? BROWSER_FRAMES;
-    const props: MapProps = { ...DEFAULT_MAP_PROPS, ...options.props };
+    // The network first: a prop's effect runs in the props' order, and every other draws on it.
+    const { facts, ...given } = options.props;
+    const props: MapProps = { facts, ...DEFAULT_MAP_PROPS, ...given };
     this.props = new PropsReconciler(props, this.effects);
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
-    const { network, bounds } = this.engine.index;
-    // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
-    this.credits = [...(basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: network.meta.attribution }];
+    this.basemap = basemap;
+    const { network, bounds } = props.facts.engine.index;
     const createMap = options.createMap ?? (mapOptions => new MapLibreMap(mapOptions));
     this.map = createMap({
       container: options.container,
@@ -137,29 +140,11 @@ export class TransitMap {
       this.map,
       station => this.engine.index.coordOf(station),
       station => this.engine.index.stationLabel(station, this.player.clock),
-      this.engine.index.compareLines,
+      // Asked of the network drawn now: another has its own lines.
+      (first, second) => this.engine.index.compareLines(first, second),
     );
-    this.overlay = new OverlayController({
-      facts: this.facts,
-      route: this.routeLayer,
-      reach: this.reachLayer,
-      coverage: this.coverageLayer,
-      camera: this.camera,
-      moment: () => this.moment(),
-      theme: () => this.props.current.theme,
-      report: result => this.notify('overlay', result),
-    });
     this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, bounds, PALETTES[props.theme]) : null;
-    this.frames = new FrameRenderer({
-      index: this.engine.index,
-      timeline: this.engine.timeline,
-      player: this.player,
-      network: this.networkLayer,
-      activeStep: this.activeStepLayer,
-      stations: this.stationLayer,
-      minimap: this.minimap,
-      baseColor: line => this.facts.colorOf(line)[this.props.current.theme],
-    });
+    this.parts = this.partsFor(props.facts);
 
     this.map.on('style.load', () => this.install());
     this.map.on('click', event => this.onMapClick(event));
@@ -168,6 +153,12 @@ export class TransitMap {
     this.map.on('move', () => this.updateMinimapViewport());
     this.map.on('moveend', () => this.notify('view', this.view()));
     this.frameRequest = this.scheduler.request(this.renderFrame);
+  }
+
+  /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
+  public get credits(): Credit[] {
+    // Another basemap's credits are its own business: the app keeps MapLibre's control for it.
+    return [...(this.basemap === DEFAULT_BASEMAP ? DEFAULT_BASEMAP_CREDITS : []), { text: this.parts.facts.engine.index.network.meta.attribution }];
   }
 
   /** Where the map is in its life: loading until its style has loaded, ready, then destroyed. */
@@ -284,9 +275,80 @@ export class TransitMap {
     this.events.clear();
   }
 
+  /** The network drawn, its history and every question about it. */
+  private get facts(): NetworkFacts {
+    return this.parts.facts;
+  }
+
+  /** The raw network the facts come from: what it plays and draws. */
+  private get engine(): NetworkEngine {
+    return this.parts.facts.engine;
+  }
+
+  /** The clock and the step playing. */
+  private get player(): Player {
+    return this.parts.player;
+  }
+
+  /** A route, a reach or coverage over the network. */
+  private get overlay(): OverlayController {
+    return this.parts.overlay;
+  }
+
+  /** Draws each frame on the layers. */
+  private get frames(): FrameRenderer {
+    return this.parts.frames;
+  }
+
+  /**
+   * What a network is drawn with: its player, at its today, the overlay worked out on it, and the
+   * frames drawn of it, on the map's own layers.
+   *
+   * @param facts - The network.
+   * @returns Its parts.
+   */
+  private partsFor(facts: NetworkFacts): NetworkParts {
+    const { index, timeline } = facts.engine;
+    const player = new Player(facts.engine, step => this.createAnimation(step));
+    const overlay = new OverlayController({
+      facts,
+      route: this.routeLayer,
+      reach: this.reachLayer,
+      coverage: this.coverageLayer,
+      camera: this.camera,
+      moment: () => this.moment(),
+      theme: () => this.props.current.theme,
+      report: result => this.notify('overlay', result),
+    });
+    const frames = new FrameRenderer({
+      index,
+      timeline,
+      player,
+      network: this.networkLayer,
+      activeStep: this.activeStepLayer,
+      stations: this.stationLayer,
+      minimap: this.minimap,
+      baseColor: line => facts.colorOf(line)[this.props.current.theme],
+    });
+    return { facts, player, overlay, frames };
+  }
+
   /** What each prop does once changed (`PropsReconciler`), reading it from the props. */
   private get effects(): Record<keyof MapProps, () => void> {
     return {
+      // Another network on the same map: drawn at its today, the camera where it is, the props that
+      // set its player, its lines and its overlay given to it again.
+      facts: () => {
+        const { facts } = this.props.current;
+        if (facts === this.parts.facts) return;
+        this.parts = this.partsFor(facts);
+        this.tileWait = 0;
+        this.minimap?.frame(facts.engine.index.bounds);
+        this.minimap?.setActive(emptyCollection());
+        const effects = this.effects;
+        for (const effect of [effects.speed, effects.camera, effects.visibleLines, effects.overlay]) effect();
+        this.jumped();
+      },
       theme: () => {
         const palette = PALETTES[this.props.current.theme];
         this.minimap?.setPalette(palette);

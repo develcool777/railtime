@@ -12,7 +12,7 @@ export const NO_COVER: Padding = { top: 0, bottom: 0, left: 0, right: 0 };
  * camera keeps first, then how it looks, then what it frames (the station selected, the overlay), so
  * no later prop cancels the camera's move to it.
  */
-export const DEFAULT_MAP_PROPS: MapProps = {
+export const DEFAULT_MAP_PROPS: Omit<MapProps, 'facts'> = {
   padding: DEFAULT_PADDING,
   cover: NO_COVER,
   theme: 'dark',

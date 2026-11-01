@@ -13,12 +13,12 @@ import '@railtime/renderer/transitMap.css';
 const facts = NetworkFacts.create(network, { plan });
 const map = new TransitMap({
   container,
-  facts,
-  props: { theme: 'dark', selectedStation: 'bank' }, // how it is set; the rest, DEFAULT_MAP_PROPS
+  props: { facts, theme: 'dark', selectedStation: 'bank' }, // the network and how it is set; the rest, DEFAULT_MAP_PROPS
   on: { time: state => …, step: change => …, stationClick: id => …, overlay: result => … },
   minimapContainer,
 });
 map.update({ viewMode: '3d', overlay: { kind: 'route', from: 'bank', to: 'oval', preference: 'fastest' } });
+map.update({ facts: NetworkFacts.create(network, { plan: 'another' }) }); // drawn on the same map, at its today
 map.seek({ time: Date.UTC(1950, 0, 1) }); // or { change }, 'today', 'future'
 map.play('start'); // history from its first date; a plan's future from today
 map.pause(); map.skip(); map.previousChange(); map.stepYear(-1); map.stop();

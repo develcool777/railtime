@@ -131,10 +131,11 @@ hears it (`time`) and asks to move it.
 ### Lifecycle
 
 ```ts
-const map = new TransitMap({ container, facts, props, on: { time, step, … }, view, minimapContainer });
+const map = new TransitMap({ container, props: { facts, … }, on: { time, step, … }, view, minimapContainer });
 ```
 
-Loading, then ready (the style loaded, the layers drawn as the props say), then destroyed (`destroy`:
+The network is a prop (`facts`), compared by instance: another (a plan shown, or none) is drawn on the
+same map, its player at its today, the camera where it was, the basemap kept. Loading, then ready (the style loaded, the layers drawn as the props say), then destroyed (`destroy`:
 the frame loop, the map, the minimap and every listener gone; any later call does nothing). Props and
 commands are taken at once in any state. There is nothing else to call.
 
@@ -143,10 +144,11 @@ commands are taken at once in any state. There is nothing else to call.
 ```text
 TransitMap            facade: owns MapLibre, the frame loop and the event queue; wires the rest
 ├─ PropsReconciler    the props, and one effect per prop, run in the props' order
-├─ OverlayController  a route, a reach or coverage at the moment shown: drawn, framed when new, reported
-├─ FrameRenderer      each frame on the layers; nothing sent when nothing changed
+├─ NetworkParts       what one network is drawn with, made again for another (`facts`):
+│  ├─ Player             the clock and each step's phases, moved only by its commands
+│  ├─ OverlayController  a route, a reach or coverage at the moment shown: drawn, framed when new, reported
+│  └─ FrameRenderer      each frame on the layers; nothing sent when nothing changed
 ├─ CameraDirector     frames steps, follows in 3D; reads its settings from the props
-├─ Player             the clock and each step's phases, moved only by its commands
 └─ layers/*, Minimap  draw what they are given
 ```
 
