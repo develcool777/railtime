@@ -192,6 +192,25 @@ export class Timeline {
   }
 
   /**
+   * The stations on the map on one line, as drawn on a date: an opening of it grows out of them first.
+   *
+   * @param line - The id of the line as drawn.
+   * @param time - The date, which says what each line is drawn as.
+   * @param cursor - The cursor.
+   * @param leaving - Line segments to leave out: a closure's own.
+   * @returns Their ids.
+   */
+  private stationsOnLine(line: string, time: number, cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+    const stations = new Set<string>();
+    for (const lineSegment of this.index.lineSegments) {
+      if (leaving.has(lineSegment) || this.identityOn(lineSegment.line, time) !== line || !this.isOpen(lineSegment, cursor)) continue;
+      stations.add(lineSegment.segment.stationA);
+      stations.add(lineSegment.segment.stationB);
+    }
+    return stations;
+  }
+
+  /**
    * How an opening grows: from the stations on the map before it (else the end nearest the centre),
    * segment by segment, and the order its stations come in. Its caption and its animation both read it.
    *
@@ -201,7 +220,13 @@ export class Timeline {
   public growthOf(step: OpenStep): Growth {
     const known = this.growths.get(step);
     if (known) return known;
-    const planned = planGrowth(step.segments, this.stationsOnMap(step.index), station => this.index.coordOf(station), this.index.centre);
+    const planned = planGrowth(
+      step.segments,
+      this.stationsOnMap(step.index),
+      station => this.index.coordOf(station),
+      this.index.centre,
+      this.stationsOnLine(step.line, step.time, step.index),
+    );
     const growth = this.calledAtOnly(planned, step.lineSegments, step.index + 1);
     this.growths.set(step, growth);
     return growth;
@@ -219,7 +244,13 @@ export class Timeline {
     const known = this.growths.get(step);
     if (known) return known;
     const segments = [...new Map(step.lineSegments.map(({ segment }) => [segment.index, segment])).values()];
-    const planned = planGrowth(segments, this.stationsOnMap(step.index + 1), station => this.index.coordOf(station), this.index.centre);
+    const planned = planGrowth(
+      segments,
+      this.stationsOnMap(step.index + 1),
+      station => this.index.coordOf(station),
+      this.index.centre,
+      this.stationsOnLine(step.line, step.time, step.index + 1),
+    );
     // While its closing step plays, a line still calls where it called.
     const growth = this.calledAtOnly(planned, step.lineSegments, step.index);
     this.growths.set(step, growth);
@@ -342,7 +373,8 @@ export class Timeline {
     for (const lineSegment of opens) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const line of [...byLine.keys()].sort(this.index.compareLines)) {
       for (const stretch of connectedStretches(byLine.get(line)!, coordOf, this.index.centre)) {
-        for (const part of forkedParts(stretch, this.stationsOnMap(this.steps.length), coordOf, this.index.centre)) {
+        const onMap = this.stationsOnMap(this.steps.length);
+        for (const part of forkedParts(stretch, onMap, coordOf, this.index.centre, this.stationsOnLine(line, time, this.steps.length))) {
           const step = this.addStep({ kind: 'open', time, line, lineSegments: part, segments: [...new Set(part.map(item => item.segment))] });
           for (const lineSegment of part) this.openStep.set(lineSegment, step);
         }
@@ -370,7 +402,8 @@ export class Timeline {
             .flatMap(({ segment }) => [segment.stationA, segment.stationB]),
         );
         // Split as the stretch would open from the network that stays, played backwards: its last branch first.
-        for (const part of forkedParts(stretch, staying, coordOf, this.index.centre).reverse()) {
+        const stayingOnLine = this.stationsOnLine(line, time, this.steps.length, closing);
+        for (const part of forkedParts(stretch, staying, coordOf, this.index.centre, stayingOnLine).reverse()) {
           const step = this.addStep({ kind: 'close', time, line, lineSegments: part });
           for (const lineSegment of part) this.closeStep.set(lineSegment, step);
         }

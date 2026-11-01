@@ -30,6 +30,19 @@ describe('CaptionUtils', () => {
       });
     });
 
+    test('names an extension leaving its line where it does not call from the station before', () => {
+      // Blue runs B – C from 1930 but never calls at C: its 1935 extension on to E is named from B.
+      const network = tinyNetwork();
+      network.stations.e = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
+      network.segments.push({
+        stationA: 'c',
+        stationB: 'e',
+        lines: { blue: { open: '1935-01-01' } },
+        coordinates: [network.stations.c!.coordinate, network.stations.e.coordinate],
+      });
+      expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
+    });
+
     test('says a line opens though another already runs there, and one back on track it left reopens', () => {
       // B and C are both on the map: the stretch grows one way, from C, nearer the centre.
       expect(captionAfter(tinyNetwork(), '1929-01-01')).toMatchObject({ title: 'Blue line opens', subtitle: 'C – B' });

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkEngine } from '@railtime/network/engine.service';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TrackSegment } from '@railtime/network/engine.types';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
@@ -53,6 +54,14 @@ describe('London', () => {
       step.kind === 'close' ? step.lineSegments.some(({ segment }) => segment.stationB === 'new-cross-gate' || segment.stationA === 'new-cross-gate') : null,
     );
     expect(reaches).toEqual([true, false]);
+  });
+
+  test('extends the Central line in 1920 out of its Wood Lane loop to Ealing Broadway, named from Wood Lane', () => {
+    const facts = NetworkFacts.create(london, { today: toTimestamp('2026-01-01') });
+    const extended = stepsOn('1920-08-03').find(step => step.kind === 'open' && step.line === 'central');
+    if (extended?.kind !== 'open') throw new Error('the Central line reaches Ealing Broadway on 3 August 1920');
+    expect(timeline.growthOf(extended).reach[0]?.station).toBe('white-city');
+    expect(facts.change(extended.index).subtitle).toBe('Wood Lane – Ealing Broadway');
   });
 
   test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {

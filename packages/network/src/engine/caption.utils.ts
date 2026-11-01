@@ -28,6 +28,37 @@ const drawnAs = (context: CaptionContext, step: Step, line: string): { id: strin
 };
 
 /**
+ * Where a stretch meets its line, as a passenger knew it: the station itself where the line calls
+ * there, else the nearest one along the line's track that it calls at (an extension leaving the line
+ * at a junction is named from the station before it); else the station itself.
+ *
+ * @param context - The network.
+ * @param station - The stretch's end on the line.
+ * @param line - The id of the line, as drawn.
+ * @param cursor - The cursor the line is asked at.
+ * @returns The station id.
+ */
+const stopNear = (context: CaptionContext, station: string, line: string, cursor: number): string => {
+  const { index, timeline } = context;
+  const onLine = (stop: string) =>
+    index.lineSegmentsAt(stop).filter(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.identityOf(lineSegment.line, cursor).id === line);
+  const seen = new Set([station]);
+  const queue = [station];
+  for (let current = queue.shift(); current !== undefined; current = queue.shift()) {
+    const here = current;
+    const lineSegments = onLine(here);
+    if (lineSegments.some(lineSegment => timeline.servesStation(here, lineSegment.line, cursor))) return here;
+    for (const { segment } of lineSegments) {
+      const next = segment.stationA === here ? segment.stationB : segment.stationA;
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return station;
+};
+
+/**
  * A line opening, extended or reopening, from the first station it reaches to the last.
  *
  * @param step - The step.
@@ -46,7 +77,7 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
   return {
     kind: 'open',
     title: `${index.lineName(step.line)} ${verb}`,
-    subtitle: `${name(required(reach[0], 'first station reached').station)} – ${name(required(reach.at(-1), 'last station reached').station)}`,
+    subtitle: `${name(stopNear(context, required(reach[0], 'first station reached').station, step.line, step.index))} – ${name(required(reach.at(-1), 'last station reached').station)}`,
     color: context.colorOf(step.line),
     stations: reach.filter(reached => reached.isNew).map(reached => name(reached.station)),
   };
@@ -67,7 +98,7 @@ const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 
   return {
     kind: 'close',
     title: `${context.index.lineName(step.line)}: section ${returns ? 'suspended' : 'closes'}`,
-    subtitle: `${name(required(reach[0], 'first station left').station)} – ${name(required(reach.at(-1), 'last station left').station)}`,
+    subtitle: `${name(stopNear(context, required(reach[0], 'first station left').station, step.line, step.index + 1))} – ${name(required(reach.at(-1), 'last station left').station)}`,
     color: context.colorOf(step.line),
     stations: [],
   };

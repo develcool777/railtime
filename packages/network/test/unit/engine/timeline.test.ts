@@ -338,6 +338,14 @@ describe('TimelineUtils', () => {
       expect(growth.totalKm).toBeCloseTo(2, 0);
     });
 
+    test('grows an extension out of its own line, though its other end meets another line nearer the centre', () => {
+      // West on the line extended, East on another line only; the centre by East.
+      const segments = [track(0, 'west', 'middle', 1), track(1, 'middle', 'east', 1)];
+      const placeOf = (station: string): [number, number] => [{ west: 0, middle: 1, east: 2 }[station] ?? 0, 0];
+      const growth = planGrowth(segments, new Set(['west', 'east']), placeOf, [2, 0], new Set(['west']));
+      expect(growth.reach.map(reached => reached.station)).toEqual(['west', 'middle', 'east']);
+    });
+
     test('grows one way between two stations already on the map, from the one nearer the centre', () => {
       // A gap filled: West and East on the map, Middle new between them; the centre by East.
       const segments = [track(0, 'west', 'middle', 1), track(1, 'middle', 'east', 1)];
