@@ -12,7 +12,7 @@ import type { Network } from '@railtime/schema/network.types';
 describe('StepAnimation', () => {
   describe('every kind', () => {
     test('frames and draws every kind of step from start to end', () => {
-      const playback = playbackOf(tinyNetwork(), 'extension');
+      const playback = playbackOf(tinyNetwork(), { plan: 'extension' });
       const { index, timeline } = playback;
       const kinds = new Set<string>();
       for (const step of timeline.steps) {
@@ -43,7 +43,7 @@ describe('StepAnimation', () => {
     });
 
     test("draws a plan's stretch as the map draws a plan, dashed, while it grows and once it has", () => {
-      const playback = playbackOf(tinyNetwork(), 'extension');
+      const playback = playbackOf(tinyNetwork(), { plan: 'extension' });
       const { index, timeline } = playback;
       const state = renderStateOf(playback);
       const plannedOf = (step: (typeof timeline.steps)[number]) => {
@@ -80,7 +80,7 @@ describe('StepAnimation, opening a stretch', () => {
   });
 
   test('grows more slowly in 3D, where the camera follows it at street level', () => {
-    const playback = playbackOf(tinyNetwork(), undefined, '3d');
+    const playback = playbackOf(tinyNetwork(), { view: '3d' });
     playback.player.seek({ time: toTimestamp('1905-01-01') });
     playback.player.skip();
     const pace = GROWTH_PACE['3d'];

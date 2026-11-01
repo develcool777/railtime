@@ -17,7 +17,7 @@ import { playbackOf } from '../../support/playback.utils';
  * @returns The frames, the map, the playback and what the minimap was sent.
  */
 const framesOn = (date: string, plan?: string) => {
-  const playback = playbackOf(tinyNetwork(), plan);
+  const playback = playbackOf(tinyNetwork(), { plan });
   if (plan) playback.player.seek('future');
   else playback.player.seek({ time: toTimestamp(date) });
   const fake = fakeMap();

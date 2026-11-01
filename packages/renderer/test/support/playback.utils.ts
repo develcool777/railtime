@@ -8,19 +8,20 @@ import { Player } from '../../src/playback/player.service';
 import type { StepDrawing } from '../../src/steps/animation.types';
 import { StepAnimation } from '../../src/steps/animation.service';
 import { emptyDrawing } from '../../src/steps/animation.utils';
-import type { ViewMode } from '../../src/transitMap.types';
-import type { Playback } from './playback.types';
+import type { Playback, PlaybackOptions } from './playback.types';
 
 /**
  * A network's facts, its index and timeline, and a player at today, 1 January 2026, wired as `TransitMap` wires them.
  *
  * @param network - The network.
- * @param plan - One of its plans to build on it, as `TransitMap`'s `plan` option does.
- * @param view - How the map is seen as the steps play: flat unless told.
+ * @param options - What the playback is of.
+ * @param options.plan - One of its plans to build on it, as `TransitMap`'s `plan` option does.
+ * @param options.networks - Its optional networks to show, as the facts `TransitMap` is given are made.
+ * @param options.view - How the map is seen as the steps play: flat unless told.
  * @returns The pieces.
  */
-export const playbackOf = (network: Network, plan?: string, view: ViewMode = '2d'): Playback => {
-  const facts = NetworkFacts.create(network, { ...(plan ? { plan } : {}), today: Date.UTC(2026, 0, 1) });
+export const playbackOf = (network: Network, { plan, networks, view = '2d' }: PlaybackOptions = {}): Playback => {
+  const facts = NetworkFacts.create(network, { plan, networks, today: Date.UTC(2026, 0, 1) });
   const { index, timeline } = facts.engine;
   const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
   return { facts, index, timeline, player };

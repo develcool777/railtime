@@ -43,17 +43,34 @@ const stationWithLines = (station: Station, kept: (line: string) => boolean): St
 };
 
 /**
+ * Where the timeline starts with some optional networks shown: the city's start, or an older one of theirs.
+ *
+ * @param network - The network, as stored.
+ * @param shown - The optional networks shown.
+ * @returns The earliest, as an ISO date.
+ */
+const startShown = (network: Network, shown: readonly string[]): string =>
+  shown.reduce((start, id) => {
+    const own = network.networks[id]?.start;
+    return own && own < start ? own : start;
+  }, network.meta.start);
+
+/**
  * The network as shown: each optional network left off but those asked for, as if it were not there.
- * Its lines go, the track only they ran, the stations only they served (but one a plan builds on, which
- * stays without them) and the changes to those; a plan building one of its lines goes with it.
+ * Its lines go, the track only they ran, the stations only they served and the changes to those; a
+ * station only it served that a plan builds on is that plan's own, as it would be without it; a plan
+ * building one of its lines goes with it. One shown that is older than the city starts the timeline
+ * at its own start.
  *
  * @param network - The network, as stored.
  * @param shown - The optional networks to keep.
- * @returns The network shown; the one given where nothing is left off.
+ * @returns The network shown; the one given where nothing is left off and nothing starts it earlier.
  */
 export const withNetworksShown = (network: Network, shown: readonly string[]): Network => {
   const hidden = new Set(optionalIdsOf(network).filter(id => !shown.includes(id)));
-  if (hidden.size === 0) return network;
+  const start = startShown(network, shown);
+  const meta = start === network.meta.start ? network.meta : { ...network.meta, start };
+  if (hidden.size === 0) return meta === network.meta ? network : { ...network, meta };
   const lines = Object.fromEntries(Object.entries(network.lines).filter(([, line]) => !hidden.has(line.network)));
   const kept = (line: string): boolean => line in lines;
   const segments = network.segments.flatMap(segment => {
@@ -65,20 +82,34 @@ export const withNetworksShown = (network: Network, shown: readonly string[]): N
   const plans = Object.fromEntries(
     Object.entries(network.plans ?? {}).filter(([, plan]) => plan.sections.every(section => kept(section.line) || plan.lines?.[section.line])),
   );
-  const planned = new Set(Object.values(plans).flatMap(plan => plan.sections.flatMap(section => section.stations)));
+  const gone = new Set([...servedBefore].filter(id => !served.has(id)));
   const stations = Object.fromEntries(
     Object.entries(network.stations)
-      .filter(([id]) => served.has(id) || planned.has(id) || !servedBefore.has(id))
+      .filter(([id]) => !gone.has(id))
       .map(([id, station]) => [id, stationWithLines(station, kept)]),
+  );
+  // A plan's station that is gone becomes the plan's own: its place and name, none of its history.
+  const plansShown = Object.fromEntries(
+    Object.entries(plans).map(([id, plan]) => {
+      const own = [...new Set(plan.sections.flatMap(section => section.stations))].filter(station => gone.has(station));
+      if (own.length === 0) return [id, plan];
+      const adopted = own.map(station => {
+        // Within bounds: a station is gone only if the network had it.
+        const { name, names, coordinate } = network.stations[station]!;
+        return [station, { name, ...(names ? { names } : {}), coordinate }];
+      });
+      return [id, { ...plan, stations: { ...plan.stations, ...Object.fromEntries(adopted) } }];
+    }),
   );
   return {
     ...network,
+    meta,
     networks: Object.fromEntries(Object.entries(network.networks).filter(([id]) => !hidden.has(id))),
     lines,
     stations,
     segments,
     ...(network.transfers ? { transfers: network.transfers.filter(({ stationA, stationB }) => stationA in stations && stationB in stations) } : {}),
-    ...(network.plans ? { plans } : {}),
+    ...(network.plans ? { plans: plansShown } : {}),
   };
 };
 
