@@ -1,10 +1,8 @@
-import type { CityIndex } from '@railtime/schema/cityIndex.types';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import { citiesByCountry, cityMenu, networkUrlOf, planToOpen, previewUrlOf } from '~/utils/city.utils';
+import { citiesByCountry, cityMenu, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
 import { CITIES } from '~/constants/city.constants';
-import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));
@@ -33,19 +31,6 @@ describe('CityUtils', () => {
     test("finds every city's previews beside its dataset", () => {
       expect(previewUrlOf('kyiv', 'dark')).toBe('data/ukraine/kyiv/kyiv.dark.webp');
       for (const city of CITIES) expect(existsSync(`${SERVED}${previewUrlOf(city.value, 'light').replace(/^data\//, '')}`), city.value).toBe(true);
-    });
-
-    test('lists in the index every city the menu has, and no other', () => {
-      const index: CityIndex = JSON.parse(readFileSync(`${SERVED}cities.json`, 'utf8'));
-      expect(Object.keys(index).sort()).toEqual(CITIES.map(city => city.value).sort());
-    });
-  });
-
-  describe('planToOpen', () => {
-    test('opens the plan asked for, or a network never built on its first', () => {
-      expect(planToOpen(planOnlyNetwork(), 'second')).toBe('second');
-      expect(planToOpen(planOnlyNetwork(), 'nowhere')).toBe('first');
-      expect(planToOpen(planOnlyNetwork(), undefined)).toBe('first');
     });
   });
 });

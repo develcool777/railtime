@@ -1,9 +1,12 @@
 import type { Network } from '@railtime/schema/network.types';
 import type { RenderState } from '../../src/layers/style.types';
+import type { NetworkSnapshot } from '../../src/layers/snapshot.types';
+import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { FactsAt } from '@railtime/network/facts.types';
 import { Player } from '../../src/playback/player.service';
-import { createStepAnimation } from '../../src/steps/animation.utils';
+import type { StepDrawing } from '../../src/steps/animation.types';
+import { createStepAnimation, emptyDrawing } from '../../src/steps/animation.utils';
 import type { ViewMode } from '../../src/transitMap.types';
 import type { Playback } from './playback.types';
 
@@ -44,3 +47,27 @@ export const renderStateOf = (playback: Playback): RenderState => ({
   visibleLines: new Set(playback.index.lineIds),
   baseColor: line => playback.index.lineOf(line).color,
 });
+
+/**
+ * What the map has on it at the player's position.
+ *
+ * @param playback - The pieces from `playbackOf`.
+ * @param stepPlaying - A step is playing there: its openings make room, its closures fade.
+ * @returns The snapshot.
+ */
+export const snapshotOf = (playback: Playback, stepPlaying = false): NetworkSnapshot => buildNetworkSnapshot(renderStateOf(playback), stepPlaying);
+
+/**
+ * Draws the step playing, at the player's progress through it, as the map would.
+ *
+ * @param playback - The pieces from `playbackOf`.
+ * @returns What the step drew, or `null` if none is playing.
+ */
+export const drawnStep = (playback: Playback): StepDrawing | null => {
+  const { player } = playback;
+  if (!player.active) return null;
+  const state = renderStateOf(playback);
+  const drawing = emptyDrawing();
+  player.active.animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress: player.progress, holdProgress: player.holdProgress }, drawing);
+  return drawing;
+};

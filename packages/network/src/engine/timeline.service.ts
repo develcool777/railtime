@@ -2,7 +2,7 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import type { NetworkIndex } from './index.service';
 import type { Growth, LineSegment, OpenStep, Step } from './engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
-import { connectedStretches, planGrowth } from './timeline.utils';
+import { connectedStretches, planGrowth } from './timeline.utils.ts';
 import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
 
 /**

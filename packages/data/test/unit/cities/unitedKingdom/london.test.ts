@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { buildNetworkSnapshot } from '../../../../../renderer/src/layers/snapshot.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkEngine } from '@railtime/network/engine.service';
 import type { TrackSegment } from '@railtime/network/engine.types';
-import { playbackOf, renderStateOf } from '../../../../../renderer/test/support/playback.utils';
+import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 const london = cityNetwork('london');
@@ -125,7 +124,7 @@ describe('London', () => {
   });
 
   test('is at its known size today', () => {
-    const snapshot = buildNetworkSnapshot(renderStateOf(playbackOf(london)), false);
+    const snapshot = snapshotOf(playbackOf(london));
     expect(snapshot.stats.stations).toBe(384);
     expect(snapshot.stats.lines).toBe(18);
   });

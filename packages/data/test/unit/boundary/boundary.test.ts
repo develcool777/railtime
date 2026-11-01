@@ -49,7 +49,7 @@ const stationsAt = (...points: LngLat[]): Record<string, Station> =>
  * @returns The network.
  */
 const networkOf = (built: Record<string, Station>, planned: Record<string, Station> = {}): Network => ({
-  meta: { city: 'Test', start: '1900-01-01', built: '2026-01-01', attribution: 'test' },
+  meta: { city: 'Test', country: 'Testland', start: '1900-01-01', built: '2026-01-01', attribution: 'test' },
   networks: {},
   lines: {},
   stations: built,

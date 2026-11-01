@@ -27,9 +27,12 @@ The app serves `cities/` as it is, at `/data/`: `/data/united-kingdom/london/lon
 
 ## The summaries
 
-`cities/cities.json` sums up each city (how many lines, stations and plans, when it opened), so the
-landing page needs one small file, not every network: it is built into the page, which is prerendered
-whole. `pnpm data:summaries` rewrites it; a test fails while it is out of date.
+`cities/cities.json` sums up each city (its name and country, as its network's `meta` gives them; how
+many lines, stations and plans, when it opened), so the landing page needs one small file, not every
+network: it is built into the page, which is prerendered whole. It is also the site's one list of
+cities, in the order the menu shows them: grouped by country, the countries in the order they come.
+`pnpm data:summaries` rewrites it and keeps that order, a new city after the last of its country;
+to reorder, move a line. A test fails while it is out of date.
 
 ## The previews
 
@@ -70,9 +73,10 @@ Track and stations come from OpenStreetMap.
   longer calling there, by line. Dated while the line runs there; an `infill` after the line has
   left says it never called there. The schema refuses any other date.
 
-A new city is a new network in the same format, then `pnpm data:summaries` to add it to the landing page's list
-and `pnpm data:previews <city>` to draw its card's pictures, `pnpm data:boundary <city> <relation>` for its outline, plus one entry in `CITIES` (`web/app/utils/explorer.constants.ts`): it gets a card on the landing page
-and its own page at `/<city>`. Its history gets a test of its own,
+A new city is a new network in the same format, in `cities/<country>/<city>/` (its `meta.country` as a
+slug: `United Kingdom`, `united-kingdom`), then `pnpm data:summaries` to add it to the site's list,
+`pnpm data:previews <city>` to draw its card's pictures and `pnpm data:boundary <city> <relation>` for
+its outline: it gets a card on the landing page and its own page at `/<city>`. Its history gets a test of its own,
 `test/unit/cities/<country>/<city>.test.ts` (camelCase), which plays it through the renderer and
 lists each date a line comes apart, with why: a works closure or a stretch opening on its own is
 history, but a wrong date parts a line just the same, so a new one fails the test until it is

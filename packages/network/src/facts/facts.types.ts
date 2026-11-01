@@ -3,12 +3,20 @@ import type { PlanStatus } from '@railtime/schema/network.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { IsoDate } from '@railtime/core/date.types';
 import type { Step } from '../engine/engine.types';
+import type { NetworkIndex } from '../engine/index.service';
+import type { Timeline } from '../engine/timeline.service';
 
 /** The map's colour theme. */
 export type Theme = 'dark' | 'light';
 
 /** A line's colour in each theme: an answer holds both, and what shows it picks the one for its theme. */
 export type LineColor = Record<Theme, string>;
+
+/**
+ * One line's track in a sketch of the network: what is open today, or for a network never built, its
+ * first plan's, drawn dashed.
+ */
+export type LineSketch = { line: string; color: LineColor; paths: LngLat[][]; dashed: boolean };
 
 /** What is on the map. */
 export type NetworkStats = { stations: number; km: number; lines: number };
@@ -309,3 +317,12 @@ export type FactsAt = {
 
 /** A segment of track a reach colours, timed by its ends. */
 export type ReachedSegment = { segment: number; minutes: number };
+
+/** What the records are worked out from: the network, its history, and each line's colour. */
+export type RecordsSource = {
+  index: NetworkIndex;
+  timeline: Timeline;
+  /** The year each station was first on the map, by id. */
+  firstYears: Map<string, number>;
+  colorOf: (line: string) => LineColor;
+};

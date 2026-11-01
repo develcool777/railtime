@@ -3,9 +3,8 @@ import type { StillRequest, StillTrack } from '@railtime/renderer/basemapStill.t
 import type { MapView } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
 import type { LngLat } from '@railtime/core/geometry.types';
-import { pushTo } from '@railtime/core/collection.utils';
 import { latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
-import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { MAX_PREVIEW_ZOOM, PREVIEW_PADDING, TILE_SIZE } from './preview.constants.ts';
 import type { PreviewSize } from './preview.types.ts';
 
@@ -38,47 +37,17 @@ export const fitView = (points: LngLat[], size: PreviewSize): MapView => {
 };
 
 /**
- * The track a preview shows, each segment with its lines: what is open today, or for a network
- * never built, its first plan's.
- *
- * @param network - The city's network.
- * @returns Each segment's coordinates and line ids.
- */
-const shownTrack = (network: Network): { coordinates: LngLat[]; lines: string[] }[] => {
-  const openToday = network.segments.filter(segment => Object.values(segment.lines).some(dates => !dates.close));
-  if (openToday.length > 0 || !network.plans) return openToday.map(segment => ({ coordinates: segment.coordinates, lines: Object.keys(segment.lines) }));
-  const built = buildPlan(network, firstPlanOf(network) ?? '');
-  return built.sections.flatMap(section =>
-    // Within bounds: a built section's segments are the built network's.
-    section.segments.map(position => ({ coordinates: built.network.segments[position]!.coordinates, lines: [section.line] })),
-  );
-};
-
-/**
- * What a preview draws of a network: each line's track in the theme's colour (a segment shared by
- * several, its first line's), the network's first line on top, dashed for a network never built.
+ * What a preview draws of a network: its sketch (`NetworkFacts.sketch`), each line in the theme's
+ * colour, the network's first line on top, dashed for a network never built.
  *
  * @param network - The city's network.
  * @param theme - The preview's theme.
  * @returns The track by line, bottom first.
  */
-export const previewTrackOf = (network: Network, theme: Theme): StillTrack[] => {
-  const lines = { ...network.lines, ...network.plans?.[firstPlanOf(network) ?? '']?.lines };
-  const lineOrder = Object.keys(lines);
-  const dashed = isPlanOnly(network);
-  const byLine = new Map<string, LngLat[][]>();
-  for (const segment of shownTrack(network)) {
-    const first = [...segment.lines].sort((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other))[0] ?? '';
-    pushTo(byLine, first, segment.coordinates);
-  }
-  return [...byLine]
-    .sort(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))
-    .map(([id, paths]) => {
-      const line = lines[id];
-      const color = (theme === 'dark' ? line?.darkColor : undefined) ?? line?.color ?? '#888888';
-      return { color, paths, dashed };
-    });
-};
+export const previewTrackOf = (network: Network, theme: Theme): StillTrack[] =>
+  NetworkFacts.create(network)
+    .sketch()
+    .map(line => ({ color: line.color[theme], paths: line.paths, dashed: line.dashed }));
 
 /**
  * The picture to take of a network: its track, framed to fill the preview.

@@ -6,8 +6,8 @@ import { yearOf } from '@railtime/core/date.utils';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
 import type { CoverageCells, CoverageInfo, CoverageYear, GridCorners } from '../facts/facts.types';
-import { cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils';
-import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES, MAX_CELLS, MIN_CELL_KM } from './coverage.constants';
+import { cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils.ts';
+import { COVERAGE_BANDS, COVERAGE_HEADLINE_METRES, MAX_CELLS, MIN_CELL_KM } from './coverage.constants.ts';
 
 /**
  * A city cut into cells, as the map draws it: columns even in longitude, rows even on the map, the

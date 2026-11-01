@@ -2,7 +2,7 @@ import type { NetworkIndex } from '../engine/index.service';
 import type { RoutePreference } from '../facts/facts.types';
 import type { Edge, Move, Place, RideLeg, Route, RouteLeg } from './finder.types';
 import type { Timeline } from '../engine/timeline.service';
-import { CHANGE_MINUTES, FEWER_CHANGES_PENALTY, RIDE_KMH, WALK_MINUTES } from './finder.constants';
+import { CHANGE_MINUTES, FEWER_CHANGES_PENALTY, RIDE_KMH, WALK_MINUTES } from './finder.constants.ts';
 
 /**
  * A binary min-heap: items come out cheapest first. What Dijkstra's search takes its next place

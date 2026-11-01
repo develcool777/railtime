@@ -41,7 +41,7 @@ const BROWSER_FRAMES: FrameScheduler = {
  * moves), and events (what happened, delivered between frames, never inside a call). A fact is asked
  * of the `NetworkFacts` it was made with, never of the map. Made with its props and listeners; `destroy` takes it all down.
  */
-export class TransitMap extends EventEmitter<TransitMapEvents> {
+export class TransitMap {
   /** What the map owes credit to: the basemap, then the network's data. Shown by the app when it turns MapLibre's control off. */
   public readonly credits: Credit[];
   /** The network, its history and every question about it. */
@@ -54,6 +54,8 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private readonly map: MapLibreMap;
   /** Asks for frames. */
   private readonly scheduler: FrameScheduler;
+  /** The app's listeners, given with the map: the only ones it has. */
+  private readonly events = new EventEmitter<TransitMapEvents>();
   /** The props, and what each does once changed. */
   private readonly props: PropsReconciler;
   /** Moves the main map's camera. */
@@ -90,10 +92,9 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
   private lastFrameAt = 0;
 
   public constructor(options: TransitMapOptions) {
-    super();
     // Before the first map: MapLibre starts its workers with it.
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
-    for (const [event, listener] of Object.entries(options.on ?? {})) this.on(event as keyof TransitMapEvents, listener as never);
+    for (const [event, listener] of Object.entries(options.on ?? {})) this.events.on(event as keyof TransitMapEvents, listener as never);
     this.facts = options.facts;
     this.engine = options.facts.engine;
     this.player = new Player(this.engine, step => this.createAnimation(step));
@@ -270,7 +271,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
     this.queue = [];
     this.minimap?.destroy();
     this.map.remove();
-    this.removeAllListeners();
+    this.events.clear();
   }
 
   /** What each prop does once changed (`PropsReconciler`), reading it from the props. */
@@ -334,7 +335,7 @@ export class TransitMap extends EventEmitter<TransitMapEvents> {
    * @param payload - What it says.
    */
   private notify<Name extends keyof TransitMapEvents>(event: Name, payload: TransitMapEvents[Name]): void {
-    this.queue.push(() => this.emit(event, payload));
+    this.queue.push(() => this.events.emit(event, payload));
   }
 
   /** Delivers the events raised since the last frame, in order. */

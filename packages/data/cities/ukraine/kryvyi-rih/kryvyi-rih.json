@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Kryvyi Rih","start":"1986-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Kryvyi Rih","country":"Ukraine","start":"1986-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Kryvyi Rih Metrotram","names":{"uk":"Криворізький метротрам"}}
   },

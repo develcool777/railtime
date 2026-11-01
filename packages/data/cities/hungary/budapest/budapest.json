@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Budapest","start":"1896-05-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Budapest","country":"Hungary","start":"1896-05-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Budapest Metro","names":{"hu":"Budapesti metró"}}
   },

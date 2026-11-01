@@ -1,5 +1,5 @@
 {
-  "meta": {"city":"Glasgow","start":"1896-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
+  "meta": {"city":"Glasgow","country":"United Kingdom","start":"1896-12-01","built":"2026-10-29","attribution":"© OpenStreetMap contributors (ODbL)"},
   "networks": {
     "metro": {"name":"Glasgow Subway"}
   },

@@ -1,9 +1,14 @@
 import type { Network } from '@railtime/schema/network.types';
 import { cumulativeDistances } from '@railtime/core/geometry.utils';
-import type { NetworkSummary, PlanFacts, ReachedSegment } from './facts.types';
+import type { LngLat } from '@railtime/core/geometry.types';
+import { pushTo } from '@railtime/core/collection.utils';
+import { required } from '@railtime/core/required.utils';
+import type { LineSketch, NetworkRecords, NetworkSummary, NetworkTime, PlanFacts, ReachedSegment, RecordsSource } from './facts.types';
+import { networkAt } from '../engine/history.utils.ts';
+import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
-import { REACH_BANDS } from './facts.constants';
+import { REACH_BANDS } from './facts.constants.ts';
 
 /**
  * The length of a network's track.
@@ -56,6 +61,47 @@ export const networkSummary = (network: Network): NetworkSummary => {
 };
 
 /**
+ * The track a sketch shows, each segment with its lines: what is open today, or for a network never
+ * built, its first plan's.
+ *
+ * @param network - The network.
+ * @returns Each segment's coordinates and line ids.
+ */
+const sketchedTrack = (network: Network): { coordinates: LngLat[]; lines: string[] }[] => {
+  const openToday = network.segments.filter(segment => Object.values(segment.lines).some(dates => !dates.close));
+  if (openToday.length > 0 || !network.plans) return openToday.map(segment => ({ coordinates: segment.coordinates, lines: Object.keys(segment.lines) }));
+  const built = buildPlan(network, firstPlanOf(network) ?? '');
+  return built.sections.flatMap(section =>
+    // Within bounds: a built section's segments are the built network's.
+    section.segments.map(position => ({ coordinates: built.network.segments[position]!.coordinates, lines: [section.line] })),
+  );
+};
+
+/**
+ * A network at a glance: each line's track (a segment shared by several, its first line's), the
+ * network's first line last, to lie on top; dashed for a network never built.
+ *
+ * @param network - The network.
+ * @returns The track by line, bottom first.
+ */
+export const sketchOf = (network: Network): LineSketch[] => {
+  const lines = { ...network.lines, ...network.plans?.[firstPlanOf(network) ?? '']?.lines };
+  const lineOrder = Object.keys(lines);
+  const dashed = isPlanOnly(network);
+  const byLine = new Map<string, LngLat[][]>();
+  for (const segment of sketchedTrack(network)) {
+    const first = [...segment.lines].sort((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other))[0] ?? '';
+    pushTo(byLine, first, segment.coordinates);
+  }
+  return [...byLine]
+    .sort(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))
+    .map(([id, paths]) => {
+      const line = required(lines[id], `line ${id}`);
+      return { line: id, color: { light: line.color, dark: line.darkColor ?? line.color }, paths, dashed };
+    });
+};
+
+/**
  * The band a time falls in: the last has no end, so every time finds one.
  *
  * @param minutes - How long it takes.
@@ -84,4 +130,40 @@ export const reachedSegments = (
     if (ends.length > 0) reached.push({ segment: segment.index, minutes: ends.reduce((total, time) => total + time, 0) / ends.length });
   }
   return reached;
+};
+
+/**
+ * The network's records at a moment: the stations open longest, those most lines call at, and the
+ * longest lines.
+ *
+ * @param source - The network, its history and its lines' colours.
+ * @param count - How many of each.
+ * @param moment - The moment.
+ * @returns The records.
+ */
+export const recordsOf = (source: RecordsSource, count: number, moment: NetworkTime): NetworkRecords => {
+  const { index, timeline, firstYears, colorOf } = source;
+  const { stations } = networkAt(index, timeline, moment.cursor);
+  const name = (station: string) => index.stationName(station, moment.time);
+  const oldest = [...stations.keys()]
+    .flatMap(station => {
+      const year = firstYears.get(station);
+      return year === undefined ? [] : [{ id: station, name: name(station), year }];
+    })
+    .sort((first, second) => first.year - second.year || first.name.localeCompare(second.name))
+    .slice(0, count);
+  const busiest = [...stations]
+    .map(([station, lines]) => ({
+      id: station,
+      name: name(station),
+      lines: [...lines].sort(index.compareLines).map(line => ({ id: line, name: index.lineName(line), color: colorOf(line) })),
+    }))
+    .sort((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
+    .slice(0, count);
+  const longest = index.lineIds
+    .map(line => ({ id: line, name: index.lineName(line), color: colorOf(line), km: lineLengthKm(index, timeline, line, moment.cursor) }))
+    .filter(line => line.km > 0)
+    .sort((first, second) => second.km - first.km)
+    .slice(0, count);
+  return { oldest, busiest, longest };
 };
