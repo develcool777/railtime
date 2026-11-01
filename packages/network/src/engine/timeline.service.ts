@@ -2,7 +2,7 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import type { NetworkIndex } from './index.service';
 import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
 import { pushTo } from '@railtime/core/collection.utils';
-import { connectedStretches, planGrowth } from './timeline.utils.ts';
+import { connectedStretches, forkedParts, planGrowth } from './timeline.utils.ts';
 import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
 
 /**
@@ -12,7 +12,7 @@ import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.t
  * mode sits on a cursor; playback moves it one step at a time, animating `steps[cursor]`.
  *
  * On one date the order is: identity changes, then openings (line by line, one connected stretch
- * per step), then closures, then stations opening on existing track, then stations closing on it,
+ * per step, a stretch that forks a step per branch), then closures, then stations opening on existing track, then stations closing on it,
  * then renames.
  *
  * A plan built on the network follows every dated step, undated: each section's openings, then its
@@ -330,35 +330,50 @@ export class Timeline {
   }
 
   /**
-   * One step per line and connected stretch. Lines drawn as the same line (aliases) open together.
+   * One step per line and connected stretch, and per branch where it forks: each grows as one front.
+   * Lines drawn as the same line (aliases) open together.
    *
    * @param time - The date.
    * @param opens - That day's openings.
    */
   private addOpenSteps(time: number, opens: LineSegment[]): void {
+    const coordOf = (station: string) => this.index.coordOf(station);
     const byLine = new Map<string, LineSegment[]>();
     for (const lineSegment of opens) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const line of [...byLine.keys()].sort(this.index.compareLines)) {
-      for (const stretch of connectedStretches(byLine.get(line)!, station => this.index.coordOf(station), this.index.centre)) {
-        const step = this.addStep({ kind: 'open', time, line, lineSegments: stretch, segments: [...new Set(stretch.map(item => item.segment))] });
-        for (const lineSegment of stretch) this.openStep.set(lineSegment, step);
+      for (const stretch of connectedStretches(byLine.get(line)!, coordOf, this.index.centre)) {
+        for (const part of forkedParts(stretch, this.stationsOnMap(this.steps.length), coordOf, this.index.centre)) {
+          const step = this.addStep({ kind: 'open', time, line, lineSegments: part, segments: [...new Set(part.map(item => item.segment))] });
+          for (const lineSegment of part) this.openStep.set(lineSegment, step);
+        }
       }
     }
   }
 
   /**
-   * One step per line and connected stretch closing that day: each retracts as one front, as an opening grows.
+   * One step per line and connected stretch closing that day, and per branch where it forks: each
+   * retracts as one front, as an opening grows, its branches back to the fork before the way they leave.
    *
    * @param time - The date.
    * @param closes - That day's closures.
    */
   private addCloseSteps(time: number, closes: LineSegment[]): void {
+    const coordOf = (station: string) => this.index.coordOf(station);
     const byLine = new Map<string, LineSegment[]>();
     for (const lineSegment of closes) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const [line, lineSegments] of byLine) {
-      for (const stretch of connectedStretches(lineSegments, station => this.index.coordOf(station), this.index.centre)) {
-        const step = this.addStep({ kind: 'close', time, line, lineSegments: stretch });
-        for (const lineSegment of stretch) this.closeStep.set(lineSegment, step);
+      for (const stretch of connectedStretches(lineSegments, coordOf, this.index.centre)) {
+        const closing = new Set(stretch);
+        const staying = new Set(
+          this.index.lineSegments
+            .filter(lineSegment => !closing.has(lineSegment) && this.isOpen(lineSegment, this.steps.length))
+            .flatMap(({ segment }) => [segment.stationA, segment.stationB]),
+        );
+        // Split as the stretch would open from the network that stays, played backwards: its last branch first.
+        for (const part of forkedParts(stretch, staying, coordOf, this.index.centre).reverse()) {
+          const step = this.addStep({ kind: 'close', time, line, lineSegments: part });
+          for (const lineSegment of part) this.closeStep.set(lineSegment, step);
+        }
       }
     }
   }

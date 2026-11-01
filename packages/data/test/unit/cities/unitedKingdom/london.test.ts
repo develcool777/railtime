@@ -41,6 +41,20 @@ describe('London', () => {
     expect(timeline.retreatOf(suspended).reach.filter(reached => reached.isNew)).toEqual([]);
   });
 
+  test('opens the Hampstead tube in 1907 a branch at a time: to Golders Green, then from Camden Town to Highgate', () => {
+    const opened = stepsOn('1907-06-22').filter(step => step.kind === 'open');
+    const ends = opened.map(step => (step.kind === 'open' ? new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB])) : new Set()));
+    expect(ends.map(stations => ['golders-green', 'archway'].filter(station => stations.has(station)))).toEqual([['golders-green'], ['archway']]);
+  });
+
+  test('closes the East London line in 2007 a branch at a time: New Cross Gate back to Surrey Quays, then the rest', () => {
+    const closed = stepsOn('2007-12-23').filter(step => step.kind === 'close');
+    const reaches = closed.map(step =>
+      step.kind === 'close' ? step.lineSegments.some(({ segment }) => segment.stationB === 'new-cross-gate' || segment.stationA === 'new-cross-gate') : null,
+    );
+    expect(reaches).toEqual([true, false]);
+  });
+
   test('renames no station while no line runs there: Windsor, left by the District in 1885', () => {
     expect(timeline.steps.some(step => step.kind === 'rename' && step.station === 'windsor-and-eton-central')).toBe(false);
   });

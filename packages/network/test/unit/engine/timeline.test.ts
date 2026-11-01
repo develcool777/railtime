@@ -4,8 +4,8 @@ import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
-import type { TrackSegment } from '../../../src/engine/engine.types';
-import { planGrowth } from '../../../src/engine/timeline.utils';
+import type { LineSegment, TrackSegment } from '../../../src/engine/engine.types';
+import { forkedParts, planGrowth } from '../../../src/engine/timeline.utils';
 
 const timelineOf = (network = tinyNetwork()) => {
   const index = new NetworkIndex(network);
@@ -247,6 +247,26 @@ describe('Timeline', () => {
     expect(timeline.retreatOf(closure)).toBe(retreat);
   });
 
+  test('closes a fork a branch at a time: the branch back to the fork, then the way it left', () => {
+    const network = tinyNetwork();
+    // Blue runs out of D, which stays on red, to E, forking there 2 km on to F and 1 km north to G.
+    network.stations.e = { name: 'E', coordinate: [4 * 0.0144, 51.5] };
+    network.stations.f = { name: 'F', coordinate: [6 * 0.0144, 51.5] };
+    network.stations.g = { name: 'G', coordinate: [4 * 0.0144, 51.509] };
+    const blue = { blue: { open: '1930-01-01', close: '1950-01-01' } };
+    network.segments.push(
+      { stationA: 'd', stationB: 'e', lines: blue, coordinates: [network.stations.d!.coordinate, network.stations.e.coordinate] },
+      { stationA: 'e', stationB: 'f', lines: blue, coordinates: [network.stations.e.coordinate, network.stations.f.coordinate] },
+      { stationA: 'e', stationB: 'g', lines: blue, coordinates: [network.stations.e.coordinate, network.stations.g.coordinate] },
+    );
+    const { timeline } = timelineOf(network);
+    const closures = timeline.steps.filter(step => step.kind === 'close' && step.lineSegments.some(({ segment }) => segment.stationA === 'e'));
+    expect(closures.map(step => step.kind === 'close' && step.lineSegments.map(({ segment }) => `${segment.stationA}–${segment.stationB}`).sort())).toEqual([
+      ['e–g'],
+      ['d–e', 'e–f'],
+    ]);
+  });
+
   test('stops a closing front only where its line called, not at a station it ran past', () => {
     const network = tinyNetwork();
     // Blue runs D – E – F from 1930 to 1950; E opens on it only in 1960, after it left.
@@ -296,6 +316,14 @@ const track = (index: number, stationA: string, stationB: string, lengthKm: numb
   lengthKm,
   travel: 1,
 });
+
+/**
+ * A line's period on a made-up segment: what splitting a stretch reads is its track.
+ *
+ * @param segment - The segment.
+ * @returns The line segment.
+ */
+const onLine = (segment: TrackSegment): LineSegment => ({ segment, line: 'red', opens: 0, closes: null, section: null, previous: null, next: null });
 
 describe('TimelineUtils', () => {
   describe('planGrowth', () => {
@@ -367,6 +395,22 @@ describe('TimelineUtils', () => {
       const { index } = factsOf(tinyNetwork()).engine;
       const growth = planGrowth(index.segments, new Set(), station => index.coordOf(station), [0.05, 51.5]);
       expect(growth.reach[0]?.station).toBe('d');
+    });
+  });
+
+  describe('forkedParts', () => {
+    test('opens a fork as the longest way from its start, then each branch from where it leaves', () => {
+      // Out of O, on the map: Near 1 km, then Far 1 km on and Beyond 3 km on.
+      const fork = [track(0, 'o', 'near', 1), track(1, 'far', 'near', 1), track(2, 'beyond', 'near', 3)].map(onLine);
+      const parts = forkedParts(fork, new Set(['o']), () => [0, 0], [0, 0]);
+      expect(parts).toEqual([[fork[0], fork[2]], [fork[1]]]);
+    });
+
+    test('keeps a stretch with no fork, and a loop, which joins its way twice, in one part', () => {
+      const line = [track(0, 'o', 'p', 1), track(1, 'p', 'q', 1)].map(onLine);
+      expect(forkedParts(line, new Set(['o']), () => [0, 0], [0, 0])).toEqual([line]);
+      const loop = [track(0, 'o', 'p', 1), track(1, 'p', 'q', 2), track(2, 'q', 'o', 2)].map(onLine);
+      expect(forkedParts(loop, new Set(['o']), () => [0, 0], [0, 0])).toHaveLength(1);
     });
   });
 });

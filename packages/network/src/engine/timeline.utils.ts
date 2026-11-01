@@ -44,6 +44,48 @@ export const connectedStretches = (lineSegments: LineSegment[], coordOf: (statio
 };
 
 /**
+ * Splits a stretch opening at once where it forks, so each part grows as one front a camera can
+ * follow: the longest way from where it starts, then each branch leaving that way at one station,
+ * grown from there (split again where it forks). Track joining that way at two stations, a loop,
+ * grows with it, side by side.
+ *
+ * @param stretch - A connected stretch's line segments.
+ * @param stationsOnMap - Stations on the map before it opens.
+ * @param coordOf - Where a station is.
+ * @param centre - The network's centre.
+ * @returns Its parts, in the order they open.
+ */
+export const forkedParts = (stretch: LineSegment[], stationsOnMap: Set<string>, coordOf: (station: string) => LngLat, centre: LngLat): LineSegment[][] => {
+  const growth = planGrowth([...new Set(stretch.map(lineSegment => lineSegment.segment))], stationsOnMap, coordOf, centre);
+  const kmAt = new Map(growth.reach.map(reached => [reached.station, reached.km]));
+  // The longest way: back from the farthest station, each segment the one the front reached it by.
+  const way = new Set<TrackSegment>();
+  for (let station = growth.reach.at(-1)?.station; station !== undefined;) {
+    const reachedBy = growth.plans.find(
+      plan =>
+        !way.has(plan.segment) &&
+        (plan.fromStationA ? plan.segment.stationB : plan.segment.stationA) === station &&
+        Math.abs(plan.startKm + plan.segment.lengthKm - (kmAt.get(station) ?? 0)) < 1e-6,
+    );
+    if (!reachedBy) break;
+    way.add(reachedBy.segment);
+    station = reachedBy.fromStationA ? reachedBy.segment.stationA : reachedBy.segment.stationB;
+  }
+  const first = stretch.filter(lineSegment => way.has(lineSegment.segment));
+  const rest = stretch.filter(lineSegment => !way.has(lineSegment.segment));
+  if (first.length === 0 || rest.length === 0) return [stretch];
+  const onWay = new Set([...way].flatMap(segment => [segment.stationA, segment.stationB]));
+  const branches: LineSegment[][] = [];
+  for (const part of connectedStretches(rest, coordOf, centre)) {
+    const forks = new Set(part.flatMap(({ segment }) => [segment.stationA, segment.stationB]).filter(station => onWay.has(station)));
+    if (forks.size === 1) branches.push(part);
+    else first.push(...part);
+  }
+  const drawn = new Set([...stationsOnMap, ...first.flatMap(({ segment }) => [segment.stationA, segment.stationB])]);
+  return [first, ...branches.flatMap(branch => forkedParts(branch, drawn, coordOf, centre))];
+};
+
+/**
  * The unsettled station nearest the growth's start.
  *
  * @param distances - Distance found so far to each station.
@@ -67,7 +109,7 @@ const nearestUnsettled = (distances: Map<string, number>, settled: Set<string>):
  * else at its end nearest the centre (a line between two stations, or crossing the network, grows from
  * one end through them); only a loop, which has no end, starts at a station on the map, else the one
  * nearest the centre. Each segment starts drawing when the front reaches its nearer end, so a stretch
- * that forks grows its branches side by side and stations are reached in order of distance.
+ * that forks grows its branches side by side (a timeline opens them one by one: `forkedParts`) and stations are reached in order of distance.
  *
  * @param segments - The stretch's segments.
  * @param stationsOnMap - Stations on the map before the stretch opens.
