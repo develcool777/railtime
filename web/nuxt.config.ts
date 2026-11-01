@@ -64,5 +64,8 @@ export default defineNuxtConfig({
   },
   // Links end with a slash, as the pages' canonical addresses do: no redirect on the way.
   experimental: { defaults: { nuxtLink: { trailingSlash: 'append' } } },
+  // The map's engine, found only through the renderer's source: bundled up front, so the dev server
+  // does not find it on the first page and reload.
+  vite: { optimizeDeps: { include: ['maplibre-gl'] } },
   devtools: { enabled: true },
 });
