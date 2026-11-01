@@ -1,5 +1,5 @@
 <template>
-  <!-- On a phone: a drawer over the map's foot, always there, snapping to its tabs, half the screen or all of it; dragged by its handle, so the lists in it scroll. -->
+  <!-- On a phone: a drawer over the map's foot, always there, snapping to its tabs (named under their icons where the screen is wide enough), half the screen or all of it; dragged by its handle, so the lists in it scroll. -->
   <UDrawer
     v-if="phone"
     :open="true"
@@ -24,15 +24,16 @@
           :active="section.id === shown"
           activeColor="primary"
           activeVariant="soft"
-          class="h-13 min-w-0 flex-1 flex-col justify-center gap-0.5 px-0"
-          :class="{ 'text-muted': section.id !== shown }"
+          class="min-w-0 flex-1 flex-col justify-center gap-0.5 px-0"
+          :class="[tabLabels ? 'h-13' : 'h-11', { 'text-muted': section.id !== shown }]"
+          :aria-label="tabLabels ? undefined : section.label"
           :aria-pressed="section.id === shown"
           :aria-description="marks[section.id]"
           @click="emit('pick', section.id)">
           <UChip :show="!!marks[section.id]" size="md">
             <UIcon :name="section.icon" class="size-5" />
           </UChip>
-          <span class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
+          <span v-if="tabLabels" class="text-[11px] leading-4 font-semibold">{{ section.label }}</span>
         </UButton>
       </nav>
       <div v-show="snap !== 'peek'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -66,11 +67,14 @@
   import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
   import { SHEET_HEIGHTS, SHEET_TOP_GAP } from '~/features/explorer/explorer.constants';
+  import { sheetHeightOf } from '~/features/explorer/layout.utils';
   import type { Section, SheetSnap } from '~/features/explorer/explorer.types';
 
   const props = defineProps<{
     /** The phone's layout: a drawer, not a column. */
     phone: boolean;
+    /** On a phone: its tabs show their names, under their icons. */
+    tabLabels: boolean;
     /** Beside the map: whether the column is out. */
     open: boolean;
     /** Beside the map: the column's width, pixels. */
@@ -93,7 +97,7 @@
   onMounted(() => window.addEventListener('resize', onResize));
   onBeforeUnmount(() => window.removeEventListener('resize', onResize));
   const snapPoints = computed((): Record<SheetSnap, string> => ({
-    peek: `${SHEET_HEIGHTS.peek}px`,
+    peek: `${sheetHeightOf('peek', props.tabLabels)}px`,
     half: `${SHEET_HEIGHTS.half}px`,
     full: `${windowHeight.value - SHEET_TOP_GAP}px`,
   }));

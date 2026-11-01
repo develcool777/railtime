@@ -1,24 +1,35 @@
 import { clamp } from '@railtime/core/number.utils';
 import type { Padding } from '@railtime/renderer/transitMap.types';
 
-import { PANEL_WIDTH, SHEET_HEIGHTS } from '~/features/explorer/explorer.constants';
+import { PANEL_WIDTH, SHEET_HEIGHTS, TAB_LABELS_HEIGHT } from '~/features/explorer/explorer.constants';
 import type { SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /** How tall the time control stands in each of its sizes, pixels, for the room the camera keeps clear of it. */
 const TIME_CONTROL_HEIGHTS: Record<TimeMode, number> = { rest: 80, timeline: 130, playing: 150 };
 
 /**
+ * How much of the map's foot the phone's sheet covers: at full height, the half it is let down to.
+ *
+ * @param sheet - How high it stands.
+ * @param tabLabels - Whether its tabs show their names, under their icons.
+ * @returns Pixels.
+ */
+export const sheetHeightOf = (sheet: SheetSnap, tabLabels: boolean): number => {
+  if (sheet !== 'peek') return SHEET_HEIGHTS.half;
+  return tabLabels ? SHEET_HEIGHTS.peek + TAB_LABELS_HEIGHT : SHEET_HEIGHTS.peek;
+};
+
+/**
  * Room the camera keeps clear of the cards on the map: the tools at the top right, the time control
- * at the bottom; on a phone, the sheet too (at full height, the half it covers when let down).
+ * at the bottom; on a phone, the sheet too.
  *
  * @param mode - What the time control shows.
- * @param phone - Whether the layout is the phone's.
- * @param sheet - How high the phone's sheet stands.
+ * @param sheetHeight - How much of the map's foot the phone's sheet covers (`sheetHeightOf`); `null` beside the map.
  * @returns The padding.
  */
-export const mapPaddingFor = (mode: TimeMode, phone: boolean, sheet: SheetSnap): Padding => {
+export const mapPaddingFor = (mode: TimeMode, sheetHeight: number | null): Padding => {
   const timeControl = TIME_CONTROL_HEIGHTS[mode];
-  if (phone) return { top: 24, right: 64, left: 24, bottom: SHEET_HEIGHTS[sheet === 'full' ? 'half' : sheet] + timeControl - 20 };
+  if (sheetHeight !== null) return { top: 24, right: 64, left: 24, bottom: sheetHeight + timeControl - 20 };
   return { top: 64, right: 72, left: 48, bottom: timeControl };
 };
 

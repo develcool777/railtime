@@ -15,8 +15,14 @@ export const SECTIONS: SectionEntry[] = [
 /** The panel's width beside the map, pixels: what it opens at, and how far it can be dragged. */
 export const PANEL_WIDTH = { initial: 340, min: 280, max: 480 };
 
-/** How tall the phone's sheet stands at each snap, pixels; full stands 8 short of the map's top. */
-export const SHEET_HEIGHTS: Record<Exclude<SheetSnap, 'full'>, number> = { peek: 92, half: 420 };
+/** How tall the phone's sheet stands at each snap, pixels: peek its handle and its row of tabs, as icons; full stands 8 short of the map's top. */
+export const SHEET_HEIGHTS: Record<Exclude<SheetSnap, 'full'>, number> = { peek: 84, half: 420 };
+
+/** What the tabs' names add to the sheet's peek, pixels, where they show. */
+export const TAB_LABELS_HEIGHT = 8;
+
+/** Where a phone's screen is wide enough for its tabs' names under their icons: every name fits its tab. */
+export const TAB_LABELS_QUERY = '(width >= 36rem)';
 
 /** Room the phone's sheet leaves above it at full height: the header's, and a little more, pixels. */
 export const SHEET_TOP_GAP = 60;

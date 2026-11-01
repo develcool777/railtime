@@ -5,10 +5,18 @@
     <section v-for="group in groups" :key="group.network">
       <div class="flex items-center justify-between gap-2 px-2 pb-1">
         <h3 class="eyebrow text-muted truncate">{{ group.name }}</h3>
-        <span class="flex flex-none gap-2.5 text-xs font-semibold">
-          <UButton label="Show all" variant="link" size="xs" class="p-0" @click="showGroup(group.lines)" />
-          <UButton label="Only these" color="neutral" variant="link" size="xs" class="p-0" @click="showOnly(group.lines)" />
-        </span>
+        <!-- The group's lines at once, its eye as each line's: open while every one shows. -->
+        <UTooltip :text="groupToggleLabel(group)">
+          <UButton
+            :icon="allShown(group.lines) ? 'i-lucide-eye' : 'i-lucide-eye-off'"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            class="flex-none"
+            :aria-pressed="allShown(group.lines)"
+            :aria-label="groupToggleLabel(group)"
+            @click="toggleGroup(group.lines)" />
+        </UTooltip>
       </div>
       <ul role="list">
         <li
@@ -79,12 +87,20 @@
     emit('change', next);
   };
 
-  const showGroup = (lines: LineInfo[]) => emit('change', new Set([...props.visible, ...lines.map(line => line.id)]));
+  /** Whether every line of a group shows. */
+  const allShown = (lines: LineInfo[]): boolean => lines.every(line => props.visible.has(line.id));
 
-  // Only these lines on the map; pressed again with only them shown, every line comes back.
-  const showOnly = (lines: LineInfo[]) => {
-    const ids = new Set(lines.map(line => line.id));
-    const onlyThese = props.visible.size === ids.size && [...ids].every(id => props.visible.has(id));
-    emit('change', onlyThese ? new Set(props.lines.map(line => line.id)) : ids);
+  /** What the group's eye does: hides its lines while all show, else shows them all. */
+  const groupToggleLabel = (group: { name: string; lines: LineInfo[] }): string =>
+    allShown(group.lines) ? `Hide all ${group.name} lines` : `Show all ${group.name} lines`;
+
+  const toggleGroup = (lines: LineInfo[]) => {
+    const next = new Set(props.visible);
+    const show = !allShown(lines);
+    for (const line of lines) {
+      if (show) next.add(line.id);
+      else next.delete(line.id);
+    }
+    emit('change', next);
   };
 </script>

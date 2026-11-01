@@ -24,7 +24,7 @@ import {
   withStation,
   withoutStations,
 } from '~/features/explorer/explorer.utils';
-import { mapPaddingFor, panelCoverOf } from '~/features/explorer/layout.utils';
+import { mapPaddingFor, panelCoverOf, sheetHeightOf } from '~/features/explorer/layout.utils';
 import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
 import { isAtRest } from '~/features/explorer/time/timeline.utils';
@@ -54,6 +54,8 @@ export const useExplorerStore = defineStore('explorer', () => {
   const views = ref<PanelView[]>([]);
   const timeMode = ref<TimeMode>('rest');
   const phone = ref(false);
+  // A phone wide enough for its tabs' names.
+  const tabLabels = ref(false);
   const panelOpen = useCookie<boolean>('railtime-panel-open', { default: () => true });
   const panelWidth = useCookie<number>('railtime-panel-width', { default: () => PANEL_WIDTH.initial });
   const sheet = ref<SheetSnap>('peek');
@@ -101,6 +103,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const chrome = computed(() =>
     chromeOf({ phone: phone.value, mapOnly: mapOnly.value, sheet: sheet.value, timeMode: timeMode.value, minimap: player.value.minimap }),
   );
+  const sheetHeight = computed(() => (phone.value ? sheetHeightOf(sheet.value, tabLabels.value) : null));
   const panelCover = computed(() => panelCoverOf({ phone: phone.value, mapOnly: mapOnly.value, panelOpen: panelOpen.value, panelWidth: panelWidth.value }));
   const mapProps = computed(() =>
     mapPropsOf({
@@ -114,7 +117,7 @@ export const useExplorerStore = defineStore('explorer', () => {
       overlay: overlayRequest.value,
       boundary: boundary.value,
       player: player.value,
-      padding: mapPaddingFor(timeMode.value, phone.value, sheet.value),
+      padding: mapPaddingFor(timeMode.value, sheetHeight.value),
       panelCover: panelCover.value,
     }),
   );
@@ -378,9 +381,11 @@ export const useExplorerStore = defineStore('explorer', () => {
     views,
     timeMode,
     phone,
+    tabLabels,
     panelOpen,
     panelWidth,
     sheet,
+    sheetHeight,
     mapOnly,
     dialog,
     routeEnds,

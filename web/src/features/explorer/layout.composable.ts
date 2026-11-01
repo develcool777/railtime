@@ -2,13 +2,14 @@ import { storeToRefs } from 'pinia';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ShallowRef } from 'vue';
 
-import { PHONE_QUERY } from '~/features/explorer/explorer.constants';
+import { PHONE_QUERY, TAB_LABELS_QUERY } from '~/features/explorer/explorer.constants';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { ExplorerLayout } from '~/features/explorer/layout.composable.types';
 import { draggedPanelWidth } from '~/features/explorer/layout.utils';
 
 /**
- * What the layout takes from the browser: whether it is the phone's, the panel's edge dragged, and
+ * What the layout takes from the browser: whether it is the phone's, and wide enough for its tabs'
+ * names, the panel's edge dragged, and
  * full screen kept with map only. The layout's state is the store's. Client only, as the map is.
  *
  * @param root - The explorer's element, which map only takes full screen.
@@ -16,11 +17,14 @@ import { draggedPanelWidth } from '~/features/explorer/layout.utils';
  */
 export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>): ExplorerLayout => {
   const store = useExplorerStore();
-  const { phone, panelWidth, mapOnly } = storeToRefs(store);
+  const { phone, tabLabels, panelWidth, mapOnly } = storeToRefs(store);
 
   const phoneQuery = window.matchMedia(PHONE_QUERY);
   phone.value = phoneQuery.matches;
   const onPhoneChange = (event: MediaQueryListEvent) => (phone.value = event.matches);
+  const labelsQuery = window.matchMedia(TAB_LABELS_QUERY);
+  tabLabels.value = labelsQuery.matches;
+  const onLabelsChange = (event: MediaQueryListEvent) => (tabLabels.value = event.matches);
 
   const resizing = ref(false);
   const startResize = (event: PointerEvent) => {
@@ -51,10 +55,12 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
   onMounted(() => {
     document.addEventListener('fullscreenchange', onFullscreenChange);
     phoneQuery.addEventListener('change', onPhoneChange);
+    labelsQuery.addEventListener('change', onLabelsChange);
   });
   onBeforeUnmount(() => {
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     phoneQuery.removeEventListener('change', onPhoneChange);
+    labelsQuery.removeEventListener('change', onLabelsChange);
   });
 
   return { resizing, startResize };
