@@ -6,7 +6,7 @@
   "leeds": {"name":"Leeds","country":"United Kingdom","networks":["Leeds Supertram"],"openedYear":null,"planOnly":true,"plans":1,"lines":3,"stations":47},
   "bristol": {"name":"Bristol","country":"United Kingdom","networks":["Bristol Mass Transit"],"openedYear":null,"planOnly":true,"plans":2,"lines":1,"stations":18},
   "liverpool": {"name":"Liverpool","country":"United Kingdom","networks":["Merseytram"],"openedYear":null,"planOnly":true,"plans":1,"lines":3,"stations":45},
-  "kyiv": {"name":"Kyiv","country":"Ukraine","networks":["Kyiv Metro"],"openedYear":1960,"planOnly":false,"plans":2,"lines":3,"stations":52},
+  "kyiv": {"name":"Kyiv","country":"Ukraine","networks":["Kyiv Metro"],"openedYear":1960,"planOnly":false,"plans":3,"lines":3,"stations":52},
   "kharkiv": {"name":"Kharkiv","country":"Ukraine","networks":["Kharkiv Metro"],"openedYear":1975,"planOnly":false,"plans":3,"lines":3,"stations":30},
   "dnipro": {"name":"Dnipro","country":"Ukraine","networks":["Dnipro Metro"],"openedYear":1995,"planOnly":false,"plans":2,"lines":1,"stations":6},
   "kryvyi-rih": {"name":"Kryvyi Rih","country":"Ukraine","networks":["Kryvyi Rih Metrotram"],"openedYear":1986,"planOnly":false,"plans":3,"lines":2,"stations":11},
