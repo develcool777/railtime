@@ -110,6 +110,13 @@
      * @param index - The row.
      * @param behavior - At once, or smoothly.
      */
-    centre: (index: number, behavior: 'auto' | 'smooth') => virtualizer.value.scrollToIndex(index, { align: 'center', behavior }),
+    centre: (index: number, behavior: 'auto' | 'smooth') => {
+      // The virtualizer's own smooth scroll corrects its target as rows are measured on the way, and
+      // starts again with each call, so a list followed while playing jerks back and forth: smoothly,
+      // the browser scrolls once to where the row stands now.
+      if (behavior === 'auto') return virtualizer.value.scrollToIndex(index, { align: 'center' });
+      const [offset] = virtualizer.value.getOffsetForIndex(index, 'center') ?? [];
+      if (offset !== undefined) scroller.value?.scrollTo({ top: offset, behavior: 'smooth' });
+    },
   });
 </script>
