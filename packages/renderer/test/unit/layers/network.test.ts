@@ -8,6 +8,7 @@ import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 import { emptyDrawing } from '../../../src/steps/animation.utils';
+import { byZoom, highlightedOpacity, highlightedWidth } from '../../../src/layers/style.utils';
 
 describe('NetworkLayer', () => {
   test("draws a snapshot's lines, ghosts, plans and transfers", () => {
@@ -93,5 +94,19 @@ describe('ActiveStepLayer', () => {
     for (let frame = 0; frame < 5; frame++) layer.update(emptyDrawing());
     expect(fake.sends.get(SOURCES.active)).toBe(3);
     expect(fake.data.get(SOURCES.active)).toEqual({ type: 'FeatureCollection', features: [] });
+  });
+
+  test("widens new built track as it stands out, but keeps a plan's at its width, its dashes the same, standing out by its opacity", () => {
+    const fake = fakeMap();
+    const layer = new ActiveStepLayer(fake.map);
+    layer.install();
+    const drawing = emptyDrawing();
+    drawing.highlight = 0.5;
+    layer.update(drawing);
+    for (const planned of [LAYERS.activePlanned, LAYERS.growingPlanned]) {
+      expect(fake.layers.get(planned)?.paint['line-width']).toEqual(byZoom(2.2, 5.5));
+      expect(fake.layers.get(planned)?.paint['line-opacity']).toEqual(highlightedOpacity(0.85, 0.5));
+    }
+    expect(fake.layers.get(LAYERS.activeLines)?.paint['line-width']).toEqual(highlightedWidth(2.2, 5.5, 0.5));
   });
 });
