@@ -18,9 +18,11 @@ export const HELP_TOPICS: { title: string; items: { icon?: string; text?: string
   {
     title: 'In time',
     items: [
-      { icon: 'i-lucide-history', label: 'History', description: 'Open the timeline and drag to any day since the first line opened' },
-      { icon: 'i-lucide-play', label: 'Play', description: 'Watch the network grow, change by change' },
-      { icon: 'i-lucide-settings-2', label: 'Player settings', description: 'Its speed, how the camera follows, the minimap, 3D' },
+      { icon: 'i-lucide-gallery-horizontal', label: 'Timeline', description: 'Drag or click it to see the network on any day since the first line opened' },
+      { icon: 'i-lucide-play', label: 'Play', description: 'Watch the network grow, change by change, on from the day shown' },
+      { icon: 'i-lucide-skip-forward', label: 'Previous and next change', description: 'Step through the changes one at a time' },
+      { icon: 'i-lucide-undo-2', label: 'Today', description: 'Back to the network as it is, or a plan built' },
+      { icon: 'i-lucide-settings-2', label: 'Player settings', description: 'Its speed, how the camera follows, the minimap' },
     ],
   },
 ];

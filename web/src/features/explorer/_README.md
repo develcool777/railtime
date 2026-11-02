@@ -12,7 +12,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | Part        | What                                                                                                                                                                                                                       | Components                                                        |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `map/`      | The map: `useTransitMap`, the only code that touches it (made with the store's props, given each change)                                                                                                                   | `MapTools`                                                        |
-| `time/`     | The time control: at rest, the timeline, the player and its settings (the store's time actions); the scale                                                                                                                 | `TimeControl`, `TimelineBar`, `PlayerSettings`                    |
+| `time/`     | The time control: one card, playing or not, its play where it always is, the timeline under it, the player's settings (the store's time actions); the scale                                                                | `TimeControl`, `TimelineBar`, `PlayerSettings`                    |
 | `panel/`    | The panel's frame, and everything around the map computed over the store: the section and the views pushed over it, the route and reach found, growth and records, the plan shown, each section's dot (`useExplorerPanel`) | `PanelTop`, `ExplorerRail`, `ExplorerPanel`, `PanelSearch`        |
 | `lines/`    | The Lines section, and a line's view                                                                                                                                                                                       | `LinesSection`, `LineView`                                        |
 | `changes/`  | The Changes section, which follows playback and is searched by line, station or year                                                                                                                                       | `ChangesSection`, `ChangeTimeline`                                |
@@ -67,7 +67,7 @@ At the top, what every part shares or what ties them together:
 - **The map** is touched by one adapter (`useTransitMap`): it gives the map `store.mapProps`, writes
   what the map says into the store (a station clicked: `pickStation`), and destroys it.
 - **A part never imports another part's composable.** What parts share is in the store (playback
-  opens Changes: `startPlaying`).
+  is the time: `timeMode`, the map's `time`).
 - **Components** take props and emit; none reaches into the store or a composable.
 
 ## Adding to it

@@ -53,7 +53,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   // What is open.
   const section = ref<Section>('lines');
   const views = ref<PanelView[]>([]);
-  const timeMode = ref<TimeMode>('rest');
+  const timeMode = ref<TimeMode>('timeline');
   const phone = ref(false);
   // A phone wide enough for its tabs' names.
   const tabLabels = ref(false);
@@ -134,7 +134,7 @@ export const useExplorerStore = defineStore('explorer', () => {
           overlay: overlayRequest.value,
           boundary: boundary.value,
           player: player.value,
-          padding: mapPaddingFor(timeMode.value, sheetHeight.value),
+          padding: mapPaddingFor(sheetHeight.value),
           panelCover: panelCover.value,
         })
       : null,
@@ -159,7 +159,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     const station = address.station && opened.find('station', address.station) ? address.station : undefined;
     section.value = address.section ?? opening;
     views.value = [...(line ? [{ kind: 'line' as const, id: line }] : []), ...(station ? [{ kind: 'station' as const, id: station }] : [])];
-    timeMode.value = 'rest';
+    timeMode.value = 'timeline';
     sheet.value = 'peek';
     mapOnly.value = address.mapOnly ?? false;
     dialog.value = null;
@@ -194,7 +194,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     const keep = (stop: Stop | null) => (stop && next.find('station', stop.id) ? stop : null);
     routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
     reachFrom.value = keep(reachFrom.value);
-    timeMode.value = 'rest';
+    timeMode.value = 'timeline';
     step.value = null;
   };
 
@@ -243,13 +243,12 @@ export const useExplorerStore = defineStore('explorer', () => {
   const detach = () => (map.value = null);
 
   /**
-   * The map moved through time: a date away from rest opens the timeline, so the way back is in sight.
+   * The map moved through time.
    *
    * @param next - The time it told.
    */
   const timeChanged = (next: TimeState) => {
     time.value = next;
-    if (timeMode.value === 'rest' && !isAtRest(next, plan.value !== undefined)) timeMode.value = 'timeline';
   };
   /** Playback reached its end: the timeline, at today. */
   const playbackEnded = () => {
@@ -360,43 +359,36 @@ export const useExplorerStore = defineStore('explorer', () => {
 
   // Time: the map moves through it; the store says which card shows, and sends the map the command.
 
-  /** The history from its start (a plan's future from today) in the player, Changes open to follow it. */
-  const startPlaying = () => {
-    section.value = 'changes';
-    views.value = [];
-    timeMode.value = 'playing';
-    map.value?.play('start');
-  };
-  /** Opens the timeline; a network never built has no years to slide through: it plays its plan. */
-  const openTimeline = () => {
-    if (planOnly.value) startPlaying();
-    else timeMode.value = 'timeline';
-  };
-  /** Closes the timeline, back to the network as it ends: today, or a plan built. */
-  const closeTimeline = () => {
-    timeMode.value = 'rest';
-    map.value?.seek('future');
-  };
-  /** Opens the timeline from rest, or closes it; leaves the player alone. */
-  const toggleTimeline = () => {
-    if (timeMode.value === 'rest') openTimeline();
-    else if (timeMode.value === 'timeline') closeTimeline();
-  };
-  /** Plays: on from where it paused in the player, else the history from its start. */
+  /**
+   * Plays on from the date the timeline stands at, where it was dragged or paused (from the start
+   * again once at its end); the panel stays on what is open in it (Changes, open, follows along).
+   */
   const play = () => {
-    if (timeMode.value === 'playing') map.value?.play();
-    else startPlaying();
+    timeMode.value = 'playing';
+    map.value?.play('here');
   };
-  /** Plays or pauses. */
-  const togglePlay = () => {
-    if (timeMode.value === 'playing' && time.value?.playing) map.value?.pause();
-    else play();
-  };
-  /** Leaves the player for the timeline, at the date reached, the whole network in view. */
-  const exitHistory = () => {
-    map.value?.stop();
+  /** Pauses where it is: the timeline, at the date reached. */
+  const pause = () => {
+    map.value?.pause();
     timeMode.value = 'timeline';
   };
+  /** Plays or pauses. */
+  const togglePlay = () => (timeMode.value === 'playing' && time.value?.playing ? pause() : play());
+  /**
+   * Leaves for a moment: today, or the network as it ends (a plan built, else today); playing, it
+   * stops, the whole network back in view.
+   *
+   * @param target - Where to.
+   */
+  const leaveTo = (target: TimelineTarget) => {
+    if (timeMode.value === 'playing') map.value?.stop();
+    timeMode.value = 'timeline';
+    pick(target);
+  };
+  /** The change before the one shown; playing, it plays again. */
+  const previousChange = () => map.value?.previousChange();
+  /** Finishes the change playing, or goes to the next one. */
+  const nextChange = () => map.value?.skip();
   /**
    * Shows what the timeline was picked at: playing, it plays on from there.
    *
@@ -436,14 +428,13 @@ export const useExplorerStore = defineStore('explorer', () => {
     coverageMetres.value = metres;
   };
   /**
-   * A year picked on a chart: the map at its end (today, for this year), the timeline open to say so.
+   * A year picked on a chart: the map at its end (today, for this year), which the timeline shows.
    *
    * @param year - The year.
    */
   const showYear = (year: number) => {
     const today = facts.value?.range.today ?? Date.now();
     map.value?.seek({ time: Math.min(endOfYear(year), today) });
-    if (timeMode.value === 'rest') openTimeline();
   };
 
   return {
@@ -509,12 +500,12 @@ export const useExplorerStore = defineStore('explorer', () => {
     setDialog,
     dialogOpen,
     setPlayer,
-    openTimeline,
-    closeTimeline,
-    toggleTimeline,
     play,
     togglePlay,
-    exitHistory,
+    pause,
+    leaveTo,
+    previousChange,
+    nextChange,
     pick,
     pickChange,
     stepTime,

@@ -133,8 +133,8 @@
           <!-- The time control, and above it while history plays the minimap, unless turned off; on a phone it rides above the sheet. -->
           <div
             v-show="chrome.timeControl"
-            class="pointer-events-none absolute z-10 flex -translate-x-1/2 flex-col gap-3"
-            :class="[timeMode === 'rest' ? 'items-center' : 'items-start', resizing ? '' : 'transition-[left,width] duration-200 ease-out']"
+            class="pointer-events-none absolute z-10 flex -translate-x-1/2 flex-col items-start gap-3"
+            :class="{ 'transition-[left,width] duration-200 ease-out': !resizing }"
             :style="{
               bottom: sheetHeight === null ? '28px' : `${sheetHeight + 12}px`,
               // Centred on what the panel leaves of the map.
@@ -156,21 +156,16 @@
               :range
               :step
               :settings="player"
-              :viewMode
               :plan="planSummary"
               :planOnly
-              @open="store.openTimeline"
-              @close="store.closeTimeline"
-              @today="store.pick({ kind: 'date', time: range.today })"
-              @future="store.pick({ kind: 'future' })"
               @play="store.play"
-              @pause="store.map?.pause()"
-              @previous="store.stepTime(-1)"
-              @skip="store.map?.skip()"
+              @pause="store.pause"
+              @previous="store.previousChange"
+              @skip="store.nextChange"
+              @today="store.leaveTo({ kind: 'date', time: range.today })"
+              @future="store.leaveTo({ kind: 'future' })"
               @pick="store.pick"
-              @settings="store.setPlayer"
-              @viewMode="viewMode = $event"
-              @exit="store.exitHistory" />
+              @settings="store.setPlayer" />
           </div>
 
           <!-- The map's credits stay on it: its tiles' licences ask for them; the rest are on the About page. On a phone they fold into a button. -->

@@ -10,8 +10,8 @@ export type SectionEntry = { id: Section; label: string; icon: string; descripti
 /** How high the phone's sheet stands: its tabs only, half the screen, or all of it. */
 export type SheetSnap = 'peek' | 'half' | 'full';
 
-/** What the time control shows: the totals at rest, the timeline to pick a date, or the player. */
-export type TimeMode = 'rest' | 'timeline' | 'playing';
+/** What the time control does: stands at a date, set on its timeline or paused at, or plays. */
+export type TimeMode = 'timeline' | 'playing';
 
 /** A view pushed over the panel's section: a line's, or a station's. Back pops the last one. */
 export type PanelView = { kind: 'line'; id: string } | { kind: 'station'; id: string };
