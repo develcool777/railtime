@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
+import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 import type { LineSegment, TrackSegment } from '../../../src/engine/engine.types';
@@ -124,6 +125,34 @@ describe('Timeline', () => {
     ]);
     expect(timeline.steps.slice(0, timeline.datedCount).every(step => !step.planned)).toBe(true);
     expect(timeline.cursorAt(toTimestamp('2999-01-01'))).toBe(timeline.datedCount);
+  });
+
+  test("grows a plan's line from an end, though its sections both leave its middle", () => {
+    const network = planOnlyNetwork();
+    // The red line A–B–C as two sections out of B: one way, then the other.
+    network.plans!.first!.sections = [
+      { line: 'red', stations: ['b', 'c'] },
+      { line: 'red', stations: ['b', 'a'] },
+    ];
+    const { timeline } = factsOf(network, 'first').engine;
+    const openings = timeline.steps.filter(step => step.kind === 'open');
+    expect(openings).toHaveLength(1);
+    // From A or from C, whichever is nearer the centre: B, the middle, is passed on the way.
+    expect(timeline.growthOf(openings[0]!).reach.map(reached => reached.station)[1]).toBe('b');
+  });
+
+  test("opens a plan's line where it forks a branch at a time, its way first", () => {
+    const network = planOnlyNetwork();
+    const first = network.plans!.first!;
+    first.stations!.d = { name: 'D', coordinate: [30.01, 50.005] };
+    // A second section branching off the first at B, shorter than the way on to C.
+    first.sections.push({ line: 'red', stations: ['b', 'd'] });
+    const { timeline } = factsOf(network, 'first').engine;
+    const openings = timeline.steps.filter(step => step.kind === 'open');
+    const parts = openings.map(step => step.segments.map(segment => `${segment.stationA}-${segment.stationB}`));
+    // The longest way through first, two segments; then the branch left off it at B.
+    expect(parts.map(part => part.length)).toEqual([2, 1]);
+    expect(parts.flat().sort()).toEqual(['a-b', 'b-c', 'b-d']);
   });
 
   test("keeps a plan's station off its line until its section plays", () => {

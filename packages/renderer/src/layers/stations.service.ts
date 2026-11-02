@@ -203,7 +203,15 @@ export class StationLayer extends MapLayer {
    * @param palette - The theme's colours.
    */
   public applyPalette(palette: Palette): void {
-    this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-color', ['case', ['get', 'interchange'], palette.interchangeRing, ['get', 'color']]);
+    // An interchange is a white dot ringed dark; a planned one, all but hollow, keeps only its ring, so it is ringed as its name is written: clear on the map.
+    this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-color', [
+      'case',
+      ['all', ['get', 'interchange'], ['get', 'planned']],
+      palette.label,
+      ['get', 'interchange'],
+      palette.interchangeRing,
+      ['get', 'color'],
+    ]);
     this.map.setPaintProperty(LAYERS.selection, 'circle-stroke-color', palette.label);
     this.noteColor = palette.basemapText;
     for (const layer of [LAYERS.labels, LAYERS.newLabels]) {

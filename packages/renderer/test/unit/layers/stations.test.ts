@@ -167,6 +167,25 @@ describe('StationLayer', () => {
     expect(label({})).toBe('A');
   });
 
+  test("rings an interchange dark round its white dot, a planned one, all but hollow, in the labels' colour, and any other station in its line's", () => {
+    const { fake, layer } = installed();
+    layer.applyPalette(PALETTES.dark);
+    // Read as MapLibre reads it, by the spec's own entry for a ring's colour, whose JSON is typed loosely.
+    const colorIn = (value: unknown, properties: Partial<StationProperties> = {}) => {
+      const parsed = expression.createExpression(value, latest.paint_circle['circle-stroke-color'] as never);
+      if (parsed.result !== 'success') throw new Error('the ring is not an expression MapLibre reads');
+      return String(
+        parsed.value.evaluate({ zoom: 14 }, { type: 1, properties: { color: '#f00', interchange: false, planned: false, ...properties } } as never),
+      );
+    };
+    const ring = (properties: Partial<StationProperties>) => colorIn(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-color'], properties);
+    const colorOf = (hex: string) => colorIn(hex);
+    expect(ring({ interchange: true })).toBe(colorOf(PALETTES.dark.interchangeRing));
+    expect(ring({ interchange: true, planned: true })).toBe(colorOf(PALETTES.dark.label));
+    expect(ring({ planned: true })).toBe(colorOf('#f00'));
+    expect(ring({})).toBe(colorOf('#f00'));
+  });
+
   test('sends MapLibre nothing for a frame whose stations look as the last: a growing line changes none most frames', () => {
     const { fake, layer } = installed();
     const stations = new Map([['a', new Map([['red', '#f00']])]]);
