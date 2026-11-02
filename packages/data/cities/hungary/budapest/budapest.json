@@ -126,9 +126,9 @@
       },
       "sections": [
         {"line":"m1","stations":["vorosmarty-ter","vigado-ter"]},
-        {"line":"m1","stations":["szechenyi-furdo","hungaria-korut-m1","mexikoi-ut"]},
         {"line":"m1","stations":["mexikoi-ut","kassai-ter"]},
-        {"line":"m1","stations":["kassai-ter","csaktornya-park","marcheggi-hid"]}
+        {"line":"m1","stations":["kassai-ter","csaktornya-park","marcheggi-hid"]},
+        {"line":"m1","stations":["szechenyi-furdo","hungaria-korut-m1","mexikoi-ut"]}
       ]
     },
     "m2-hev-link": {

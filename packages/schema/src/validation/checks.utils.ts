@@ -1,6 +1,7 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
 import type { Mode, Network, Plan, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
+import type { BuiltPlan } from '../plan/build.types';
 import { buildPlan } from '../plan/build.utils.ts';
 import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
 
@@ -308,6 +309,38 @@ const planReferenceProblems = (network: Network, plan: Plan): string[] => [
 ];
 
 /**
+ * A plan's sections of a line coming back after another line's: a plan plays in its order, so each
+ * line's sections go together, the line built whole before the next.
+ *
+ * @param plan - One of the network's plans.
+ * @returns A problem for each.
+ */
+const planOrderProblems = (plan: Plan): string[] =>
+  plan.sections.flatMap((section, position) => {
+    const before = plan.sections[position - 1];
+    const earlier = plan.sections.slice(0, position - 1).some(other => other.line === section.line);
+    return before && before.line !== section.line && earlier
+      ? [`section ${position}: ${section.line} again, after ${before.line}: a line's sections go together`]
+      : [];
+  });
+
+/**
+ * A plan's sections adding only stations on its line's track between two that lay more of it: a line's
+ * track plays unbroken, the stations it adds on it before or after, so no station breaks an extension.
+ *
+ * @param built - A plan built on the network.
+ * @returns A problem for each.
+ */
+const planStationOrderProblems = (built: BuiltPlan): string[] =>
+  built.sections.flatMap((section, position) => {
+    const laysTrack = (other: BuiltPlan['sections'][number]) => other.line === section.line && other.segments.length > 0;
+    const between = built.sections.slice(0, position).some(laysTrack) && built.sections.slice(position + 1).some(laysTrack);
+    return section.segments.length === 0 && between
+      ? [`section ${position}: only stations, between sections of ${section.line}'s track: its track goes unbroken`]
+      : [];
+  });
+
+/**
  * Checks each plan as the network it would build: its own ids new, its references and dates sound.
  * A problem the network already has is reported once, not again for every plan.
  *
@@ -319,10 +352,12 @@ export const checkPlans = (network: Network, problem: (message: string) => void)
   checkNetwork(network, message => known.add(message));
   for (const [planId, plan] of Object.entries(network.plans ?? {})) {
     const references = planReferenceProblems(network, plan);
-    for (const message of references) problem(`plan ${planId}: ${message}`);
+    for (const message of [...references, ...planOrderProblems(plan)]) problem(`plan ${planId}: ${message}`);
     // Built only once its ids are sound: building needs every station's place.
     if (references.length > 0) continue;
-    checkNetwork(buildPlan(network, planId).network, message => {
+    const built = buildPlan(network, planId);
+    for (const message of planStationOrderProblems(built)) problem(`plan ${planId}: ${message}`);
+    checkNetwork(built.network, message => {
       if (!known.has(message)) problem(`plan ${planId}: ${message}`);
     });
   }

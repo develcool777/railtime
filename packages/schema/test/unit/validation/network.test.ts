@@ -55,6 +55,24 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual(['plan extension: section 2: unknown line blue', 'plan extension: section 2: unknown station x']);
   });
 
+  test("refuses a plan's section of only stations between two laying its line's track, and takes one before them", () => {
+    const network = plannedNetwork();
+    const extension = network.plans!.extension!;
+    extension.stations = { ...extension.stations, e: { name: 'E', coordinate: [0.0576, 51.5] } };
+    extension.sections = [...extension.sections, { line: 'red', stations: ['d', 'e'] }];
+    expect(problemsOf(network)).toEqual([]);
+    extension.sections = [extension.sections[1]!, extension.sections[0]!, extension.sections[2]!];
+    expect(problemsOf(network)).toEqual(["plan extension: section 1: only stations, between sections of red's track: its track goes unbroken"]);
+  });
+
+  test("refuses a plan coming back to a line after another line's sections: each line's go together, as they play", () => {
+    const network = plannedNetwork();
+    const extension = network.plans!.extension!;
+    extension.lines = { ...extension.lines, green: { name: 'Green', network: 'metro', mode: 'metro', color: '#00aa00' } };
+    extension.sections = [extension.sections[0]!, { line: 'green', stations: ['a', 'b'] }, ...extension.sections.slice(1)];
+    expect(problemsOf(network)).toContain(`plan extension: section 2: ${extension.sections[2]!.line} again, after green: a line's sections go together`);
+  });
+
   test('refuses a plan reusing an id the network has', () => {
     const network = plannedNetwork();
     network.plans!.extension!.stations!.a = { name: 'Another A', coordinate: [0, 51.6] };

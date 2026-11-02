@@ -232,13 +232,13 @@
         "uruguai": {"name":"Uruguai","coordinate":[-9.1965,38.7534]}
       },
       "sections": [
+        {"line":"azul","stations":["colegio-militar-luz","uruguai","benfica"]},
         {"line":"azul","stations":["terreiro-do-paco","alfandega","santa-apolonia"]},
+        {"line":"verde","stations":["telheiras","horta-nova","carnide"]},
         {"line":"verde","stations":["alvalade","calvanas","campo-grande"]},
         {"line":"verde","stations":["areeiro","madrid","roma"]},
         {"line":"vermelha","stations":["sao-sebastiao","campolide","amoreiras","campo-de-ourique"]},
-        {"line":"amarela","stations":["rato","estrela","infante-santo","alcantara-mar"]},
-        {"line":"verde","stations":["telheiras","horta-nova","carnide"]},
-        {"line":"azul","stations":["colegio-militar-luz","uruguai","benfica"]}
+        {"line":"amarela","stations":["rato","estrela","infante-santo","alcantara-mar"]}
       ]
     },
     "linha-das-colinas": {

@@ -169,6 +169,9 @@ never the track out to the station. Where an interchange's lines run apart under
 track curves gently to the one station point. Where a line's trains end at a station from two
 directions and go back the way they came, the station says so (`reverses`); nowhere else may a line
 turn back through it. A plan's station on track already built sits on that track: the plan splits it there.
+A plan plays in its order, section by section: a line's sections go together, the line built whole
+before the next, and its track unbroken, a section adding only stations on it before or after the
+sections laying it, never between (the schema refuses either).
 A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
 says the line never called there); its `closed` while the line runs there; its `suspended`, spells it
 closed for a while and reopened, each while the line runs there and calls, in order. The schema refuses

@@ -121,13 +121,13 @@
       },
       "sections": [
         {"line":"oleksiivska","stations":["metrobudivnykiv","derzhavinska","odeska"]},
+        {"line":"oleksiivska","stations":["odeska","motel-druzhba","aeroport"]},
+        {"line":"oleksiivska","stations":["derzhavinska","kashtanova","odeska"]},
         {"line":"saltivska","stations":["istorychnyi-muzei","ploshcha-urytskoho"]},
         {"line":"saltivska","stations":["saltivska","druzhby-narodiv"]},
+        {"line":"saltivska","stations":["ploshcha-urytskoho","novobavarska","novozhanove"]},
         {"line":"kholodnohirsko-zavodska","stations":["kholodna-hora","zaliutyne"]},
         {"line":"kholodnohirsko-zavodska","stations":["industrialna","skhidna","rohanska"]},
-        {"line":"oleksiivska","stations":["derzhavinska","kashtanova","odeska"]},
-        {"line":"oleksiivska","stations":["odeska","motel-druzhba","aeroport"]},
-        {"line":"saltivska","stations":["ploshcha-urytskoho","novobavarska","novozhanove"]},
         {"line":"kholodnohirsko-zavodska","stations":["rohanska","pivdenna"]},
         {"line":"m4","stations":["heroiv-pratsi-2","valentynivska","prospekt-traktorobudivnykiv","saltivske-shose","mikroraion-602"]},
         {"line":"m4","stations":["mikroraion-602","krasnodarska","nemyshlianska","imeni-o-s-maselskoho-2"]}

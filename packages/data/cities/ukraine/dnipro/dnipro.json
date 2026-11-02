@@ -71,11 +71,11 @@
         {"line":"tsentralno-zavodska","stations":["vokzalna","teatralna","tsentralna","muzeina"]},
         {"line":"tsentralno-zavodska","stations":["muzeina","dnipro","pivdennyi-vokzal"]},
         {"line":"tsentralno-zavodska","stations":["pokrovska","parus-1","parus-2"]},
-        {"line":"druha","stations":["pushkinska","yevropeiska","slobozhanskyi-prospekt","industrialna"]},
         {"line":"tsentralno-zavodska","stations":["pivdennyi-vokzal","kosmichna","prospekt-heroiv","sokil"]},
+        {"line":"tsentralno-zavodska","stations":["sokil","topolia-1","topolia-2"]},
+        {"line":"druha","stations":["pushkinska","yevropeiska","slobozhanskyi-prospekt","industrialna"]},
         {"line":"druha","stations":["industrialna","kharkivska"]},
         {"line":"druha","stations":["pushkinska","robocha","sportyvna"]},
-        {"line":"tsentralno-zavodska","stations":["sokil","topolia-1","topolia-2"]},
         {"line":"druha","stations":["sportyvna","enerhetychna","shynna"]}
       ],
       "transfers": [
