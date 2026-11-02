@@ -316,4 +316,23 @@ describe('London', () => {
     expect(played.started).toBe(played.steps);
     expect(played.cursor).toBe(played.steps);
   }, 30_000);
+
+  test('plays its whole history with the Bakerloo hidden, the Jubilee out for the years it was drawn as it', () => {
+    const hidden = playbackOf(london, { hidden: ['national-rail', 'bakerloo'] });
+    // Drawn as the Metropolitan from 1932, the Stanmore branch goes as it in 1939, and is back as the Jubilee in 1979.
+    const jubilee = hidden.timeline.steps.filter(
+      step => (step.kind === 'open' || step.kind === 'close') && step.lineSegments.some(lineSegment => lineSegment.line === 'jubilee'),
+    );
+    expect(jubilee.map(step => [step.kind, step.kind === 'open' || step.kind === 'close' ? step.line : '', new Date(step.time).getUTCFullYear()])).toEqual(
+      expect.arrayContaining([
+        ['close', 'metropolitan', 1939],
+        ['open', 'jubilee', 1979],
+      ]),
+    );
+    expect(jubilee.some(step => new Date(step.time).getUTCFullYear() > 1939 && new Date(step.time).getUTCFullYear() < 1979)).toBe(false);
+    expect(hidden.timeline.steps.some(step => step.kind === 'identity' && step.lines.includes('jubilee'))).toBe(false);
+    const played = playWholeHistory(london, { hidden: ['national-rail', 'bakerloo'] });
+    expect(played.started).toBe(played.steps);
+    expect(played.cursor).toBe(played.steps);
+  }, 30_000);
 });

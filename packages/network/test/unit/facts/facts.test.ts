@@ -47,6 +47,27 @@ describe('NetworkFacts', () => {
     expect(withRail.find('station', 'x')).toEqual({ id: 'x', name: 'X' });
   });
 
+  test('takes a line out for the years it was drawn as a line hidden, going as what it was, back as itself', () => {
+    const network = tinyNetwork();
+    // Green, on C – D from 1970, drawn as red until 1975, then as blue until 1990.
+    network.lines.green = {
+      ...network.lines.green!,
+      aliases: [
+        { until: '1975-01-01', as: 'red', text: 'Green runs as Blue' },
+        { until: '1990-01-01', as: 'blue', text: 'Green becomes its own line' },
+      ],
+    };
+    const facts = NetworkFacts.create(network, { today: TODAY, hidden: ['blue'] });
+    const titlesIn = (year: number) =>
+      facts
+        .changes()
+        .filter(change => change.time !== null && new Date(change.time).getUTCFullYear() === year)
+        .map(change => change.title);
+    expect(titlesIn(1975)).toEqual(['Red line: section closes']);
+    expect(titlesIn(1990)).toEqual(['Pink becomes its own line', 'Green line opens']);
+    expect(facts.lines().find(line => line.id === 'green')?.opened).toBe(toTimestamp('1990-01-01'));
+  });
+
   test('shows the network as built when its plan builds only on lines hidden', () => {
     const facts = NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: 'grey-on' });
     expect(facts.plan).toBeNull();

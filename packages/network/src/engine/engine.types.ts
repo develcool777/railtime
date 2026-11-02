@@ -95,3 +95,9 @@ export type Growth = {
    */
   reach: { station: string; km: number; isNew: boolean }[];
 };
+
+/**
+ * A stretch of time a line is left out, as timestamps: the years it was drawn as a line hidden. Its
+ * runs are cut there, each side a run of its own, never one suspended and back.
+ */
+export type LineGap = { from: number; until: number };

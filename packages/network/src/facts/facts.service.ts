@@ -74,12 +74,12 @@ export class NetworkFacts {
   private constructor(stored: Network, hidden: string[], plan: string | null, today: number) {
     this.stored = stored;
     this.hidden = hidden;
-    const source = withLinesHidden(stored, hidden);
+    const { network: source, gaps } = withLinesHidden(stored, hidden);
     this.source = source;
     // A plan building on a line hidden goes with it: the network is shown as built.
     this.plan = plan !== null && source.plans?.[plan] ? plan : null;
     this.planOnly = isPlanOnly(source);
-    this.engine = new NetworkEngine(source, this.plan, today);
+    this.engine = new NetworkEngine(source, this.plan, today, gaps);
     this.index = this.engine.index;
     this.timeline = this.engine.timeline;
     this.range = this.engine.range;

@@ -5,13 +5,15 @@ import type { BuiltSection } from '@railtime/schema/plan.types';
 import { required } from '@railtime/core/required.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { boundsOf, cumulativeDistances } from '@railtime/core/geometry.utils';
-import type { LineSegment, TrackSegment } from './engine.types';
+import type { LineGap, LineSegment, TrackSegment } from './engine.types';
+import { outsideGaps } from './gaps.utils.ts';
 import { orientSegments } from './orientation.utils.ts';
 
 /**
  * The network, indexed for drawing: segments with their distances and direction of travel
  * precomputed, and one `LineSegment` per (segment, line, period) with its dates as timestamps: a line
- * suspended on a segment and back is two periods there. A plan built on the network adds one
+ * suspended on a segment and back is two periods there, linked; a line left out for a while (a gap)
+ * is two there, apart. A plan built on the network adds one
  * undated `LineSegment` per line its sections put on a segment.
  */
 export class NetworkIndex {
@@ -35,14 +37,18 @@ export class NetworkIndex {
   private readonly transfersByStation = new Map<string, string[]>();
   /** Line segments touching each station. */
   private readonly lineSegmentsByStation = new Map<string, LineSegment[]>();
+  /** The stretches of time each line is left out, if any. */
+  public readonly gaps: ReadonlyMap<string, readonly LineGap[]>;
 
   /**
    * @param network - The network: with a plan's track, if one is built on it (`buildPlan`).
    * @param sections - That plan's sections, in order.
+   * @param gaps - The stretches of time each line is left out: the years it was drawn as a line hidden.
    */
-  public constructor(network: Network, sections: BuiltSection[] = []) {
+  public constructor(network: Network, sections: BuiltSection[] = [], gaps: ReadonlyMap<string, readonly LineGap[]> = new Map()) {
     this.network = network;
     this.sections = sections;
+    this.gaps = gaps;
     this.lineOrder = new Map(Object.keys(network.lines).map((line, position) => [line, position]));
     this.lineIds = Object.entries(network.lines)
       .filter(([, line]) => !line.pseudo)
@@ -155,15 +161,26 @@ export class NetworkIndex {
 
   /**
    * When a line first ran as itself: its first opening, or, for a line drawn as another until a
-   * date (an alias), that date.
+   * date (an alias), that date, or its first opening after it where it was out then (a gap).
    *
    * @param line - A line id.
    * @returns A timestamp; `Infinity` for a line only a plan builds.
    */
   public lineOpens(line: string): number {
-    const opens = Math.min(...this.lineSegments.filter(lineSegment => lineSegment.line === line).map(lineSegment => lineSegment.opens));
     const ownFrom = Math.max(...(this.lineOf(line).aliases ?? []).map(alias => toTimestamp(alias.until)));
-    return Math.max(opens, ownFrom);
+    const runsAsItself = this.lineSegments.filter(lineSegment => lineSegment.line === line && (lineSegment.closes === null || lineSegment.closes > ownFrom));
+    return Math.min(...runsAsItself.map(lineSegment => Math.max(lineSegment.opens, ownFrom)));
+  }
+
+  /**
+   * Whether a line goes out at a moment (a gap starts): what it is drawn as changing then shows nowhere.
+   *
+   * @param line - A line id.
+   * @param time - A timestamp.
+   * @returns True if one of its gaps starts then.
+   */
+  public goesOutAt(line: string, time: number): boolean {
+    return (this.gaps.get(line) ?? []).some(gap => gap.from === time);
   }
 
   /**
@@ -211,21 +228,28 @@ export class NetworkIndex {
       // Each spell without trains ends one period and starts the next.
       const starts = [dates.open, ...(dates.suspended ?? []).map(spell => spell.until)];
       const ends = [...(dates.suspended ?? []).map(spell => spell.from), dates.close];
+      // The period before, while it ran up to the spell: one a gap cut short leaves the next apart.
       let previous: LineSegment | null = null;
       for (const [period, start] of starts.entries()) {
         const end = ends[period];
-        const lineSegment: LineSegment = {
+        const opens = toTimestamp(start);
+        const closes = end ? toTimestamp(end) : null;
+        const pieces = outsideGaps(opens, closes, this.gaps.get(line) ?? []).map((piece): LineSegment => ({
           segment: trackSegment,
           line,
-          opens: toTimestamp(start),
-          closes: end ? toTimestamp(end) : null,
+          ...piece,
           section: null,
-          previous,
+          previous: null,
           next: null,
-        };
-        if (previous) previous.next = lineSegment;
-        previous = lineSegment;
-        this.addLineSegment(lineSegment);
+        }));
+        const [first] = pieces;
+        if (first && previous && first.opens === opens) {
+          first.previous = previous;
+          previous.next = first;
+        }
+        for (const piece of pieces) this.addLineSegment(piece);
+        const last = pieces.at(-1);
+        previous = last?.closes === closes ? last : null;
       }
     }
     return trackSegment;

@@ -19,38 +19,31 @@
         </UTooltip>
       </div>
       <ul role="list">
-        <li v-for="line in group.lines" :key="line.id" class="flex items-center" :class="{ 'opacity-55': !isOpen(line) }">
+        <!-- A line hidden keeps its place, only named, faded, to be shown again. -->
+        <li
+          v-for="entry in group.entries"
+          :key="entry.id"
+          class="flex min-h-9 items-center"
+          :class="{ 'opacity-40': !entry.shown, 'opacity-55': entry.shown && !isOpen(entry.shown) }">
           <UButton
             v-if="group.toggleable.length > 0"
-            icon="i-lucide-eye"
+            :icon="entry.shown ? 'i-lucide-eye' : 'i-lucide-eye-off'"
             color="neutral"
             variant="link"
             size="sm"
             class="text-dimmed hover:text-highlighted w-8 flex-none justify-center"
-            :aria-pressed="true"
-            :aria-label="`Hide ${line.name}`"
-            @click="emit('show', [line.id], false)" />
-          <ListRow class="min-w-0 flex-1" :class="{ 'pl-0': group.toggleable.length > 0 }" @click="emit('open', line.id)">
-            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(line.color) }" />
-            <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ line.name }}</span>
-            <span class="text-muted flex-none text-xs tabular-nums">{{ line.opened === null ? 'Planned' : yearOf(line.opened) }}</span>
+            :aria-pressed="entry.shown !== null"
+            :aria-label="entry.shown ? `Hide ${entry.name}` : `Show ${entry.name}`"
+            @click="emit('show', [entry.id], !entry.shown)" />
+          <ListRow v-if="entry.shown" class="min-w-0 flex-1" :class="{ 'pl-0': group.toggleable.length > 0 }" @click="emit('open', entry.id)">
+            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(entry.color) }" />
+            <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ entry.name }}</span>
+            <span class="text-muted flex-none text-xs tabular-nums">{{ entry.shown.opened === null ? 'Planned' : yearOf(entry.shown.opened) }}</span>
             <UIcon name="i-lucide-chevron-right" class="text-dimmed size-4 flex-none" />
           </ListRow>
-        </li>
-        <!-- Hidden, a line is as if it were not there: only named, faded, to be shown again. -->
-        <li v-for="line in group.hiddenLines" :key="line.id" class="flex h-9 items-center opacity-40">
-          <UButton
-            icon="i-lucide-eye-off"
-            color="neutral"
-            variant="link"
-            size="sm"
-            class="text-dimmed hover:text-highlighted w-8 flex-none justify-center"
-            :aria-pressed="false"
-            :aria-label="`Show ${line.name}`"
-            @click="emit('show', [line.id], true)" />
-          <span class="flex min-w-0 flex-1 items-center gap-2.5">
-            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(line.color) }" />
-            <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ line.name }}</span>
+          <span v-else class="flex min-w-0 flex-1 items-center gap-2.5">
+            <span class="h-1.5 w-[22px] flex-none rounded-full" :style="{ background: lineColor(entry.color) }" />
+            <span class="text-highlighted flex-1 truncate text-sm leading-5 font-medium">{{ entry.name }}</span>
           </span>
         </li>
       </ul>

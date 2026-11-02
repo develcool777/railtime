@@ -1,6 +1,7 @@
 import type { Line, Network, Plan, Station, Suspension } from '@railtime/schema/network.types';
-import type { NetworkChoice } from './facts.types';
-import { lineFrom, runFrom, shownFromOf, stationFrom } from './aliases.utils.ts';
+import type { NetworkChoice, ShownNetwork } from './facts.types';
+import type { LineGap } from '../engine/engine.types';
+import { gapsOf, lineWithout, runsOutside, stationOutside } from './aliases.utils.ts';
 
 /**
  * The lines a person may show or hide: every line of the network but those that exist only to be
@@ -65,20 +66,17 @@ const stationWithLines = (station: Station, kept: (line: string) => boolean): St
 };
 
 /**
- * The lines left with some hidden: those drawn, each only from when it is no longer drawn as one
- * hidden (an alias), and the pseudo lines one of them is still drawn as.
+ * The lines left with some hidden: those drawn, without their aliases to lines hidden, and the pseudo
+ * lines one of them is still drawn as.
  *
  * @param network - The network, as stored.
  * @param hidden - The lines hidden.
- * @param shownFrom - Each line drawn as one hidden for a while, and the day it is first drawn.
  * @returns The lines, in its order.
  */
-const linesLeft = (network: Network, hidden: Set<string>, shownFrom: Map<string, string>): Record<string, Line> => {
-  const own = (id: string, line: Line): Line => {
-    const from = shownFrom.get(id);
-    return from === undefined ? line : lineFrom(line, from);
-  };
-  const drawn = Object.entries(network.lines).flatMap(([id, line]): [string, Line][] => (line.pseudo || hidden.has(id) ? [] : [[id, own(id, line)]]));
+const linesLeft = (network: Network, hidden: Set<string>): Record<string, Line> => {
+  const drawn = Object.entries(network.lines).flatMap(([id, line]): [string, Line][] =>
+    line.pseudo || hidden.has(id) ? [] : [[id, lineWithout(line, hidden)]],
+  );
   const drawnAs = new Set(drawn.flatMap(([, line]) => (line.aliases ?? []).map(alias => alias.as)));
   const kept = new Map([...drawn, ...Object.entries(network.lines).filter(([id, line]) => line.pseudo && drawnAs.has(id))]);
   // In the network's order.
@@ -108,32 +106,28 @@ const startShown = (network: Network, drawn: (line: string) => boolean): string 
 
 /**
  * The network with some lines hidden, as if they were not there: their track, the stations only they
- * served and the changes to those go, and the years another line was drawn as one of them (an alias):
- * that line is drawn only once it is its own; a station only they served that a plan builds on is that plan's own, as it would be
- * without them; a plan keeps its sections on lines still drawn, its stations only those use, and goes
- * once it has none. A network older than the city starts the
+ * served and the changes to those go, and the years another line was drawn as one of them (an alias),
+ * its gaps, which the engine cuts its runs at; a station only they served that a plan builds on is
+ * that plan's own, as it would be without them; a plan keeps its sections on lines still drawn, its
+ * stations only those use, and goes once it has none. A network older than the city starts the
  * timeline at its own start while one of its lines shows.
  *
  * @param network - The network, as stored.
  * @param hidden - The lines hidden.
- * @returns The network shown; the one given where nothing is hidden and nothing starts it earlier.
+ * @returns The network shown, the one given where nothing is hidden and nothing starts it earlier, and each line's gaps.
  */
-export const withLinesHidden = (network: Network, hidden: readonly string[]): Network => {
+export const withLinesHidden = (network: Network, hidden: readonly string[]): ShownNetwork => {
   const hiddenSet = new Set(hidden);
-  const shownFrom = shownFromOf(network.lines, hiddenSet);
-  const lines = linesLeft(network, hiddenSet, shownFrom);
   // A pseudo line has no track of its own: drawn are the lines not hidden.
   const drawn = (line: string): boolean => !hiddenSet.has(line) && network.lines[line]?.pseudo !== true;
   const start = startShown(network, drawn);
   const meta = start === network.meta.start ? network.meta : { ...network.meta, start };
-  if (hiddenSet.size === 0) return meta === network.meta ? network : { ...network, meta };
+  if (hiddenSet.size === 0) return { network: meta === network.meta ? network : { ...network, meta }, gaps: new Map() };
+  const lines = linesLeft(network, hiddenSet);
+  const gaps = gapsOf(network.lines, hiddenSet);
+  const gapsOfLine = (line: string): readonly LineGap[] => gaps.get(line) ?? [];
   const segments = network.segments.flatMap(segment => {
-    const left = Object.entries(segment.lines).flatMap(([line, run]) => {
-      if (!drawn(line)) return [];
-      const from = shownFrom.get(line);
-      const shown = from === undefined ? run : runFrom(run, from);
-      return shown ? [[line, shown] as const] : [];
-    });
+    const left = Object.entries(segment.lines).filter(([line, run]) => drawn(line) && runsOutside(run, gapsOfLine(line)));
     return left.length > 0 ? [{ ...segment, lines: Object.fromEntries(left) }] : [];
   });
   const servedBefore = new Set(network.segments.flatMap(segment => [segment.stationA, segment.stationB]));
@@ -156,7 +150,7 @@ export const withLinesHidden = (network: Network, hidden: readonly string[]): Ne
   const stations = Object.fromEntries(
     Object.entries(network.stations)
       .filter(([id]) => !gone.has(id))
-      .map(([id, station]) => [id, stationFrom(stationWithLines(station, drawn), shownFrom)]),
+      .map(([id, station]) => [id, stationOutside(stationWithLines(station, drawn), gaps)]),
   );
   // A plan's station that is gone becomes the plan's own: its place and name, none of its history.
   const plansShown = Object.fromEntries(
@@ -175,14 +169,17 @@ export const withLinesHidden = (network: Network, hidden: readonly string[]): Ne
     [...Object.values(lines), ...Object.values(plansShown).flatMap(plan => Object.values(plan.lines ?? {}))].map(line => line.network),
   );
   return {
-    ...network,
-    meta,
-    networks: Object.fromEntries(Object.entries(network.networks).filter(([id]) => networksUsed.has(id))),
-    lines,
-    stations,
-    segments,
-    ...(network.transfers ? { transfers: network.transfers.filter(({ stationA, stationB }) => stationA in stations && stationB in stations) } : {}),
-    ...(network.plans ? { plans: plansShown } : {}),
+    network: {
+      ...network,
+      meta,
+      networks: Object.fromEntries(Object.entries(network.networks).filter(([id]) => networksUsed.has(id))),
+      lines,
+      stations,
+      segments,
+      ...(network.transfers ? { transfers: network.transfers.filter(({ stationA, stationB }) => stationA in stations && stationB in stations) } : {}),
+      ...(network.plans ? { plans: plansShown } : {}),
+    },
+    gaps,
   };
 };
 

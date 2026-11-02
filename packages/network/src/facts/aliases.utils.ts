@@ -1,78 +1,108 @@
 import type { Line, SegmentLine, Station, Suspension } from '@railtime/schema/network.types';
+import { toIsoDate, toTimestamp } from '@railtime/core/date.utils';
+import type { LineGap } from '../engine/engine.types';
+import { outsideGaps } from '../engine/gaps.utils.ts';
 
 /**
- * Where each line drawn for a while as a line hidden (an alias) is first its own: the years it was
- * drawn as that line are that line's history, and go with it.
+ * The years each line still shown was drawn as a line hidden (an alias): that line's history, which
+ * goes with it. An alias runs from the one before it ends, or from the start, to its own end.
  *
  * @param lines - The network's lines.
  * @param hidden - The lines hidden.
- * @returns For each such line still shown, the day it is first drawn: its last alias to a line hidden ending.
+ * @returns Each line shown with any, its gaps in order.
  */
-export const shownFromOf = (lines: Record<string, Line>, hidden: Set<string>): Map<string, string> =>
+export const gapsOf = (lines: Record<string, Line>, hidden: Set<string>): Map<string, LineGap[]> =>
   new Map(
     Object.entries(lines).flatMap(([id, line]) => {
       if (hidden.has(id)) return [];
-      const ends = (line.aliases ?? []).filter(alias => hidden.has(alias.as)).map(alias => alias.until);
-      return ends.length > 0 ? [[id, ends.reduce((last, until) => (until > last ? until : last))] as const] : [];
+      const aliases = [...(line.aliases ?? [])].sort((first, second) => first.until.localeCompare(second.until));
+      const gaps = aliases.flatMap((alias, position) => {
+        if (!hidden.has(alias.as)) return [];
+        const before = aliases[position - 1];
+        return [{ from: before ? toTimestamp(before.until) : -Infinity, until: toTimestamp(alias.until) }];
+      });
+      return gaps.length > 0 ? [[id, gaps] as const] : [];
     }),
   );
 
 /**
- * A line drawn from a day on: its aliases ending before it gone.
+ * A line without its aliases to lines hidden: the years they ran are its gaps.
  *
  * @param line - The line.
- * @param from - The day it is first drawn.
+ * @param hidden - The lines hidden.
  * @returns The line, its aliases trimmed.
  */
-export const lineFrom = (line: Line, from: string): Line => {
+export const lineWithout = (line: Line, hidden: Set<string>): Line => {
   const { aliases, ...own } = line;
-  const left = (aliases ?? []).filter(alias => alias.until > from);
+  const left = (aliases ?? []).filter(alias => !hidden.has(alias.as));
+  if (left.length === (aliases ?? []).length) return line;
   return left.length > 0 ? { ...own, aliases: left } : own;
 };
 
 /**
- * Spells closed for a while from a day on: those over before it gone, one running over it from then.
+ * Whether anything is left of a line's run over a segment outside its gaps: the engine cuts what is.
+ *
+ * @param run - The run.
+ * @param gaps - The line's gaps.
+ * @returns True if some of it is outside them.
+ */
+export const runsOutside = (run: SegmentLine, gaps: readonly LineGap[]): boolean =>
+  outsideGaps(toTimestamp(run.open), run.close ? toTimestamp(run.close) : null, gaps).length > 0;
+
+/**
+ * Spells closed for a while outside a line's gaps: cut at each.
  *
  * @param spells - The spells.
- * @param from - The day.
- * @returns The spells left, or none.
+ * @param gaps - The line's gaps.
+ * @returns The spells left, in order.
  */
-const spellsFrom = (spells: Suspension[] | undefined, from: string): Suspension[] | undefined => {
-  const left = (spells ?? []).filter(spell => spell.until > from).map(spell => (spell.from < from ? { ...spell, from } : spell));
-  return left.length > 0 ? left : undefined;
-};
+const spellsOutside = (spells: Suspension[], gaps: readonly LineGap[]): Suspension[] =>
+  spells.flatMap(spell =>
+    outsideGaps(toTimestamp(spell.from), toTimestamp(spell.until), gaps).map(piece => ({
+      from: toIsoDate(piece.opens),
+      // Within bounds: a piece of a spell ends where the spell or a gap does.
+      until: toIsoDate(piece.closes!),
+    })),
+  );
 
 /**
- * A line's run over a segment from a day on: opening then at the earliest, and none if it had closed by then.
+ * The gap a day falls in, if any.
  *
- * @param run - The line's run over the segment.
- * @param from - The day the line is first drawn.
- * @returns The run, or none.
+ * @param day - The day, as an ISO date.
+ * @param gaps - A line's gaps.
+ * @returns The gap.
  */
-export const runFrom = (run: SegmentLine, from: string): SegmentLine | null => {
-  if (run.close !== undefined && run.close <= from) return null;
-  const { suspended, ...own } = run;
-  const spells = spellsFrom(suspended, from);
-  return { ...own, open: run.open < from ? from : run.open, ...(spells ? { suspended: spells } : {}) };
+const gapAt = (day: string, gaps: readonly LineGap[]): LineGap | undefined => {
+  const time = toTimestamp(day);
+  return gaps.find(gap => gap.from <= time && time < gap.until);
 };
 
 /**
- * A station with what it says of lines drawn only from a day on, from then: an opening on one before
- * it is the line's own opening; a closing on one before it leaves the line passing through, never
- * calling.
+ * A station with what it says of lines with gaps outside them: a line opening there in one opens there
+ * as it is back; one closing there in one closes as it goes, or, gone from the start, never calls
+ * there; its spells closed are cut at each.
  *
  * @param station - The station.
- * @param shownFrom - Each line drawn only from a day on, and the day.
+ * @param gaps - Each line's gaps.
  * @returns The station.
  */
-export const stationFrom = (station: Station, shownFrom: Map<string, string>): Station => {
-  const fromOf = (line: string) => shownFrom.get(line) ?? '';
-  const infill = Object.entries(station.infill ?? {}).filter(([line, day]) => day > fromOf(line));
-  const closed = Object.entries(station.closed ?? {}).filter(([line, day]) => day > fromOf(line));
-  const passing = Object.entries(station.closed ?? {}).flatMap(([line, day]) => (day <= fromOf(line) ? [line] : []));
+export const stationOutside = (station: Station, gaps: ReadonlyMap<string, readonly LineGap[]>): Station => {
+  const lines = [...gaps.keys()].filter(line => station.infill?.[line] || station.closed?.[line] || station.suspended?.[line]);
+  if (lines.length === 0) return station;
+  const gapsOfLine = (line: string) => gaps.get(line) ?? [];
+  const infill = Object.entries(station.infill ?? {}).map(([line, day]): [string, string] => {
+    const gap = gapAt(day, gapsOfLine(line));
+    return [line, gap ? toIsoDate(gap.until) : day];
+  });
+  const closings = Object.entries(station.closed ?? {}).map(([line, day]) => [line, day, gapAt(day, gapsOfLine(line))] as const);
+  const closed = closings.flatMap(([line, day, gap]): [string, string][] => {
+    if (!gap) return [[line, day]];
+    return Number.isFinite(gap.from) ? [[line, toIsoDate(gap.from)]] : [];
+  });
+  const passing = closings.flatMap(([line, , gap]) => (gap && !Number.isFinite(gap.from) ? [line] : []));
   const suspended = Object.entries(station.suspended ?? {}).flatMap(([line, spells]) => {
-    const left = shownFrom.has(line) ? spellsFrom(spells, fromOf(line)) : spells;
-    return left ? [[line, left] as const] : [];
+    const left = spellsOutside(spells, gapsOfLine(line));
+    return left.length > 0 ? [[line, left] as const] : [];
   });
   const passes = [...new Set([...(station.passes ?? []), ...passing])];
   const out: Station = { ...station };

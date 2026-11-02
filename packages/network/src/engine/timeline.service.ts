@@ -278,14 +278,18 @@ export class Timeline {
   }
 
   /**
-   * What a line is drawn as on a date: used to group a day's openings, after that day's identity steps.
+   * What a line is drawn as on a date: used to group a day's openings, after that day's identity steps;
+   * on the day it goes out as an alias ends (a gap), still that alias, as it goes.
    *
    * @param line - The line id.
    * @param time - The date's timestamp.
    * @returns The id of the line it is drawn as.
    */
   private identityOn(line: string, time: number): string {
-    for (const alias of this.index.lineOf(line).aliases ?? []) if (time < toTimestamp(alias.until)) return alias.as;
+    for (const alias of this.index.lineOf(line).aliases ?? []) {
+      const until = toTimestamp(alias.until);
+      if (time < until || (time === until && this.index.goesOutAt(line, time))) return alias.as;
+    }
     return line;
   }
 
@@ -433,13 +437,19 @@ export class Timeline {
     }
   }
 
-  /** Finds, for each line with aliases, the identity step that ends each alias. */
+  /**
+   * Finds, for each line with aliases, the identity step that ends each alias; for one ending as the
+   * line goes out (a gap), the first step after that day's, the line drawn as its alias until it is out.
+   */
   private indexAliasEnds(): void {
     for (const [line, info] of Object.entries(this.index.network.lines)) {
-      const ends = (info.aliases ?? []).map(alias => ({
-        as: alias.as,
-        step: this.steps.findIndex(step => step.kind === 'identity' && step.time === toTimestamp(alias.until) && step.lines.includes(line)),
-      }));
+      const ends = (info.aliases ?? []).map(alias => {
+        const time = toTimestamp(alias.until);
+        if (!this.index.goesOutAt(line, time))
+          return { as: alias.as, step: this.steps.findIndex(step => step.kind === 'identity' && step.time === time && step.lines.includes(line)) };
+        const after = this.steps.findIndex(step => step.time > time);
+        return { as: alias.as, step: after === -1 ? this.steps.length : after };
+      });
       if (ends.length > 0) this.aliasEnds.set(line, ends);
     }
   }

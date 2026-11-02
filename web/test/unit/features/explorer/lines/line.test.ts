@@ -65,36 +65,37 @@ describe('LineUtils', () => {
   });
 
   describe('lineGroups', () => {
-    test('groups the lines by network in order, a plan’s own under Planned, which no eye hides', () => {
+    test('groups the lines by network in the network’s order, a plan’s own last under Planned, which no eye hides', () => {
       const groups = lineGroups([lineOf('red', 'metro'), lineOf('tram', 'trams'), lineOf('blue', 'metro'), lineOf('new', 'metro', null)], CHOICES, '');
-      expect(groups.map(group => [group.name, group.lines.map(line => line.id), group.toggleable])).toEqual([
+      expect(groups.map(group => [group.name, group.entries.map(entry => entry.id), group.toggleable])).toEqual([
         ['Metro', ['red', 'blue'], ['red', 'blue']],
         ['Trams', ['tram'], ['tram']],
         ['Planned', ['new'], []],
       ]);
     });
 
-    test('lists a line hidden after its network’s own, only named, and a network all hidden after those shown', () => {
+    test('keeps a line hidden in its place, only named, and a network all hidden in its own', () => {
       const choices = [
         choiceOf('metro', [
-          ['red', true],
-          ['blue', false],
+          ['red', false],
+          ['blue', true],
         ]),
         choiceOf('rail', [['grey', false]]),
+        choiceOf('trams', [['tram', true]]),
       ];
-      const groups = lineGroups([lineOf('red', 'metro'), lineOf('new', 'metro', null)], choices, '');
-      expect(groups.map(group => [group.network, group.lines.map(line => line.id), group.hiddenLines.map(line => line.id)])).toEqual([
-        ['metro', ['red'], ['blue']],
-        ['rail', [], ['grey']],
-        ['planned', ['new'], []],
+      const groups = lineGroups([lineOf('blue', 'metro'), lineOf('tram', 'trams')], choices, '');
+      expect(groups.map(group => [group.network, group.entries.map(entry => [entry.id, entry.shown?.id ?? null])])).toEqual([
+        [
+          'metro',
+          [
+            ['red', null],
+            ['blue', 'blue'],
+          ],
+        ],
+        ['rail', [['grey', null]]],
+        ['trams', [['tram', 'tram']]],
       ]);
-      expect(groups[1]).toEqual({
-        network: 'rail',
-        name: 'Rail',
-        lines: [],
-        hiddenLines: [{ id: 'grey', name: 'Grey', color: RED, shown: false }],
-        toggleable: ['grey'],
-      });
+      expect(groups[1]).toEqual({ network: 'rail', name: 'Rail', entries: [{ id: 'grey', name: 'Grey', color: RED, shown: null }], toggleable: ['grey'] });
     });
 
     test('keeps the lines a search finds, on the map or hidden, and the groups with any', () => {
