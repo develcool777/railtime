@@ -59,6 +59,10 @@ export const collectDays = (index: NetworkIndex, stops: StationStops): Map<numbe
   }
   for (const [station, info] of Object.entries(index.network.stations)) collectStationDays(index, stops, station, info, day);
   for (const [line, info] of Object.entries(index.network.lines))
-    for (const alias of info.aliases ?? []) day(toTimestamp(alias.until)).identities.push({ line, text: alias.text });
+    for (const alias of info.aliases ?? []) {
+      const time = toTimestamp(alias.until);
+      // A line going out as its alias ends comes back as itself: no step says so.
+      if (!index.goesOutAt(line, time)) day(time).identities.push({ line, text: alias.text });
+    }
   return days;
 };

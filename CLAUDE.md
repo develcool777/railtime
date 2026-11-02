@@ -180,7 +180,8 @@ Any line, or a network's lines at once, can be hidden (the Lines panel's eyes, f
 `NetworkFacts.create(network, { hidden })` leaves out the line, the track and stations only it has,
 and a plan's sections on it (the plan with none left), so every count, the history, the coverage and the routes are without
 it; a station only it has that a plan builds on is the plan's own again; the years another line was
-drawn as it (an alias) go too, that line shown only once it is its own. There is no other hiding: the map
+drawn as it (an alias) go too: that line's gap, which the engine cuts its runs at, the line going as
+what it was drawn as and coming back as itself, with no step saying it changed. There is no other hiding: the map
 draws what the facts have. A network beside the city's own (main-line suburban trains beside a
 metro) is `hidden` at first: in the city's data, with its history, but hidden until shown, so the
 city list counts the city's own. One older than the city gives its own `start`, where the timeline

@@ -1,5 +1,6 @@
 import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
+import type { LineGap } from './engine.types';
 import { NetworkIndex } from './index.service.ts';
 import { Timeline } from './timeline.service.ts';
 
@@ -17,9 +18,15 @@ export class NetworkEngine {
   /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's future plays at `end`. */
   public readonly range: { start: number; end: number; today: number };
 
-  public constructor(network: Network, plan: string | null, today: number) {
+  /**
+   * @param network - The network: with its lines hidden left out (`withLinesHidden`).
+   * @param plan - One of its plans to build on it, or none.
+   * @param today - Today, as a timestamp.
+   * @param gaps - The stretches of time each line is left out: the years it was drawn as a line hidden.
+   */
+  public constructor(network: Network, plan: string | null, today: number, gaps: ReadonlyMap<string, readonly LineGap[]> = new Map()) {
     const built = plan ? buildPlan(network, plan) : null;
-    this.index = new NetworkIndex(built?.network ?? network, built?.sections);
+    this.index = new NetworkIndex(built?.network ?? network, built?.sections, gaps);
     this.timeline = new Timeline(this.index);
     this.range = { start: this.timeline.start, end: Math.max(today, this.timeline.lastDate), today };
   }

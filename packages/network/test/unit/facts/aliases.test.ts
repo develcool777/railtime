@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type { Line, Station } from '@railtime/schema/network.types';
-import { lineFrom, runFrom, shownFromOf, stationFrom } from '../../../src/facts/aliases.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
+import { gapsOf, lineWithout, runsOutside, stationOutside } from '../../../src/facts/aliases.utils';
 
 /** A line drawn as `red` until 1950, then as `blue` until 1970. */
 const GREEN: Line = {
@@ -14,56 +15,67 @@ const GREEN: Line = {
   ],
 };
 
+/** A gap from 1950 to 1970: the years `green` ran as `blue`. */
+const MIDDLE = [{ from: toTimestamp('1950-01-01'), until: toTimestamp('1970-01-01') }];
+
 describe('AliasesUtils', () => {
-  describe('shownFromOf', () => {
-    test('gives each line shown the day its last alias to a line hidden ends', () => {
+  describe('gapsOf', () => {
+    test('gives each line shown the years it was drawn as a line hidden, each alias from the one before it', () => {
       const lines = { green: GREEN, red: { ...GREEN, aliases: [] } };
-      expect(shownFromOf(lines, new Set(['red']))).toEqual(new Map([['green', '1950-01-01']]));
-      expect(shownFromOf(lines, new Set(['red', 'blue']))).toEqual(new Map([['green', '1970-01-01']]));
-      expect(shownFromOf(lines, new Set(['green', 'blue']))).toEqual(new Map());
+      expect(gapsOf(lines, new Set(['red']))).toEqual(new Map([['green', [{ from: -Infinity, until: toTimestamp('1950-01-01') }]]]));
+      expect(gapsOf(lines, new Set(['blue']))).toEqual(new Map([['green', MIDDLE]]));
+      expect(gapsOf(lines, new Set(['green', 'blue']))).toEqual(new Map());
     });
   });
 
-  describe('lineFrom', () => {
-    test('keeps the aliases ending after the day, and none once all have', () => {
-      expect(lineFrom(GREEN, '1950-01-01').aliases).toEqual([GREEN.aliases![1]]);
-      expect(lineFrom(GREEN, '1970-01-01')).not.toHaveProperty('aliases');
+  describe('lineWithout', () => {
+    test('drops its aliases to lines hidden, and keeps it as it is with none', () => {
+      expect(lineWithout(GREEN, new Set(['blue'])).aliases).toEqual([GREEN.aliases![0]]);
+      expect(lineWithout(GREEN, new Set(['red', 'blue']))).not.toHaveProperty('aliases');
+      expect(lineWithout(GREEN, new Set(['grey']))).toBe(GREEN);
     });
   });
 
-  describe('runFrom', () => {
-    test('opens a run then at the earliest, trims its spells, and drops one closed by then', () => {
-      const run = {
-        open: '1900-01-01',
-        close: '1990-01-01',
-        suspended: [
-          { from: '1910-01-01', until: '1920-01-01' },
-          { from: '1940-01-01', until: '1960-01-01' },
-        ],
-      };
-      expect(runFrom(run, '1950-01-01')).toEqual({ open: '1950-01-01', close: '1990-01-01', suspended: [{ from: '1950-01-01', until: '1960-01-01' }] });
-      expect(runFrom({ open: '1960-01-01' }, '1950-01-01')).toEqual({ open: '1960-01-01' });
-      expect(runFrom(run, '1990-01-01')).toBeNull();
+  describe('runsOutside', () => {
+    test('tells a run with some of it outside the gaps from one all inside them', () => {
+      expect(runsOutside({ open: '1940-01-01', close: '1960-01-01' }, MIDDLE)).toBe(true);
+      expect(runsOutside({ open: '1955-01-01', close: '1960-01-01' }, MIDDLE)).toBe(false);
+      expect(runsOutside({ open: '1955-01-01' }, MIDDLE)).toBe(true);
     });
   });
 
-  describe('stationFrom', () => {
-    test("opens it with the line before the day, passes it by where it had closed by then, and leaves other lines' as they are", () => {
+  describe('stationOutside', () => {
+    test('opens it as the line is back, closes it as the line goes, cuts its spells, and leaves other lines as they are', () => {
       const station: Station = {
         name: 'C',
         coordinate: [0, 0],
-        infill: { green: '1940-01-01', red: '1940-01-01' },
-        closed: { green: '1945-01-01' },
-        suspended: { green: [{ from: '1930-01-01', until: '1935-01-01' }], red: [{ from: '1930-01-01', until: '1935-01-01' }] },
+        infill: { green: '1955-01-01', red: '1955-01-01' },
+        closed: { green: '1965-01-01' },
+        suspended: { green: [{ from: '1945-01-01', until: '1975-01-01' }], red: [{ from: '1960-01-01', until: '1961-01-01' }] },
       };
-      expect(stationFrom(station, new Map([['green', '1950-01-01']]))).toEqual({
+      expect(stationOutside(station, new Map([['green', MIDDLE]]))).toEqual({
         name: 'C',
         coordinate: [0, 0],
-        infill: { red: '1940-01-01' },
-        suspended: { red: [{ from: '1930-01-01', until: '1935-01-01' }] },
+        infill: { green: '1970-01-01', red: '1955-01-01' },
+        closed: { green: '1950-01-01' },
+        suspended: {
+          green: [
+            { from: '1945-01-01', until: '1950-01-01' },
+            { from: '1970-01-01', until: '1975-01-01' },
+          ],
+          red: [{ from: '1960-01-01', until: '1961-01-01' }],
+        },
+      });
+      expect(stationOutside(station, new Map([['blue', MIDDLE]]))).toBe(station);
+    });
+
+    test('has a line gone from the start, closing there in its gap, pass it by', () => {
+      const station: Station = { name: 'C', coordinate: [0, 0], closed: { green: '1940-01-01' } };
+      expect(stationOutside(station, new Map([['green', [{ from: -Infinity, until: toTimestamp('1950-01-01') }]]]))).toEqual({
+        name: 'C',
+        coordinate: [0, 0],
         passes: ['green'],
       });
-      expect(stationFrom(station, new Map([['green', '1920-01-01']]))).toEqual(station);
     });
   });
 });

@@ -12,6 +12,26 @@ describe('NetworkIndex', () => {
     expect(index.stationName('d')).toBe('D');
   });
 
+  test('cuts a line out of its gaps, the pieces either side apart, a suspension still linking its periods', () => {
+    const day = (date: string) => toTimestamp(date);
+    const index = new NetworkIndex(tinyNetwork(), [], new Map([['blue', [{ from: day('1932-01-01'), until: day('1935-01-01') }]]]));
+    const [first, second, third, ...rest] = index.lineSegments.filter(lineSegment => lineSegment.line === 'blue');
+    expect(rest).toEqual([]);
+    expect(first).toMatchObject({ opens: day('1930-01-01'), closes: day('1932-01-01'), previous: null, next: null });
+    expect(second).toMatchObject({ opens: day('1935-01-01'), closes: day('1940-01-01'), previous: null, next: third });
+    expect(third).toMatchObject({ opens: day('1945-01-01'), closes: day('1950-01-01'), previous: second, next: null });
+  });
+
+  test('leaves a suspension unlinked where a gap cuts the period before it short', () => {
+    const day = (date: string) => toTimestamp(date);
+    const index = new NetworkIndex(tinyNetwork(), [], new Map([['blue', [{ from: day('1938-01-01'), until: day('1942-01-01') }]]]));
+    const periods = index.lineSegments.filter(lineSegment => lineSegment.line === 'blue');
+    expect(periods.map(period => [period.opens, period.closes, period.previous !== null])).toEqual([
+      [day('1930-01-01'), day('1938-01-01'), false],
+      [day('1945-01-01'), day('1950-01-01'), false],
+    ]);
+  });
+
   test('makes each period of a suspended line its own line segment, linked to the next', () => {
     const index = new NetworkIndex(tinyNetwork());
     const [before, after, ...rest] = index.lineSegments.filter(lineSegment => lineSegment.line === 'blue');
