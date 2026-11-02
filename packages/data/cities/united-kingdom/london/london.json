@@ -7,7 +7,7 @@
     "dlr": {"name":"DLR"},
     "trams": {"name":"London Trams"},
     "cable-car": {"name":"London Cable Car"},
-    "national-rail": {"name":"National Rail","optional":true,"start":"1835-11-01"}
+    "national-rail": {"name":"National Rail","hidden":true,"start":"1835-11-01"}
   },
   "lines": {
     "metropolitan": {"name":"Metropolitan","network":"underground","mode":"metro","color":"#9B0056"},

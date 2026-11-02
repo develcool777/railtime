@@ -5,7 +5,7 @@ import { required } from '@railtime/core/required.utils';
 import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { REACH_BANDS } from './facts.constants.ts';
 import { bandOf, byOpening, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
-import { optionalNetworksAsked, optionalNetworksOf, withNetworksShown } from './networks.utils.ts';
+import { linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from './networks.utils.ts';
 import { RouteFinder } from '../route/finder.service.ts';
 import type { NetworkHistory } from '../engine/history.types';
 import { networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
@@ -25,7 +25,7 @@ import type {
   NetworkFactsOptions,
   NetworkGrowth,
   NetworkTime,
-  OptionalNetworkInfo,
+  NetworkChoice,
   NetworkRecords,
   NetworkSummary,
   PlanInfo,
@@ -46,8 +46,8 @@ import type {
 export class NetworkFacts {
   /** The plan built on the network, if one was asked for. */
   public readonly plan: string | null;
-  /** The optional networks shown, in the network's order; the rest are left off. */
-  public readonly networks: string[];
+  /** The lines hidden, in the network's order: as if they were not there. */
+  public readonly hidden: string[];
   /** Whether the network was never built: it has only its plans. */
   public readonly planOnly: boolean;
   /** The raw network through time, which every answer comes from: what the renderer plays and draws. */
@@ -68,17 +68,18 @@ export class NetworkFacts {
   private readonly coverages = new WeakMap<CityBoundary, CoverageMeasure>();
   /** The network as shown, its plans unbuilt. */
   private readonly source: Network;
-  /** The network as stored, every optional network in it. */
+  /** The network as stored, every line in it. */
   private readonly stored: Network;
 
-  private constructor(stored: Network, networks: string[], plan: string | null, today: number) {
+  private constructor(stored: Network, hidden: string[], plan: string | null, today: number) {
     this.stored = stored;
-    this.networks = networks;
-    const source = withNetworksShown(stored, networks);
+    this.hidden = hidden;
+    const source = withLinesHidden(stored, hidden);
     this.source = source;
-    this.plan = plan;
+    // A plan building on a line hidden goes with it: the network is shown as built.
+    this.plan = plan !== null && source.plans?.[plan] ? plan : null;
     this.planOnly = isPlanOnly(source);
-    this.engine = new NetworkEngine(source, plan, today);
+    this.engine = new NetworkEngine(source, this.plan, today);
     this.index = this.engine.index;
     this.timeline = this.engine.timeline;
     this.range = this.engine.range;
@@ -90,20 +91,21 @@ export class NetworkFacts {
    * A network's facts.
    *
    * @param network - The network, as stored.
-   * @param options - A plan to build on it, its optional networks to show, and today.
+   * @param options - A plan to build on it, its lines hidden, and today.
    * @returns Its facts.
    */
   public static create(network: Network, options: NetworkFactsOptions = {}): NetworkFacts {
-    return new NetworkFacts(network, optionalNetworksAsked(network, options.networks ?? []), options.plan ?? null, options.today ?? todayTimestamp());
+    const hidden = options.hidden ? linesNamed(network, options.hidden) : linesHiddenAtFirst(network);
+    return new NetworkFacts(network, hidden, options.plan ?? null, options.today ?? todayTimestamp());
   }
 
   /**
-   * The networks the city may show or leave off, each with its lines: shown or not.
+   * Each network with the lines a person may show or hide, hidden ones too.
    *
    * @returns Each, in the network's order.
    */
-  public optionalNetworks(): OptionalNetworkInfo[] {
-    return optionalNetworksOf(this.stored, this.networks);
+  public networkChoices(): NetworkChoice[] {
+    return networkChoicesOf(this.stored, this.hidden);
   }
 
   /**

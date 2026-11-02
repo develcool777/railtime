@@ -1,31 +1,49 @@
-import type { Network, Station, Suspension } from '@railtime/schema/network.types';
-import type { OptionalNetworkInfo } from './facts.types';
+import type { Line, Network, Plan, Station, Suspension } from '@railtime/schema/network.types';
+import type { NetworkChoice } from './facts.types';
+import { lineFrom, runFrom, shownFromOf, stationFrom } from './aliases.utils.ts';
 
 /**
- * The networks a city may show or leave off, by id.
+ * The lines a person may show or hide: every line of the network but those that exist only to be
+ * drawn as (pseudo lines).
  *
  * @param network - The network, as stored.
- * @returns Its optional networks' ids, in its order.
+ * @returns Their ids, in its order.
  */
-const optionalIdsOf = (network: Network): string[] =>
-  Object.entries(network.networks)
-    .filter(([, info]) => info.optional)
+const toggleableOf = (network: Network): string[] =>
+  Object.entries(network.lines)
+    .filter(([, line]) => !line.pseudo)
     .map(([id]) => id);
 
 /**
- * The optional networks asked for that a city has: an address may name any.
+ * The lines some ids name: a line by its own id, every line of a network by the network's.
  *
  * @param network - The network, as stored.
- * @param asked - The ids asked for.
- * @returns Those it has, in its order.
+ * @param ids - Ids of lines or networks; those it does not have name nothing.
+ * @returns The lines, in its order.
  */
-export const optionalNetworksAsked = (network: Network, asked: readonly string[]): string[] => optionalIdsOf(network).filter(id => asked.includes(id));
+export const linesNamed = (network: Network, ids: readonly string[]): string[] =>
+  // Within bounds: each id is one of the network's lines.
+  toggleableOf(network).filter(id => ids.includes(id) || ids.includes(network.lines[id]!.network));
 
 /**
- * A station with what it says of lines no longer there left out.
+ * The lines hidden when a city opens: those of its networks hidden at first.
+ *
+ * @param network - The network, as stored.
+ * @returns Their ids, in its order.
+ */
+export const linesHiddenAtFirst = (network: Network): string[] =>
+  linesNamed(
+    network,
+    Object.entries(network.networks)
+      .filter(([, info]) => info.hidden)
+      .map(([id]) => id),
+  );
+
+/**
+ * A station with what it says of lines no longer drawn left out.
  *
  * @param station - The station.
- * @param kept - Whether a line is still there.
+ * @param kept - Whether a line is still drawn.
  * @returns The station, its per-line notes trimmed.
  */
 const stationWithLines = (station: Station, kept: (line: string) => boolean): Station => {
@@ -47,54 +65,102 @@ const stationWithLines = (station: Station, kept: (line: string) => boolean): St
 };
 
 /**
- * Where the timeline starts with some optional networks shown: the city's start, or an older one of theirs.
+ * The lines left with some hidden: those drawn, each only from when it is no longer drawn as one
+ * hidden (an alias), and the pseudo lines one of them is still drawn as.
  *
  * @param network - The network, as stored.
- * @param shown - The optional networks shown.
- * @returns The earliest, as an ISO date.
+ * @param hidden - The lines hidden.
+ * @param shownFrom - Each line drawn as one hidden for a while, and the day it is first drawn.
+ * @returns The lines, in its order.
  */
-const startShown = (network: Network, shown: readonly string[]): string =>
-  shown.reduce((start, id) => {
-    const own = network.networks[id]?.start;
-    return own && own < start ? own : start;
-  }, network.meta.start);
+const linesLeft = (network: Network, hidden: Set<string>, shownFrom: Map<string, string>): Record<string, Line> => {
+  const own = (id: string, line: Line): Line => {
+    const from = shownFrom.get(id);
+    return from === undefined ? line : lineFrom(line, from);
+  };
+  const drawn = Object.entries(network.lines).flatMap(([id, line]): [string, Line][] => (line.pseudo || hidden.has(id) ? [] : [[id, own(id, line)]]));
+  const drawnAs = new Set(drawn.flatMap(([, line]) => (line.aliases ?? []).map(alias => alias.as)));
+  const kept = new Map([...drawn, ...Object.entries(network.lines).filter(([id, line]) => line.pseudo && drawnAs.has(id))]);
+  // In the network's order.
+  return Object.fromEntries(
+    Object.keys(network.lines).flatMap((id): [string, Line][] => {
+      const line = kept.get(id);
+      return line ? [[id, line]] : [];
+    }),
+  );
+};
 
 /**
- * The network as shown: each optional network left off but those asked for, as if it were not there.
- * Its lines go, the track only they ran, the stations only they served and the changes to those; a
- * station only it served that a plan builds on is that plan's own, as it would be without it; a plan
- * building one of its lines goes with it. One shown that is older than the city starts the timeline
- * at its own start.
+ * Where the timeline starts with some lines hidden: the city's start, or an older one of a network
+ * one of its lines drawn is in.
  *
  * @param network - The network, as stored.
- * @param shown - The optional networks to keep.
- * @returns The network shown; the one given where nothing is left off and nothing starts it earlier.
+ * @param drawn - Whether a line is drawn.
+ * @returns The earliest, as an ISO date.
  */
-export const withNetworksShown = (network: Network, shown: readonly string[]): Network => {
-  const hidden = new Set(optionalIdsOf(network).filter(id => !shown.includes(id)));
-  const start = startShown(network, shown);
+const startShown = (network: Network, drawn: (line: string) => boolean): string =>
+  Object.entries(network.lines)
+    .filter(([id]) => drawn(id))
+    .reduce((start, [, line]) => {
+      const own = network.networks[line.network]?.start;
+      return own && own < start ? own : start;
+    }, network.meta.start);
+
+/**
+ * The network with some lines hidden, as if they were not there: their track, the stations only they
+ * served and the changes to those go, and the years another line was drawn as one of them (an alias):
+ * that line is drawn only once it is its own; a station only they served that a plan builds on is that plan's own, as it would be
+ * without them; a plan keeps its sections on lines still drawn, its stations only those use, and goes
+ * once it has none. A network older than the city starts the
+ * timeline at its own start while one of its lines shows.
+ *
+ * @param network - The network, as stored.
+ * @param hidden - The lines hidden.
+ * @returns The network shown; the one given where nothing is hidden and nothing starts it earlier.
+ */
+export const withLinesHidden = (network: Network, hidden: readonly string[]): Network => {
+  const hiddenSet = new Set(hidden);
+  const shownFrom = shownFromOf(network.lines, hiddenSet);
+  const lines = linesLeft(network, hiddenSet, shownFrom);
+  // A pseudo line has no track of its own: drawn are the lines not hidden.
+  const drawn = (line: string): boolean => !hiddenSet.has(line) && network.lines[line]?.pseudo !== true;
+  const start = startShown(network, drawn);
   const meta = start === network.meta.start ? network.meta : { ...network.meta, start };
-  if (hidden.size === 0) return meta === network.meta ? network : { ...network, meta };
-  const lines = Object.fromEntries(Object.entries(network.lines).filter(([, line]) => !hidden.has(line.network)));
-  const kept = (line: string): boolean => line in lines;
+  if (hiddenSet.size === 0) return meta === network.meta ? network : { ...network, meta };
   const segments = network.segments.flatMap(segment => {
-    const left = Object.entries(segment.lines).filter(([line]) => kept(line));
+    const left = Object.entries(segment.lines).flatMap(([line, run]) => {
+      if (!drawn(line)) return [];
+      const from = shownFrom.get(line);
+      const shown = from === undefined ? run : runFrom(run, from);
+      return shown ? [[line, shown] as const] : [];
+    });
     return left.length > 0 ? [{ ...segment, lines: Object.fromEntries(left) }] : [];
   });
   const servedBefore = new Set(network.segments.flatMap(segment => [segment.stationA, segment.stationB]));
   const served = new Set(segments.flatMap(segment => [segment.stationA, segment.stationB]));
-  const plans = Object.fromEntries(
-    Object.entries(network.plans ?? {}).filter(([, plan]) => plan.sections.every(section => kept(section.line) || plan.lines?.[section.line])),
-  );
   const gone = new Set([...servedBefore].filter(id => !served.has(id)));
+  const plans = Object.fromEntries(
+    Object.entries(network.plans ?? {}).flatMap(([id, plan]): [string, Plan][] => {
+      const sections = plan.sections.filter(section => drawn(section.line) || plan.lines?.[section.line]);
+      if (sections.length === 0) return [];
+      if (sections.length === plan.sections.length) return [[id, plan]];
+      // A station of the plan's own that only the sections left out reach goes with them.
+      const reached = new Set(sections.flatMap(section => section.stations));
+      const stations = Object.entries(plan.stations ?? {}).filter(([station]) => reached.has(station));
+      const transfers = plan.transfers?.filter(({ stationA, stationB }) =>
+        [stationA, stationB].every(station => reached.has(station) || (station in network.stations && !gone.has(station))),
+      );
+      return [[id, { ...plan, sections, stations: Object.fromEntries(stations), ...(transfers ? { transfers } : {}) }]];
+    }),
+  );
   const stations = Object.fromEntries(
     Object.entries(network.stations)
       .filter(([id]) => !gone.has(id))
-      .map(([id, station]) => [id, stationWithLines(station, kept)]),
+      .map(([id, station]) => [id, stationFrom(stationWithLines(station, drawn), shownFrom)]),
   );
   // A plan's station that is gone becomes the plan's own: its place and name, none of its history.
   const plansShown = Object.fromEntries(
-    Object.entries(plans).map(([id, plan]) => {
+    Object.entries(plans).map(([id, plan]): [string, Plan] => {
       const own = [...new Set(plan.sections.flatMap(section => section.stations))].filter(station => gone.has(station));
       if (own.length === 0) return [id, plan];
       const adopted = own.map(station => {
@@ -105,10 +171,13 @@ export const withNetworksShown = (network: Network, shown: readonly string[]): N
       return [id, { ...plan, stations: { ...plan.stations, ...Object.fromEntries(adopted) } }];
     }),
   );
+  const networksUsed = new Set(
+    [...Object.values(lines), ...Object.values(plansShown).flatMap(plan => Object.values(plan.lines ?? {}))].map(line => line.network),
+  );
   return {
     ...network,
     meta,
-    networks: Object.fromEntries(Object.entries(network.networks).filter(([id]) => !hidden.has(id))),
+    networks: Object.fromEntries(Object.entries(network.networks).filter(([id]) => networksUsed.has(id))),
     lines,
     stations,
     segments,
@@ -118,20 +187,21 @@ export const withNetworksShown = (network: Network, shown: readonly string[]): N
 };
 
 /**
- * Each network a city may show or leave off, with its lines, for a list to turn it on.
+ * Each network with the lines a person may show or hide, for a list to do it.
  *
  * @param network - The network, as stored.
- * @param shown - The optional networks shown.
- * @returns Each, in the network's order.
+ * @param hidden - The lines hidden.
+ * @returns Each network with one, in the network's order.
  */
-export const optionalNetworksOf = (network: Network, shown: readonly string[]): OptionalNetworkInfo[] =>
-  Object.entries(network.networks)
-    .filter(([, info]) => info.optional)
-    .map(([id, info]) => ({
-      id,
-      name: info.name,
-      shown: shown.includes(id),
-      lines: Object.entries(network.lines)
-        .filter(([, line]) => line.network === id && !line.pseudo)
-        .map(([lineId, line]) => ({ id: lineId, name: line.name, color: { light: line.color, dark: line.darkColor ?? line.color } })),
-    }));
+export const networkChoicesOf = (network: Network, hidden: readonly string[]): NetworkChoice[] =>
+  Object.entries(network.networks).flatMap(([id, info]) => {
+    const lines = Object.entries(network.lines)
+      .filter(([, line]) => line.network === id && !line.pseudo)
+      .map(([lineId, line]) => ({
+        id: lineId,
+        name: line.name,
+        color: { light: line.color, dark: line.darkColor ?? line.color },
+        shown: !hidden.includes(lineId),
+      }));
+    return lines.length > 0 ? [{ id, name: info.name, lines }] : [];
+  });

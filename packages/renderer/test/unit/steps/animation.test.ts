@@ -150,14 +150,6 @@ describe('StepAnimation, opening a stretch', () => {
     const reached = draw(1);
     expect(reached.links.features.map(link => link.geometry.coordinates)).toEqual([[playback.index.coordOf('d'), playback.index.coordOf('a')]]);
     expect([...reached.linked].sort()).toEqual(['a', 'd']);
-    expect(draw(1, { hidden: ['red'] }).links.features).toEqual([]);
-  });
-
-  test('draws nothing of a hidden line, and reaches none of its stations', () => {
-    const drawing = extension().draw(1, { hidden: ['red'] });
-    expect([drawing.lines.features, drawing.growing.features, drawing.heads.features]).toEqual([[], [], []]);
-    expect(drawing.reached.size).toBe(0);
-    expect(drawing.highlighted.size).toBe(0);
   });
 });
 
@@ -215,11 +207,9 @@ describe('StepAnimation, closing track', () => {
     // Closing track never stands out as new track does.
     expect(half.highlight).toBe(0);
     expect(half.fading.get('e')).toBe(0);
-    // Gone at the end; a hidden line draws nothing, and its station is not on the map to fade.
+    // Gone at the end.
     expect(draw(1).growing.features).toEqual([]);
     expect(draw(1).lines.features).toEqual([]);
-    expect(draw(0.5, { hidden: ['blue'] }).growing.features).toEqual([]);
-    expect(draw(0.5, { hidden: ['blue'] }).fading.size).toBe(0);
   });
 
   test('plays each connected stretch closing on one day as its own step', () => {
@@ -245,15 +235,6 @@ describe('StepAnimation, a station opening on its line', () => {
     expect(animation.startPoint()).toEqual(animation.cameraPoints()[0]);
     expect(animation.cameraPoints()).toEqual([playback.index.coordOf('c')]);
   });
-
-  test('adds nothing for a hidden line the station opens on', () => {
-    const network = tinyNetwork();
-    network.stations.c!.infill = { red: '1935-01-01', blue: '1935-01-01' };
-    const { draw } = stepAfter(network, '1934-01-01');
-    const hidden = draw(0.5, { hidden: ['red', 'blue'] });
-    expect(hidden.reached.size).toBe(0);
-    expect(hidden.highlighted.size).toBe(0);
-  });
 });
 
 describe('StepAnimation, a station closing', () => {
@@ -266,12 +247,11 @@ describe('StepAnimation, a station closing', () => {
     expect(animation.cameraPoints()).toEqual([playback.index.coordOf('d')]);
   });
 
-  test('keeps a station another line still calls at, unless that line is hidden', () => {
+  test('keeps a station another line still calls at', () => {
     const network = tinyNetwork();
     network.segments[2]!.lines.green!.open = '1955-01-01';
     const { draw } = stepAfter(network, '1959-01-01');
     expect(draw(0.5).fading.size).toBe(0);
-    expect(draw(0.5, { hidden: ['green'] }).fading).toEqual(new Map([['d', 0.5]]));
   });
 });
 

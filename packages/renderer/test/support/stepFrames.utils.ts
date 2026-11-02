@@ -21,10 +21,9 @@ export const stepAfter = (network: Network, date: string): StartedStep => {
   if (!active) throw new Error(`No step after ${date}`);
   const { animation } = active;
   const state = renderStateOf(playback);
-  const draw = (progress: number, { holdProgress = 0, hidden = [] }: FrameOptions = {}) => {
-    const shown = { ...state, visibleLines: new Set([...state.visibleLines].filter(line => !hidden.includes(line))) };
+  const draw = (progress: number, { holdProgress = 0 }: FrameOptions = {}) => {
     const drawing = emptyDrawing();
-    animation.draw({ state: shown, snapshot: buildNetworkSnapshot(shown, true), progress, holdProgress }, drawing);
+    animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress, holdProgress }, drawing);
     return drawing;
   };
   return { playback, animation, state, draw };

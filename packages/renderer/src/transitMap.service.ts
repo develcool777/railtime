@@ -350,7 +350,7 @@ export class TransitMap {
         this.minimap?.frame(facts.engine.index.bounds);
         this.minimap?.setActive(emptyCollection());
         const effects = this.effects;
-        for (const effect of [effects.speed, effects.camera, effects.visibleLines, effects.overlay]) effect();
+        for (const effect of [effects.speed, effects.camera, effects.overlay]) effect();
         this.jumped();
       },
       theme: () => {
@@ -368,10 +368,6 @@ export class TransitMap {
         this.camera.tilt();
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
-      visibleLines: () => {
-        this.frames.visibleLines = new Set(this.props.current.visibleLines ?? this.engine.index.lineIds);
-        this.frames.redraw();
-      },
       focusedLines: () => this.applyBackdrop(),
       selectedStation: () => {
         const station = this.props.current.selectedStation;

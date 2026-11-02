@@ -35,8 +35,6 @@ export type MapProps = {
   viewMode: ViewMode;
   /** Whether the stations are named, or only their dots shown. */
   stationLabels: boolean;
-  /** The lines shown; `null` for every line. */
-  visibleLines: string[] | null;
   /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
   focusedLines: string[] | null;
   /** The station ringed, flown to when it changes; `null` for none. */

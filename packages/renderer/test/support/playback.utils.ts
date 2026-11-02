@@ -16,12 +16,12 @@ import type { Playback, PlaybackOptions } from './playback.types';
  * @param network - The network.
  * @param options - What the playback is of.
  * @param options.plan - One of its plans to build on it, as `TransitMap`'s `plan` option does.
- * @param options.networks - Its optional networks to show, as the facts `TransitMap` is given are made.
+ * @param options.hidden - Its lines hidden, as the facts `TransitMap` is given are made: those hidden at first without them.
  * @param options.view - How the map is seen as the steps play: flat unless told.
  * @returns The pieces.
  */
-export const playbackOf = (network: Network, { plan, networks, view = '2d' }: PlaybackOptions = {}): Playback => {
-  const facts = NetworkFacts.create(network, { plan, networks, today: Date.UTC(2026, 0, 1) });
+export const playbackOf = (network: Network, { plan, hidden, view = '2d' }: PlaybackOptions = {}): Playback => {
+  const facts = NetworkFacts.create(network, { plan, ...(hidden ? { hidden } : {}), today: Date.UTC(2026, 0, 1) });
   const { index, timeline } = facts.engine;
   const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
   return { facts, index, timeline, player };
@@ -36,7 +36,7 @@ export const playbackOf = (network: Network, { plan, networks, view = '2d' }: Pl
 export const networkNow = (playback: Playback): FactsAt => playback.facts.asOf({ cursor: playback.player.cursor, time: playback.player.clock });
 
 /**
- * The render state at the player's position, every line visible, in each line's own colour.
+ * The render state at the player's position, in each line's own colour.
  *
  * @param playback - The pieces from `playbackOf`.
  * @returns The render state.
@@ -46,7 +46,6 @@ export const renderStateOf = (playback: Playback): RenderState => ({
   timeline: playback.timeline,
   cursor: playback.player.cursor,
   identityProgress: null,
-  visibleLines: new Set(playback.index.lineIds),
   baseColor: line => playback.index.lineOf(line).color,
 });
 

@@ -154,7 +154,7 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
 };
 
 /**
- * Where a line's timeline starts: its network's own start, an optional network older than the city, or the city's.
+ * Where a line's timeline starts: its network's own, for one hidden at first that is older than the city, or the city's.
  *
  * @param network - The network.
  * @param lineId - One of its lines.
@@ -162,7 +162,7 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
  */
 const startOf = (network: Network, lineId: string): string => {
   const info = network.networks[network.lines[lineId]?.network ?? ''];
-  return (info?.optional && info.start) || network.meta.start;
+  return (info?.hidden && info.start) || network.meta.start;
 };
 
 /**
@@ -272,19 +272,13 @@ const checkThroughStations = (network: Network, problem: (message: string) => vo
  */
 export const checkNetwork = (network: Network, problem: (message: string) => void): void => {
   for (const [networkId, info] of Object.entries(network.networks)) {
-    // Only an optional network may start apart, and only before the city: the city's own history starts with it.
-    if (info.start && (!info.optional || info.start >= network.meta.start))
-      problem(`network ${networkId}: a start of its own, ${info.start}, but it is not an optional network older than the city`);
+    // Only a network hidden at first may start apart, and only before the city: the city's own history starts with it.
+    if (info.start && (!info.hidden || info.start >= network.meta.start))
+      problem(`network ${networkId}: a start of its own, ${info.start}, but it is not a network hidden at first, older than the city`);
   }
   for (const [lineId, line] of Object.entries(network.lines)) {
     if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
-    for (const alias of line.aliases ?? []) {
-      const target = network.lines[alias.as];
-      if (!target) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
-      // An optional network may be left off: a line it does not run must not lean on one of its lines.
-      else if (target.network !== line.network && network.networks[target.network]?.optional)
-        problem(`line ${lineId}: alias to ${alias.as}, of the optional network ${target.network}`);
-    }
+    for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
   }
   checkStations(network, problem);
   for (const segment of network.segments) checkSegment(network, segment, problem);

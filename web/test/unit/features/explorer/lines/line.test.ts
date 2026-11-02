@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { LineInfo, OptionalNetworkInfo } from '@railtime/network/facts.types';
+import type { LineInfo, NetworkChoice } from '@railtime/network/facts.types';
 import { lineGroups, titleInLine } from '~/features/explorer/lines/line.utils';
 
 const RED = { light: '#ff0000', dark: '#ff0000' };
@@ -22,12 +22,26 @@ const lineOf = (id: string, network: string, opened: number | null = 0): LineInf
 });
 
 /**
- * An optional network with one line.
+ * A network with a line or two that may be shown or hidden.
  *
- * @param shown - Whether it is on.
+ * @param id - Its id, and its name capitalised.
+ * @param lines - Each line's id, and whether it shows.
  * @returns The network.
  */
-const railOf = (shown: boolean): OptionalNetworkInfo => ({ id: 'rail', name: 'Rail', shown, lines: [{ id: 'grey', name: 'Grey', color: RED }] });
+const choiceOf = (id: string, lines: [string, boolean][]): NetworkChoice => ({
+  id,
+  name: id.charAt(0).toUpperCase() + id.slice(1),
+  lines: lines.map(([line, shown]) => ({ id: line, name: line.charAt(0).toUpperCase() + line.slice(1), color: RED, shown })),
+});
+
+/** The networks the lines below are in, every line shown. */
+const CHOICES = [
+  choiceOf('metro', [
+    ['red', true],
+    ['blue', true],
+  ]),
+  choiceOf('trams', [['tram', true]]),
+];
 
 describe('LineUtils', () => {
   describe('titleInLine', () => {
@@ -51,37 +65,42 @@ describe('LineUtils', () => {
   });
 
   describe('lineGroups', () => {
-    test('groups the lines by network in order, a plan’s own under Planned', () => {
-      const groups = lineGroups([lineOf('red', 'metro'), lineOf('tram', 'trams'), lineOf('blue', 'metro'), lineOf('new', 'metro', null)], [], '');
-      expect(groups.map(group => [group.name, group.lines.map(line => line.id)])).toEqual([
-        ['Metro', ['red', 'blue']],
-        ['Trams', ['tram']],
-        ['Planned', ['new']],
+    test('groups the lines by network in order, a plan’s own under Planned, which no eye hides', () => {
+      const groups = lineGroups([lineOf('red', 'metro'), lineOf('tram', 'trams'), lineOf('blue', 'metro'), lineOf('new', 'metro', null)], CHOICES, '');
+      expect(groups.map(group => [group.name, group.lines.map(line => line.id), group.toggleable])).toEqual([
+        ['Metro', ['red', 'blue'], ['red', 'blue']],
+        ['Trams', ['tram'], ['tram']],
+        ['Planned', ['new'], []],
       ]);
-      expect(groups.every(group => group.shown && !group.optional)).toBe(true);
     });
 
-    test('lists an optional network off after the city’s own, its lines only named', () => {
-      const groups = lineGroups([lineOf('red', 'metro')], [railOf(false)], '');
-      expect(groups.at(-1)).toEqual({
+    test('lists a line hidden after its network’s own, only named, and a network all hidden after those shown', () => {
+      const choices = [
+        choiceOf('metro', [
+          ['red', true],
+          ['blue', false],
+        ]),
+        choiceOf('rail', [['grey', false]]),
+      ];
+      const groups = lineGroups([lineOf('red', 'metro'), lineOf('new', 'metro', null)], choices, '');
+      expect(groups.map(group => [group.network, group.lines.map(line => line.id), group.hiddenLines.map(line => line.id)])).toEqual([
+        ['metro', ['red'], ['blue']],
+        ['rail', [], ['grey']],
+        ['planned', ['new'], []],
+      ]);
+      expect(groups[1]).toEqual({
         network: 'rail',
         name: 'Rail',
-        optional: true,
-        shown: false,
         lines: [],
-        offLines: [{ id: 'grey', name: 'Grey', color: RED }],
+        hiddenLines: [{ id: 'grey', name: 'Grey', color: RED, shown: false }],
+        toggleable: ['grey'],
       });
     });
 
-    test('lists an optional network on with its lines on the map, as the city’s own', () => {
-      const groups = lineGroups([lineOf('red', 'metro'), lineOf('grey', 'rail')], [railOf(true)], '');
-      expect(groups.at(-1)).toMatchObject({ network: 'rail', optional: true, shown: true, offLines: [] });
-      expect(groups.at(-1)?.lines.map(line => line.id)).toEqual(['grey']);
-    });
-
-    test('keeps the lines a search finds, on the map or off, and the groups with any', () => {
-      expect(lineGroups([lineOf('red', 'metro')], [railOf(false)], 'gre').map(group => group.network)).toEqual(['rail']);
-      expect(lineGroups([lineOf('red', 'metro')], [railOf(false)], 'red').map(group => group.network)).toEqual(['metro']);
+    test('keeps the lines a search finds, on the map or hidden, and the groups with any', () => {
+      const choices = [choiceOf('metro', [['red', true]]), choiceOf('rail', [['grey', false]])];
+      expect(lineGroups([lineOf('red', 'metro')], choices, 'gre').map(group => group.network)).toEqual(['rail']);
+      expect(lineGroups([lineOf('red', 'metro')], choices, 'red').map(group => group.network)).toEqual(['metro']);
     });
   });
 });

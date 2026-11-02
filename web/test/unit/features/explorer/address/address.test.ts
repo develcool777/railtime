@@ -33,12 +33,6 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ plan: 'General Plan' })).toEqual({});
     });
 
-    test('reads the optional networks shown, each an id', () => {
-      expect(parseExplorerQuery({ with: 'swr,southern' })).toEqual({ networks: ['swr', 'southern'] });
-      expect(parseExplorerQuery({ with: 'SWR,,southern' })).toEqual({ networks: ['southern'] });
-      expect(parseExplorerQuery({ with: '' })).toEqual({});
-    });
-
     test("reads coverage's distance, one of its own but the default", () => {
       expect(parseExplorerQuery({ walk: '400' })).toEqual({ walk: 400 });
       expect(parseExplorerQuery({ walk: '1200' })).toEqual({ walk: 1200 });
@@ -81,7 +75,6 @@ describe('ExplorerUrlUtils', () => {
         view: { center: [-0.12, 51.5] as [number, number], zoom: 11.5 },
         station: 'victoria',
         plan: 'extension',
-        networks: ['swr', 'southern'],
         section: 'reach' as const,
         walk: 1200 as const,
         line: 'victoria',

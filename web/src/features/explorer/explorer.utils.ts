@@ -137,7 +137,6 @@ type MapPropsInput = {
   theme: Theme;
   viewMode: ViewMode;
   stationNames: boolean;
-  visibleLines: string[] | null;
   timeMode: TimeMode;
   openStation: string | null;
   openLine: string | null;
@@ -160,7 +159,6 @@ export const mapPropsOf = (input: MapPropsInput): MapProps => ({
   theme: input.theme,
   viewMode: input.viewMode,
   stationLabels: input.stationNames,
-  visibleLines: input.visibleLines,
   focusedLines: input.timeMode === 'playing' || input.openStation || !input.openLine ? null : [input.openLine],
   selectedStation: input.openStation,
   overlay: input.overlay,

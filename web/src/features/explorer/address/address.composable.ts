@@ -18,7 +18,7 @@ import { isDated } from '~/features/explorer/time/timeline.utils';
  * @param openingSection - The section a page opens on without a tab in its address: left out of it.
  */
 export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Section): void => {
-  const { section, openStation, openLine, viewMode, stationNames, mapOnly, playing, time, view, plan, shownNetworks, coverageMetres } =
+  const { section, openStation, openLine, viewMode, stationNames, mapOnly, playing, time, view, plan, pickedPlan, coverageMetres } =
     storeToRefs(useExplorerStore());
   const route = useRoute();
   const router = useRouter();
@@ -33,8 +33,7 @@ export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Se
       ...(date.value === undefined ? {} : { date: date.value }),
       ...(view.value ? { view: view.value } : {}),
       ...(openStation.value ? { station: openStation.value } : {}),
-      ...(plan.value ? { plan: plan.value } : {}),
-      ...(shownNetworks.value.length > 0 ? { networks: shownNetworks.value } : {}),
+      ...(pickedPlan.value ? { plan: pickedPlan.value } : {}),
       ...(section.value === openingSection ? {} : { section: section.value }),
       ...(coverageMetres.value === COVERAGE_DEFAULT_METRES ? {} : { walk: coverageMetres.value }),
       ...(openLine.value ? { line: openLine.value } : {}),

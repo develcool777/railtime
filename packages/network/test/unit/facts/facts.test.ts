@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkFacts } from '../../../src/facts/facts.service';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
-import { optionalNetwork } from '../../support/factories/optionalNetwork.utils';
+import { hiddenNetwork } from '../../support/factories/hiddenNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf as plainFactsOf, questionsOn } from '../../support/facts.utils';
 import { bandOf, networkSummary, planFacts, reachedSegments } from '../../../src/facts/facts.utils';
@@ -33,18 +33,24 @@ const factsOf = (plan?: string) => {
 const momentOf = (facts: NetworkFacts, date: string) => ({ cursor: facts.engine.timeline.cursorAt(toTimestamp(date)), time: toTimestamp(date) });
 
 describe('NetworkFacts', () => {
-  test('leaves its optional networks off unless asked for, and lists them either way', () => {
-    const network = optionalNetwork();
+  test('hides the lines of its networks hidden at first unless asked otherwise, and lists them either way', () => {
+    const network = hiddenNetwork();
     const plain = NetworkFacts.create(network, { today: TODAY });
-    expect(plain.networks).toEqual([]);
+    expect(plain.hidden).toEqual(['grey']);
     expect(plain.lines().map(line => line.id)).not.toContain('grey');
     expect(plain.find('station', 'x')).toBeNull();
-    expect(plain.optionalNetworks().map(entry => [entry.id, entry.shown])).toEqual([['rail', false]]);
-    const withRail = NetworkFacts.create(network, { today: TODAY, networks: ['rail', 'nowhere'] });
-    expect(withRail.networks).toEqual(['rail']);
-    expect(withRail.lines().map(line => line.id)).toContain('grey');
+    expect(plain.networkChoices().map(entry => entry.id)).toEqual(['metro', 'rail']);
+    const withRail = NetworkFacts.create(network, { today: TODAY, hidden: ['blue', 'nowhere'] });
+    expect(withRail.hidden).toEqual(['blue']);
+    expect(withRail.lines().map(line => line.id)).toEqual(expect.arrayContaining(['grey']));
+    expect(withRail.lines().map(line => line.id)).not.toContain('blue');
     expect(withRail.find('station', 'x')).toEqual({ id: 'x', name: 'X' });
-    expect(withRail.optionalNetworks()[0]?.shown).toBe(true);
+  });
+
+  test('shows the network as built when its plan builds only on lines hidden', () => {
+    const facts = NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: 'grey-on' });
+    expect(facts.plan).toBeNull();
+    expect(NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: 'grey-on', hidden: [] }).plan).toBe('grey-on');
   });
 
   test('runs from its first date to today, or to its last dated change after it', () => {

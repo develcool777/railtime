@@ -37,7 +37,7 @@ const change = (index: number, year: number | null): ChangeInfo => ({
 });
 
 /**
- * A section's top, as the explorer asks for it: Lines, two of three lines shown, nothing playing.
+ * A section's top, as the explorer asks for it: Lines, three lines on the map and one hidden, nothing playing.
  *
  * @param overrides - What differs.
  * @returns The input.
@@ -48,7 +48,7 @@ const sectionInput = (overrides: Partial<SectionTopInput>): SectionTopInput => (
   playing: false,
   hasPlan: false,
   lines: [line('red', 1900), line('blue', 1950), line('green', null)],
-  visible: new Set(['red', 'blue']),
+  hidden: 1,
   changes: [change(0, 1900), change(1, 1950), change(2, null)],
   currentChange: null,
   time: timeAt({}),
@@ -109,8 +109,9 @@ describe('PanelUtils', () => {
   });
 
   describe('sectionTop', () => {
-    test('counts the lines, and those shown', () => {
-      expect(sectionTop(sectionInput({}))).toEqual({ title: 'Lines', context: '3 lines · 2 shown' });
+    test('counts the lines, and those hidden while any are', () => {
+      expect(sectionTop(sectionInput({}))).toEqual({ title: 'Lines', context: '3 lines · 1 hidden' });
+      expect(sectionTop(sectionInput({ hidden: 0 }))).toEqual({ title: 'Lines', context: '3 lines' });
     });
 
     test('counts the changes since the first dated one', () => {

@@ -3,7 +3,7 @@ import type { SideBySide } from './style.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { RouteStopKind } from '../overlay/overlay.types';
 
-/** Everything already on the map at a cursor. Rebuilt only when the cursor, toggles or theme change. */
+/** Everything already on the map at a cursor. Rebuilt only when the cursor or theme change. */
 export type NetworkSnapshot = {
   sideBySide: SideBySide;
   lines: FeatureCollection<LineFeature>;
