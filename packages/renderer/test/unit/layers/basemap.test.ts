@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { LayerSpecification } from 'maplibre-gl';
-import { basemapFont, guardMissingNumbers, recolorBasemap } from '../../../src/layers/basemap.utils';
+import { basemapFont, guardMissingNumbers, recolorBasemap, showBasemapLabels } from '../../../src/layers/basemap.utils';
 import { FALLBACK_FONT, MISSING_NUMBER, PALETTES } from '../../../src/layers/theme.constants';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 
@@ -21,6 +21,7 @@ const STYLE = [
   { id: 'place', type: 'symbol', source: 'tiles', 'source-layer': 'place', layout: { 'text-font': ['Basemap Sans'] } },
   { id: 'hillshade', type: 'hillshade', source: 'dem' },
   { id: 'rt-lines', type: 'line', source: 'rt-lines' },
+  { id: 'rt-names', type: 'symbol', source: 'rt-lines' },
 ] as LayerSpecification[];
 
 describe('BasemapUtils', () => {
@@ -76,6 +77,18 @@ describe('BasemapUtils', () => {
       const fake = fakeMap(STYLE);
       recolorBasemap(fake.map, PALETTES.light, { labels: false });
       expect(fake.layers.get('place')?.layout.visibility).toBe('none');
+    });
+  });
+
+  describe('showBasemapLabels', () => {
+    test("hides the basemap's street and place names and shows them again, never its points of interest or the network's own names", () => {
+      const fake = fakeMap(STYLE);
+      recolorBasemap(fake.map, PALETTES.dark, { labels: true });
+      const visibility = () => ['place', 'poi', 'rt-names'].map(id => fake.layers.get(id)?.layout.visibility);
+      showBasemapLabels(fake.map, false);
+      expect(visibility()).toEqual(['none', 'none', undefined]);
+      showBasemapLabels(fake.map, true);
+      expect(visibility()).toEqual(['visible', 'none', undefined]);
     });
   });
 

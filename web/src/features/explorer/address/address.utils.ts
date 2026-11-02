@@ -79,6 +79,7 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
     ...(line && SLUG.test(line) ? { line } : {}),
     ...(single(query.view) === '3d' ? { viewMode: '3d' as const } : {}),
     ...(single(query.names) === 'off' ? { stationNames: false as const } : {}),
+    ...(single(query.streets) === 'off' ? { streetNames: false as const } : {}),
     ...(single(query.mapOnly) === '1' ? { mapOnly: true as const } : {}),
   };
 };
@@ -102,7 +103,7 @@ export const sameQuery = (first: ExplorerQuery, second: ExplorerQuery): boolean 
  * @returns The query.
  */
 export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
-  const { date, view, station, plan, section, walk, line, viewMode, stationNames, mapOnly } = state;
+  const { date, view, station, plan, section, walk, line, viewMode, stationNames, streetNames, mapOnly } = state;
   return {
     ...(date === undefined ? {} : { date: toIsoDate(date) }),
     ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
@@ -113,6 +114,7 @@ export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, str
     ...(line ? { line } : {}),
     ...(viewMode === '3d' ? { view: '3d' } : {}),
     ...(stationNames === false ? { names: 'off' } : {}),
+    ...(streetNames === false ? { streets: 'off' } : {}),
     ...(mapOnly ? { mapOnly: '1' } : {}),
   };
 };

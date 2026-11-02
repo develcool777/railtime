@@ -55,14 +55,27 @@ const paintIfPresent = (map: MapLibreMap, layerId: string, property: PaintProper
 };
 
 /**
- * Recolours one basemap layer.
+ * Whether a basemap layer names the city's streets and places: the labels a map shows or hides as it
+ * is set. Its points of interest and house numbers are never shown, and the network's own labels are
+ * not the basemap's.
+ *
+ * @param layer - The style layer.
+ * @returns True for a street or place name layer.
+ */
+const namesStreets = (layer: LayerSpecification): boolean => {
+  if (layer.type !== 'symbol' || layer.id.startsWith(OVERLAY_PREFIX)) return false;
+  const sourceLayer = layer['source-layer'] ?? '';
+  return sourceLayer !== 'poi' && sourceLayer !== 'housenumber';
+};
+
+/**
+ * Recolours one basemap layer; a label that is no street's or place's name is hidden.
  *
  * @param map - The map.
  * @param layer - The style layer.
  * @param palette - The theme's colours.
- * @param labels - Whether to keep its labels.
  */
-const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Palette, labels: boolean): void => {
+const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Palette): void => {
   const sourceLayer = 'source-layer' in layer ? (layer['source-layer'] ?? '') : '';
   switch (layer.type) {
     case 'background':
@@ -79,7 +92,7 @@ const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Pale
       paintIfPresent(map, layer.id, 'line-color', lineColor(sourceLayer, layer.id, palette));
       break;
     case 'symbol':
-      if (!labels || sourceLayer === 'poi' || sourceLayer === 'housenumber') {
+      if (!namesStreets(layer)) {
         map.setLayoutProperty(layer.id, 'visibility', 'none');
         break;
       }
@@ -91,19 +104,30 @@ const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Pale
 };
 
 /**
+ * Names the basemap's streets and places, or leaves the city unnamed (`namesStreets`).
+ *
+ * @param map - The map, with its style loaded.
+ * @param shown - Whether to name them.
+ */
+export const showBasemapLabels = (map: MapLibreMap, shown: boolean): void => {
+  for (const layer of map.getStyle().layers) if (namesStreets(layer)) map.setLayoutProperty(layer.id, 'visibility', shown ? 'visible' : 'none');
+};
+
+/**
  * Recolours an OpenMapTiles-schema basemap (OpenFreeMap, MapTiler…) to a palette, so the network is
- * the only colour on the map. Points of interest and house numbers are hidden; with `labels: false`
- * (the minimap) every label is.
+ * the only colour on the map. Points of interest and house numbers are hidden; its street and place
+ * names shown as `labels` says (`showBasemapLabels`): never on the minimap, on the map as it is set.
  *
  * @param map - The map.
  * @param palette - The theme's colours.
- * @param options - `labels`: keep place and street labels.
- * @param options.labels - Keep place and street labels.
+ * @param options - `labels`: show the street and place names.
+ * @param options.labels - Show the street and place names.
  */
 export const recolorBasemap = (map: MapLibreMap, palette: Palette, options: { labels: boolean }): void => {
+  showBasemapLabels(map, options.labels);
   for (const layer of map.getStyle().layers) {
     if (layer.id.startsWith(OVERLAY_PREFIX)) continue;
-    recolorLayer(map, layer, palette, options.labels);
+    recolorLayer(map, layer, palette);
     // A filter comparing a value some features lack (a road number's length) gets a stand-in for it.
     const filter = 'filter' in layer ? layer.filter : undefined;
     const guarded = filter === undefined ? undefined : guardMissingNumbers(filter);

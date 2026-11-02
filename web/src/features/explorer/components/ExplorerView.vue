@@ -107,11 +107,13 @@
             v-if="chrome.tools"
             class="absolute top-4 right-4 max-lg:top-3 max-lg:right-3"
             :stationNames
+            :streetNames
             :viewMode
             @zoomIn="store.map?.zoomIn()"
             @zoomOut="store.map?.zoomOut()"
             @fit="store.map?.fitNetwork()"
             @stationNames="stationNames = $event"
+            @streetNames="streetNames = $event"
             @viewMode="viewMode = $event"
             @mapOnly="store.setMapOnly(true)"
             @help="store.setDialog('help')" />
@@ -242,6 +244,7 @@
     panelCover,
     viewMode,
     stationNames,
+    streetNames,
     player,
     chrome,
     routeEnds,

@@ -25,6 +25,7 @@ export const useExplorerShortcuts = (sections: Readonly<Ref<{ id: Section }[]>>)
     back: () => store.stepTime(-1),
     forward: () => store.stepTime(1),
     names: () => (store.stationNames = !store.stationNames),
+    streets: () => (store.streetNames = !store.streetNames),
     view3d: () => (store.viewMode = store.viewMode === '3d' ? '2d' : '3d'),
     mapOnly: () => store.setMapOnly(!store.mapOnly),
   };

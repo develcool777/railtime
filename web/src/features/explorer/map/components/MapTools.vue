@@ -29,10 +29,21 @@
   const props = defineProps<{
     /** Whether the map names its stations. */
     stationNames: boolean;
+    /** Whether the map names its streets and places. */
+    streetNames: boolean;
     /** How the map is seen: flat, or in 3D. */
     viewMode: ViewMode;
   }>();
-  const emit = defineEmits<{ zoomIn: []; zoomOut: []; fit: []; stationNames: [shown: boolean]; viewMode: [mode: ViewMode]; mapOnly: []; help: [] }>();
+  const emit = defineEmits<{
+    zoomIn: [];
+    zoomOut: [];
+    fit: [];
+    stationNames: [shown: boolean];
+    streetNames: [shown: boolean];
+    viewMode: [mode: ViewMode];
+    mapOnly: [];
+    help: [];
+  }>();
 
   const groups = computed((): MapTool[][] => [
     [
@@ -48,6 +59,14 @@
         kbds: ['N'],
         pressed: props.stationNames,
         run: () => emit('stationNames', !props.stationNames),
+      },
+      {
+        label: props.streetNames ? 'Hide street names' : 'Show street names',
+        // The icon says how the map is: its streets named, or not.
+        icon: props.streetNames ? 'i-lucide-type' : 'i-lucide-remove-formatting',
+        kbds: ['S'],
+        pressed: props.streetNames,
+        run: () => emit('streetNames', !props.streetNames),
       },
       {
         label: props.viewMode === '3d' ? 'Flat map' : 'See in 3D',

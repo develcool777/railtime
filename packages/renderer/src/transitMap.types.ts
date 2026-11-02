@@ -35,6 +35,8 @@ export type MapProps = {
   viewMode: ViewMode;
   /** Whether the stations are named, or only their dots shown. */
   stationLabels: boolean;
+  /** Whether the basemap names its streets and places, or shows the city unnamed but for the stations. */
+  streetLabels: boolean;
   /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
   focusedLines: string[] | null;
   /** The station ringed, flown to when it changes; `null` for none. */

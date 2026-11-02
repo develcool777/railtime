@@ -40,18 +40,19 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ walk: '500' })).toEqual({});
     });
 
-    test('reads the tab, the line open, 3D, the names hidden and map only', () => {
-      expect(parseExplorerQuery({ tab: 'route', line: 'central', view: '3d', names: 'off', mapOnly: '1' })).toEqual({
+    test("reads the tab, the line open, 3D, the stations' and the streets' names hidden and map only", () => {
+      expect(parseExplorerQuery({ tab: 'route', line: 'central', view: '3d', names: 'off', streets: 'off', mapOnly: '1' })).toEqual({
         section: 'route',
         line: 'central',
         viewMode: '3d',
         stationNames: false,
+        streetNames: false,
         mapOnly: true,
       });
     });
 
     test('leaves out a tab there is none of, and the defaults written out', () => {
-      expect(parseExplorerQuery({ tab: 'trains', line: 'Central Line', view: '2d', names: 'on', mapOnly: 'yes' })).toEqual({});
+      expect(parseExplorerQuery({ tab: 'trains', line: 'Central Line', view: '2d', names: 'on', streets: 'on', mapOnly: 'yes' })).toEqual({});
     });
 
     test('takes the first of a repeated parameter', () => {
@@ -80,6 +81,7 @@ describe('ExplorerUrlUtils', () => {
         line: 'victoria',
         viewMode: '3d' as const,
         stationNames: false as const,
+        streetNames: false as const,
         mapOnly: true as const,
       };
       expect(parseExplorerQuery(formatExplorerQuery(state))).toEqual(state);

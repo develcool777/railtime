@@ -23,6 +23,8 @@ export type ExplorerUrlState = {
   viewMode?: ViewMode;
   /** Station names hidden; shown without one. */
   stationNames?: false;
+  /** The basemap's street and place names hidden; shown without one. */
+  streetNames?: false;
   /** Only the map; the page around it without one. */
   mapOnly?: true;
 };
