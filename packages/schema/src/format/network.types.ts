@@ -120,9 +120,22 @@ export type PlanSection = {
   line: string;
   /**
    * Station ids: the network's or the plan's. A new station between two neighbours on the line's
-   * track stands on that track; anywhere else, the section runs straight from station to station.
+   * track stands on that track; anywhere else, the section runs from station to station over the
+   * plan's track between them (`Plan.track`), straight where it has none.
    */
   stations: string[];
+};
+
+/**
+ * Where a plan's new track runs between two stations a section links: over a bridge, round a curve. As
+ * a segment's, from station A to station B, held to the same: its ends on its stations, no turn
+ * sharper than its trains can.
+ */
+export type PlanTrack = {
+  stationA: string;
+  stationB: string;
+  /** From station A to station B. */
+  coordinates: LngLat[];
 };
 
 /**
@@ -144,6 +157,8 @@ export type Plan = {
   lines?: Record<string, Line>;
   stations?: Record<string, Station>;
   sections: PlanSection[];
+  /** Where its new track runs, between stations its sections link with no track yet; straight between any others. */
+  track?: PlanTrack[];
   transfers?: Transfer[];
 };
 

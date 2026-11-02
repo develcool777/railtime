@@ -1,8 +1,7 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
-import type { Mode, Network, Plan, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
-import type { BuiltPlan } from '../plan/build.types';
-import { buildPlan } from '../plan/build.utils.ts';
+import type { Mode, Network, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
+import type { TrackOut } from './checks.types';
 import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
 
 /**
@@ -167,6 +166,20 @@ const startOf = (network: Network, lineId: string): string => {
 };
 
 /**
+ * A segment's track turning sharper than the trains on it can: up close, in 3D, a corner or a spike
+ * shows the line missing its station. The most agile of its lines' modes sets the limit.
+ *
+ * @param segment - The segment.
+ * @param modes - The modes of the lines on it; none, and it is not checked.
+ * @returns The problem, or `null`.
+ */
+export const segmentTurnProblem = (segment: Segment, modes: Mode[]): string | null => {
+  const sharpest = sharpestTurn(segment.coordinates);
+  if (modes.length === 0 || !sharpest || sharpest.degrees <= Math.max(...modes.map(maxTurnOf))) return null;
+  return `segment ${segment.stationA} – ${segment.stationB}: its track turns ${Math.round(sharpest.degrees)}° at point ${sharpest.position}, sharper than its trains can`;
+};
+
+/**
  * Checks a segment: its stations and lines exist, its track reaches its stations, its dates are in order, none before its timeline starts.
  *
  * @param network - The network, its shape already valid.
@@ -187,12 +200,11 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
     const gap = place && end ? distanceKm(place, end) * 1000 : 0;
     if (gap > STATION_GAP_METRES) problem(`${name}: its track ends ${Math.round(gap)} m from ${station}`);
   }
-  // No track turns sharper than its trains can: up close, in 3D, a corner or a spike shows the line missing its station.
-  const modes = Object.keys(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []);
-  const sharpest = sharpestTurn(segment.coordinates);
-  const limit = Math.max(0, ...modes.map(maxTurnOf));
-  if (modes.length > 0 && sharpest && sharpest.degrees > limit)
-    problem(`${name}: its track turns ${Math.round(sharpest.degrees)}° at point ${sharpest.position}, sharper than its trains can`);
+  const turn = segmentTurnProblem(
+    segment,
+    Object.keys(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []),
+  );
+  if (turn) problem(turn);
   for (const [lineId, dates] of Object.entries(segment.lines)) {
     if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);
     // Before its timeline starts, a line's opening would never play.
@@ -205,18 +217,16 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
   }
 };
 
-/** A line's track leaving a station: one of its segments, from the station's end. */
-type TrackOut = { segment: Segment; dates: SegmentLine; track: LngLat[] };
-
 /**
- * Whether two of a line's spells on segments overlap: only then do its trains run from one to the other.
+ * Whether a line's trains run from one of its tracks to another: only while both are open, a plan's
+ * whenever the other is.
  *
- * @param first - One spell.
- * @param second - The other.
+ * @param first - One track's dates.
+ * @param second - The other's.
  * @returns Whether they share a day.
  */
-const overlap = (first: SegmentLine, second: SegmentLine): boolean =>
-  (!second.close || first.open < second.close) && (!first.close || second.open < first.close);
+const overlap = (first: SegmentLine | null, second: SegmentLine | null): boolean =>
+  !first || !second || ((!second.close || first.open < second.close) && (!first.close || second.open < first.close));
 
 /**
  * How sharply a line turns through a station, from one segment's track into another's, over
@@ -233,36 +243,66 @@ const turnThrough = (into: LngLat[], out: LngLat[]): number => {
 };
 
 /**
- * Checks each line runs through its stations as a train can: every track it leaves a station on
+ * Each line's dated track leaving each station, keyed `station|line`.
+ *
+ * @param network - The network.
+ * @returns The tracks, a list for each station and line.
+ */
+export const datedTracksOut = (network: Network): Map<string, TrackOut[]> => {
+  const leaving = new Map<string, TrackOut[]>();
+  for (const segment of network.segments)
+    for (const [lineId, dates] of Object.entries(segment.lines)) for (const out of tracksOut(segment, dates)) pushTrack(leaving, out.station, lineId, out);
+  return leaving;
+};
+
+/**
+ * A segment's track leaving each of its stations.
+ *
+ * @param segment - The segment.
+ * @param dates - When the line on it runs there, or `null` for a plan's.
+ * @returns Its two ends' tracks, each with its station.
+ */
+export const tracksOut = (segment: Segment, dates: SegmentLine | null): (TrackOut & { station: string })[] => [
+  { station: segment.stationA, track: segment.coordinates, dates },
+  { station: segment.stationB, track: segment.coordinates.toReversed(), dates },
+];
+
+/**
+ * Adds a line's track leaving a station to those keyed `station|line`.
+ *
+ * @param leaving - The tracks so far.
+ * @param station - The station.
+ * @param lineId - The line.
+ * @param out - The track.
+ */
+export const pushTrack = (leaving: Map<string, TrackOut[]>, station: string, lineId: string, out: TrackOut): void => {
+  const key = `${station}|${lineId}`;
+  leaving.set(key, [...(leaving.get(key) ?? []), out]);
+};
+
+/**
+ * Lines turning sharper through a station than their trains can: every track one leaves a station on
  * carries on smoothly from another it runs on then, unless it ends there or reverses there.
  *
- * @param network - The network, its shape already valid.
- * @param problem - Reports one problem.
+ * @param network - The network the tracks are its.
+ * @param leaving - Each line's tracks leaving each station (`datedTracksOut`, a plan's added).
+ * @param checks - Which tracks leaving are checked; every one, unless said.
+ * @returns A problem for each station and line.
  */
-const checkThroughStations = (network: Network, problem: (message: string) => void): void => {
-  const leaving = new Map<string, TrackOut[]>();
-  for (const segment of network.segments) {
-    for (const [lineId, dates] of Object.entries(segment.lines)) {
-      for (const [station, track] of [
-        [segment.stationA, segment.coordinates],
-        [segment.stationB, segment.coordinates.toReversed()],
-      ] as const) {
-        const key = `${station}|${lineId}`;
-        leaving.set(key, [...(leaving.get(key) ?? []), { segment, dates, track }]);
-      }
-    }
-  }
+export const throughStationProblems = (network: Network, leaving: Map<string, TrackOut[]>, checks: (out: TrackOut) => boolean = () => true): string[] => {
+  const problems: string[] = [];
   for (const [key, tracks] of leaving) {
     const [station = '', lineId = ''] = key.split('|');
     const mode = network.lines[lineId]?.mode;
     if (!mode || network.stations[station]?.reverses?.includes(lineId)) continue;
     let sharpest = 0;
-    for (const out of tracks) {
+    for (const out of tracks.filter(checks)) {
       const turns = tracks.filter(into => into !== out && overlap(into.dates, out.dates)).map(into => turnThrough(into.track, out.track));
       if (turns.length > 0) sharpest = Math.max(sharpest, Math.min(...turns));
     }
-    if (sharpest > maxTurnOf(mode)) problem(`station ${station}: ${lineId} turns ${Math.round(sharpest)}° through it, sharper than its trains can`);
+    if (sharpest > maxTurnOf(mode)) problems.push(`station ${station}: ${lineId} turns ${Math.round(sharpest)}° through it, sharper than its trains can`);
   }
+  return problems;
 };
 
 /**
@@ -283,82 +323,5 @@ export const checkNetwork = (network: Network, problem: (message: string) => voi
   }
   checkStations(network, problem);
   for (const segment of network.segments) checkSegment(network, segment, problem);
-  checkThroughStations(network, problem);
-};
-
-/**
- * A plan's ids that are already the network's, and its sections' lines and stations that are no one's.
- *
- * @param network - The network.
- * @param plan - One of its plans.
- * @returns A problem for each.
- */
-const planReferenceProblems = (network: Network, plan: Plan): string[] => [
-  ...Object.keys(plan.lines ?? {})
-    .filter(line => network.lines[line])
-    .map(line => `line ${line} is already in the network`),
-  ...Object.keys(plan.stations ?? {})
-    .filter(station => network.stations[station])
-    .map(station => `station ${station} is already in the network`),
-  ...plan.sections.flatMap((section, position) => [
-    ...(network.lines[section.line] || plan.lines?.[section.line] ? [] : [`section ${position}: unknown line ${section.line}`]),
-    ...section.stations
-      .filter(station => !network.stations[station] && !plan.stations?.[station])
-      .map(station => `section ${position}: unknown station ${station}`),
-  ]),
-];
-
-/**
- * A plan's sections of a line coming back after another line's: a plan plays in its order, so each
- * line's sections go together, the line built whole before the next.
- *
- * @param plan - One of the network's plans.
- * @returns A problem for each.
- */
-const planOrderProblems = (plan: Plan): string[] =>
-  plan.sections.flatMap((section, position) => {
-    const before = plan.sections[position - 1];
-    const earlier = plan.sections.slice(0, position - 1).some(other => other.line === section.line);
-    return before && before.line !== section.line && earlier
-      ? [`section ${position}: ${section.line} again, after ${before.line}: a line's sections go together`]
-      : [];
-  });
-
-/**
- * A plan's sections adding only stations on its line's track between two that lay more of it: a line's
- * track plays unbroken, the stations it adds on it before or after, so no station breaks an extension.
- *
- * @param built - A plan built on the network.
- * @returns A problem for each.
- */
-const planStationOrderProblems = (built: BuiltPlan): string[] =>
-  built.sections.flatMap((section, position) => {
-    const laysTrack = (other: BuiltPlan['sections'][number]) => other.line === section.line && other.segments.length > 0;
-    const between = built.sections.slice(0, position).some(laysTrack) && built.sections.slice(position + 1).some(laysTrack);
-    return section.segments.length === 0 && between
-      ? [`section ${position}: only stations, between sections of ${section.line}'s track: its track goes unbroken`]
-      : [];
-  });
-
-/**
- * Checks each plan as the network it would build: its own ids new, its references and dates sound.
- * A problem the network already has is reported once, not again for every plan.
- *
- * @param network - The network, its shape already valid.
- * @param problem - Reports one problem.
- */
-export const checkPlans = (network: Network, problem: (message: string) => void): void => {
-  const known = new Set<string>();
-  checkNetwork(network, message => known.add(message));
-  for (const [planId, plan] of Object.entries(network.plans ?? {})) {
-    const references = planReferenceProblems(network, plan);
-    for (const message of [...references, ...planOrderProblems(plan)]) problem(`plan ${planId}: ${message}`);
-    // Built only once its ids are sound: building needs every station's place.
-    if (references.length > 0) continue;
-    const built = buildPlan(network, planId);
-    for (const message of planStationOrderProblems(built)) problem(`plan ${planId}: ${message}`);
-    checkNetwork(built.network, message => {
-      if (!known.has(message)) problem(`plan ${planId}: ${message}`);
-    });
-  }
+  for (const message of throughStationProblems(network, datedTracksOut(network))) problem(message);
 };

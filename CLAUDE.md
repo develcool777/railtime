@@ -169,6 +169,10 @@ never the track out to the station. Where an interchange's lines run apart under
 track curves gently to the one station point. Where a line's trains end at a station from two
 directions and go back the way they came, the station says so (`reverses`); nowhere else may a line
 turn back through it. A plan's station on track already built sits on that track: the plan splits it there.
+A plan's new track runs where its `track` says, between two stations a section links (over a bridge,
+round a curve), as a segment's, one per line; where it says nothing, the plan curves it through its
+line's stations, on from the track the line already has. Either way the schema holds it as it holds
+built track: its ends on its stations, no turn sharper than its trains can, inside it or through a station.
 A plan plays in its order, line by line: a line's sections go together and play as one, the line
 growing from an end, never from its middle one way and back, a branch after the way it leaves, built whole
 before the next, and its track unbroken, a section adding only stations on it before or after the

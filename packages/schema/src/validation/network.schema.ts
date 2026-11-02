@@ -1,4 +1,5 @@
-import { checkNetwork, checkPlans } from './checks.utils.ts';
+import { checkNetwork } from './checks.utils.ts';
+import { checkPlans } from './plans.utils.ts';
 import type { Network } from '../format/network.types';
 import { networkShape } from './shape.schema.ts';
 

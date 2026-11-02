@@ -1,7 +1,7 @@
-import type { Network, PlanSection, Segment } from '../format/network.types';
+import type { Network, PlanSection, PlanTrack, Segment } from '../format/network.types';
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { SectionWorks } from './build.types';
-import { splitTrack } from './track.utils.ts';
+import type { Heading, SectionWorks } from './build.types';
+import { curveBetween, headingOf, splitTrack } from './track.utils.ts';
 
 /**
  * Builds plan sections on a network, keeping track of segments as objects, so splitting one never
@@ -12,14 +12,19 @@ export class PlanBuilder {
   public readonly network: Network;
   /** Every section built so far, in order. */
   public readonly sections: SectionWorks[] = [];
+  /** Where the plan's new track runs between two stations, where it says. */
+  private readonly track: PlanTrack[];
+  /** The new track laid where the plan says none: straight until `curve` bends it through its line's stations. */
+  private readonly unsaid = new Set<Segment>();
 
-  public constructor(network: Network) {
+  public constructor(network: Network, track: PlanTrack[] = []) {
     this.network = network;
+    this.track = track;
   }
 
   /**
    * Builds one section: stands its new stations between neighbours on the line's track, then puts the
-   * line on the track between its stations, laying straight track where there is none.
+   * line on the track between its stations, laying the plan's where there is none.
    *
    * @param section - The section.
    */
@@ -67,17 +72,22 @@ export class PlanBuilder {
   }
 
   /**
-   * Straight track between two stations.
+   * New track between two stations: where the plan says it runs, either way round, else straight.
    *
    * @param stationA - One end.
    * @param stationB - The other.
    * @returns The new segment, with no lines yet.
    */
   private lay(stationA: string, stationB: string): Segment {
+    const given = this.track.find(
+      track => (track.stationA === stationA && track.stationB === stationB) || (track.stationA === stationB && track.stationB === stationA),
+    );
     // Within bounds: the schema checks every station of a plan exists.
-    const coordinates: LngLat[] = [this.network.stations[stationA]!.coordinate, this.network.stations[stationB]!.coordinate];
+    let coordinates: LngLat[] = [this.network.stations[stationA]!.coordinate, this.network.stations[stationB]!.coordinate];
+    if (given) coordinates = given.stationA === stationA ? [...given.coordinates] : given.coordinates.toReversed();
     const segment: Segment = { stationA, stationB, lines: {}, coordinates };
     this.network.segments.push(segment);
+    if (!given) this.unsaid.add(segment);
     return segment;
   }
 
@@ -99,5 +109,57 @@ export class PlanBuilder {
     ];
     this.network.segments.splice(this.network.segments.indexOf(segment), 1, ...halves);
     for (const section of this.sections) section.segments = section.segments.flatMap(item => (item === segment ? halves : [item]));
+    if (this.unsaid.delete(segment)) for (const half of halves) this.unsaid.add(half);
+  }
+
+  /**
+   * Bends the new track the plan said nothing of, once every section is built, as a line's track
+   * runs: each stretch leaves and comes into its stations on the way its line goes through them, so
+   * the line curves through a station instead of turning a corner there. Where it ends, or reverses,
+   * it runs straight on; where it meets track the plan said or the network had, it follows that.
+   */
+  public curve(): void {
+    const headings = new Map<Segment, [Heading, Heading]>();
+    for (const segment of this.unsaid) {
+      const line = this.sections.find(section => section.segments.includes(segment))?.line;
+      if (line === undefined) continue;
+      // The way it comes into station B is the way it would leave B backwards, turned round.
+      const [back, on] = [this.headingThrough(segment.stationB, segment, line), this.headingThrough(segment.stationA, segment, line)];
+      headings.set(segment, [on, [-back[0], -back[1]]]);
+    }
+    // Every heading taken from the track as laid, before any of it bends.
+    for (const [segment, [leaving, arriving]] of headings)
+      segment.coordinates = curveBetween(segment.coordinates[0]!, segment.coordinates.at(-1)!, leaving, arriving);
+  }
+
+  /**
+   * The way a line's new track leaves a station: halfway between its own way and straight on from
+   * the line's track it comes in on there (the one most nearly opposite, where it forks), or that
+   * track's way exactly if the track is said, the plan's or the network's. Straight on where nothing
+   * comes in, or the line reverses there.
+   *
+   * @param station - The station.
+   * @param segment - The new track, unsaid.
+   * @param line - Its line.
+   * @returns The heading.
+   */
+  private headingThrough(station: string, segment: Segment, line: string): Heading {
+    const leaving = (track: Segment) => headingOf(track.stationA === station ? track.coordinates : track.coordinates.toReversed());
+    // Within bounds: a laid segment's ends are two stations apart.
+    const own = leaving(segment)!;
+    if (this.network.stations[station]?.reverses?.includes(line)) return own;
+    let against: { heading: Heading; said: boolean } | null = null;
+    for (const other of this.network.segments) {
+      if (other === segment || (other.stationA !== station && other.stationB !== station) || !this.runsOver(other, line)) continue;
+      const heading = leaving(other);
+      const dot = heading ? heading[0] * own[0] + heading[1] * own[1] : 0;
+      if (heading && (!against || dot < against.heading[0] * own[0] + against.heading[1] * own[1])) against = { heading, said: !this.unsaid.has(other) };
+    }
+    if (!against) return own;
+    const straightOn: Heading = [-against.heading[0], -against.heading[1]];
+    if (against.said) return straightOn;
+    const [east, north] = [own[0] + straightOn[0], own[1] + straightOn[1]];
+    const length = Math.hypot(east, north);
+    return length > 0 ? [east / length, north / length] : own;
   }
 }

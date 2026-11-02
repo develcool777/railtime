@@ -59,7 +59,9 @@ Track and stations come from OpenStreetMap.
 - `plans`: futures a city may have, by id, undated: each a name, a `status` (under construction,
   planned, proposed, concept or abandoned), the lines, stations and transfers it
   would add, and its `sections` (a line through stations) in the order they would be built. A new
-  station between two neighbours on a line stands on their track. The explorer offers a plan picker
+  station between two neighbours on a line stands on their track. Its `track` says where new track
+  runs between two stations a section links, as a segment's coordinates (a bridge's line, a curve);
+  elsewhere new track curves through its line's stations. The explorer offers a plan picker
   (`plan=<id>` in a link): the map shows the plan built, drawn dashed, and "Play future" builds it
   line by line from today.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
