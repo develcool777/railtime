@@ -210,12 +210,12 @@ describe('CoverageMeasure', () => {
     expect(measure.history(400)).toEqual(coverageHistory(index, timeline, new CoverageGrid(CITY), [first, 1925], 400));
     const cursor = timeline.cursorAt(toTimestamp('1915-01-01'));
     const grid = new CoverageGrid(CITY);
-    expect(measure.cells(cursor, 1200)).toEqual({
+    expect(measure.cells(cursor, 2000)).toEqual({
       columns: grid.columns,
       rows: grid.rows,
       corners: grid.corners,
       bands: COVERAGE_BANDS,
-      cells: cellBands(grid, grid.distances(servedStations(index, timeline, cursor), 1200), COVERAGE_BANDS),
+      cells: cellBands(grid, grid.distances(servedStations(index, timeline, cursor), 2000), COVERAGE_BANDS),
     });
     expect(measure.bounds).toEqual([
       [-2 * KM_EAST, 51.5 - 2 * KM_NORTH],
@@ -229,13 +229,16 @@ describe('CoverageUtils', () => {
     test('takes the bands up to a distance, each ending at or before it', () => {
       expect(bandsWithin(COVERAGE_BANDS, 400).map(band => band.upTo)).toEqual([400]);
       expect(bandsWithin(COVERAGE_BANDS, 800).map(band => band.upTo)).toEqual([400, 800]);
-      expect(bandsWithin(COVERAGE_BANDS, 1200)).toEqual(COVERAGE_BANDS);
+      expect(bandsWithin(COVERAGE_BANDS, 1200).map(band => band.upTo)).toEqual([400, 800, 1200]);
+      expect(bandsWithin(COVERAGE_BANDS, 2000)).toEqual(COVERAGE_BANDS);
     });
   });
 
   describe('bandAt', () => {
     test('puts a distance in the first band it fits, its end included, and none beyond them', () => {
-      expect([0, 400, 401, 800, 1200, 1201, Infinity].map(metres => bandAt(metres, COVERAGE_BANDS))).toEqual([0, 0, 1, 1, 2, -1, -1]);
+      expect([0, 400, 401, 800, 1200, 1201, 1600, 2000, 2001, Infinity].map(metres => bandAt(metres, COVERAGE_BANDS))).toEqual([
+        0, 0, 1, 1, 2, 3, 3, 4, -1, -1,
+      ]);
     });
   });
 
@@ -286,7 +289,7 @@ describe('CoverageUtils', () => {
     test('shares nothing out of a city with no area', () => {
       const grid = new CoverageGrid({ ...SQUARE, polygons: [] });
       const coverage = coverageOf(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS, 800);
-      expect([coverage.share, coverage.beyond.share, ...coverage.bands.map(band => band.share)]).toEqual([0, 0, 0, 0, 0]);
+      expect([coverage.share, coverage.beyond.share, ...coverage.bands.map(band => band.share)]).toEqual(Array(2 + COVERAGE_BANDS.length).fill(0));
     });
   });
 

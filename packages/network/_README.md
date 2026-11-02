@@ -24,7 +24,7 @@ then.route('bank', 'oval', 'fastest');
 then.reach('bank');
 then.records(5);
 then.stats();
-facts.coverage(boundary).info(cursor, 800); // how much of the city is within 800 m of a station (400, 800 or 1200)
+facts.coverage(boundary).info(cursor, 800); // how much of the city is within 800 m of a station (400, 800, 1200, 1600 or 2000)
 facts.coverage(boundary).cells(cursor, 800); // the same, cell by cell in its bands, for a picture
 facts.coverage(boundary).history(800); // the share within it, year by year
 ```

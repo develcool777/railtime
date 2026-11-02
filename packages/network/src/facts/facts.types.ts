@@ -179,8 +179,8 @@ export type CoverageBand = {
   color: string;
 };
 
-/** How far from a station coverage counts, metres: a 5-, 10- or 15-minute walk, about, each a band's far edge. */
-export type CoverageDistance = 400 | 800 | 1200;
+/** How far from a station coverage counts, metres: a 5- to 25-minute walk, about, each a band's far edge. */
+export type CoverageDistance = 400 | 800 | 1200 | 1600 | 2000;
 
 /** A band, and how much of the city lies in it. */
 export type CoverageShare = CoverageBand & {
