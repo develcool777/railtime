@@ -187,7 +187,8 @@ its own laid over theirs, which draws one line on top of the other.
 Any line, or a network's lines at once, can be hidden (the Lines panel's eyes, for the visit). Hidden, it is as if it were not there:
 `NetworkFacts.create(network, { hidden })` leaves out the line, the track and stations only it has,
 and a plan's sections on it (the plan with none left), so every count, the history, the coverage and the routes are without
-it; a station only it has that a plan builds on is the plan's own again; the years another line was
+it; a station only it has that a plan builds on is the plan's own again, and so is the track only it has
+between two stations a plan's section links: the plan runs on it still, never laying its own beside it; the years another line was
 drawn as it (an alias) go too: that line's gap, which the engine cuts its runs at, the line going as
 what it was drawn as and coming back as itself, with no step saying it changed. There is no other hiding: the map
 draws what the facts have. A network beside the city's own (main-line suburban trains beside a

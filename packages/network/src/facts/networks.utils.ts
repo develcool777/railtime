@@ -1,4 +1,4 @@
-import type { Line, Network, Plan, Station, Suspension } from '@railtime/schema/network.types';
+import type { Line, Network, Plan, Segment, Station, Suspension } from '@railtime/schema/network.types';
 import type { NetworkChoice, ShownNetwork } from './facts.types';
 import type { LineGap } from '../engine/engine.types';
 import { gapsOf, lineWithout, runsOutside, stationOutside } from './aliases.utils.ts';
@@ -89,6 +89,28 @@ const linesLeft = (network: Network, hidden: Set<string>): Record<string, Line> 
 };
 
 /**
+ * Whether two pieces of track join the same two stations, either way round.
+ *
+ * @param first - One: its two stations.
+ * @param second - The other.
+ * @returns True if they do.
+ */
+const samePair = (first: Pick<Segment, 'stationA' | 'stationB'>, second: Pick<Segment, 'stationA' | 'stationB'>): boolean =>
+  (first.stationA === second.stationA && first.stationB === second.stationB) || (first.stationA === second.stationB && first.stationB === second.stationA);
+
+/**
+ * Whether one of a plan's sections links a segment's two stations, one after the other.
+ *
+ * @param plan - The plan.
+ * @param segment - The segment.
+ * @returns True if one does.
+ */
+const linksStations = (plan: Plan, segment: Segment): boolean =>
+  plan.sections.some(section =>
+    section.stations.some((station, index) => index > 0 && samePair({ stationA: section.stations[index - 1]!, stationB: station }, segment)),
+  );
+
+/**
  * Where the timeline starts with some lines hidden: the city's start, or an older one of a network
  * one of its lines drawn is in.
  *
@@ -108,7 +130,8 @@ const startShown = (network: Network, drawn: (line: string) => boolean): string 
  * The network with some lines hidden, as if they were not there: their track, the stations only they
  * served and the changes to those go, and the years another line was drawn as one of them (an alias),
  * its gaps, which the engine cuts its runs at; a station only they served that a plan builds on is
- * that plan's own, as it would be without them; a plan keeps its sections on lines still drawn, its
+ * that plan's own, as it would be without them, and so is their track between two stations a plan's
+ * section links, so the plan runs where they ran; a plan keeps its sections on lines still drawn, its
  * stations only those use, and goes once it has none. A network older than the city starts the
  * timeline at its own start while one of its lines shows.
  *
@@ -126,10 +149,12 @@ export const withLinesHidden = (network: Network, hidden: readonly string[]): Sh
   const lines = linesLeft(network, hiddenSet);
   const gaps = gapsOf(network.lines, hiddenSet);
   const gapsOfLine = (line: string): readonly LineGap[] => gaps.get(line) ?? [];
+  const runsLeft = (segment: Segment) => Object.entries(segment.lines).filter(([line, run]) => drawn(line) && runsOutside(run, gapsOfLine(line)));
   const segments = network.segments.flatMap(segment => {
-    const left = Object.entries(segment.lines).filter(([line, run]) => drawn(line) && runsOutside(run, gapsOfLine(line)));
+    const left = runsLeft(segment);
     return left.length > 0 ? [{ ...segment, lines: Object.fromEntries(left) }] : [];
   });
+  const trackGone = network.segments.filter(segment => runsLeft(segment).length === 0);
   const servedBefore = new Set(network.segments.flatMap(segment => [segment.stationA, segment.stationB]));
   const served = new Set(segments.flatMap(segment => [segment.stationA, segment.stationB]));
   const gone = new Set([...servedBefore].filter(id => !served.has(id)));
@@ -152,17 +177,27 @@ export const withLinesHidden = (network: Network, hidden: readonly string[]): Sh
       .filter(([id]) => !gone.has(id))
       .map(([id, station]) => [id, stationOutside(stationWithLines(station, drawn), gaps)]),
   );
-  // A plan's station that is gone becomes the plan's own: its place and name, none of its history.
+  // A plan's station that is gone becomes the plan's own: its place and name, none of its history; and
+  // so does track gone between two stations a section links, where the plan says none: it runs there still.
   const plansShown = Object.fromEntries(
     Object.entries(plans).map(([id, plan]): [string, Plan] => {
       const own = [...new Set(plan.sections.flatMap(section => section.stations))].filter(station => gone.has(station));
-      if (own.length === 0) return [id, plan];
+      const track = trackGone.filter(segment => linksStations(plan, segment) && !plan.track?.some(given => samePair(given, segment)));
+      if (own.length === 0 && track.length === 0) return [id, plan];
       const adopted = own.map(station => {
         // Within bounds: a station is gone only if the network had it.
         const { name, names, coordinate } = network.stations[station]!;
         return [station, { name, ...(names ? { names } : {}), coordinate }];
       });
-      return [id, { ...plan, stations: { ...plan.stations, ...Object.fromEntries(adopted) } }];
+      const ownTrack = track.map(({ stationA, stationB, coordinates }) => ({ stationA, stationB, coordinates }));
+      return [
+        id,
+        {
+          ...plan,
+          stations: { ...plan.stations, ...Object.fromEntries(adopted) },
+          ...(ownTrack.length > 0 ? { track: [...(plan.track ?? []), ...ownTrack] } : {}),
+        },
+      ];
     }),
   );
   const networksUsed = new Set(
