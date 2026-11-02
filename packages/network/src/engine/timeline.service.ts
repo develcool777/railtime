@@ -18,7 +18,9 @@ import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.t
  * per step, a stretch that forks a step per branch), then stations opening on existing track, then
  * stations closing on it, then closures, then renames.
  *
- * A plan built on the network follows every dated step, undated: each section's openings, then its
+ * A plan built on the network follows every dated step, undated, line by line: each line's new track
+ * as one, whatever sections the plan gives it, so a line grows from an end, never from the middle
+ * one way and back for the other; a step per connected stretch and branch, as a day's; then its
  * stations opening on existing track. Its steps are `planned`, at time `Infinity`.
  */
 export class Timeline {
@@ -305,15 +307,28 @@ export class Timeline {
     return index;
   }
 
-  /** Each plan section's steps, in the plan's order: its openings, then its stations on existing track. */
+  /**
+   * Each plan line's steps, in the plan's order, its sections (which come together) as one: its new
+   * track, grown as a day's openings grow; then its stations on existing track.
+   */
   private addPlannedSteps(): void {
     const bySection = new Map<number, LineSegment[]>();
     for (const lineSegment of this.index.lineSegments) if (lineSegment.section !== null) pushTo(bySection, lineSegment.section, lineSegment);
+    const lines: { line: string; positions: number[] }[] = [];
     for (const [position, section] of this.index.sections.entries()) {
-      this.addOpenSteps(Infinity, bySection.get(position) ?? []);
+      const last = lines.at(-1);
+      if (last?.line === section.line) last.positions.push(position);
+      else lines.push({ line: section.line, positions: [position] });
+    }
+    for (const { line, positions } of lines) {
+      this.addOpenSteps(
+        Infinity,
+        positions.flatMap(position => bySection.get(position) ?? []),
+      );
       this.addInfillSteps(
         Infinity,
-        section.infills.map(station => ({ station, line: section.line, reopening: false })),
+        // Within bounds: each position is one of the sections'.
+        positions.flatMap(position => this.index.sections[position]!.infills.map(station => ({ station, line, reopening: false }))),
       );
     }
   }

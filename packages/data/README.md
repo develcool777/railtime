@@ -61,7 +61,7 @@ Track and stations come from OpenStreetMap.
   would add, and its `sections` (a line through stations) in the order they would be built. A new
   station between two neighbours on a line stands on their track. The explorer offers a plan picker
   (`plan=<id>` in a link): the map shows the plan built, drawn dashed, and "Play future" builds it
-  section by section from today.
+  line by line from today.
 - `aliases`: lines drawn as another line until a date (Circle as Metropolitan until 1949,
   Hammersmith & City until 1990, the Overground as one line until 2024).
 - `<city>.boundary.json`, beside every network: its outline (`name`, `source`,
