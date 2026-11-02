@@ -243,7 +243,7 @@
         "m9": {"name":"Osokorsko-Troieshchynska","names":{"uk":"Осокорсько-Троєщинська лінія"},"network":"metro","mode":"metro","color":"#8D5A3B"},
         "m10": {"name":"Bortnytsko-Novobilytska","names":{"uk":"Бортницько-Новобілицька лінія"},"network":"metro","mode":"metro","color":"#009E9E"},
         "m11": {"name":"Darnytsko-Vynohradarska","names":{"uk":"Дарницько-Виноградарська лінія"},"network":"metro","mode":"metro","color":"#9ACD32"},
-        "m12": {"name":"Berkovetsko-Obolonska","names":{"uk":"Берковецько-Оболонська лінія"},"network":"metro","mode":"metro","color":"#8E1B3A"}
+        "m12": {"name":"Zhuliansko-Pyrohivska","names":{"uk":"Жулянсько-Пирогівська лінія"},"network":"metro","mode":"metro","color":"#8E1B3A"}
       },
       "stations": {
         "aeroport": {"name":"Aeroport Kyiv","names":{"uk":"Аеропорт «Київ»"},"coordinate":[30.442,50.413]},
@@ -308,9 +308,7 @@
         "danyla-apostola": {"name":"Danyla Apostola","names":{"uk":"Данила Апостола"},"coordinate":[30.48307,50.52049]},
         "prospekt-svobody": {"name":"Prospekt Svobody","names":{"uk":"Проспект Свободи"},"coordinate":[30.42108,50.51518]},
         "selyshche-shevchenka": {"name":"Selyshche Shevchenka","names":{"uk":"Селище Шевченка"},"coordinate":[30.43179,50.5177]},
-        "hazoprovidna": {"name":"Hazoprovidna","names":{"uk":"Газопровідна"},"coordinate":[30.3875,50.4998]},
         "luhova": {"name":"Luhova","names":{"uk":"Лугова"},"coordinate":[30.48333,50.51142]},
-        "levka-lukianenka": {"name":"Levka Lukianenka","names":{"uk":"Левка Лукʼяненка"},"coordinate":[30.49674,50.51247]},
         "bilyche-pole": {"name":"Bilyche Pole","names":{"uk":"Біличе Поле"},"coordinate":[30.4469,50.48952]},
         "kvitnytstvo": {"name":"Kvitnytstvo","names":{"uk":"Квітництво"},"coordinate":[30.40582,50.48482]},
         "vovcha-hora": {"name":"Vovcha Hora","names":{"uk":"Вовча Гора"},"coordinate":[30.40584,50.47316]},
@@ -365,7 +363,7 @@
         "zdolbunivska": {"name":"Zdolbunivska","names":{"uk":"Здолбунівська"},"coordinate":[30.61209,50.41443]},
         "avtovokzal-teremky": {"name":"Avtovokzal Teremky","names":{"uk":"Автовокзал «Теремки»"},"coordinate":[30.4521,50.3751]},
         "vulytsia-dmytra-lutsenka": {"name":"Vulytsia Dmytra Lutsenka","names":{"uk":"Вулиця Дмитра Луценка"},"coordinate":[30.4425,50.3827]},
-        "zhuliany": {"name":"Zhuliany","names":{"uk":"Жуляни"},"coordinate":[30.44217,50.39282]},
+        "zhuliany": {"name":"Zhuliany","names":{"uk":"Жуляни"},"coordinate":[30.44055,50.39427]},
         "pryvokzalna": {"name":"Pryvokzalna","names":{"uk":"Привокзальна"},"coordinate":[30.6458,50.4302]},
         "teplovozna": {"name":"Teplovozna","names":{"uk":"Тепловозна"},"coordinate":[30.6206,50.4225]},
         "petra-radzinia": {"name":"Petra Radzinia","names":{"uk":"Петра Радзіня"},"coordinate":[30.605,50.4207]},
@@ -380,13 +378,22 @@
         "kholmska-ploshcha": {"name":"Kholmska Ploshcha","names":{"uk":"Холмська площа"},"coordinate":[30.3452,50.4643]},
         "lvivska": {"name":"Lvivska","names":{"uk":"Львівська"},"coordinate":[30.3665,50.4541]},
         "vasylia-kuchera": {"name":"Vasylia Kuchera","names":{"uk":"Василя Кучера"},"coordinate":[30.3868,50.4201]},
-        "protasiv-yar": {"name":"Protasiv Yar","names":{"uk":"Протасів Яр"},"coordinate":[30.4925,50.4205]}
+        "protasiv-yar": {"name":"Protasiv Yar","names":{"uk":"Протасів Яр"},"coordinate":[30.4925,50.4205]},
+        "mykhaila-maksymovycha": {"name":"Mykhaila Maksymovycha","names":{"uk":"Михайла Максимовича"},"coordinate":[30.46659,50.39109]},
+        "sumska": {"name":"Sumska","names":{"uk":"Сумська"},"coordinate":[30.48404,50.39845]},
+        "holosiivskyi-prospekt": {"name":"Holosiivskyi Prospekt","names":{"uk":"Голосіївський проспект"},"coordinate":[30.5072,50.3952]},
+        "dobryi-shliakh": {"name":"Dobryi Shliakh","names":{"uk":"Добрий Шлях"},"coordinate":[30.52306,50.39261]},
+        "prospekt-nauky": {"name":"Prospekt Nauky","names":{"uk":"Проспект Науки"},"coordinate":[30.53122,50.38495]},
+        "kytaiv": {"name":"Kytaiv","names":{"uk":"Китаїв"},"coordinate":[30.53829,50.37667]},
+        "feodosiia": {"name":"Feodosiia","names":{"uk":"Феодосія"},"coordinate":[30.54299,50.35675]},
+        "pyrohiv": {"name":"Pyrohiv","names":{"uk":"Пирогів"},"coordinate":[30.53372,50.34434]},
+        "vita-lytovska": {"name":"Vita-Lytovska","names":{"uk":"Віта-Литовська"},"coordinate":[30.55086,50.32653]}
       },
       "sections": [
         {"line":"m1","stations":["akademmistechko","novobilychi","berkovetska"]},
         {"line":"m1","stations":["lisova","bykivnia"]},
         {"line":"m2","stations":["teremky","odeska"]},
-        {"line":"m2","stations":["ipodrom","avtovokzal-teremky","vulytsia-dmytra-lutsenka","zhuliany"]},
+        {"line":"m2","stations":["ipodrom","avtovokzal-teremky","vulytsia-dmytra-lutsenka"]},
         {"line":"m3","stations":["syrets","mostytska","varshavska","selyshche-shevchenka"]},
         {"line":"m3","stations":["mostytska","prospekt-pravdy","vitriani-hory"]},
         {"line":"m3","stations":["lukianivska","lvivska-brama","zoloti-vorota"]},
@@ -403,7 +410,7 @@
         {"line":"m9","stations":["nyzhni-sady","nebrezh","prospekt-hryhorenka","anny-akhmatovoi","zdolbunivska","petra-radzinia","berezniaky","rusanivka","mytropolyta-sheptytskoho","prospekt-navoi","troieshchyna","ploshcha-ankary","molodizhnyi-park","miloslavska"]},
         {"line":"m10","stations":["natalii-kobrynskoi","sloboda","orokhiv","kolektorna","prospekt-bazhana","denysa-antipova","holopuzivka","lisky","viskozna","hetmana-polubotka","sholom-aleikhema","kubanskoi-ukrainy","kerchenska-ploshcha","prospekt-chervonoi-kalyny","prospekt-shukhevycha","muromets","obolonska-naberezhna","prospekt-bandery","novokostiantynivska","kurenivka","bilyche-pole","mostytska","kvitnytstvo","berkovets","novobilychi"]},
         {"line":"m11","stations":["prospekt-svobody","prospekt-yevropeiskoho-soiuzu","kvitnytstvo","vovcha-hora","halahany","kozeletska","vatslava-havela","vidradnyi-prospekt","aeroport","ivana-puliuia","kholodnoiarska","demiivska-ploshcha","saperno-slobidska","zaliznychne-shose","naddniprianske-shose","petra-radzinia","teplovozna","pryvokzalna"]},
-        {"line":"m12","stations":["berkovetska","hazoprovidna","prospekt-yevropeiskoho-soiuzu","varshavska","prospekt-pravdy","konoplianka","luhova","levka-lukianenka"]}
+        {"line":"m12","stations":["dev-iatoho-travnia","zhuliany","mykhaila-maksymovycha","sumska","holosiivskyi-prospekt","dobryi-shliakh","prospekt-nauky","kytaiv","feodosiia","pyrohiv","vita-lytovska"]}
       ],
       "track": [
         {"stationA":"naberezhno-khreshchatytska","stationB":"sudnobudivna","coordinates":[[30.52114,50.47172],[30.52234,50.47252],[30.52293,50.47291],[30.5233,50.47316],[30.5236,50.47336],[30.52381,50.4735],[30.52399,50.47362],[30.52413,50.47371],[30.52424,50.47378],[30.52432,50.47383],[30.52439,50.47387],[30.52446,50.47391],[30.52453,50.47395],[30.52459,50.47399],[30.52466,50.47402],[30.52472,50.47405],[30.52478,50.47408],[30.52483,50.47411],[30.52489,50.47413],[30.52495,50.47416],[30.525,50.47418],[30.52506,50.4742],[30.52512,50.47422],[30.52518,50.47424],[30.52524,50.47426],[30.5253,50.47427],[30.52536,50.47429],[30.52543,50.4743],[30.5255,50.47432],[30.52557,50.47433],[30.52565,50.47434],[30.52573,50.47435],[30.52581,50.47437],[30.52589,50.47438],[30.52599,50.47438],[30.5261,50.47439],[30.52622,50.47438],[30.52635,50.47438],[30.52652,50.47437],[30.52672,50.47435],[30.52703,50.47431],[30.52764,50.47424]]},
@@ -425,9 +432,9 @@
         {"stationA":"halahany","stationB":"nyvky"},
         {"stationA":"hetmana-polubotka","stationB":"lisova"},
         {"stationA":"hlybochytska","stationB":"lukianivska"},
+        {"stationA":"holosiivska","stationB":"holosiivskyi-prospekt"},
         {"stationA":"kerchenska-ploshcha","stationB":"troieshchyna"},
         {"stationA":"kharkivska","stationB":"revutskoho"},
-        {"stationA":"levka-lukianenka","stationB":"minska"},
         {"stationA":"livoberezhna","stationB":"mytropolyta-sheptytskoho"},
         {"stationA":"lvivska","stationB":"zhytomyrska"},
         {"stationA":"lybidska","stationB":"lybidska-ploshcha"},
