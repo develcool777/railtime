@@ -11,7 +11,8 @@
         :modelValue="distance"
         :items="COVERAGE_DISTANCE_ITEMS"
         :content="false"
-        class="self-start"
+        class="w-full"
+        :ui="{ trigger: 'grow' }"
         aria-label="Walk from a station"
         @update:modelValue="pick" />
 
