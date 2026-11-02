@@ -33,9 +33,10 @@ and every fact about them: made once, and asked by everyone. Pure: no map, no cl
 
 ```ts
 NetworkFacts.planToOpen(network, asked); // the plan a city opens on, before its facts are made with it
-const facts = NetworkFacts.create(network, { plan, today }); // the network as stored; a plan built on it, if asked for
+const facts = NetworkFacts.create(network, { plan, hidden, today }); // the network as stored; a plan built on it, if asked for; lines hidden left out
 facts.range; // { start, end, today }
-facts.plan; // the plan built, or null
+facts.plan; // the plan built, or null (none where it builds on a line hidden)
+facts.hidden; // the lines hidden
 facts.planOnly; // never built: only plans
 facts.plans(); // every plan, with what it would add
 facts.summary(); // the city summed up, for a list of cities
@@ -86,7 +87,7 @@ network's `NetworkFacts`. A feature picks its channel by what it is.
 
 ### Props: `update(props: Partial<MapProps>)`
 
-`padding`, `cover`, `theme`, `viewMode`, `stationLabels`, `visibleLines`, `focusedLines`, `speed`,
+`padding`, `cover`, `theme`, `viewMode`, `stationLabels`, `focusedLines`, `speed`,
 `camera`, `boundary`, `selectedStation`, `overlay` (a route, a reach, coverage).
 
 - **The app owns them; the map never changes one.** It acts on them and reports facts as events;

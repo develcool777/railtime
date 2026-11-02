@@ -16,13 +16,11 @@ import { easeInOut } from '../support/drawing.utils';
  * nothing, so MapLibre is left to pan and zoom. Knows no map, only the layers.
  */
 export class FrameRenderer {
-  /** Lines the user has toggled on. */
-  public visibleLines: Set<string>;
   /** The network, its history, the player and the layers. */
   private readonly parts: FrameParts;
   /** Everything already on the map at the cursor. */
   private snapshot: NetworkSnapshot | null = null;
-  /** The snapshot needs rebuilding: the cursor, toggles or theme changed. */
+  /** The snapshot needs rebuilding: the cursor or theme changed. */
   private stale = true;
   /** The next frame shows stations without their pop-in. */
   private instant = true;
@@ -35,11 +33,10 @@ export class FrameRenderer {
 
   public constructor(parts: FrameParts) {
     this.parts = parts;
-    this.visibleLines = new Set(parts.index.lineIds);
   }
 
   /**
-   * Rebuilds the snapshot next frame: the cursor, the toggles or the theme changed.
+   * Rebuilds the snapshot next frame: the cursor or the theme changed.
    *
    * @param instant - Show the stations at once, with no pop-in: after a jump in time, or a new style.
    */
@@ -68,7 +65,6 @@ export class FrameRenderer {
       timeline,
       cursor: player.cursor,
       identityProgress: identityPlaying ? easeInOut(player.progress) : null,
-      visibleLines: this.visibleLines,
       baseColor,
     };
   }

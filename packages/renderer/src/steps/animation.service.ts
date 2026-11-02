@@ -156,7 +156,7 @@ export class StepAnimation {
    */
   private drawSegment(frame: StepFrame, drawing: StepDrawing, plan: SegmentPlan, frontKm: number): void {
     const { segment } = plan;
-    const lines = (this.stretch?.linesBySegment.get(segment.index) ?? []).filter(line => frame.state.visibleLines.has(line));
+    const lines = this.stretch?.linesBySegment.get(segment.index) ?? [];
     const drawnKm = Math.min(segment.lengthKm, frontKm - plan.startKm);
     if (lines.length === 0 || drawnKm <= 0) return;
     const coordinates = plan.fromStationA
@@ -241,7 +241,6 @@ export class StepAnimation {
       .some(
         lineSegment =>
           !step.lines.includes(lineSegment.line) &&
-          state.visibleLines.has(lineSegment.line) &&
           state.timeline.isOpen(lineSegment, state.cursor) &&
           state.timeline.servesStation(station, lineSegment.line, state.cursor),
       );
@@ -249,8 +248,7 @@ export class StepAnimation {
   }
 
   /**
-   * Marks a station as reached by a line this frame, unless the line is hidden or the station has
-   * not opened on it yet.
+   * Marks a station as reached by a line this frame, unless the station has not opened on it yet.
    *
    * @param frame - The frame.
    * @param drawing - The drawing to mark it in.
@@ -259,7 +257,7 @@ export class StepAnimation {
    */
   private reach(frame: StepFrame, drawing: StepDrawing, station: string, line: string): void {
     const { state } = frame;
-    if (!state.visibleLines.has(line) || !state.timeline.servesStation(station, line, state.cursor)) return;
+    if (!state.timeline.servesStation(station, line, state.cursor)) return;
     const resolved = resolveLine(state, line);
     const served = drawing.reached.get(station) ?? new Map();
     served.set(resolved.id, resolved.color);

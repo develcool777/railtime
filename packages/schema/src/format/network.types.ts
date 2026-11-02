@@ -22,11 +22,11 @@ export type NetworkInfo = {
   name: string;
   names?: Names;
   /**
-   * Part of the city, but left off its map until asked for: a network beside the city's own, as
-   * main-line suburban trains are beside a metro. Off, it is as if it were not there.
+   * Part of the city, but hidden when it opens, until shown: a network beside the city's own, as
+   * main-line suburban trains are beside a metro. Hidden, as any line can be, it is as if it were not there.
    */
-  optional?: boolean;
-  /** An optional network older than the city's own: where the timeline starts while it is shown, before the city's `start`. */
+  hidden?: boolean;
+  /** A network hidden at first that is older than the city's own: where the timeline starts while it shows, before the city's `start`. */
   start?: IsoDate;
 };
 

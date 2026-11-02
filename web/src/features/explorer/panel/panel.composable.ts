@@ -20,8 +20,7 @@ import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel
  */
 export const useExplorerPanel = (): ExplorerPanel => {
   const store = useExplorerStore();
-  const { section, views, openStation, openLine, timeMode, playing, time, step, facts, plan, plans, visibleLines, routeEnds, reachFrom, overlayResult } =
-    storeToRefs(store);
+  const { section, views, openStation, openLine, timeMode, playing, time, step, facts, plan, plans, routeEnds, reachFrom, overlayResult } = storeToRefs(store);
 
   const lines = computed(() => facts.value?.lines() ?? []);
   const changes = computed(() => facts.value?.changes() ?? []);
@@ -30,13 +29,6 @@ export const useExplorerPanel = (): ExplorerPanel => {
 
   /** The network at the moment the map shows: every question answered for then. */
   const now = computed(() => (facts.value && time.value ? facts.value.asOf(time.value) : null));
-
-  const visible = computed(() => new Set(visibleLines.value ?? lines.value.map(line => line.id)));
-  const setVisible = (next: Set<string>) =>
-    store.showLines(
-      next,
-      lines.value.map(line => line.id),
-    );
 
   const lineDetails = computed(() => (openLine.value && now.value ? now.value.line(openLine.value) : null));
   const lineChanges = computed(() => {
@@ -74,7 +66,7 @@ export const useExplorerPanel = (): ExplorerPanel => {
       playing: timeMode.value === 'playing',
       hasPlan: plan.value !== undefined,
       lines: lines.value,
-      visible: visible.value,
+      hidden: facts.value?.hidden.length ?? 0,
       changes: changes.value,
       currentChange: currentChange.value,
       time: time.value,
@@ -127,8 +119,6 @@ export const useExplorerPanel = (): ExplorerPanel => {
     stations,
     stationColors,
     stationDirections,
-    visible,
-    setVisible,
     currentChange,
     panelTop,
     shownDate,

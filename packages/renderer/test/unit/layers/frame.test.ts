@@ -66,16 +66,6 @@ describe('FrameRenderer', () => {
     expect(minimap.networks.at(-1)?.planned).toEqual(planned);
   });
 
-  test('draws again when told the network changed, with only the lines toggled on', () => {
-    const { frames, fake } = framesOn('1935-01-01');
-    frames.draw(0, null);
-    frames.visibleLines = new Set(['blue']);
-    frames.redraw();
-    frames.draw(16, null);
-    const lines = fake.data.get(SOURCES.lines) as FeatureCollection<LineFeature>;
-    expect(new Set(lines.features.map(feature => feature.properties.line))).toEqual(new Set(['blue']));
-  });
-
   test('plays a step frame by frame, counting its new stations, and clears it from the map and the minimap once it ends', () => {
     const { frames, fake, playback, minimap } = framesOn('1905-01-01');
     frames.draw(0, null);

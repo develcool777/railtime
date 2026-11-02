@@ -6,7 +6,7 @@ import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 const london = cityNetwork('london');
-// London as it opens: its optional networks off.
+// London as it opens: National Rail hidden.
 const { index, timeline } = playbackOf(london);
 const stepsOn = (date: string) => timeline.steps.filter(step => step.time === toTimestamp(date));
 const startOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationA : segment.stationB);
@@ -233,8 +233,9 @@ describe('London', () => {
   );
 
   describe('with National Rail shown', () => {
-    const shown = ['national-rail'];
-    const railSteps = playbackOf(london, { networks: shown }).timeline.steps;
+    // Nothing hidden.
+    const shown: string[] = [];
+    const railSteps = playbackOf(london, { hidden: shown }).timeline.steps;
     const railStepsOn = (date: string) => railSteps.filter(step => step.time === toTimestamp(date));
     const stationsOf = (step: (typeof railSteps)[number] | undefined) => {
       if (step?.kind === 'open') return new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB]));
@@ -268,7 +269,7 @@ describe('London', () => {
       const croydon = railSteps.find(step => step.kind === 'open' && step.line === 'southern');
       expect(croydon?.time).toBe(toTimestamp('1839-06-05'));
       expect(stationsOf(croydon)).toContain('west-croydon');
-      const { index: railIndex } = playbackOf(london, { networks: shown });
+      const { index: railIndex } = playbackOf(london, { hidden: shown });
       const linesOn = new Map<unknown, string[]>();
       for (const { segment, line } of railIndex.lineSegmentsAt('forest-hill')) linesOn.set(segment, [...(linesOn.get(segment) ?? []), line]);
       expect([...linesOn.values()].map(lines => lines.sort())).toEqual([
@@ -285,13 +286,13 @@ describe('London', () => {
     });
 
     test('is at its known size today, National Rail with it', () => {
-      const snapshot = snapshotOf(playbackOf(london, { networks: shown }));
+      const snapshot = snapshotOf(playbackOf(london, { hidden: shown }));
       expect(snapshot.stats.stations).toBe(601);
       expect(snapshot.stats.lines).toBe(24);
     });
 
     test('plays its whole history, every step, drawing frames without errors', () => {
-      const played = playWholeHistory(london, { networks: shown });
+      const played = playWholeHistory(london, { hidden: shown });
       expect(played.started).toBe(played.steps);
       expect(played.cursor).toBe(played.steps);
     }, 30_000);
@@ -303,4 +304,16 @@ describe('London', () => {
       expect(played.cursor).toBe(played.steps);
     });
   });
+
+  test('plays its whole history with the Metropolitan hidden, the years other lines were drawn as it gone with it', () => {
+    const hidden = playbackOf(london, { hidden: ['national-rail', 'metropolitan'] });
+    expect(hidden.index.lineSegments.some(lineSegment => lineSegment.line === 'metropolitan')).toBe(false);
+    expect(hidden.timeline.steps.some(step => step.kind === 'open' && step.line === 'metropolitan')).toBe(false);
+    // The Circle, drawn as the Metropolitan until 1949, comes only then, as itself.
+    const circle = hidden.timeline.steps.find(step => step.kind === 'open' && step.line === 'circle');
+    expect(circle?.time).toBe(toTimestamp('1949-01-01'));
+    const played = playWholeHistory(london, { hidden: ['national-rail', 'metropolitan'] });
+    expect(played.started).toBe(played.steps);
+    expect(played.cursor).toBe(played.steps);
+  }, 30_000);
 });

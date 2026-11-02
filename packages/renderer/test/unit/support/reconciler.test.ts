@@ -56,9 +56,9 @@ describe('ReconcilerUtils', () => {
       const current = {
         ...PROPS,
         overlay: { kind: 'route' as const, from: 'a', to: 'b', preference: 'fastest' as const },
-        visibleLines: ['a', 'b'],
+        focusedLines: ['a', 'b'],
       };
-      expect(stateChanges(current, { overlay: { preference: 'fastest', to: 'b', from: 'a', kind: 'route' }, visibleLines: ['a', 'b'] })).toEqual({});
+      expect(stateChanges(current, { overlay: { preference: 'fastest', to: 'b', from: 'a', kind: 'route' }, focusedLines: ['a', 'b'] })).toEqual({});
     });
 
     test('gives only the parts that differ', () => {
@@ -69,9 +69,9 @@ describe('ReconcilerUtils', () => {
     });
 
     test('tells apart a list in another order, a list from none, and an overlay of another kind', () => {
-      const current = { ...PROPS, visibleLines: ['a', 'b'], overlay: { kind: 'reach' as const, from: 'a' } };
-      expect(stateChanges(current, { visibleLines: ['b', 'a'] })).toEqual({ visibleLines: ['b', 'a'] });
-      expect(stateChanges(current, { visibleLines: null })).toEqual({ visibleLines: null });
+      const current = { ...PROPS, focusedLines: ['a', 'b'], overlay: { kind: 'reach' as const, from: 'a' } };
+      expect(stateChanges(current, { focusedLines: ['b', 'a'] })).toEqual({ focusedLines: ['b', 'a'] });
+      expect(stateChanges(current, { focusedLines: null })).toEqual({ focusedLines: null });
       expect(stateChanges(current, { overlay: { kind: 'coverage', metres: 800 } })).toEqual({ overlay: { kind: 'coverage', metres: 800 } });
       expect(stateChanges(current, { overlay: null })).toEqual({ overlay: null });
     });

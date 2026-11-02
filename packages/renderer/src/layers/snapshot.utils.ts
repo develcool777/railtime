@@ -9,7 +9,7 @@ import type { LngLat } from '@railtime/core/geometry.types';
  * so the track already on the map makes room before the new line draws in.
  *
  * @param state - The frame's render state.
- * @param lineSegments - The visible line segments.
+ * @param lineSegments - The line segments.
  * @param resolved - Each line as drawn.
  * @param stepPlaying - A step is playing at the cursor.
  * @returns The lines on each segment, in side-by-side order.
@@ -56,9 +56,8 @@ const linkTransfers = (state: RenderState, stations: Map<string, StationLines>):
 export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): NetworkSnapshot => {
   const { timeline, cursor, index } = state;
   const resolved = new Map(index.lineIds.map(line => [line, resolveLine(state, line)]));
-  const visible = index.lineSegments.filter(lineSegment => state.visibleLines.has(lineSegment.line));
   const closingNow = (lineSegment: LineSegment) => stepPlaying && timeline.closesAt(lineSegment, cursor);
-  const sideBySide = buildSideBySide(state, visible, resolved, stepPlaying);
+  const sideBySide = buildSideBySide(state, index.lineSegments, resolved, stepPlaying);
 
   const lines: LineFeature[] = [];
   const planned: LineFeature[] = [];
@@ -71,7 +70,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   const segmentsOnMap = new Set<number>();
   const linesOnMap = new Set<string>();
 
-  for (const lineSegment of visible) {
+  for (const lineSegment of index.lineSegments) {
     const { segment } = lineSegment;
     // Track a line is leaving is a ghost as it goes; suspended, until its line returns there. Closed for good, it is gone.
     const closing = closingNow(lineSegment);

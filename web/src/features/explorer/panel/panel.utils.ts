@@ -45,8 +45,8 @@ export const lineTop = (line: LineDetails, backLabel: string): PanelTopContent =
 export const sectionTop = (input: SectionTopInput): PanelTopContent => {
   const { section, playing, time, changes, currentChange } = input;
   if (section === 'lines') {
-    const shown = input.lines.filter(line => input.visible.has(line.id)).length;
-    return { title: input.label, context: `${counted(input.lines.length, 'line')} · ${shown} shown` };
+    const count = counted(input.lines.length, 'line');
+    return { title: input.label, context: input.hidden > 0 ? `${count} · ${input.hidden} hidden` : count };
   }
   if (section === 'stations') return { title: input.label, context: `${counted(input.stationCount, 'station')} on the map` };
   if (section === 'changes') {

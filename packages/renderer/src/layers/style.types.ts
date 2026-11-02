@@ -7,8 +7,6 @@ export type RenderState = {
   cursor: number;
   /** How far the identity step at the cursor has played (0..1), or `null` when none is playing. */
   identityProgress: number | null;
-  /** Lines the user has toggled on. */
-  visibleLines: Set<string>;
   /** A line's own colour in the current theme. */
   baseColor: (line: string) => string;
 };

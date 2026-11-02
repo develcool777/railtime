@@ -8,7 +8,7 @@ it (`../../ARCHITECTURE.md`).
 ```ts
 import { NetworkFacts } from '@railtime/network/facts.service';
 
-const facts = NetworkFacts.create(network, { plan, today }); // a plan built on it, if one is asked for
+const facts = NetworkFacts.create(network, { plan, hidden, today }); // a plan built on it, if one is asked for; lines hidden left out
 facts.range; // { start, end, today }: end is past today when a dated change is
 facts.summary(); // the city summed up, for a list of cities
 facts.plans(); // every plan, with what it would add

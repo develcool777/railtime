@@ -23,8 +23,8 @@ export type SectionTopInput = {
   /** A plan is shown: what plays is its future. */
   hasPlan: boolean;
   lines: LineInfo[];
-  /** The lines shown on the map. */
-  visible: Set<string>;
+  /** How many lines are hidden. */
+  hidden: number;
   changes: ChangeInfo[];
   /** The change the map is at, if any. */
   currentChange: number | null;

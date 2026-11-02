@@ -58,7 +58,7 @@ const parseSection = (text: string | undefined): Section | undefined => SECTIONS
 /**
  * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
  *
- * @param query - The address's query: `date`, `map`, `station`, `plan`, `with`, `tab`, `walk`, `line`, `view`, `names`, `mapOnly`.
+ * @param query - The address's query: `date`, `map`, `station`, `plan`, `tab`, `walk`, `line`, `view`, `names`, `mapOnly`.
  * @returns What it asks for.
  */
 export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
@@ -66,7 +66,6 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
   const view = parseView(single(query.map) ?? '');
   const station = single(query.station);
   const plan = single(query.plan);
-  const networks = (single(query.with) ?? '').split(',').filter(network => SLUG.test(network));
   const section = parseSection(single(query.tab));
   const walk = coverageDistanceOf(single(query.walk));
   const line = single(query.line);
@@ -75,7 +74,6 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
     ...(view ? { view } : {}),
     ...(station && SLUG.test(station) ? { station } : {}),
     ...(plan && SLUG.test(plan) ? { plan } : {}),
-    ...(networks.length > 0 ? { networks } : {}),
     ...(section ? { section } : {}),
     ...(walk && walk !== COVERAGE_DEFAULT_METRES ? { walk } : {}),
     ...(line && SLUG.test(line) ? { line } : {}),
@@ -104,13 +102,12 @@ export const sameQuery = (first: ExplorerQuery, second: ExplorerQuery): boolean 
  * @returns The query.
  */
 export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
-  const { date, view, station, plan, networks, section, walk, line, viewMode, stationNames, mapOnly } = state;
+  const { date, view, station, plan, section, walk, line, viewMode, stationNames, mapOnly } = state;
   return {
     ...(date === undefined ? {} : { date: toIsoDate(date) }),
     ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
     ...(station ? { station } : {}),
     ...(plan ? { plan } : {}),
-    ...(networks?.length ? { with: networks.join(',') } : {}),
     ...(section ? { tab: section } : {}),
     ...(walk ? { walk: String(walk) } : {}),
     ...(line ? { line } : {}),

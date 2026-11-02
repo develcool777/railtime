@@ -176,13 +176,16 @@ any other. A line's fast track beside another's stopping one runs on the same se
 by side, and each station it runs through without calling says so (`passes`): never a segment of
 its own laid over theirs, which draws one line on top of the other.
 
-A network beside the city's own (main-line suburban trains beside a metro) is `optional`: in the city's
-data, with its history, but off until shown (the Lines panel's switch, `?with=<network>`). Off, it is
-as if it were not there: `NetworkFacts` leaves out its lines, the track and stations only it has, and
-its plans, so counts, history and the city list are the city's own; a station only it has that a plan
-builds on is the plan's own again. No line outside it may lean on one of its lines (an alias). One
-older than the city gives its own `start`, where the timeline starts while it is shown; the schema
-refuses a line opening before its timeline starts, which would never play.
+Any line, or a network's lines at once, can be hidden (the Lines panel's eyes, for the visit). Hidden, it is as if it were not there:
+`NetworkFacts.create(network, { hidden })` leaves out the line, the track and stations only it has,
+and a plan's sections on it (the plan with none left), so every count, the history, the coverage and the routes are without
+it; a station only it has that a plan builds on is the plan's own again; the years another line was
+drawn as it (an alias) go too, that line shown only once it is its own. There is no other hiding: the map
+draws what the facts have. A network beside the city's own (main-line suburban trains beside a
+metro) is `hidden` at first: in the city's data, with its history, but hidden until shown, so the
+city list counts the city's own. One older than the city gives its own `start`, where the timeline
+starts while one of its lines shows; the schema refuses a line opening before its timeline starts,
+which would never play.
 
 Each city's test lists every date a line comes apart (`lineSplits` in `test/support/history.utils.ts`),
 with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just

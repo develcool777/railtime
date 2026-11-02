@@ -36,10 +36,6 @@ export type ExplorerPanel = {
   stationColors: ComputedRef<Map<string, LineColor[]>>;
   /** The stops either side of the station whose view is open, on each of its lines, by line. */
   stationDirections: ComputedRef<Map<string, LineDirection[]>>;
-  /** The lines shown on the map. */
-  visible: ComputedRef<Set<string>>;
-  /** Shows these lines on the map, and hides the rest. */
-  setVisible: (next: Set<string>) => void;
   /** The change the map is at, for the Changes list. */
   currentChange: ComputedRef<number | null>;
   /** What the panel's top says. */
