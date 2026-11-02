@@ -319,9 +319,9 @@
         {"line":"d","stations":["pankrac","nusle","namesti-miru","havlickovo-namesti"]},
         {"line":"d","stations":["havlickovo-namesti","ohrada","chmelnice","harfa","vysocanska"]},
         {"line":"d","stations":["vysocanska","prosek","letnany-i"]},
+        {"line":"d","stations":["letnany-i","letnany-ii","kbely-i","kbely-ii"]},
         {"line":"e","stations":["hradcanska","pohorelec","andel","smichovske-nadrazi"]},
         {"line":"e","stations":["smichovske-nadrazi","kavci-hory","pankrac"]},
-        {"line":"d","stations":["letnany-i","letnany-ii","kbely-i","kbely-ii"]},
         {"line":"e","stations":["hradcanska","letenske-namesti","vltavska","delnicka","palmovka","chmelnice"]},
         {"line":"e","stations":["pankrac","strasnicka","chmelnice"]}
       ]
