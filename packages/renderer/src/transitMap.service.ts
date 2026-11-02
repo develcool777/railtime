@@ -3,7 +3,7 @@ import { EventEmitter } from './support/eventEmitter.service';
 import { BuildingsLayer } from './layers/buildings.service';
 import { CoverageLayer } from './overlay/coverage.service';
 import { ActiveStepLayer, NetworkLayer } from './layers/network.service';
-import { basemapFont, recolorBasemap } from './layers/basemap.utils';
+import { basemapFont, recolorBasemap, showBasemapLabels } from './layers/basemap.utils';
 import { LAYERS } from './layers/ids.constants';
 import type { MapLayer } from './layers/layer.service';
 import { FrameRenderer } from './layers/frame.service';
@@ -356,7 +356,7 @@ export class TransitMap {
       theme: () => {
         const palette = PALETTES[this.props.current.theme];
         this.minimap?.setPalette(palette);
-        recolorBasemap(this.map, palette, { labels: true });
+        recolorBasemap(this.map, palette, { labels: this.props.current.streetLabels });
         for (const layer of this.layers) layer.applyPalette(palette);
         this.frames.redraw();
         // A route's and a reach's colours are the theme's.
@@ -368,6 +368,7 @@ export class TransitMap {
         this.camera.tilt();
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
+      streetLabels: () => showBasemapLabels(this.map, this.props.current.streetLabels),
       focusedLines: () => this.applyBackdrop(),
       selectedStation: () => {
         const station = this.props.current.selectedStation;

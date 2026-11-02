@@ -6,6 +6,11 @@ export const HELP_TOPICS: { title: string; items: { icon?: string; text?: string
       { icon: 'i-lucide-mouse-pointer-click', label: 'A station', description: 'Click one for its lines, when each came, and the stops either side' },
       { icon: 'i-lucide-locate-fixed', label: 'Fit the network', description: 'Back to the whole city' },
       { icon: 'i-lucide-captions', label: 'Station names', description: 'Name the stations, or show only their dots: crossed out while they are hidden' },
+      {
+        icon: 'i-lucide-type',
+        label: 'Street names',
+        description: 'Name the city’s streets and places, or leave only the stations named: crossed out while they are hidden',
+      },
       { text: '3D', label: 'Flat or 3D', description: 'Tilt the map close up, over the city’s buildings; 2D lays it flat again' },
       { icon: 'i-lucide-maximize-2', label: 'Map only', description: 'Hide everything but the map, full screen' },
     ],

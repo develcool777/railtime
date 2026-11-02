@@ -13,6 +13,7 @@ export const SHORTCUTS: Shortcut[] = [
   { key: 'arrowleft', kbds: ['←'], label: 'A year back; while playing, the change before', action: 'back' },
   { key: 'arrowright', kbds: ['→'], label: 'A year on; while playing, the next change', action: 'forward' },
   { key: 'n', kbds: ['N'], label: 'Show or hide station names', action: 'names' },
+  { key: 's', kbds: ['S'], label: 'Show or hide street names', action: 'streets' },
   { key: 'd', kbds: ['D'], label: 'See in 3D, or flat', action: 'view3d' },
   { key: 'f', kbds: ['F'], label: 'Map only', action: 'mapOnly' },
 ];

@@ -71,6 +71,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   // How the map is seen.
   const viewMode = ref<ViewMode>('2d');
   const stationNames = ref(true);
+  const streetNames = ref(true);
   const player = useCookie<PlayerSettings>('railtime-player', { default: () => ({ speed: DEFAULT_SPEED, camera: 'follow', minimap: true }) });
 
   // What the map says, and the network.
@@ -126,6 +127,7 @@ export const useExplorerStore = defineStore('explorer', () => {
           theme: theme.value,
           viewMode: viewMode.value,
           stationNames: stationNames.value,
+          streetNames: streetNames.value,
           timeMode: timeMode.value,
           openStation: openStation.value,
           openLine: openLine.value,
@@ -168,6 +170,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     boundary.value = null;
     viewMode.value = address.viewMode ?? '2d';
     stationNames.value = address.stationNames ?? true;
+    streetNames.value = address.streetNames ?? true;
     time.value = null;
     step.value = null;
     overlayResult.value = null;
@@ -462,6 +465,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     boundary,
     viewMode,
     stationNames,
+    streetNames,
     player,
     time,
     step,

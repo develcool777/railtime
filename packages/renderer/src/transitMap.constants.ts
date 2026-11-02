@@ -18,6 +18,7 @@ export const DEFAULT_MAP_PROPS: Omit<MapProps, 'facts'> = {
   theme: 'dark',
   viewMode: '2d',
   stationLabels: true,
+  streetLabels: true,
   focusedLines: null,
   speed: 1,
   camera: 'follow',

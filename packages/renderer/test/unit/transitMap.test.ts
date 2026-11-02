@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import type { LayerSpecification } from 'maplibre-gl';
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { FeatureCollection } from '../../src/layers/snapshot.types';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
@@ -17,10 +18,11 @@ import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
  *
  * @param props - Its props at first.
  * @param on - Its listeners, besides the one recording every event.
+ * @param style - The basemap's layers.
  * @returns The map, the stand-in, a frame stepper and the events delivered, in order.
  */
-const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}) => {
-  const fake = fakeMap();
+const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, style: LayerSpecification[] = []) => {
+  const fake = fakeMap(style);
   const pending: ((now: number) => void)[] = [];
   const events: { name: string; payload: unknown }[] = [];
   const recordAll = Object.fromEntries(
@@ -103,6 +105,17 @@ describe('TransitMap', () => {
     expect(fake.layers.get(LAYERS.labels)?.layout.visibility).toBe('none');
     expect(featuresIn(fake, SOURCES.selection)).toHaveLength(1);
     expect(fake.moves.some(move => move.kind === 'ease' && move.options.pitch === VIEW_3D_PITCH)).toBe(true);
+  });
+
+  test("leaves the city's streets unnamed from the start, as it is set, and a theme does not name them again", () => {
+    const style = [{ id: 'street-names', type: 'symbol', source: 'tiles', 'source-layer': 'transportation_name' }] as LayerSpecification[];
+    const { map, fake, ready } = mapOf({ streetLabels: false }, {}, style);
+    ready();
+    expect(fake.layers.get('street-names')?.layout.visibility).toBe('none');
+    map.update({ theme: 'light' });
+    expect(fake.layers.get('street-names')?.layout.visibility).toBe('none');
+    map.update({ streetLabels: true });
+    expect(fake.layers.get('street-names')?.layout.visibility).toBe('visible');
   });
 
   test('flies to a station selected from the start, and no later prop moves the camera off it', () => {
