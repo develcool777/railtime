@@ -85,6 +85,34 @@ describe('NetworksUtils', () => {
       expect(shown.plans?.extension?.stations?.x).toEqual({ name: 'X', coordinate: [0.0576, 51.5] });
     });
 
+    test("makes track only it had the plan's own where a section links its stations, unless the plan says where it runs", () => {
+      const network = hiddenNetwork();
+      network.plans!.extension!.sections.push({ line: 'red', stations: ['d', 'x'] });
+      const shown = withLinesHidden(network, ['grey']).network;
+      expect(shown.segments.some(segment => segment.stationB === 'x')).toBe(false);
+      expect(shown.plans?.extension?.track).toEqual([
+        {
+          stationA: 'd',
+          stationB: 'x',
+          coordinates: [
+            [0.0432, 51.5],
+            [0.0576, 51.5],
+          ],
+        },
+      ]);
+      const given = {
+        stationA: 'x',
+        stationB: 'd',
+        coordinates: [
+          [0.0576, 51.5],
+          [0.05, 51.49],
+          [0.0432, 51.5],
+        ] as [number, number][],
+      };
+      network.plans!.extension!.track = [given];
+      expect(withLinesHidden(network, ['grey']).network.plans?.extension?.track).toEqual([given]);
+    });
+
     test("starts the timeline at an older network while one of its lines shows, and at the city's own with them hidden", () => {
       const network = hiddenNetwork();
       network.networks.rail = { ...network.networks.rail!, start: '1850-01-01' };
