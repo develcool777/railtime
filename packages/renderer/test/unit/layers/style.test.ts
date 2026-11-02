@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { byZoom, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
+import { byZoom, highlightedOpacity, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
@@ -8,6 +8,13 @@ describe('LayerStyleUtils', () => {
   describe('byZoom', () => {
     test('interpolates from the whole city at zoom 10 to a neighbourhood at 14', () => {
       expect(byZoom(1, 3)).toEqual(['interpolate', ['linear'], ['zoom'], 10, 1, 14, 3]);
+    });
+  });
+
+  describe('highlightedOpacity', () => {
+    test('raises the opacity to full at full highlight, as much as the fade has left', () => {
+      expect(highlightedOpacity(0.8)).toEqual(['+', 0.8, ['*', ['get', 'highlight'], expect.closeTo(0.2, 9)]]);
+      expect(highlightedOpacity(0.8, 0.5)).toEqual(['+', 0.8, ['*', ['get', 'highlight'], expect.closeTo(0.1, 9)]]);
     });
   });
 

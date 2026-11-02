@@ -34,6 +34,17 @@ export const highlightedWidth = (atCityZoom: number, atStreetZoom: number, fade 
   byZoom(['+', atCityZoom, ['*', ['get', 'highlight'], atCityZoom * 0.8 * fade]], ['+', atStreetZoom, ['*', ['get', 'highlight'], atStreetZoom * 0.6 * fade]]);
 
 /**
+ * An opacity that rises with the feature's `highlight` property: how a plan's new track stands out,
+ * its width, which its dashes are measured in, left as it is. The fade is the layer's, as for
+ * `highlightedWidth`.
+ *
+ * @param opacity - The normal opacity.
+ * @param fade - How much of the highlight is left, 0..1.
+ * @returns A MapLibre expression: full opacity at full highlight.
+ */
+export const highlightedOpacity = (opacity: number, fade = 1): ExpressionSpecification => ['+', opacity, ['*', ['get', 'highlight'], (1 - opacity) * fade]];
+
+/**
  * The offset that puts lines on shared track side by side: the feature's `offset` slot, about one line width apart.
  *
  * @returns A MapLibre expression.

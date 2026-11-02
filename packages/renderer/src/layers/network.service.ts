@@ -4,7 +4,7 @@ import { MapLayer } from './layer.service';
 import type { NetworkSnapshot } from './snapshot.types';
 import type { Palette } from './theme.types';
 import type { StepDrawing } from '../steps/animation.types';
-import { byZoom, highlightedWidth, sideBySideOffset } from './style.utils';
+import { byZoom, highlightedOpacity, highlightedWidth, sideBySideOffset } from './style.utils';
 
 /** How opaque each of the layer's line layers is with every line in focus; the glow's is the theme's. */
 const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned]: 0.85, [LAYERS.transferCasing]: 1, [LAYERS.transferCore]: 1 } as const;
@@ -185,11 +185,12 @@ export class ActiveStepLayer extends MapLayer {
         source,
         filter: planned,
         layout: { 'line-join': 'round' },
+        // Its dashes are measured in its width: it stands out by its opacity, so they never change size.
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': highlightedWidth(2.2, 5.5),
+          'line-width': byZoom(2.2, 5.5),
           'line-offset': sideBySideOffset(),
-          'line-opacity': FULL_OPACITY[LAYERS.planned],
+          'line-opacity': highlightedOpacity(FULL_OPACITY[LAYERS.planned]),
           'line-dasharray': PLANNED_DASHES,
         },
       });
@@ -251,7 +252,8 @@ export class ActiveStepLayer extends MapLayer {
         [LAYERS.growingGlow, LAYERS.growingLines],
       ] as const)
         this.setWidths(glow, line, fade);
-      for (const planned of [LAYERS.activePlanned, LAYERS.growingPlanned]) this.map.setPaintProperty(planned, 'line-width', highlightedWidth(2.2, 5.5, fade));
+      for (const planned of [LAYERS.activePlanned, LAYERS.growingPlanned])
+        this.map.setPaintProperty(planned, 'line-opacity', highlightedOpacity(FULL_OPACITY[LAYERS.planned], fade));
     }
     const growing = { type: 'FeatureCollection', features: [...drawing.growing.features, ...drawing.heads.features] };
     for (const [source, data] of [
