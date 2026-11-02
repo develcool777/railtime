@@ -22,3 +22,6 @@ export type BuiltPlan = {
 
 /** A section being built: its line, the segments it puts the line on, and its infill stations. */
 export type SectionWorks = { line: string; segments: Segment[]; infills: string[] };
+
+/** A way a track runs, as a step of 1 km: east, then north. */
+export type Heading = [number, number];

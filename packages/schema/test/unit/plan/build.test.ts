@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { turnDegrees } from '@railtime/core/geometry.utils';
 import { buildPlan, firstPlanOf, isPlanOnly } from '../../../src/plan/build.utils';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
 
@@ -35,17 +36,41 @@ describe('PlanBuildUtils', () => {
       ]);
     });
 
-    test('lays new track straight, with none of its lines dated on it', () => {
+    test("lays new track the plan says nothing of on from its line's track, with none of its lines dated on it", () => {
       const { network } = buildPlan(plannedNetwork(), 'extension');
-      expect(network.segments[2]).toEqual({
-        stationA: 'c',
-        stationB: 'd',
-        lines: {},
-        coordinates: [
-          [0.02, 51.5],
-          [0.03, 51.5],
-        ],
-      });
+      const [toC, laid] = [network.segments[1]!, network.segments[2]!];
+      expect({ ...laid, coordinates: undefined }).toEqual({ stationA: 'c', stationB: 'd', lines: {}, coordinates: undefined });
+      expect([laid.coordinates[0], laid.coordinates.at(-1)]).toEqual([
+        [0.02, 51.5],
+        [0.03, 51.5],
+      ]);
+      // On from the way the red line comes into C, from B: no corner there.
+      expect(turnDegrees(toC.coordinates.at(-2)!, [0.02, 51.5], laid.coordinates[1]!)).toBeLessThan(1);
+    });
+
+    test('curves new track the plan says nothing of through its stations, as its trains run, never turning a corner at one', () => {
+      const network = plannedNetwork();
+      const extension = network.plans!.extension!;
+      // On from D a right angle to the north, to E.
+      extension.stations!.e = { name: 'E', coordinate: [0.03, 51.509] };
+      extension.sections[1] = { line: 'red', stations: ['c', 'd', 'e'] };
+      const { network: built } = buildPlan(network, 'extension');
+      const [toD, toE] = [built.segments.find(segment => segment.stationB === 'd')!, built.segments.find(segment => segment.stationA === 'd')!];
+      // Into D and out of it on one heading, a curve either side: over the 80 m round D it bends a few degrees, not the right angle a corner would.
+      expect(turnDegrees(toD.coordinates.at(-2)!, [0.03, 51.5], toE.coordinates[1]!)).toBeLessThan(15);
+      expect(toD.coordinates.at(-1)).toEqual([0.03, 51.5]);
+      expect(toE.coordinates.at(-1)).toEqual([0.03, 51.509]);
+    });
+
+    test("lays new track where the plan's track runs, given either way round", () => {
+      const network = plannedNetwork();
+      const bowed: [number, number][] = [
+        [0.03, 51.5],
+        [0.025, 51.5003],
+        [0.02, 51.5],
+      ];
+      network.plans!.extension!.track = [{ stationA: 'd', stationB: 'c', coordinates: bowed }];
+      expect(buildPlan(network, 'extension').network.segments[2]).toEqual({ stationA: 'c', stationB: 'd', lines: {}, coordinates: bowed.toReversed() });
     });
 
     test("keeps a section's segments when a later section splits them", () => {

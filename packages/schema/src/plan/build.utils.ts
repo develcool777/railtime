@@ -13,14 +13,18 @@ export const buildPlan = (network: Network, planId: string): BuiltPlan => {
   const { plans, ...today } = network;
   const plan = plans?.[planId];
   if (!plan) return { network: today, sections: [] };
-  const works = new PlanBuilder({
-    ...today,
-    lines: { ...today.lines, ...plan.lines },
-    stations: { ...today.stations, ...plan.stations },
-    segments: [...today.segments],
-    ...(today.transfers || plan.transfers ? { transfers: [...(today.transfers ?? []), ...(plan.transfers ?? [])] } : {}),
-  });
+  const works = new PlanBuilder(
+    {
+      ...today,
+      lines: { ...today.lines, ...plan.lines },
+      stations: { ...today.stations, ...plan.stations },
+      segments: [...today.segments],
+      ...(today.transfers || plan.transfers ? { transfers: [...(today.transfers ?? []), ...(plan.transfers ?? [])] } : {}),
+    },
+    plan.track,
+  );
   for (const section of plan.sections) works.build(section);
+  works.curve();
   const position = new Map(works.network.segments.map((segment, index) => [segment, index]));
   return {
     network: works.network,

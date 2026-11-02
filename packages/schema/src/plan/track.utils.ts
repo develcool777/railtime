@@ -1,5 +1,9 @@
 import { clamp } from '@railtime/core/number.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
+import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
+import { cumulativeDistances, offsetKm, sliceAlong } from '@railtime/core/geometry.utils';
+import { HANDLE_SHARE, CURVE_STEP_KM, HEADING_SPAN_KM } from './track.constants.ts';
+import type { Heading } from './build.types';
 
 /**
  * Where a point falls on a track: the nearest point on it, and the track either side of it.
@@ -24,4 +28,64 @@ export const splitTrack = (coordinates: LngLat[], point: LngLat): [LngLat[], Lng
     [...coordinates.slice(0, best.after + 1), best.on],
     [best.on, ...coordinates.slice(best.after + 1)],
   ];
+};
+
+/**
+ * The point some km east and north of another (`offsetKm` turned round).
+ *
+ * @param from - The point.
+ * @param east - Km east.
+ * @param north - Km north.
+ * @returns The point there.
+ */
+const offsetBy = (from: LngLat, east: number, north: number): LngLat => [
+  from[0] + east / (Math.cos(from[1] * RADIANS_PER_DEGREE) * KM_PER_DEGREE_LONGITUDE_AT_EQUATOR),
+  from[1] + north / KM_PER_DEGREE_LATITUDE,
+];
+
+/**
+ * The way a track leaves its first point: towards its point `HEADING_SPAN_KM` along it, or its end
+ * if it is shorter.
+ *
+ * @param track - The track.
+ * @returns A step of 1 km that way, east and north; none for a track going nowhere.
+ */
+export const headingOf = (track: LngLat[]): Heading | null => {
+  const distances = cumulativeDistances(track);
+  const [east, north] = offsetKm(track[0]!, sliceAlong(track, distances, Math.min(HEADING_SPAN_KM, distances.at(-1) ?? 0)).at(-1) ?? track[0]!);
+  const length = Math.hypot(east, north);
+  return length > 0 ? [east / length, north / length] : null;
+};
+
+/**
+ * A track from one point to another that leaves the first along one heading and comes into the second
+ * along another, as a train's curves do: a cubic Bézier, each end's handle `HANDLE_SHARE` of the way
+ * along its heading, its points `CURVE_STEP_KM` apart. Along the line between them, it is straight.
+ *
+ * @param from - Where it starts.
+ * @param to - Where it ends.
+ * @param leaving - The heading it leaves `from` on.
+ * @param arriving - The heading it comes into `to` on.
+ * @returns The track, from `from` to `to`.
+ */
+export const curveBetween = (from: LngLat, to: LngLat, leaving: Heading, arriving: Heading): LngLat[] => {
+  const [east, north] = offsetKm(from, to);
+  const reach = Math.hypot(east, north) * HANDLE_SHARE;
+  // In km from `from`: its handles, then the end.
+  const points: [number, number][] = [
+    [0, 0],
+    [leaving[0] * reach, leaving[1] * reach],
+    [east - arriving[0] * reach, north - arriving[1] * reach],
+    [east, north],
+  ];
+  const steps = Math.max(1, Math.ceil(Math.hypot(east, north) / CURVE_STEP_KM));
+  return Array.from({ length: steps + 1 }, (_, step) => {
+    if (step === 0) return from;
+    if (step === steps) return to;
+    const along = step / steps;
+    const weights = [(1 - along) ** 3, 3 * along * (1 - along) ** 2, 3 * along ** 2 * (1 - along), along ** 3];
+    // Within bounds: four weights for the four points.
+    const [x, y] = points.reduce<[number, number]>((sum, point, index) => [sum[0] + point[0] * weights[index]!, sum[1] + point[1] * weights[index]!], [0, 0]);
+    return offsetBy(from, x, y);
+  });
 };

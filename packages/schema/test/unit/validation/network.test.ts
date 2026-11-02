@@ -73,6 +73,88 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toContain(`plan extension: section 2: ${extension.sections[2]!.line} again, after green: a line's sections go together`);
   });
 
+  test("takes a plan's track between two stations a section links, and refuses one that would never be laid", () => {
+    const network = plannedNetwork();
+    const extension = network.plans!.extension!;
+    // C to D, bowed a little north: a curve its trains take.
+    extension.track = [
+      {
+        stationA: 'd',
+        stationB: 'c',
+        coordinates: [
+          [0.03, 51.5],
+          [0.025, 51.5003],
+          [0.02, 51.5],
+        ],
+      },
+    ];
+    expect(problemsOf(network)).toEqual([]);
+    extension.track.push(
+      {
+        stationA: 'c',
+        stationB: 'd',
+        coordinates: [
+          [0.02, 51.5],
+          [0.03, 51.5],
+        ],
+      },
+      {
+        stationA: 'a',
+        stationB: 'd',
+        coordinates: [
+          [0, 51.5],
+          [0.03, 51.5],
+        ],
+      },
+      {
+        stationA: 'a',
+        stationB: 'c',
+        coordinates: [
+          [0, 51.5],
+          [0.02, 51.5],
+        ],
+      },
+      {
+        stationA: 'c',
+        stationB: 'x',
+        coordinates: [
+          [0.02, 51.5],
+          [0.03, 51.5],
+        ],
+      },
+    );
+    expect(problemsOf(network)).toEqual([
+      'plan extension: track c – d: given twice',
+      'plan extension: track a – d: between stations no section links',
+      'plan extension: track a – c: between stations no section links',
+      'plan extension: track a – c: between stations the network links already',
+      'plan extension: track c – x: unknown station x',
+      'plan extension: track c – x: between stations no section links',
+    ]);
+  });
+
+  test("holds a plan's track to a segment's: its ends on its stations, no turn sharper than its trains can", () => {
+    const network = plannedNetwork();
+    const extension = network.plans!.extension!;
+    // Ending 70 m short of D, and doubling back at its middle.
+    extension.track = [
+      {
+        stationA: 'c',
+        stationB: 'd',
+        coordinates: [
+          [0.02, 51.5],
+          [0.035, 51.5],
+          [0.025, 51.5001],
+          [0.029, 51.5],
+        ],
+      },
+    ];
+    expect(problemsOf(network)).toEqual([
+      'plan extension: segment c – d: its track turns 179° at point 1, sharper than its trains can',
+      'plan extension: segment c – d: its track ends 69 m from d',
+    ]);
+  });
+
   test('refuses a plan reusing an id the network has', () => {
     const network = plannedNetwork();
     network.plans!.extension!.stations!.a = { name: 'Another A', coordinate: [0, 51.6] };

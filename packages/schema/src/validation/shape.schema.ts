@@ -55,6 +55,7 @@ const planSchema = z.object({
   lines: z.record(z.string(), lineSchema).optional(),
   stations: z.record(z.string(), stationSchema).optional(),
   sections: z.array(z.object({ line: z.string(), stations: z.array(z.string()).min(2) })),
+  track: z.array(z.object({ stationA: z.string(), stationB: z.string(), coordinates: z.array(lngLat).min(2) })).optional(),
   transfers: z.array(transferSchema).optional(),
 });
 
