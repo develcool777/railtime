@@ -62,10 +62,10 @@ describe('ExplorerUtils', () => {
 
   describe('mapOverlayOf', () => {
     test("draws the section's own overlay, and none for a section without one", () => {
-      expect(mapOverlayOf('route', 'rest')).toBe('route');
+      expect(mapOverlayOf('route', 'timeline')).toBe('route');
       expect(mapOverlayOf('reach', 'timeline')).toBe('reach');
-      expect(mapOverlayOf('coverage', 'rest')).toBe('coverage');
-      expect(mapOverlayOf('lines', 'rest')).toBeNull();
+      expect(mapOverlayOf('coverage', 'timeline')).toBe('coverage');
+      expect(mapOverlayOf('lines', 'timeline')).toBeNull();
     });
 
     test('hides a route and a reach while playing, and keeps coverage, which grows with the network', () => {
@@ -94,7 +94,7 @@ describe('ExplorerUtils', () => {
   });
 
   describe('chromeOf', () => {
-    const desk = { phone: false, mapOnly: false, sheet: 'peek' as const, timeMode: 'rest' as const, minimap: true };
+    const desk = { phone: false, mapOnly: false, sheet: 'peek' as const, timeMode: 'timeline' as const, minimap: true };
 
     test('shows it all beside the map, the minimap only while playing', () => {
       expect(chromeOf(desk)).toEqual({ header: true, rail: true, panel: true, tools: true, timeControl: true, minimap: false, credits: 'line' });

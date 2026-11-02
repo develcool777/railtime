@@ -36,11 +36,6 @@
         </div>
 
         <USwitch
-          :modelValue="viewMode === '3d'"
-          label="See in 3D"
-          description="Close up, over the city’s buildings"
-          @update:modelValue="emit('viewMode', $event ? '3d' : '2d')" />
-        <USwitch
           v-if="!phone"
           :modelValue="settings.minimap"
           label="Minimap"
@@ -52,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { CameraMode, ViewMode } from '@railtime/renderer/transitMap.types';
+  import type { CameraMode } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
 
   import type { PlayerSettings } from '~/features/explorer/explorer.types';
@@ -60,12 +55,10 @@
 
   const props = defineProps<{
     settings: PlayerSettings;
-    /** How the map is seen: flat, or in 3D. */
-    viewMode: ViewMode;
     /** On a phone: no minimap. */
     phone: boolean;
   }>();
-  const emit = defineEmits<{ change: [change: Partial<PlayerSettings>]; viewMode: [mode: ViewMode] }>();
+  const emit = defineEmits<{ change: [change: Partial<PlayerSettings>] }>();
 
   const cameraDescription = computed(() => CAMERA_OPTIONS.find(option => option.value === props.settings.camera)?.description ?? '');
 </script>

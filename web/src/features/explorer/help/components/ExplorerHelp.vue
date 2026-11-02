@@ -3,7 +3,8 @@
     :open
     title="What you can do"
     description="The map, its history, and the panel beside it"
-    :ui="{ content: 'max-w-2xl' }"
+    :fullscreen="phone"
+    :ui="{ content: phone ? undefined : 'max-w-2xl' }"
     @update:open="emit('update:open', $event)">
     <template #body>
       <div class="flex flex-col gap-6">

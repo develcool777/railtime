@@ -4,14 +4,13 @@ import { draggedPanelWidth, mapPaddingFor, sheetHeightOf } from '~/features/expl
 
 describe('LayoutUtils', () => {
   describe('mapPaddingFor', () => {
-    test('keeps more room at the bottom as the time control grows', () => {
-      const bottoms = (['rest', 'timeline', 'playing'] as const).map(mode => mapPaddingFor(mode, null).bottom);
-      expect(bottoms).toEqual([...bottoms].sort((first, second) => first - second));
-      expect(new Set(bottoms).size).toBe(3);
+    test('keeps room at the bottom for the time control, more than at the top for the tools', () => {
+      const padding = mapPaddingFor(null);
+      expect(padding.bottom).toBeGreaterThan(padding.top);
     });
 
     test('on a phone, adds what the sheet covers', () => {
-      expect(mapPaddingFor('rest', 200).bottom - mapPaddingFor('rest', 100).bottom).toBe(100);
+      expect(mapPaddingFor(200).bottom - mapPaddingFor(100).bottom).toBe(100);
     });
   });
 

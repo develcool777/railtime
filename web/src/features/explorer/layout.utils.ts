@@ -2,10 +2,10 @@ import { clamp } from '@railtime/core/number.utils';
 import type { Padding } from '@railtime/renderer/transitMap.types';
 
 import { PANEL_WIDTH, SHEET_HEIGHTS, TAB_LABELS_HEIGHT } from '~/features/explorer/explorer.constants';
-import type { SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import type { SheetSnap } from '~/features/explorer/explorer.types';
 
-/** How tall the time control stands in each of its sizes, pixels, for the room the camera keeps clear of it. */
-const TIME_CONTROL_HEIGHTS: Record<TimeMode, number> = { rest: 80, timeline: 130, playing: 150 };
+/** How tall the time control stands, pixels, for the room the camera keeps clear of it: one card, the same size playing or not. */
+const TIME_CONTROL_HEIGHT = { desk: 130, phone: 120 };
 
 /**
  * How much of the map's foot the phone's sheet covers: at full height, the half it is let down to.
@@ -23,14 +23,12 @@ export const sheetHeightOf = (sheet: SheetSnap, tabLabels: boolean): number => {
  * Room the camera keeps clear of the cards on the map: the tools at the top right, the time control
  * at the bottom; on a phone, the sheet too.
  *
- * @param mode - What the time control shows.
  * @param sheetHeight - How much of the map's foot the phone's sheet covers (`sheetHeightOf`); `null` beside the map.
  * @returns The padding.
  */
-export const mapPaddingFor = (mode: TimeMode, sheetHeight: number | null): Padding => {
-  const timeControl = TIME_CONTROL_HEIGHTS[mode];
-  if (sheetHeight !== null) return { top: 24, right: 64, left: 24, bottom: sheetHeight + timeControl - 20 };
-  return { top: 64, right: 72, left: 48, bottom: timeControl };
+export const mapPaddingFor = (sheetHeight: number | null): Padding => {
+  if (sheetHeight !== null) return { top: 24, right: 64, left: 24, bottom: sheetHeight + TIME_CONTROL_HEIGHT.phone - 20 };
+  return { top: 64, right: 72, left: 48, bottom: TIME_CONTROL_HEIGHT.desk };
 };
 
 /**

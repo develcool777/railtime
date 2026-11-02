@@ -24,6 +24,11 @@ export default defineAppConfig({
     badge: {
       defaultVariants: { variant: 'subtle', size: 'sm' },
     },
+    // A dialog stands over everything on the page, the phone's sheet too (a drawer always open, which
+    // would otherwise cover it or not by which opened last); its title keeps clear of its close button.
+    modal: {
+      slots: { overlay: 'z-50', content: 'z-50', header: 'pe-14' },
+    },
     // ⌘K: a panel under the header, as tall as its results, its field roomy; a row's mark centred on its name.
     dashboardSearch: {
       slots: { input: '[&_input]:h-13 [&_input]:text-base' },

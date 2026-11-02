@@ -1,5 +1,5 @@
 /** What a key does: the action a button elsewhere on the page does. */
-export type ShortcutAction = 'search' | 'help' | 'panel' | 'timeline' | 'play' | 'back' | 'forward' | 'names' | 'streets' | 'view3d' | 'mapOnly';
+export type ShortcutAction = 'search' | 'help' | 'panel' | 'today' | 'play' | 'back' | 'forward' | 'names' | 'streets' | 'view3d' | 'mapOnly';
 
 /** A key, as the keys listen for it and the help shows it. */
 export type Shortcut = {
