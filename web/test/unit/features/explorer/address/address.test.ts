@@ -42,6 +42,21 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ plan: 'General Plan' })).toEqual({});
     });
 
+    test("reads a route's ends, either until both are picked, and the way drawn after the fastest; and a reach's start", () => {
+      expect(parseExplorerQuery({ route: 'bank,oval' })).toEqual({ route: { from: 'bank', to: 'oval' } });
+      expect(parseExplorerQuery({ route: 'bank,oval,2' })).toEqual({ route: { from: 'bank', to: 'oval', option: 2 } });
+      expect(parseExplorerQuery({ route: 'bank,' })).toEqual({ route: { from: 'bank' } });
+      expect(parseExplorerQuery({ route: ',oval' })).toEqual({ route: { to: 'oval' } });
+      expect(parseExplorerQuery({ reach: 'bank' })).toEqual({ reach: 'bank' });
+    });
+
+    test('leaves out a route with no end, a malformed end or way, and a malformed reach', () => {
+      expect(parseExplorerQuery({ route: ',' })).toEqual({});
+      expect(parseExplorerQuery({ route: 'Bank!,oval,0' })).toEqual({ route: { to: 'oval' } });
+      expect(parseExplorerQuery({ route: 'bank,oval,1.5' })).toEqual({ route: { from: 'bank', to: 'oval' } });
+      expect(parseExplorerQuery({ reach: 'Bank!' })).toEqual({});
+    });
+
     test("reads coverage's distance, one of its own but the default", () => {
       expect(parseExplorerQuery({ walk: '400' })).toEqual({ walk: 400 });
       expect(parseExplorerQuery({ walk: '1200' })).toEqual({ walk: 1200 });
@@ -116,6 +131,8 @@ describe('ExplorerUrlUtils', () => {
         plan: 'extension',
         section: 'reach' as const,
         walk: 1200 as const,
+        route: { from: 'bank', to: 'oval', option: 1 },
+        reach: 'oval',
         line: 'victoria',
         viewMode: '3d' as const,
         stationNames: false as const,

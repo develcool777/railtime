@@ -35,3 +35,9 @@ export type Move = { kind: 'ride'; segment: number; km: number } | { kind: 'chan
 
 /** An edge of the route graph: where it leads, what it costs, and what it is. */
 export type Edge = { to: Place; minutes: number; move: Move };
+
+/**
+ * What one search is of: the network at a cursor, what a change counts for on top of its minutes, and
+ * how many times its minutes a ride over a segment costs, by `TrackSegment.index` (once, without one).
+ */
+export type SearchTerms = { cursor: number; penalty: number; weights: ReadonlyMap<number, number> };

@@ -1,14 +1,4 @@
-import type {
-  CoverageDistance,
-  CoverageInfo,
-  NetworkStats,
-  Playhead,
-  ReachInfo,
-  RouteInfo,
-  RoutePreference,
-  StepInfo,
-  Theme,
-} from '@railtime/network/facts.types';
+import type { CoverageDistance, CoverageInfo, NetworkStats, Playhead, ReachInfo, RouteInfo, StepInfo, Theme } from '@railtime/network/facts.types';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat } from '@railtime/core/geometry.types';
@@ -130,15 +120,22 @@ export type TimeState = Playhead & {
 };
 
 /**
- * What the map draws over the network, worked out again on each date and theme: a route between two
- * stations, how far one gets from a station, or how much of the city is within a distance of one.
+ * What the map draws over the network, worked out again on each date and theme: one of the ways between
+ * two stations (`option`, fastest first: `FactsAt.routes`), how far one gets from a station, or how much
+ * of the city is within a distance of one.
  */
 export type OverlayRequest =
-  { kind: 'route'; from: string; to: string; preference: RoutePreference } | { kind: 'reach'; from: string } | { kind: 'coverage'; metres: CoverageDistance };
+  { kind: 'route'; from: string; to: string; option: number } | { kind: 'reach'; from: string } | { kind: 'coverage'; metres: CoverageDistance };
 
-/** What the overlay drawn came to on the date shown, for the app to list: `null` where there is none on the date. */
+/**
+ * What the overlay drawn came to on the date shown, for the app to list: a route's every way and the
+ * one drawn (the option asked for, or the last there is on the date: `null` for none); `null` for a
+ * reach or coverage there is none of on the date.
+ */
 export type OverlayResult =
-  { kind: 'route'; route: RouteInfo | null } | { kind: 'reach'; reach: ReachInfo | null } | { kind: 'coverage'; coverage: CoverageInfo | null };
+  | { kind: 'route'; routes: RouteInfo[]; shown: number | null }
+  | { kind: 'reach'; reach: ReachInfo | null }
+  | { kind: 'coverage'; coverage: CoverageInfo | null };
 
 /** Events a `TransitMap` emits, by name. */
 export type TransitMapEvents = {

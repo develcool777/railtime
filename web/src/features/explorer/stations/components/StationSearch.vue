@@ -11,7 +11,8 @@
     @update:modelValue="choose">
     <!-- Where the route starts, hollow; where it ends, filled. -->
     <template #leading>
-      <span class="size-2 rounded-full border-2 border-(--ui-text-highlighted)" :class="{ 'bg-(--ui-text-highlighted)': end === 'to' }" />
+      <!-- In line with a picked end's dot, so the two read as one route. -->
+      <span class="ml-0.5 size-2 rounded-full border-2 border-(--ui-text-highlighted)" :class="{ 'bg-(--ui-text-highlighted)': end === 'to' }" />
     </template>
     <template #item-leading="{ item }">
       <span class="flex w-[22px] flex-none items-center gap-0.5 self-center">

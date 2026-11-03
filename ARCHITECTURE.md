@@ -55,7 +55,7 @@ then.line(id);
 then.directions(id);
 then.records(5);
 then.stats();
-then.route(from, to, preference);
+then.routes(from, to);
 then.reach(from);
 facts.coverage(boundary).info(cursor);
 facts.coverage(boundary).history();

@@ -53,29 +53,27 @@
             <RouteSection
               v-else-if="section === 'route'"
               :stations
-              :ends="routeEnds"
-              :preference="routePreference"
-              :route="foundRoute"
-              @from="routeEnds = { ...routeEnds, from: $event }"
-              @to="routeEnds = { ...routeEnds, to: $event }"
-              @swap="store.swapEnds"
-              @preference="routePreference = $event"
+              :ends="tools.routeEnds"
+              :found="foundRoutes"
+              @end="tools.setRouteEnd"
+              @swap="tools.swapEnds"
+              @option="tools.chooseRoute"
               @station="store.pickStation" />
             <ReachSection
               v-else-if="section === 'reach'"
               :stations
-              :from="reachFrom"
+              :from="tools.reachFrom"
               :reach="foundReach"
-              @from="reachFrom = $event"
+              @from="tools.setReachFrom"
               @station="store.pickStation" />
             <CoverageSection
               v-else-if="section === 'coverage'"
               :state="boundaryState"
               :coverage
               :history="coverageHistory"
-              :distance="coverageMetres"
+              :distance="tools.coverageMetres"
               @year="store.showYear"
-              @distance="store.showCoverageWithin" />
+              @distance="tools.showCoverageWithin" />
             <InsightsSection
               v-else-if="section === 'insights'"
               :growth
@@ -200,6 +198,7 @@
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { useExplorerStore } from '~/features/explorer/explorer.store';
+  import { useToolsStore } from '~/features/explorer/tools.store';
   import { openingSectionOf } from '~/features/explorer/explorer.utils';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
@@ -219,6 +218,7 @@
   const opening = parseExplorerQuery(useRoute().query);
   const openingSection = openingSectionOf(props.plan);
   const store = useExplorerStore();
+  const tools = useToolsStore();
   const opened = store.open(props.network, props.plan, opening, openingSection);
   const range = computed(() => (store.facts ?? opened).range);
   watch(
@@ -241,10 +241,6 @@
     streetNames,
     player,
     chrome,
-    routeEnds,
-    routePreference,
-    reachFrom,
-    coverageMetres,
     time,
     step,
     credits,
@@ -272,7 +268,7 @@
     currentChange,
     panelTop,
     shownDate,
-    foundRoute,
+    foundRoutes,
     foundReach,
     growth,
     hasHistory,

@@ -1,9 +1,9 @@
 import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { CoverageDistance, RoutePreference, Stop, Theme } from '@railtime/network/facts.types';
+import type { Theme } from '@railtime/network/facts.types';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 
-import type { Chrome, MapOverlay, PanelView, PlayerSettings, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import type { Chrome, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**
  * Opens a station's view: over a line's view, if one is open, in place of any stations walked before.
@@ -55,46 +55,6 @@ export const railSectionOf = (section: Section, views: PanelView[]): Section => 
   const top = views.at(-1);
   if (!top) return section;
   return top.kind === 'station' ? 'stations' : 'lines';
-};
-
-/**
- * What the map draws over the network for the section open. Playback hides a route and a reach, which
- * would cover the line growing and fade the network it is drawn over; coverage, which grows with the
- * network, stays.
- *
- * @param section - The section open.
- * @param timeMode - What the time control shows.
- * @returns The overlay, or `null` for none.
- */
-export const mapOverlayOf = (section: Section, timeMode: TimeMode): MapOverlay | null => {
-  if (section === 'coverage') return 'coverage';
-  if (timeMode === 'playing') return null;
-  return section === 'route' || section === 'reach' ? section : null;
-};
-
-/** What the map's overlay is worked out from: which one, and what each is of. */
-type OverlayInput = {
-  overlay: MapOverlay | null;
-  routeEnds: RouteEnds;
-  routePreference: RoutePreference;
-  reachFrom: Stop | null;
-  coverageMetres: CoverageDistance;
-};
-
-/**
- * What to ask the map to draw over the network: the overlay of the section open, once it has what it
- * needs (a route both its ends, a reach its start).
- *
- * @param input - The overlay, the route's ends and preference, the reach's start, coverage's distance.
- * @returns The request, or `null` for nothing to draw.
- */
-export const overlayRequestOf = (input: OverlayInput): OverlayRequest | null => {
-  const { overlay, routeEnds, routePreference, reachFrom, coverageMetres } = input;
-  if (overlay === 'coverage') return { kind: 'coverage', metres: coverageMetres };
-  if (overlay === 'route' && routeEnds.from && routeEnds.to)
-    return { kind: 'route', from: routeEnds.from.id, to: routeEnds.to.id, preference: routePreference };
-  if (overlay === 'reach' && reachFrom) return { kind: 'reach', from: reachFrom.id };
-  return null;
 };
 
 /** What the page's chrome is worked out from. */

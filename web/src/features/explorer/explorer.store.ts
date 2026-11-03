@@ -2,10 +2,8 @@ import { useColorMode } from '#imports';
 import { endOfYear } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { CoverageDistance, Playhead, RoutePreference, Stop, StepInfo, Theme } from '@railtime/network/facts.types';
-import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
-import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
-import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { Playhead, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { Credit, MapView, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, nextTick, ref, shallowRef } from 'vue';
@@ -14,18 +12,10 @@ import type { WritableComputedRef } from 'vue';
 import type { ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
 import { playheadOf } from '~/features/explorer/address/address.utils';
 import { PANEL_WIDTH } from '~/features/explorer/explorer.constants';
-import type { Dialog, PanelView, PlayerSettings, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
-import {
-  chromeOf,
-  mapOverlayOf,
-  mapPropsOf,
-  openOf,
-  overlayRequestOf,
-  railSectionOf,
-  walkedTo,
-  withStation,
-  withoutStations,
-} from '~/features/explorer/explorer.utils';
+import type { Dialog, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
+import { chromeOf, mapPropsOf, openOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import { useToolsStore } from '~/features/explorer/tools.store';
+import { mapOverlayOf, overlayRequestOf, stationPickOf } from '~/features/explorer/tools.utils';
 import { mapPaddingFor, panelCoverOf, sheetHeightOf } from '~/features/explorer/layout.utils';
 import { DEFAULT_PLAYER } from '~/features/explorer/time/time.constants';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
@@ -35,7 +25,8 @@ import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
  * leave two parts disagreeing (`_README.md`, Where state lives).
  *
  * - **What is open**: the section and the views pushed over it, the time control's mode, the panel,
- *   the phone's sheet, map only, the dialog; a route's ends, a reach's start, the lines shown.
+ *   the phone's sheet, map only, the dialog; the lines shown. The map's tools (a route, a reach,
+ *   coverage) are a store of their own (`useToolsStore`), read here for the map.
  * - **How the map is seen**: 3D, station names, the player's settings; and `mapProps`, everything the
  *   map shows, worked out from all of it. The map adapter gives the map `mapProps`, and nothing else
  *   tells the map how to look.
@@ -43,12 +34,13 @@ import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
  *   written by the adapter's listeners, read by every part.
  * - **The network**: its `NetworkFacts`, made here as the page opens, for every question about it.
  *
- * Kept by what each is: what is looked at in the address (`useExplorerAddress`), how the page is laid
- * out and how playback is set in cookies, the rest for the visit. The page mounts the explorer afresh
+ * Kept by what each is: what is looked at and how it is set in the address (`useExplorerAddress`), the
+ * panel's width for the visit, dark or light in the browser. The page mounts the explorer afresh
  * for each city and plan; `open` sets the store again from the address.
  */
 export const useExplorerStore = defineStore('explorer', () => {
   const colorMode = useColorMode();
+  const tools = useToolsStore();
 
   // What is open.
   const section = ref<Section>('lines');
@@ -63,11 +55,6 @@ export const useExplorerStore = defineStore('explorer', () => {
   const sheet = ref<SheetSnap>('peek');
   const mapOnly = ref(false);
   const dialog = ref<Dialog | null>(null);
-  const routeEnds = ref<RouteEnds>({ from: null, to: null });
-  const routePreference = ref<RoutePreference>('fastest');
-  const reachFrom = ref<Stop | null>(null);
-  const coverageMetres = ref<CoverageDistance>(COVERAGE_DEFAULT_METRES);
-  const boundary = shallowRef<CityBoundary | null>(null);
 
   // How the map is seen.
   const viewMode = ref<ViewMode>('2d');
@@ -78,7 +65,6 @@ export const useExplorerStore = defineStore('explorer', () => {
   // What the map says, and the network.
   const time = shallowRef<TimeState | null>(null);
   const step = shallowRef<StepInfo | null>(null);
-  const overlayResult = shallowRef<OverlayResult | null>(null);
   const view = shallowRef<MapView | null>(null);
   const facts = shallowRef<NetworkFacts | null>(null);
   /** The city's network as stored, every plan and line in it: its facts are made from it, its lines hidden left out. */
@@ -109,10 +95,10 @@ export const useExplorerStore = defineStore('explorer', () => {
   const overlayRequest = computed(() =>
     overlayRequestOf({
       overlay: mapOverlay.value,
-      routeEnds: routeEnds.value,
-      routePreference: routePreference.value,
-      reachFrom: reachFrom.value,
-      coverageMetres: coverageMetres.value,
+      routeEnds: tools.routeEnds,
+      routeOption: tools.routeOption,
+      reachFrom: tools.reachFrom,
+      coverageMetres: tools.coverageMetres,
     }),
   );
   const chrome = computed(() =>
@@ -133,7 +119,7 @@ export const useExplorerStore = defineStore('explorer', () => {
           openStation: openStation.value,
           openLine: openLine.value,
           overlay: overlayRequest.value,
-          boundary: boundary.value,
+          boundary: tools.boundary,
           player: player.value,
           padding: mapPaddingFor(sheetHeight.value),
           panelCover: panelCover.value,
@@ -170,17 +156,12 @@ export const useExplorerStore = defineStore('explorer', () => {
       minimap: address.minimap ?? DEFAULT_PLAYER.minimap,
     };
     dialog.value = null;
-    routeEnds.value = { from: null, to: null };
-    routePreference.value = 'fastest';
-    coverageMetres.value = address.walk ?? COVERAGE_DEFAULT_METRES;
-    reachFrom.value = null;
-    boundary.value = null;
+    tools.open(opened, address);
     viewMode.value = address.viewMode ?? '2d';
     stationNames.value = address.stationNames ?? true;
     streetNames.value = address.streetNames ?? true;
     time.value = null;
     step.value = null;
-    overlayResult.value = null;
     view.value = address.view ?? null;
     openingPlayhead = address.at;
     return opened;
@@ -198,9 +179,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     const next = markRaw(NetworkFacts.create(network.value, { ...(shownPlan ? { plan: shownPlan } : {}), hidden }));
     facts.value = next;
     views.value = views.value.filter(view => next.find(view.kind, view.id));
-    const keep = (stop: Stop | null) => (stop && next.find('station', stop.id) ? stop : null);
-    routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
-    reachFrom.value = keep(reachFrom.value);
+    tools.keepOn(next);
     timeMode.value = 'timeline';
     step.value = null;
   };
@@ -329,11 +308,22 @@ export const useExplorerStore = defineStore('explorer', () => {
   const walkTo = (id: string) => (views.value = walkedTo(views.value, id));
   /** Closes the stations' views, back to the line's under them, if any. */
   const closeStation = () => (views.value = withoutStations(views.value));
+  /**
+   * A station clicked on the map: with Route or Reach in sight, picked as their ends; else it opens.
+   *
+   * @param id - The station, or `null` for a click away from any.
+   */
+  const clickStation = (id: string | null) => {
+    if (!id || !facts.value || !time.value) return closeStation();
+    const stop = { id, name: facts.value.asOf(time.value).station(id).name };
+    const picking = views.value.length === 0 && (phone.value || panelOpen.value);
+    const pick = stationPickOf({ section: section.value, picking, routeEnds: tools.routeEnds }, stop);
+    if (pick.kind === 'route') tools.setRouteEnds(pick.ends);
+    else if (pick.kind === 'reach') tools.setReachFrom(pick.from);
+    else pickStation(id);
+  };
   /** Back from a pushed view: to the station walked from, the line under it, else the section. */
   const goBack = () => (views.value = views.value.slice(0, -1));
-
-  /** Swaps where the route starts and ends. */
-  const swapEnds = () => (routeEnds.value = { from: routeEnds.value.to, to: routeEnds.value.from });
 
   /**
    * Enters or leaves map only; the layout takes the page full screen with it.
@@ -437,14 +427,6 @@ export const useExplorerStore = defineStore('explorer', () => {
     else map.value?.previousChange();
   };
   /**
-   * Coverage measured within another distance of a station: the panel's figures and the map's shading.
-   *
-   * @param metres - The distance.
-   */
-  const showCoverageWithin = (metres: CoverageDistance) => {
-    coverageMetres.value = metres;
-  };
-  /**
    * A year picked on a chart: the map at its end (today, for this year), which the timeline shows.
    *
    * @param year - The year.
@@ -465,18 +447,12 @@ export const useExplorerStore = defineStore('explorer', () => {
     sheetHeight,
     mapOnly,
     dialog,
-    routeEnds,
-    routePreference,
-    reachFrom,
-    coverageMetres,
-    boundary,
     viewMode,
     stationNames,
     streetNames,
     player,
     time,
     step,
-    overlayResult,
     view,
     facts,
     networkChoices,
@@ -510,8 +486,8 @@ export const useExplorerStore = defineStore('explorer', () => {
     pickStation,
     walkTo,
     closeStation,
+    clickStation,
     goBack,
-    swapEnds,
     setMapOnly,
     setDialog,
     dialogOpen,
@@ -526,6 +502,5 @@ export const useExplorerStore = defineStore('explorer', () => {
     pickChange,
     stepTime,
     showYear,
-    showCoverageWithin,
   };
 });

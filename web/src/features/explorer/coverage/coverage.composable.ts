@@ -5,18 +5,20 @@ import { computed, markRaw, ref, watch } from 'vue';
 
 import type { BoundaryState, Coverage } from '~/features/explorer/coverage/coverage.composable.types';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
+import { useToolsStore } from '~/features/explorer/tools.store';
 import { boundaryUrlOf } from '~/utils/city.utils';
 
 /**
  * How much of the city is within walking distance of a station: its outline loaded the first time the
- * map is to draw it, and kept in the store, whose props give it to the map. What it comes to on the
+ * map is to draw it, and kept in the tools' store, from which the map's props give it to the map. What it comes to on the
  * date shown, within the distance chosen, is what the map reports; its history, the network's facts'.
  *
  * @param city - The city, whose outline is loaded.
  * @returns Where the outline is, the coverage, and its history.
  */
 export const useCoverage = (city: string): Coverage => {
-  const { mapOverlay, overlayResult, boundary, facts, coverageMetres } = storeToRefs(useExplorerStore());
+  const { mapOverlay, facts } = storeToRefs(useExplorerStore());
+  const { overlayResult, boundary, coverageMetres } = storeToRefs(useToolsStore());
   const baseURL = useRuntimeConfig().app.baseURL;
 
   const boundaryState = ref<BoundaryState>('idle');

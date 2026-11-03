@@ -23,7 +23,7 @@ then.stations(); // the stations on the map then, for a search
 then.station('bank'); // its lines, when each opened and closed there, its former names, its transfers
 then.line('central'); // its stops in order, by branch, its km and its changes
 then.directions('bank'); // the stops either side, on each line
-then.route('bank', 'oval', 'fastest');
+then.routes('bank', 'oval'); // up to three ways, fastest first: the fastest, the fewest changes, another way round
 then.reach('bank');
 then.records(5);
 then.stats();

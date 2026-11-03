@@ -4,6 +4,7 @@ import { NetworkFacts } from '../../../src/facts/facts.service';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { hiddenNetwork } from '../../support/factories/hiddenNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { routeNetwork } from '../../support/factories/routeNetwork.utils';
 import { factsOf as plainFactsOf, questionsOn } from '../../support/facts.utils';
 import { bandOf, networkSummary, planFacts, reachedSegments } from '../../../src/facts/facts.utils';
 import { REACH_BANDS } from '../../../src/facts/facts.constants';
@@ -109,8 +110,8 @@ describe('NetworkFacts', () => {
     ).toEqual(['a', 'b']);
     expect(later.stations().map(station => station.id)).toContain('d');
     expect(early.station('b').lines.find(line => line.id === 'blue')?.opened).toBe('1930-01-01');
-    expect(early.route('a', 'd', 'fastest')).toBeNull();
-    expect(later.route('a', 'd', 'fastest')).not.toBeNull();
+    expect(early.routes('a', 'd')).toEqual([]);
+    expect(later.routes('a', 'd')).not.toEqual([]);
   });
 
   test('answers for today: every dated change on it or before played', () => {
@@ -274,12 +275,24 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test("finds a route with the stops' names of the date, and none where nothing runs", () => {
     const { queries } = queriesOn('1935-01-01');
-    const route = queries.route('a', 'd', 'fastest');
+    const [route] = queries.routes('a', 'd');
     expect(route).toMatchObject({ from: { id: 'a', name: 'A' }, to: { id: 'd', name: 'D' }, changes: 0 });
     expect(route?.legs).toEqual([expect.objectContaining({ kind: 'ride', line: 'red', lineName: 'Red line', color: { light: '#ff0000', dark: '#ff0000' } })]);
     expect(route?.segments).toEqual([[0, 1, 2]]);
+    expect(route?.best).toEqual(['fastest']);
     const before = queriesOn('1899-06-01');
-    expect(before.queries.route('a', 'd', 'fastest')).toBeNull();
+    expect(before.queries.routes('a', 'd')).toEqual([]);
+  });
+
+  test('offers the ways between two stations fastest first, each with what it is best at', () => {
+    const facts = NetworkFacts.create(routeNetwork(), { today: toTimestamp('2026-01-01') });
+    const routes = facts.asOf(facts.playheads.today()).routes('a', 'e');
+    expect(routes.map(route => route.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk')))).toEqual([
+      ['red', 'blue'],
+      ['red', 'walk', 'green'],
+      ['yellow'],
+    ]);
+    expect(routes.map(route => route.best)).toEqual([['fastest'], [], ['fewest-changes']]);
   });
 
   test('times every station from one, soonest first, each in its band; nothing from a station no line calls at', () => {

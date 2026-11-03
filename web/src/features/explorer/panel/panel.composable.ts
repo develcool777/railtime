@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import { currentChangeIndex } from '~/features/explorer/changes/changes.utils';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
+import { useToolsStore } from '~/features/explorer/tools.store';
 import type { PanelView, Section } from '~/features/explorer/explorer.types';
 import { formatPlanFacts, formatStats, lineColor } from '~/features/explorer/format.utils';
 import type { ExplorerPanel } from '~/features/explorer/panel/panel.composable.types';
@@ -21,7 +22,8 @@ import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
  */
 export const useExplorerPanel = (): ExplorerPanel => {
   const store = useExplorerStore();
-  const { section, views, openStation, openLine, timeMode, playing, time, step, facts, plan, plans, routeEnds, reachFrom, overlayResult } = storeToRefs(store);
+  const { section, views, openStation, openLine, timeMode, playing, time, step, facts, plan, plans } = storeToRefs(store);
+  const { routeEnds, reachFrom, overlayResult } = storeToRefs(useToolsStore());
 
   const lines = computed(() => facts.value?.lines() ?? []);
   const changes = computed(() => facts.value?.changes() ?? []);
@@ -77,7 +79,7 @@ export const useExplorerPanel = (): ExplorerPanel => {
   });
 
   // What the map found for the overlay open.
-  const foundRoute = computed(() => (overlayResult.value?.kind === 'route' ? overlayResult.value.route : null));
+  const foundRoutes = computed(() => (overlayResult.value?.kind === 'route' ? { routes: overlayResult.value.routes, shown: overlayResult.value.shown } : null));
   const foundReach = computed(() => (overlayResult.value?.kind === 'reach' ? overlayResult.value.reach : null));
 
   // How the network grew (its facts work the years out once), and its records at the moment shown.
@@ -129,7 +131,7 @@ export const useExplorerPanel = (): ExplorerPanel => {
     currentChange,
     panelTop,
     shownDate,
-    foundRoute,
+    foundRoutes,
     foundReach,
     growth,
     hasHistory,

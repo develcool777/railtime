@@ -17,7 +17,7 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | `lines/`    | The Lines section, and a line's view                                                                                                                                                                                       | `LinesSection`, `LineView`                                        |
 | `changes/`  | The Changes section, which follows playback and is searched by line, station or year                                                                                                                                       | `ChangesSection`, `ChangeTimeline`                                |
 | `stations/` | The Stations section, a station's view and the walk from it along its lines; finding stations by name                                                                                                                      | `StationsSection`, `StationView`, `StationLinks`, `StationSearch` |
-| `route/`    | The Route section: a route between two stations                                                                                                                                                                            | `RouteSection`                                                    |
+| `route/`    | The Route section: up to three ways between two stations, picked here or on the map, and the one drawn leg by leg                                                                                                          | `RouteSection`                                                    |
 | `insights/` | The Insights section: how the network grew, and its records on the date shown                                                                                                                                              | `InsightsSection`, `GrowthChart`, `DecadeChart`                   |
 | `reach/`    | The Reach section: how far you get from a station, by time                                                                                                                                                                 | `ReachSection`                                                    |
 | `coverage/` | The Coverage section: how much of the city is near a station, its outline loaded on first opening (`useCoverage`)                                                                                                          | `CoverageSection`                                                 |
@@ -30,14 +30,19 @@ At the top, what every part shares or what ties them together:
 
 - `explorer.store.ts` (`useExplorerStore`, Pinia): the explorer's state, and what changes it. What is
   open (the section and the views pushed over it, the time control's mode, the panel, the sheet, map
-  only, the dialog, a route's ends, a reach's start); how the map is seen (3D, names,
+  only, the dialog); how the map is seen (3D, names,
   the player's settings); what the map says (the time, the change playing, what the overlay came to,
   where it looks); the network as stored, and its facts (`NetworkFacts`, made by `open`, and again from it by `showPlan` and `showLines` for
   another plan or lines hidden or shown, on the same page and map: a line hidden is left out of every fact). `mapProps` is everything the map shows, the network
   with it, worked out from it;
   `chrome`, what shows around the map. Every button and key calls its actions, the time ones sending
   the map its commands. Its rules are pure, in `explorer.utils.ts` (`withStation`, `chromeOf`,
-  `mapPropsOf`…), and tested.
+  `mapPropsOf`…), and tested. A station clicked on the map is picked for the tool in sight, or opens
+  (`clickStation`, `stationPickOf`).
+- `tools.store.ts` (`useToolsStore`): the map's tools. A route's ends and the way between them drawn
+  (another pair of ends, the fastest again), a reach's start, coverage's distance and the city's
+  outline, and what the map found for the one drawn. The explorer's store reads them for `mapProps`;
+  their rules are in `tools.utils.ts` (`mapOverlayOf`, `overlayRequestOf`, `stationPickOf`).
 - `components/ExplorerView.vue`: the frame. It opens the store on the network and the address, calls each part's composable and lays out what they give; it decides nothing itself.
 - `layout.composable.ts`: what the layout takes from the browser: phone or not, the panel's edge
   dragged, full screen kept with map only.
@@ -52,7 +57,8 @@ At the top, what every part shares or what ties them together:
 | ------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------- |
 | What is looked at: tab, line, station, 3D, names, map only    | the store                  | the address: `tab`, `line`, `station`, `view=3d`, `names=off`, `mapOnly=1` |
 | The lines hidden                                              | its facts (`hidden`)       | the visit                                                                  |
-| How far from a station coverage counts                        | the store                  | the address: `walk=400`, `1200`, `1600` or `2000` (800 m without)          |
+| A route's ends and the way drawn, a reach's start             | the tools' store           | the address: `route=bank,oval` (`,1`: the second way), `reach=bank`        |
+| How far from a station coverage counts                        | the tools' store           | the address: `walk=400`, `1200`, `1600` or `2000` (800 m without)          |
 | The playhead, where the map looks                             | the map; the store a copy  | the address: `at` (`202`, `202.4`, `202,1928-06-01`), `map`                |
 | How playback is set, the panel folded                         | the store                  | the address: `speed=4`, `camera=free`, `minimap=off`, `panel=off`          |
 | The panel's width, dragged for this screen                    | the store                  | the visit                                                                  |
@@ -67,7 +73,7 @@ At the top, what every part shares or what ties them together:
   both themes; `lineColor` (`format.utils.ts`) makes it CSS that follows the page's.
   A composable is computeds over the two: it changes when they do, and reads nothing only to re-run.
 - **The map** is touched by one adapter (`useTransitMap`): it gives the map `store.mapProps`, writes
-  what the map says into the store (a station clicked: `pickStation`), and destroys it.
+  what the map says into the store (a station clicked: `clickStation`), and destroys it.
 - **A part never imports another part's composable.** What parts share is in the store (playback
   is the time: `timeMode`, the map's `time`).
 - **Components** take props and emit; none reaches into the store or a composable.
