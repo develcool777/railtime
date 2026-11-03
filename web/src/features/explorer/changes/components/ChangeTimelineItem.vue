@@ -32,7 +32,7 @@
   import { yearOf } from '@railtime/core/date.utils';
   import type { ChangeState } from '~/features/explorer/changes/changes.types';
   import { TIMELINE_GAP, TIMELINE_SIZE } from '~/features/explorer/changes/changes.constants';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
     change: ChangeInfo;

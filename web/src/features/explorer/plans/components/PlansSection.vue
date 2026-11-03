@@ -37,7 +37,8 @@
   import { computed } from 'vue';
 
   import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
-  import { formatPlanFacts, lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
+  import { formatPlanFacts } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
     /** The city's plans, each with what it would add. */

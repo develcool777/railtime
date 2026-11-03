@@ -65,7 +65,7 @@
 
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
   import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   const METRICS: { label: string; value: GrowthMetric }[] = [
     { label: 'Stations', value: 'stations' },

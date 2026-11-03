@@ -9,6 +9,9 @@
     "test-unit": "vitest",
     "test-unit-ci": "vitest run"
   },
+  "exports": {
+    "./videoPage.types": "./src/recorder/videoPage.types.ts"
+  },
   "devDependencies": {
     "playwright-core": "^1.60.0",
     "vitest": "^5.0.5"

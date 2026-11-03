@@ -15,9 +15,9 @@ and its plans; `NetworkEngine`, `facts.engine`, the raw network the renderer pla
 city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline and pictures; the index
 of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
 `boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`),
-`packages/video` (videos of the app: `pnpm video:record <city>` records its page frame by frame, on a
-clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `web`) and `web`
-(the app: the Nuxt 4 + Nuxt UI explorer).
+`packages/video` (videos of the app: `pnpm video:record <city>` records its video page frame by frame,
+on a clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `web`) and `web`
+(the app: the Nuxt 4 + Nuxt UI explorer, and the video page, `/video/<city>`, under `pnpm dev` only).
 `README.md` has the commands; `ARCHITECTURE.md` the contract between the parts;
 `packages/network/_README.md` steps and cursors; `packages/renderer/_README.md` the frame model.
 
@@ -84,7 +84,12 @@ landing page's pictures in Chrome).
   components/ui/          components every surface uses (SiteHeader, StatusChip, MapCredits…)
   constants/  utils/      the city catalogue (CITIES, city.utils): what any page needs
   features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
-                          seo; its components in components/, the rest flat beside them
+                          seo, video (a city's history as a video, to record: `pnpm dev` only, the
+                          built site leaves it out; its state a store, `video.store.ts`, its rules in
+                          `video.utils.ts`, the map only in `video.composable.ts`, as the explorer's;
+                          all that moves on it is worked out from the page's clock each frame, never
+                          a CSS transition, which no recorder can step);
+                          its components in components/, the rest flat beside them
   features/<name>/<part>/ a big feature in parts, as dataroom-ui's modules/fileRenderer: each part
                           (explorer's map/, time/, panel/, lines/…) its own components/ and files;
                           the feature's top holds the frame and what the parts share, and a

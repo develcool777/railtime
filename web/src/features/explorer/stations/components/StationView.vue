@@ -52,7 +52,7 @@
   import type { LineDirection, StationInfo } from '@railtime/network/facts.types';
 
   import { stripAround } from '~/features/explorer/stations/station.utils';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
     station: StationInfo;

@@ -101,7 +101,7 @@
   import type { RouteInfo, Stop, StationSummary } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
   import { ROUTE_ENDS } from '~/features/explorer/route/route.constants';
   import { routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
   import type { RouteEnds } from '~/features/explorer/tools.types';

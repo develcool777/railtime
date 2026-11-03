@@ -30,8 +30,9 @@ pnpm data:summaries  # sum up every city into cities/cities.json, the landing pa
 pnpm data:previews london  # draw its card's pictures (needs Chrome)
 pnpm data:boundary london  # fetch its outline from OpenStreetMap again; add a relation id for a new city
 
-pnpm video:record kyiv     # record its history playing, from pnpm dev, into packages/video/videos/kyiv.mp4
-                           # (needs Chrome and ffmpeg: brew install ffmpeg; --fps, --size, --query "mapOnly=1", --seconds)
+pnpm video:record kyiv     # record its video page (/video/kyiv, from pnpm dev) into packages/video/videos/kyiv.mp4
+                           # (needs Chrome and ffmpeg: brew install ffmpeg; --page explorer records the explorer
+                           # as it is; --fps, --size 1080x1920, --query "mapOnly=1", --seconds, --out)
 ```
 
 ## How it's built

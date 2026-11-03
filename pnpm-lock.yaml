@@ -198,6 +198,9 @@ importers:
       '@railtime/schema':
         specifier: workspace:*
         version: link:../packages/schema
+      '@railtime/video':
+        specifier: workspace:*
+        version: link:../packages/video
       '@tanstack/charts':
         specifier: 1.1.0
         version: 1.1.0(vue@3.5.44(typescript@6.0.3))

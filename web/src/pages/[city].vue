@@ -26,13 +26,13 @@
 </template>
 
 <script setup lang="ts">
-  import { definePageMeta, navigateTo, useFetch, useRoute, useRuntimeConfig } from '#imports';
+  import { definePageMeta, navigateTo, useRoute, useRuntimeConfig } from '#imports';
   import { NetworkFacts } from '@railtime/network/facts.service';
-  import type { Network } from '@railtime/schema/network.types';
   import { computed } from 'vue';
 
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
-  import { cityNameOf, citySummaryOf, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
+  import { useCityNetwork } from '~/utils/city.composable';
+  import { cityNameOf, citySummaryOf, isCity, previewUrlOf } from '~/utils/city.utils';
   import { citySeo } from '~/features/seo/seo.utils';
 
   // Only cities with a dataset have a page: any other address is a 404. Each city is a page of its
@@ -47,10 +47,7 @@
   const seo = citySeo(city.value, entry);
   usePageSeo(seo);
 
-  // The map only runs in the browser, so the network is fetched there too.
-  // The base URL is joined here, as for the pictures: ofetch leaves a relative path as it is when the base
-  // is `/`, and the browser would resolve it against the page's own address (/london/data/…).
-  const { data: network, error } = useFetch<Network>(() => `${baseURL}${networkUrlOf(city.value)}`, { server: false });
+  const { network, error } = useCityNetwork(city);
 
   // A plan is shown in place, on the same map: the explorer is keyed on the city alone.
   // A network never built always shows a plan: its first, unless the address names another.
