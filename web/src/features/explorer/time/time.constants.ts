@@ -1,11 +1,15 @@
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
+import type { PlayerSettings } from '~/features/explorer/explorer.types';
 import type { TickMark } from '~/features/explorer/time/timeline.types';
 
 /** Playback speeds offered: half speed to follow a line closely, in 3D above all. */
 export const SPEED_OPTIONS = [0.5, 1, 2, 4].map(speed => ({ label: `${speed}×`, value: speed }));
 
-/** Default playback speed: London's whole history takes about five and a half minutes. */
-export const DEFAULT_SPEED = 2;
+/**
+ * How playback is set without the address saying otherwise: at 2×, at which London's whole history
+ * takes about five and a half minutes; the camera following; the minimap shown.
+ */
+export const DEFAULT_PLAYER: PlayerSettings = { speed: 2, camera: 'follow', minimap: true };
 
 /** Camera modes offered during playback, each with what it does. */
 export const CAMERA_OPTIONS: { label: string; value: CameraMode; description: string }[] = [

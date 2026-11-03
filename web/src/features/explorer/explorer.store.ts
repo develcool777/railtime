@@ -1,4 +1,4 @@
-import { useColorMode, useCookie } from '#imports';
+import { useColorMode } from '#imports';
 import { endOfYear } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
@@ -27,7 +27,7 @@ import {
   withoutStations,
 } from '~/features/explorer/explorer.utils';
 import { mapPaddingFor, panelCoverOf, sheetHeightOf } from '~/features/explorer/layout.utils';
-import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
+import { DEFAULT_PLAYER } from '~/features/explorer/time/time.constants';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
 
 /**
@@ -57,8 +57,9 @@ export const useExplorerStore = defineStore('explorer', () => {
   const phone = ref(false);
   // A phone wide enough for its tabs' names.
   const tabLabels = ref(false);
-  const panelOpen = useCookie<boolean>('railtime-panel-open', { default: () => true });
-  const panelWidth = useCookie<number>('railtime-panel-width', { default: () => PANEL_WIDTH.initial });
+  const panelOpen = ref(true);
+  // Dragged for this screen, so kept for the visit only: in a link it would not fit another screen.
+  const panelWidth = ref(PANEL_WIDTH.initial);
   const sheet = ref<SheetSnap>('peek');
   const mapOnly = ref(false);
   const dialog = ref<Dialog | null>(null);
@@ -72,7 +73,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const viewMode = ref<ViewMode>('2d');
   const stationNames = ref(true);
   const streetNames = ref(true);
-  const player = useCookie<PlayerSettings>('railtime-player', { default: () => ({ speed: DEFAULT_SPEED, camera: 'follow', minimap: true }) });
+  const player = ref<PlayerSettings>({ ...DEFAULT_PLAYER });
 
   // What the map says, and the network.
   const time = shallowRef<TimeState | null>(null);
@@ -162,6 +163,12 @@ export const useExplorerStore = defineStore('explorer', () => {
     timeMode.value = 'timeline';
     sheet.value = 'peek';
     mapOnly.value = address.mapOnly ?? false;
+    panelOpen.value = address.panelOpen ?? true;
+    player.value = {
+      speed: address.speed ?? DEFAULT_PLAYER.speed,
+      camera: address.camera ?? DEFAULT_PLAYER.camera,
+      minimap: address.minimap ?? DEFAULT_PLAYER.minimap,
+    };
     dialog.value = null;
     routeEnds.value = { from: null, to: null };
     routePreference.value = 'fastest';

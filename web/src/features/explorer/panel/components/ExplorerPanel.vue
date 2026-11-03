@@ -64,7 +64,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { useWindowSize } from '@vueuse/core';
+  import { computed } from 'vue';
 
   import { SHEET_HEIGHTS, SHEET_TOP_GAP } from '~/features/explorer/explorer.constants';
   import { sheetHeightOf } from '~/features/explorer/layout.utils';
@@ -92,10 +93,7 @@
 
   // The drawer measures its snaps from the window's foot, as fractions of its height or in pixels:
   // its tabs, half, and all of it but the header's room, which depends on the window.
-  const windowHeight = ref(window.innerHeight);
-  const onResize = () => (windowHeight.value = window.innerHeight);
-  onMounted(() => window.addEventListener('resize', onResize));
-  onBeforeUnmount(() => window.removeEventListener('resize', onResize));
+  const { height: windowHeight } = useWindowSize();
   const snapPoints = computed((): Record<SheetSnap, string> => ({
     peek: `${sheetHeightOf('peek', props.tabLabels)}px`,
     half: `${SHEET_HEIGHTS.half}px`,

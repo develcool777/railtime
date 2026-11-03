@@ -64,6 +64,18 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ tab: 'trains', line: 'Central Line', view: '2d', names: 'on', streets: 'on', mapOnly: 'yes' })).toEqual({});
     });
 
+    test('reads how playback is set, one of its own but the default, and the panel folded', () => {
+      expect(parseExplorerQuery({ speed: '4', camera: 'free', minimap: 'off', panel: 'off' })).toEqual({
+        speed: 4,
+        camera: 'free',
+        minimap: false,
+        panelOpen: false,
+      });
+      expect(parseExplorerQuery({ speed: '0.5' })).toEqual({ speed: 0.5 });
+      expect(parseExplorerQuery({ speed: '2', camera: 'follow', minimap: 'on', panel: 'on' })).toEqual({});
+      expect(parseExplorerQuery({ speed: '3', camera: 'drone' })).toEqual({});
+    });
+
     test('takes the first of a repeated parameter', () => {
       expect(parseExplorerQuery({ station: ['bank', 'oval'] })).toEqual({ station: 'bank' });
     });
@@ -109,6 +121,10 @@ describe('ExplorerUrlUtils', () => {
         stationNames: false as const,
         streetNames: false as const,
         mapOnly: true as const,
+        panelOpen: false as const,
+        speed: 0.5,
+        camera: 'free' as const,
+        minimap: false as const,
       };
       expect(parseExplorerQuery(formatExplorerQuery(state))).toEqual(state);
     });

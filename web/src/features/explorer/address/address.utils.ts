@@ -5,6 +5,7 @@ import { DAY_MS, toIsoDate } from '@railtime/core/date.utils';
 import { coverageDistanceOf } from '~/features/explorer/coverage/coverage.utils';
 import type { ExplorerQuery, ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
+import { CAMERA_OPTIONS, DEFAULT_PLAYER, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
 import type { Section } from '~/features/explorer/explorer.types';
 
 /** A playhead: its cursor, the next change's progress in hundredths or the day the clock is on, `202.4` or `202,1928-06-01`. */
@@ -108,7 +109,7 @@ const parseSection = (text: string | undefined): Section | undefined => SECTIONS
 /**
  * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
  *
- * @param query - The address's query: `at`, `map`, `station`, `plan`, `tab`, `walk`, `line`, `view`, `names`, `mapOnly`.
+ * @param query - The address's query: `at`, `map`, `station`, `plan`, `tab`, `walk`, `line`, `view`, `names`, `streets`, `mapOnly`, `panel`, `speed`, `camera`, `minimap`.
  * @returns What it asks for.
  */
 export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
@@ -119,6 +120,8 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
   const section = parseSection(single(query.tab));
   const walk = coverageDistanceOf(single(query.walk));
   const line = single(query.line);
+  const speed = SPEED_OPTIONS.find(option => String(option.value) === single(query.speed))?.value;
+  const camera = CAMERA_OPTIONS.find(option => option.value === single(query.camera))?.value;
   return {
     ...(playhead ? { at: playhead } : {}),
     ...(view ? { view } : {}),
@@ -131,6 +134,10 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
     ...(single(query.names) === 'off' ? { stationNames: false as const } : {}),
     ...(single(query.streets) === 'off' ? { streetNames: false as const } : {}),
     ...(single(query.mapOnly) === '1' ? { mapOnly: true as const } : {}),
+    ...(single(query.panel) === 'off' ? { panelOpen: false as const } : {}),
+    ...(speed !== undefined && speed !== DEFAULT_PLAYER.speed ? { speed } : {}),
+    ...(camera && camera !== DEFAULT_PLAYER.camera ? { camera } : {}),
+    ...(single(query.minimap) === 'off' ? { minimap: false as const } : {}),
   };
 };
 
@@ -153,7 +160,7 @@ export const sameQuery = (first: ExplorerQuery, second: ExplorerQuery): boolean 
  * @returns The query.
  */
 export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
-  const { at: playhead, view, station, plan, section, walk, line, viewMode, stationNames, streetNames, mapOnly } = state;
+  const { at: playhead, view, station, plan, section, walk, line, viewMode, stationNames, streetNames, mapOnly, panelOpen, speed, camera, minimap } = state;
   return {
     ...(playhead ? { at: formatPlayhead(playhead) } : {}),
     ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
@@ -166,5 +173,9 @@ export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, str
     ...(stationNames === false ? { names: 'off' } : {}),
     ...(streetNames === false ? { streets: 'off' } : {}),
     ...(mapOnly ? { mapOnly: '1' } : {}),
+    ...(panelOpen === false ? { panel: 'off' } : {}),
+    ...(speed === undefined ? {} : { speed: String(speed) }),
+    ...(camera ? { camera } : {}),
+    ...(minimap === false ? { minimap: 'off' } : {}),
   };
 };

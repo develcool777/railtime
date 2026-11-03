@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia';
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { syncRef, useEventListener, useFullscreen, useMediaQuery } from '@vueuse/core';
+import { ref, watch } from 'vue';
 import type { ShallowRef } from 'vue';
 
 import { PHONE_QUERY, TAB_LABELS_QUERY } from '~/features/explorer/explorer.constants';
@@ -19,48 +20,30 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
   const store = useExplorerStore();
   const { phone, tabLabels, panelWidth, mapOnly } = storeToRefs(store);
 
-  const phoneQuery = window.matchMedia(PHONE_QUERY);
-  phone.value = phoneQuery.matches;
-  const onPhoneChange = (event: MediaQueryListEvent) => (phone.value = event.matches);
-  const labelsQuery = window.matchMedia(TAB_LABELS_QUERY);
-  tabLabels.value = labelsQuery.matches;
-  const onLabelsChange = (event: MediaQueryListEvent) => (tabLabels.value = event.matches);
+  // The store holds what the browser says, for every part to read.
+  syncRef(useMediaQuery(PHONE_QUERY), phone, { direction: 'ltr' });
+  syncRef(useMediaQuery(TAB_LABELS_QUERY), tabLabels, { direction: 'ltr' });
 
   const resizing = ref(false);
   const startResize = (event: PointerEvent) => {
-    const startX = event.clientX;
-    const startWidth = panelWidth.value;
+    const [startX, startWidth] = [event.clientX, panelWidth.value];
     resizing.value = true;
-    const onMove = (move: PointerEvent) => (panelWidth.value = draggedPanelWidth(startWidth, move.clientX - startX));
-    const onUp = () => {
-      resizing.value = false;
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+    const stops = [
+      useEventListener(window, 'pointermove', (move: PointerEvent) => (panelWidth.value = draggedPanelWidth(startWidth, move.clientX - startX))),
+      useEventListener(window, 'pointerup', () => {
+        resizing.value = false;
+        for (const stop of stops) stop();
+      }),
+    ];
   };
 
   // Map only takes the page full screen where the browser lets it: not every browser has it (an
   // iPhone's Safari), and none without a click (map only opened by a link), where the panels still hide.
-  watch(mapOnly, async shown => {
-    if (shown && !document.fullscreenElement) await root.value?.requestFullscreen?.().catch(() => undefined);
-    else if (!shown && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
-  });
+  const { isFullscreen, enter, exit } = useFullscreen(root);
+  watch(mapOnly, shown => (shown ? enter() : exit()).catch(() => undefined));
   // Leaving full screen (Esc, or the browser's own control) brings the panels back.
-  const onFullscreenChange = () => {
-    if (!document.fullscreenElement) store.setMapOnly(false);
-  };
-
-  onMounted(() => {
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    phoneQuery.addEventListener('change', onPhoneChange);
-    labelsQuery.addEventListener('change', onLabelsChange);
-  });
-  onBeforeUnmount(() => {
-    document.removeEventListener('fullscreenchange', onFullscreenChange);
-    phoneQuery.removeEventListener('change', onPhoneChange);
-    labelsQuery.removeEventListener('change', onLabelsChange);
+  watch(isFullscreen, full => {
+    if (!full) store.setMapOnly(false);
   });
 
   return { resizing, startResize };

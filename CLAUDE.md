@@ -99,7 +99,7 @@ landing page's pictures in Chrome).
   The explorer's state (what is open, how it is set) is one Pinia store, `explorer.store.ts`: every
   button calls its actions, and its rules are pure functions in `explorer.utils.ts`; its `mapProps` is
   everything the map shows, and `map/transitMap.composable.ts` is the only code that touches the map.
-  What is looked at goes in the address, preferences in cookies (`features/explorer/_README.md`).
+  What is looked at and how it is set goes in the address; dark or light, the one preference, in the browser (`features/explorer/_README.md`).
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
   camelCase attributes and events.
