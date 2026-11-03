@@ -31,7 +31,7 @@ const PADDING = { top: 10, right: 20, bottom: 30, left: 40 };
  */
 const stepAfter = (date: string) => {
   const playback = playbackOf(tinyNetwork());
-  playback.player.seek({ time: toTimestamp(date) });
+  playback.player.seek(playback.facts.playheads.on(toTimestamp(date)));
   playback.player.skip();
   const fake = fakeMap();
   const coordOf = (station: string) => playback.index.coordOf(station);

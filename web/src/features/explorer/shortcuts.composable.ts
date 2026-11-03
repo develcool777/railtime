@@ -20,7 +20,7 @@ export const useExplorerShortcuts = (sections: Readonly<Ref<{ id: Section }[]>>)
     search: () => store.setDialog('search'),
     help: () => store.setDialog('help'),
     panel: store.togglePanel,
-    today: () => store.leaveTo({ kind: 'future' }),
+    rest: () => store.leaveTo('rest'),
     play: store.togglePlay,
     back: () => store.stepTime(-1),
     forward: () => store.stepTime(1),

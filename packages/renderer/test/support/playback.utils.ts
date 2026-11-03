@@ -33,7 +33,7 @@ export const playbackOf = (network: Network, { plan, hidden, view = '2d' }: Play
  * @param playback - The pieces from `playbackOf`.
  * @returns The questions, answered for that moment.
  */
-export const networkNow = (playback: Playback): FactsAt => playback.facts.asOf({ cursor: playback.player.cursor, time: playback.player.clock });
+export const networkNow = (playback: Playback): FactsAt => playback.facts.asOf(playback.player.playhead);
 
 /**
  * The render state at the player's position, in each line's own colour.

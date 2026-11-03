@@ -1,4 +1,14 @@
-import type { CoverageDistance, CoverageInfo, NetworkStats, ReachInfo, RouteInfo, RoutePreference, StepInfo, Theme } from '@railtime/network/facts.types';
+import type {
+  CoverageDistance,
+  CoverageInfo,
+  NetworkStats,
+  Playhead,
+  ReachInfo,
+  RouteInfo,
+  RoutePreference,
+  StepInfo,
+  Theme,
+} from '@railtime/network/facts.types';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat } from '@railtime/core/geometry.types';
@@ -55,12 +65,6 @@ export type MapProps = {
   boundary: CityBoundary | null;
 };
 
-/** Where `play` starts: here, history's start, or a change (its position in the timeline, as `ChangeInfo.index`). */
-export type PlayFrom = 'here' | 'start' | { change: number };
-
-/** Where `seek` goes: the end of a day, just after a change, just before one (playing starts it), today, or the future (everything played). */
-export type SeekTarget = { time: number } | { change: number } | { beforeChange: number } | 'today' | 'future';
-
 /** Asks for the next frame, and cancels one asked for: `requestAnimationFrame` unless a test steps frames by hand. */
 export type FrameScheduler = {
   request: (frame: (now: number) => void) => number;
@@ -107,16 +111,16 @@ export type NetworkParts = {
 /** One credit the map owes: the basemap's or the data's. */
 export type Credit = { text: string; url?: string };
 
-/** Where playback is. */
-export type TimeState = {
-  /** The clock, as a UTC timestamp. */
-  time: number;
-  /** Steps that have happened. Equal to `todayCursor` on today's map. */
-  cursor: number;
-  stepCount: number;
-  /** Steps that have happened by today. */
-  todayCursor: number;
-  /** The map shows a plan's future: a planned step is playing or has played. `time` is then the end of the dates. */
+/**
+ * Where playback is: its playhead (the changes done, the clock, how far the next change has been
+ * drawn), which `seek` takes back as it is, and what stands round it, as `NetworkFacts.playheads` says.
+ */
+export type TimeState = Playhead & {
+  /** The playhead is today's. */
+  atToday: boolean;
+  /** The playhead is where the map rests: today, or for a network with a plan the plan built. */
+  atRest: boolean;
+  /** The map shows a plan: a planned change done, or one being drawn. `time` is then the end of the dates. */
   future: boolean;
   playing: boolean;
   stats: NetworkStats;
@@ -137,7 +141,7 @@ export type OverlayResult =
 export type TransitMapEvents = {
   /** The map is ready: its style loaded, its layers drawn as its props say. */
   status: 'ready';
-  /** The clock, cursor, playing state or stats changed. */
+  /** The playhead, playing state or stats changed. */
   time: TimeState;
   /** A step started (`StepInfo`), or its caption should go (`null`). */
   step: StepInfo | null;

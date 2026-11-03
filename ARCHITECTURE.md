@@ -48,7 +48,7 @@ facts.change(index);
 facts.growth();
 facts.hasHistory();
 facts.today(); // the questions below, for today
-const then = facts.asOf(time); // time: { cursor, time }, as the map's `time` event gives it
+const then = facts.asOf(time); // time: a Playhead { cursor, time, progress }, as the map's `time` event gives it
 then.stations();
 then.station(id);
 then.line(id);
@@ -100,8 +100,8 @@ network's `NetworkFacts`. A feature picks its channel by what it is.
 ### Commands
 
 ```ts
-seek({ time } | { change } | { beforeChange } | 'today' | 'future'); // a seek: playing, it plays on
-play('here' | 'start' | { change }); // start: history's first date, or a plan's today
+seek(playhead); // a Playhead { cursor, time, progress }, from facts.playheads or a TimeState; playing, it plays on
+play(playhead?); // on from here, or from a playhead; at the end, again from history's start (a plan's: today)
 pause();
 stop(); // stop: pause, the camera back to the whole network
 skip();

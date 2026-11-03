@@ -19,8 +19,8 @@ const map = new TransitMap({
 });
 map.update({ viewMode: '3d', overlay: { kind: 'route', from: 'bank', to: 'oval', preference: 'fastest' } });
 map.update({ facts: NetworkFacts.create(network, { plan: 'another' }) }); // drawn on the same map, at its today
-map.seek({ time: Date.UTC(1950, 0, 1) }); // or { change }, 'today', 'future'
-map.play('start'); // history from its first date; a plan's future from today
+map.seek(facts.playheads.on(Date.UTC(1950, 0, 1))); // any Playhead: .after(cursor, progress), .before(cursor), .today(), .end(), a TimeState
+map.play(); // on from here; at the end, again from history's first date (a plan's: today); or play(playhead)
 map.pause(); map.skip(); map.previousChange(); map.stepYear(-1); map.stop();
 map.destroy();
 ```

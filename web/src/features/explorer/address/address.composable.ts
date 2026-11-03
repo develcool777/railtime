@@ -1,36 +1,36 @@
 import { useRoute, useRouter } from '#imports';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import { storeToRefs } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 
-import { formatExplorerQuery, sameQuery } from '~/features/explorer/address/address.utils';
-import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
+import { ADDRESS_WRITE_MS } from '~/features/explorer/address/address.constants';
+import { formatExplorerQuery, linkedPlayheadOf, sameQuery } from '~/features/explorer/address/address.utils';
+import type { ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { Section } from '~/features/explorer/explorer.types';
-import { isDated } from '~/features/explorer/time/timeline.utils';
 
 /**
- * The address follows what is looked at, so it can be shared: the day and the view, the tab, the line
+ * The address follows what is looked at, so it can be shared: the playhead (`at`) and the view, the tab, the line
  * or station open, coverage's distance, 3D, the station names, map only. The store opened on what it said (`open`); from
- * then on it is written from the store. While playing the day is left as it was, not rewritten every change.
+ * then on it is written from the store, playing too, at most every `ADDRESS_WRITE_MS`: a reload or a link opens where the map is.
  *
  * @param opening - What the address said when the page opened.
  * @param openingSection - The section a page opens on without a tab in its address: left out of it.
  */
 export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Section): void => {
-  const { section, openStation, openLine, viewMode, stationNames, streetNames, mapOnly, playing, time, view, plan, pickedPlan, coverageMetres } =
+  const { section, openStation, openLine, viewMode, stationNames, streetNames, mapOnly, time, view, pickedPlan, coverageMetres, facts } =
     storeToRefs(useExplorerStore());
   const route = useRoute();
   const router = useRouter();
 
-  // The day the address says: followed while exploring, kept as it was while playing.
-  const date = ref(opening.date);
+  // The playhead the address names: as the address opened, until the map tells it where it is.
+  const linked = ref<LinkedPlayhead | null>(opening.at ?? null);
   watch(time, now => {
-    if (!playing.value) date.value = isDated(now, plan.value !== undefined) ? now.time : undefined;
+    if (now && facts.value) linked.value = linkedPlayheadOf(now, facts.value.playheads);
   });
   const query = computed(() =>
     formatExplorerQuery({
-      ...(date.value === undefined ? {} : { date: date.value }),
+      ...(linked.value ? { at: linked.value } : {}),
       ...(view.value ? { view: view.value } : {}),
       ...(openStation.value ? { station: openStation.value } : {}),
       ...(pickedPlan.value ? { plan: pickedPlan.value } : {}),
@@ -43,7 +43,19 @@ export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Se
       ...(mapOnly.value ? { mapOnly: true as const } : {}),
     }),
   );
-  watch(query, next => {
-    if (!sameQuery(next, route.query)) void router.replace({ query: next });
+  // Written at once, then at most every ADDRESS_WRITE_MS, the last one always.
+  let lastWrite = 0;
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  const write = () => {
+    pending = undefined;
+    lastWrite = Date.now();
+    if (!sameQuery(query.value, route.query)) void router.replace({ query: query.value });
+  };
+  watch(query, () => {
+    if (pending) return;
+    const wait = lastWrite + ADDRESS_WRITE_MS - Date.now();
+    if (wait <= 0) write();
+    else pending = setTimeout(write, wait);
   });
+  onScopeDispose(() => clearTimeout(pending));
 };

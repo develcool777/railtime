@@ -24,7 +24,7 @@ import type {
   LineSketch,
   NetworkFactsOptions,
   NetworkGrowth,
-  NetworkTime,
+  Playhead,
   NetworkChoice,
   NetworkRecords,
   NetworkSummary,
@@ -54,6 +54,8 @@ export class NetworkFacts {
   public readonly engine: NetworkEngine;
   /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's future plays at `end`. */
   public readonly range: { start: number; end: number; today: number };
+  /** Where in its history the map can be: on a day, after or before a change, today, at the end. */
+  public readonly playheads: NetworkEngine['playheads'];
   /** The network, indexed. */
   private readonly index: NetworkIndex;
   /** Its history as steps. */
@@ -83,6 +85,7 @@ export class NetworkFacts {
     this.index = this.engine.index;
     this.timeline = this.engine.timeline;
     this.range = this.engine.range;
+    this.playheads = this.engine.playheads;
     this.routes = new RouteFinder(this.index, this.timeline);
     this.thisYear = yearOf(today);
   }
@@ -228,16 +231,6 @@ export class NetworkFacts {
   }
 
   /**
-   * The moment at the end of a day: every change on it or before has happened.
-   *
-   * @param day - A timestamp on that day.
-   * @returns The moment.
-   */
-  public momentOn(day: number): NetworkTime {
-    return { cursor: this.timeline.cursorAt(day), time: day };
-  }
-
-  /**
    * Whether the network has a history to show: some year with a station on the map. One never built
    * has only its plans.
    *
@@ -253,7 +246,7 @@ export class NetworkFacts {
    * @returns The questions, each answered for today.
    */
   public today(): FactsAt {
-    return this.asOf(this.momentOn(this.range.today));
+    return this.asOf(this.playheads.today());
   }
 
   /**
@@ -262,7 +255,7 @@ export class NetworkFacts {
    * @param moment - The moment: the map's `time`.
    * @returns The questions, each answered for that moment.
    */
-  public asOf(moment: NetworkTime): FactsAt {
+  public asOf(moment: Playhead): FactsAt {
     return {
       stations: () => this.stationsAt(moment),
       station: id => this.stationAt(id, moment),
@@ -297,7 +290,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The line's details.
    */
-  private lineAt(line: string, moment: NetworkTime): LineDetails {
+  private lineAt(line: string, moment: Playhead): LineDetails {
     const info = required(
       this.lines().find(candidate => candidate.id === line),
       `line ${line}`,
@@ -324,7 +317,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The route, or `null` if the network then has none.
    */
-  private routeAt(from: string, to: string, preference: RoutePreference, moment: NetworkTime): RouteInfo | null {
+  private routeAt(from: string, to: string, preference: RoutePreference, moment: Playhead): RouteInfo | null {
     const route = this.routes.find(from, to, moment.cursor, preference);
     if (!route) return null;
     const stop = (station: string) => ({ id: station, name: this.index.stationName(station, moment.time) });
@@ -358,7 +351,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The stations it gets to, soonest first, the bands they are coloured in, and the track it colours; `null` if no line calls there then.
    */
-  private reachAt(from: string, moment: NetworkTime): ReachInfo | null {
+  private reachAt(from: string, moment: Playhead): ReachInfo | null {
     const minutes = this.routes.reach(from, moment.cursor);
     if (minutes.size === 0) return null;
     const name = (station: string) => this.index.stationName(station, moment.time);
@@ -382,7 +375,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The records.
    */
-  private recordsAt(count: number, moment: NetworkTime): NetworkRecords {
+  private recordsAt(count: number, moment: Playhead): NetworkRecords {
     const { firstYears } = this.networkHistory();
     return recordsOf({ index: this.index, timeline: this.timeline, firstYears, colorOf: line => this.colorOf(line) }, count, moment);
   }
@@ -393,7 +386,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The stations a line calls at, by name.
    */
-  private stationsAt(moment: NetworkTime): StationSummary[] {
+  private stationsAt(moment: Playhead): StationSummary[] {
     return (
       [...this.timeline.stationsOnMap(moment.cursor)]
         .map(station => {
@@ -423,7 +416,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The station's details.
    */
-  private stationAt(station: string, moment: NetworkTime): StationInfo {
+  private stationAt(station: string, moment: Playhead): StationInfo {
     const info = this.index.stationOf(station);
     const calling = new Set(this.callingAt(station, moment.cursor));
     const lines = [...trackDatesAt(this.index, this.timeline, station).entries()].map(([line, dates]) => {
@@ -474,7 +467,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns Each one on the map then.
    */
-  private transfersFrom(station: string, moment: NetworkTime): TransferInfo[] {
+  private transfersFrom(station: string, moment: Playhead): TransferInfo[] {
     return this.index.transfersAt(station).flatMap(other => {
       // The lines calling there now, each as it is drawn then (a branch still shown as its parent).
       const calling = this.callingAt(other, moment.cursor).map(line => this.timeline.identityOf(line, moment.cursor).id);

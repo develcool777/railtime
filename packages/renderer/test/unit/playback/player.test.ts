@@ -1,13 +1,14 @@
 import { describe, expect, test } from 'vitest';
 import { YEAR_MS, toTimestamp } from '@railtime/core/date.utils';
 import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
+import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 describe('Player', () => {
   test('stops on each step and plays it through its phases to the end', () => {
-    const { timeline, player } = playbackOf(tinyNetwork());
-    player.seek({ time: toTimestamp('1899-06-01') });
+    const { facts, timeline, player } = playbackOf(tinyNetwork());
+    player.seek(facts.playheads.on(toTimestamp('1899-06-01')));
     player.play();
     const events: string[] = [];
     for (let frame = 0; frame < 20000 && player.playing; frame++) events.push(...player.tick(1 / 30).map(event => event.type));
@@ -32,44 +33,82 @@ describe('Player', () => {
     expect(player.cursor).toBe(timeline.steps.length);
   });
 
+  test('tells where it is as a playhead: the changes done, the clock, and how far the next one has been drawn', () => {
+    const { facts, player } = playbackOf(tinyNetwork());
+    player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
+    expect(player.playhead).toEqual({ cursor: 1, time: toTimestamp('1905-01-01'), progress: 0 });
+    player.skip();
+    player.play();
+    player.tick(1);
+    player.tick(player.active!.animation.drawSeconds / 2);
+    expect(player.playhead).toEqual({ cursor: 1, time: toTimestamp('1910-01-01'), progress: expect.closeTo(0.5) });
+  });
+
+  test("seeks a change drawn in part, past the camera's beat, and plays it on from there", () => {
+    const { facts, player } = playbackOf(tinyNetwork());
+    player.seek(facts.playheads.after(1, 0.25));
+    expect([player.phase, player.cursor]).toEqual(['draw', 1]);
+    expect(player.playhead).toEqual({ ...facts.playheads.after(1, 0.25), progress: expect.closeTo(0.25) });
+    player.play();
+    expect(player.tick(player.active!.animation.drawSeconds).map(event => event.type)).toEqual([]);
+    expect(player.phase).toBe('hold');
+    // Past the last change there is nothing to draw.
+    player.seek({ ...facts.playheads.end(), progress: 0.5 });
+    expect(player.active).toBeNull();
+  });
+
+  test("holds the clock to the change's years: from the last done's date to the next one's, history's start before any", () => {
+    const { facts, timeline, player } = playbackOf(tinyNetwork());
+    const [first, second] = timeline.steps;
+    player.seek({ cursor: 1, time: toTimestamp('1850-01-01'), progress: 0 });
+    expect(player.clock).toBe(first!.time);
+    player.seek({ cursor: 1, time: toTimestamp('1990-01-01'), progress: 0 });
+    expect([player.cursor, player.clock]).toEqual([1, second!.time]);
+    player.seek({ cursor: 0, time: toTimestamp('1990-01-01'), progress: 0 });
+    expect([player.cursor, player.clock]).toEqual([0, first!.time]);
+    player.seek({ cursor: -2, time: toTimestamp('1800-01-01'), progress: 0 });
+    expect([player.cursor, player.clock]).toEqual([0, timeline.start]);
+    expect(facts.playheads.after(0).time).toBe(timeline.start);
+  });
+
   test('jumps to the end, the plan built', () => {
-    const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
-    player.seek('future');
+    const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
+    player.seek(facts.playheads.end());
     expect(player.cursor).toBe(timeline.steps.length);
     expect(player.inFuture).toBe(true);
-    player.seek({ time: toTimestamp('1950-01-01') });
+    player.seek(facts.playheads.on(toTimestamp('1950-01-01')));
     expect(player.inFuture).toBe(false);
   });
 
   test('skips to the next step, then finishes it', () => {
-    const { player } = playbackOf(tinyNetwork());
-    player.seek({ time: toTimestamp('1899-06-01') });
+    const { facts, player } = playbackOf(tinyNetwork());
+    player.seek(facts.playheads.on(toTimestamp('1899-06-01')));
     expect(player.skip().map(event => event.type)).toEqual(['stepStart']);
     expect(player.skip().map(event => event.type)).toEqual(['stepEnd']);
     expect(player.cursor).toBe(1);
   });
 
   test('jumps to just before a step, so playing starts it, or just past it, on its date', () => {
-    const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
+    const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
     const dated = timeline.steps[2]!;
-    player.seek({ change: 2 });
+    player.seek(facts.playheads.after(3));
     expect(player.cursor).toBe(3);
     expect(player.clock).toBe(dated.time);
-    player.seek({ beforeChange: 2 });
+    player.seek(facts.playheads.before(2));
     expect(player.cursor).toBe(2);
     player.play();
     expect(player.tick(1 / 30).map(event => event.type)).toEqual(['stepStart']);
     expect(player.active?.animation.step).toBe(dated);
     // A planned step stands at the end, in the future.
-    player.seek({ change: timeline.datedCount });
+    player.seek(facts.playheads.after(timeline.datedCount + 1));
     expect(player.clock).toBe(player.end);
     expect(player.inFuture).toBe(true);
   });
 
   test('runs the clock fast through quiet years and slows steadily into the next change, never with a jolt', () => {
-    const { timeline, player } = playbackOf(tinyNetwork());
+    const { facts, timeline, player } = playbackOf(tinyNetwork());
     // Five years before red reaches C, D in 1910.
-    player.seek({ time: toTimestamp('1905-01-01') });
+    player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
     player.play();
     const frame = 1 / 60;
     const speeds: number[] = [];
@@ -86,9 +125,9 @@ describe('Player', () => {
   });
 
   test('plays a step through its phases at their exact edges: a beat for the camera, the change drawn, then held', () => {
-    const { player } = playbackOf(tinyNetwork());
+    const { facts, player } = playbackOf(tinyNetwork());
     // Red's 1910 stretch: 1 s for the camera, then drawn (its 2 km, and a stop at D), then held 1.2 s.
-    player.seek({ time: toTimestamp('1905-01-01') });
+    player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
     expect([player.phase, player.progress, player.holdProgress]).toEqual([null, 0, 0]);
     player.skip();
     player.play();
@@ -114,8 +153,8 @@ describe('Player', () => {
   });
 
   test('plays faster at a higher speed, and not at all while paused', () => {
-    const { player } = playbackOf(tinyNetwork());
-    player.seek({ time: toTimestamp('1905-01-01') });
+    const { facts, player } = playbackOf(tinyNetwork());
+    player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
     player.skip();
     expect(player.tick(5)).toEqual([]);
     expect(player.active?.elapsed).toBe(0);
@@ -124,9 +163,9 @@ describe('Player', () => {
     player.tick(0.25);
     expect(player.active?.elapsed).toBe(0.5);
     // Between steps, the clock runs twice as fast too.
-    const between = playbackOf(tinyNetwork()).player;
+    const { facts: betweenFacts, player: between } = playbackOf(tinyNetwork());
     // Nine quiet years before green opens in 1970: the clock runs at its fastest.
-    between.seek({ time: toTimestamp('1961-01-01') });
+    between.seek(betweenFacts.playheads.on(toTimestamp('1961-01-01')));
     between.play();
     between.setSpeed(2);
     const before = between.clock;
@@ -143,7 +182,7 @@ describe('Player', () => {
     expect(timeline.lastDate).toBe(player.end);
     // From past the last change, the clock runs on to the end before playback stops.
     const fresh = playbackOf(tinyNetwork());
-    fresh.player.seek({ change: fresh.timeline.steps.length - 1 });
+    fresh.player.seek(fresh.facts.playheads.after(fresh.timeline.steps.length));
     fresh.player.play();
     const events: string[] = [];
     let frames = 0;
@@ -158,74 +197,80 @@ describe('Player', () => {
   });
 
   test('skips nothing past the last step, and seeks to the first or last step for a place outside them', () => {
-    const { timeline, player } = playbackOf(tinyNetwork());
-    player.seek('future');
+    const { facts, timeline, player } = playbackOf(tinyNetwork());
+    player.seek(facts.playheads.end());
     expect(player.skip()).toEqual([]);
-    player.seek({ beforeChange: 999 });
+    player.seek(facts.playheads.before(999));
     expect(player.cursor).toBe(timeline.steps.length - 1);
-    player.seek({ beforeChange: -5 });
+    player.seek(facts.playheads.before(-5));
     expect(player.cursor).toBe(0);
   });
 
   describe('commands', () => {
-    test('plays history from its first date, and a plan from today, where its future starts', () => {
-      const history = playbackOf(tinyNetwork()).player;
-      history.play('start');
-      expect(history.clock).toBe(toTimestamp('1899-01-01'));
-      expect(history.playing).toBe(true);
-      const plan = playbackOf(tinyNetwork(), { plan: 'extension' }).player;
-      plan.play('start');
-      expect(plan.clock).toBe(plan.today);
+    test('starts again at the end: history from its first date, a network with a plan from today, where it starts', () => {
+      const history = playbackOf(tinyNetwork());
+      history.player.seek(history.facts.playheads.end());
+      history.player.play();
+      expect([history.player.clock, history.player.playing]).toEqual([toTimestamp('1899-01-01'), true]);
+      const plan = playbackOf(tinyNetwork(), { plan: 'extension' });
+      plan.player.seek(plan.facts.playheads.end());
+      plan.player.play();
+      expect([plan.player.clock, plan.player.cursor]).toEqual([plan.player.today, plan.timeline.datedCount]);
+      const planOnly = playbackOf(planOnlyNetwork(), { plan: 'first' });
+      planOnly.player.seek(planOnly.facts.playheads.end());
+      planOnly.player.play();
+      expect([planOnly.player.clock, planOnly.player.cursor]).toEqual([planOnly.player.today, 0]);
     });
 
     test('plays on from here, but from the start again once at the end', () => {
-      const { player, timeline } = playbackOf(tinyNetwork());
-      player.seek({ time: toTimestamp('1935-01-01') });
+      const { facts, player, timeline } = playbackOf(tinyNetwork());
+      player.seek(facts.playheads.on(toTimestamp('1935-01-01')));
       player.play();
       expect(player.clock).toBe(toTimestamp('1935-01-01'));
-      player.seek('future');
+      player.seek(facts.playheads.end());
       player.play();
       expect(player.clock).toBe(timeline.start);
     });
 
     test('plays from just before a change, so it plays again', () => {
-      const { player } = playbackOf(tinyNetwork());
-      player.play({ change: 3 });
+      const { facts, player } = playbackOf(tinyNetwork());
+      player.play(facts.playheads.before(3));
       expect([player.cursor, player.playing]).toEqual([3, true]);
     });
 
-    test('keeps playing or paused as it seeks; the future, where all has played, pauses', () => {
-      const { player, timeline } = playbackOf(tinyNetwork());
+    test('keeps playing or paused as it seeks; at the end, where all has played, playing ends on the next frame', () => {
+      const { facts, player, timeline } = playbackOf(tinyNetwork());
       player.play();
-      player.seek({ time: toTimestamp('1935-01-01') });
+      player.seek(facts.playheads.on(toTimestamp('1935-01-01')));
       expect(player.playing).toBe(true);
-      player.seek({ change: 2 });
+      player.seek(facts.playheads.after(3));
       expect([player.cursor, player.playing]).toEqual([3, true]);
-      player.seek('future');
-      expect([player.cursor, player.playing]).toEqual([timeline.steps.length, false]);
-      player.seek('today');
+      player.seek(facts.playheads.end());
+      expect([player.cursor, player.playing]).toEqual([timeline.steps.length, true]);
+      expect(player.tick(1 / 30).map(event => event.type)).toEqual(['end']);
+      player.seek(facts.playheads.today());
       expect([player.clock, player.playing]).toEqual([player.today, false]);
     });
 
     test('steps a year at a time, within the timeline', () => {
-      const { player, timeline } = playbackOf(tinyNetwork());
-      player.seek({ time: toTimestamp('1935-06-01') });
+      const { facts, player, timeline } = playbackOf(tinyNetwork());
+      player.seek(facts.playheads.on(toTimestamp('1935-06-01')));
       player.stepYear(-1);
       expect(player.clock).toBe(toTimestamp('1935-06-01') - YEAR_MS);
-      player.seek({ time: timeline.start });
+      player.seek(facts.playheads.on(timeline.start));
       player.stepYear(-1);
       expect(player.clock).toBe(timeline.start);
-      player.seek('today');
+      player.seek(facts.playheads.today());
       player.stepYear(1);
       expect(player.clock).toBe(player.end);
     });
 
     test('goes back to the change before the one playing, or the one before the last played', () => {
-      const { player } = playbackOf(tinyNetwork());
-      player.seek({ change: 4 });
+      const { facts, player } = playbackOf(tinyNetwork());
+      player.seek(facts.playheads.after(5));
       player.previousChange();
       expect(player.cursor).toBe(3);
-      player.play({ change: 4 });
+      player.play(facts.playheads.before(4));
       player.skip();
       expect(player.active?.animation.step.index).toBe(4);
       player.previousChange();

@@ -284,12 +284,21 @@ export type PlanInfo = {
 /** A network summed up, for a list of cities. */
 export type NetworkSummary = Omit<CityIndexEntry, 'name' | 'country'>;
 
-/** A moment in the network's history, as the map's `time` event gives it: the steps happened, and the day. */
-export type NetworkTime = {
-  /** Steps that have happened. */
+/**
+ * A position in the network's history, as a video's playhead is one in the video: the changes done, the
+ * clock, and how far the next change has been drawn. The same in 2D and 3D and at any speed, which change
+ * only how fast it moves: the map reports one (`TimeState`), seeks one and the app's address holds one.
+ */
+export type Playhead = {
+  /** Changes done, a plan's too: the sequence number, as exact as a day is not (many changes share one). */
   cursor: number;
-  /** The day, as a UTC timestamp. */
+  /**
+   * The clock, as a UTC timestamp: in the years after the last change done, up to the next one's date;
+   * a plan's change has none and plays at the end of the range.
+   */
   time: number;
+  /** How far the next change has been drawn, 0 to 1: 0 between changes. The facts count only the changes done. */
+  progress: number;
 };
 
 /** What `NetworkFacts` is made with besides the network. */

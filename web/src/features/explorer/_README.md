@@ -53,7 +53,7 @@ At the top, what every part shares or what ties them together:
 | What is looked at: tab, line, station, 3D, names, map only    | the store                  | the address: `tab`, `line`, `station`, `view=3d`, `names=off`, `mapOnly=1` |
 | The lines hidden                                              | its facts (`hidden`)       | the visit                                                                  |
 | How far from a station coverage counts                        | the store                  | the address: `walk=400`, `1200`, `1600` or `2000` (800 m without)          |
-| The day, where the map looks                                  | the map; the store a copy  | the address: `date`, `map`                                                 |
+| The playhead, where the map looks                             | the map; the store a copy  | the address: `at` (`202`, `202.4`, `202,1928-06-01`), `map`                |
 | How the page is laid out, how playback is set                 | the store                  | cookies: `railtime-panel-open`, `-panel-width`, `-player`                  |
 | The rest: the time control's mode, the sheet, the dialog open | the store                  | the visit                                                                  |
 | Every fact about the network                                  | `NetworkFacts` (`network`) | asked, never kept                                                          |

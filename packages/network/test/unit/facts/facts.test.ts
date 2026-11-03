@@ -23,15 +23,6 @@ const factsOf = (plan?: string) => {
   return NetworkFacts.create(network, { ...(plan ? { plan } : {}), today: TODAY });
 };
 
-/**
- * The moment just after a date: the cursor past every step on it or before.
- *
- * @param facts - The network's facts.
- * @param date - The date.
- * @returns The moment.
- */
-const momentOf = (facts: NetworkFacts, date: string) => ({ cursor: facts.engine.timeline.cursorAt(toTimestamp(date)), time: toTimestamp(date) });
-
 describe('NetworkFacts', () => {
   test('hides the lines of its networks hidden at first unless asked otherwise, and lists them either way', () => {
     const network = hiddenNetwork();
@@ -108,8 +99,8 @@ describe('NetworkFacts', () => {
 
   test('answers for the moment it is asked about, and for no other', () => {
     const facts = factsOf();
-    const early = facts.asOf(momentOf(facts, '1905-01-01'));
-    const later = facts.asOf(momentOf(facts, '1935-01-01'));
+    const early = facts.asOf(facts.playheads.on(toTimestamp('1905-01-01')));
+    const later = facts.asOf(facts.playheads.on(toTimestamp('1935-01-01')));
     expect(
       early
         .stations()
@@ -124,13 +115,13 @@ describe('NetworkFacts', () => {
 
   test('answers for today: every dated change on it or before played', () => {
     const facts = factsOf();
-    expect(facts.today().stats()).toEqual(facts.asOf(momentOf(facts, '2026-01-01')).stats());
+    expect(facts.today().stats()).toEqual(facts.asOf(facts.playheads.on(toTimestamp('2026-01-01'))).stats());
   });
 
   test("names a station as it was called at the moment's date", () => {
     const facts = factsOf();
-    expect(facts.asOf(momentOf(facts, '1915-01-01')).station('d').name).toBe('Old D');
-    expect(facts.asOf(momentOf(facts, '1935-01-01')).station('d').name).toBe('D');
+    expect(facts.asOf(facts.playheads.on(toTimestamp('1915-01-01'))).station('d').name).toBe('Old D');
+    expect(facts.asOf(facts.playheads.on(toTimestamp('1935-01-01'))).station('d').name).toBe('D');
   });
 
   test('finds a line or station by its id, with its name; none it does not have', () => {
@@ -163,9 +154,12 @@ describe('NetworkFacts', () => {
 
   test('gives the stops either side of a station on each of its lines, as at the moment', () => {
     const facts = factsOf();
-    expect(facts.asOf(momentOf(facts, '1935-01-01')).directions('c').get('red')).toEqual([
-      { previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: null } },
-    ]);
+    expect(
+      facts
+        .asOf(facts.playheads.on(toTimestamp('1935-01-01')))
+        .directions('c')
+        .get('red'),
+    ).toEqual([{ previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: null } }]);
   });
 
   test('builds a plan on the network: its changes play last', () => {
@@ -344,7 +338,7 @@ describe('NetworkFacts questions, at a moment', () => {
   });
 
   test("lists a plan's undated line at a station of its own, and a former name from the day it was dropped", () => {
-    const queries = questionsOn(plainFactsOf(tinyNetwork(), 'extension'), 'future');
+    const queries = questionsOn(plainFactsOf(tinyNetwork(), 'extension'), 'end');
     expect(queries.station('e').lines).toEqual([{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: null, calls: true }]);
     const renamed = queriesOn('1925-01-01');
     expect(renamed.queries.station('d').formerNames.map(former => former.name)).toEqual(['Old D']);

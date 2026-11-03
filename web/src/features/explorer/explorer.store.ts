@@ -2,7 +2,7 @@ import { useColorMode, useCookie } from '#imports';
 import { endOfYear } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { CoverageDistance, RoutePreference, Stop, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { CoverageDistance, Playhead, RoutePreference, Stop, StepInfo, Theme } from '@railtime/network/facts.types';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import type { Credit, MapView, OverlayResult, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
@@ -11,7 +11,8 @@ import { defineStore } from 'pinia';
 import { computed, markRaw, nextTick, ref, shallowRef } from 'vue';
 import type { WritableComputedRef } from 'vue';
 
-import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
+import type { ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
+import { playheadOf } from '~/features/explorer/address/address.utils';
 import { PANEL_WIDTH } from '~/features/explorer/explorer.constants';
 import type { Dialog, PanelView, PlayerSettings, RouteEnds, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 import {
@@ -28,7 +29,6 @@ import {
 import { mapPaddingFor, panelCoverOf, sheetHeightOf } from '~/features/explorer/layout.utils';
 import { DEFAULT_SPEED } from '~/features/explorer/time/time.constants';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
-import { isAtRest } from '~/features/explorer/time/timeline.utils';
 
 /**
  * The explorer's state, and what changes it: the one place a button or a key acts, so no click can
@@ -86,8 +86,8 @@ export const useExplorerStore = defineStore('explorer', () => {
   const map = shallowRef<TransitMap | null>(null);
   /** What the map owes credit to, once mounted. */
   const credits = shallowRef<Credit[]>([]);
-  /** The day the address opened on, for the map once it is there. */
-  let openingDate: number | undefined;
+  /** Where in the history the address opened, for the map once it is there. */
+  let openingPlayhead: LinkedPlayhead | undefined;
 
   /** The plan picked, if any: shown while every line it builds on is, and kept in the address either way. */
   const pickedPlan = ref<string | undefined>(undefined);
@@ -175,7 +175,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     step.value = null;
     overlayResult.value = null;
     view.value = address.view ?? null;
-    openingDate = address.date;
+    openingPlayhead = address.at;
     return opened;
   };
 
@@ -199,6 +199,15 @@ export const useExplorerStore = defineStore('explorer', () => {
   };
 
   /**
+   * Moves the map to a playhead of the network shown.
+   *
+   * @param where - Picks it from the network's playheads.
+   */
+  const seekTo = (where: (playheads: NetworkFacts['playheads']) => Playhead) => {
+    if (facts.value) map.value?.seek(where(facts.value.playheads));
+  };
+
+  /**
    * Shows another plan, or the network as built, at the plan's future (else today).
    *
    * @param shownPlan - The plan to show built on it; none for the network as built.
@@ -208,7 +217,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     remake(shownPlan, facts.value?.hidden ?? []);
     // Once the map has the new network (it opens at its today), on to the plan built.
     await nextTick();
-    if (shownPlan) map.value?.seek('future');
+    if (shownPlan) seekTo(playheads => playheads.end());
   };
 
   /**
@@ -220,24 +229,25 @@ export const useExplorerStore = defineStore('explorer', () => {
    * @param shown - Whether to show them.
    */
   const showLines = async (lines: readonly string[], shown: boolean) => {
-    const day = time.value && !isAtRest(time.value, plan.value !== undefined) ? time.value.time : undefined;
+    const day = time.value && !time.value.atRest ? time.value.time : undefined;
     const hidden = facts.value?.hidden ?? [];
     remake(pickedPlan.value, shown ? hidden.filter(id => !lines.includes(id)) : [...new Set([...hidden, ...lines])]);
     // The new network opens at its today: back to the day shown, if it was another.
     await nextTick();
-    if (day !== undefined) map.value?.seek({ time: day });
+    if (day !== undefined) seekTo(playheads => playheads.on(day));
   };
 
   /**
-   * The map is mounted: it is shown where the address opened, on its day, or a plan's future.
+   * The map is mounted: it is shown where the address opened, or a plan built.
    *
    * @param mounted - The map.
    */
   const attach = (mounted: TransitMap) => {
     map.value = markRaw(mounted);
     credits.value = mounted.credits;
-    if (openingDate !== undefined) mounted.seek({ time: openingDate });
-    else if (plan.value) mounted.seek('future');
+    const opening = openingPlayhead;
+    if (opening) seekTo(playheads => playheadOf(opening, playheads));
+    else if (plan.value) seekTo(playheads => playheads.end());
   };
   /** The map is taken down. */
   const detach = () => (map.value = null);
@@ -365,7 +375,7 @@ export const useExplorerStore = defineStore('explorer', () => {
    */
   const play = () => {
     timeMode.value = 'playing';
-    map.value?.play('here');
+    map.value?.play();
   };
   /** Pauses where it is: the timeline, at the date reached. */
   const pause = () => {
@@ -375,15 +385,15 @@ export const useExplorerStore = defineStore('explorer', () => {
   /** Plays or pauses. */
   const togglePlay = () => (timeMode.value === 'playing' && time.value?.playing ? pause() : play());
   /**
-   * Leaves for a moment: today, or the network as it ends (a plan built, else today); playing, it
-   * stops, the whole network back in view.
+   * Leaves for one of the network's places: today, where the map rests (today, or a plan built) or the
+   * end; playing, it stops, the whole network back in view.
    *
-   * @param target - Where to.
+   * @param place - Where to, as `Playheads` names it.
    */
-  const leaveTo = (target: TimelineTarget) => {
+  const leaveTo = (place: 'today' | 'rest' | 'end') => {
     if (timeMode.value === 'playing') map.value?.stop();
     timeMode.value = 'timeline';
-    pick(target);
+    seekTo(playheads => playheads[place]());
   };
   /** The change before the one shown; playing, it plays again. */
   const previousChange = () => map.value?.previousChange();
@@ -395,9 +405,9 @@ export const useExplorerStore = defineStore('explorer', () => {
    * @param target - A date, a change, or the future.
    */
   const pick = (target: TimelineTarget) => {
-    if (target.kind === 'future') map.value?.seek('future');
-    else if (target.kind === 'change') map.value?.seek({ change: target.index });
-    else map.value?.seek({ time: target.time });
+    if (target.kind === 'future') seekTo(playheads => playheads.end());
+    else if (target.kind === 'change') seekTo(playheads => playheads.after(target.index + 1));
+    else seekTo(playheads => playheads.on(target.time));
   };
   /**
    * A change picked in a list: while playing, playback goes back to play it; otherwise the map shows it.
@@ -405,8 +415,8 @@ export const useExplorerStore = defineStore('explorer', () => {
    * @param index - The change.
    */
   const pickChange = (index: number) => {
-    if (timeMode.value === 'playing') map.value?.play({ change: index });
-    else map.value?.seek({ change: index });
+    if (timeMode.value === 'playing' && facts.value) map.value?.play(facts.value.playheads.before(index));
+    else seekTo(playheads => playheads.after(index + 1));
   };
   /**
    * A year back or on; in the player, the change before or the next.
@@ -433,8 +443,7 @@ export const useExplorerStore = defineStore('explorer', () => {
    * @param year - The year.
    */
   const showYear = (year: number) => {
-    const today = facts.value?.range.today ?? Date.now();
-    map.value?.seek({ time: Math.min(endOfYear(year), today) });
+    seekTo(playheads => playheads.on(Math.min(endOfYear(year), playheads.today().time)));
   };
 
   return {

@@ -15,7 +15,10 @@ facts.plans(); // every plan, with what it would add
 facts.lines(); // every line, its colour in both themes
 facts.changes(); // every change, as its caption says it, planned ones last
 facts.growth(); // the network year by year, and openings by decade
-const then = facts.asOf({ cursor, time }); // the map's `time`, facts.momentOn(day), or facts.today()
+facts.playheads.on(day); // a Playhead { cursor, time, progress }: the map's position in the history
+facts.playheads.after(cursor, progress); // after so many changes, the next drawn so far; .before(cursor), .today(), .start(), .rest(), .end()
+facts.playheads.hold(playhead); // its rules, in one place: the cursor to the timeline, the clock to its change's years; .dateOf(change), .isRest(), .isToday(), .inPlan()
+const then = facts.asOf(playhead); // the map's `time` (a TimeState is a playhead), or one of facts.playheads; or facts.today()
 then.stations(); // the stations on the map then, for a search
 then.station('bank'); // its lines, when each opened and closed there, its former names, its transfers
 then.line('central'); // its stops in order, by branch, its km and its changes

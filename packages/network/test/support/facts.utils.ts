@@ -15,13 +15,11 @@ const TEST_TODAY = Date.UTC(2026, 0, 1);
 export const factsOf = (network: Network, plan?: string): NetworkFacts => NetworkFacts.create(network, { ...(plan ? { plan } : {}), today: TEST_TODAY });
 
 /**
- * The network's questions answered at the end of a day, or in its future (every change played).
+ * The network's questions answered at the end of a day, or at its end (every change played, a plan's too).
  *
  * @param facts - The network's facts.
- * @param when - A timestamp, or `future`.
+ * @param when - A timestamp, or `end`.
  * @returns The questions, answered then.
  */
-export const questionsOn = (facts: NetworkFacts, when: number | 'future'): FactsAt =>
-  when === 'future'
-    ? facts.asOf({ cursor: facts.engine.timeline.steps.length, time: facts.range.end })
-    : facts.asOf({ cursor: facts.engine.timeline.cursorAt(when), time: when });
+export const questionsOn = (facts: NetworkFacts, when: number | 'end'): FactsAt =>
+  facts.asOf(when === 'end' ? facts.playheads.end() : facts.playheads.on(when));

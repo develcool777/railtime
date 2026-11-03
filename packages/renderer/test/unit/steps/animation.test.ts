@@ -16,7 +16,7 @@ describe('StepAnimation', () => {
       const { index, timeline } = playback;
       const kinds = new Set<string>();
       for (const step of timeline.steps) {
-        playback.player.seek({ beforeChange: step.index });
+        playback.player.seek(playback.facts.playheads.before(step.index));
         const animation = new StepAnimation(step, { index, timeline, view: '2d' as const });
         kinds.add(step.kind);
         expect(animation.step).toBe(step);
@@ -47,7 +47,7 @@ describe('StepAnimation', () => {
       const { index, timeline } = playback;
       const state = renderStateOf(playback);
       const plannedOf = (step: (typeof timeline.steps)[number]) => {
-        playback.player.seek({ beforeChange: step.index });
+        playback.player.seek(playback.facts.playheads.before(step.index));
         const drawing = emptyDrawing();
         new StepAnimation(step, { index, timeline, view: '2d' }).draw(
           { state, snapshot: buildNetworkSnapshot(state, true), progress: 0.5, holdProgress: 0 },
@@ -81,7 +81,7 @@ describe('StepAnimation, opening a stretch', () => {
 
   test('grows more slowly in 3D, where the camera follows it at street level', () => {
     const playback = playbackOf(tinyNetwork(), { view: '3d' });
-    playback.player.seek({ time: toTimestamp('1905-01-01') });
+    playback.player.seek(playback.facts.playheads.on(toTimestamp('1905-01-01')));
     playback.player.skip();
     const pace = GROWTH_PACE['3d'];
     const animation = playback.player.active!.animation;

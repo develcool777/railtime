@@ -1,8 +1,7 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-import { isAtRest, isDated, positionOf, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
+import { positionOf, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 import type { TimelineScale } from '~/features/explorer/time/timeline.types';
-import { timeAt } from '@test/support/factories/timeState.utils';
 
 const START = Date.UTC(1900, 0, 1);
 const END = Date.UTC(2000, 0, 1);
@@ -67,39 +66,6 @@ describe('TimelineUtils', () => {
       expect(targetAt(PLANNED, 0.84 + 0.12)).toEqual({ kind: 'change', index: 5 });
       expect(targetAt(PLANNED, 1)).toEqual({ kind: 'future' });
       expect(targetAt(PLANNED, 0.845)).toEqual({ kind: 'date', time: END });
-    });
-  });
-
-  describe('isAtRest', () => {
-    test('is today, without a plan', () => {
-      expect(isAtRest(timeAt({}), false)).toBe(true);
-      expect(isAtRest(timeAt({ cursor: 2, time: Date.UTC(1935, 0, 1) }), false)).toBe(false);
-      expect(isAtRest(timeAt({ future: true }), false)).toBe(false);
-    });
-
-    test('is the plan built, with one', () => {
-      expect(isAtRest(timeAt({ future: true, cursor: 5 }), true)).toBe(true);
-      expect(isAtRest(timeAt({}), true)).toBe(false);
-    });
-
-    test('is at rest before the map mounts', () => {
-      expect(isAtRest(null, false)).toBe(true);
-    });
-  });
-
-  describe('isDated', () => {
-    test('names a day away from today', () => {
-      expect(isDated(timeAt({ cursor: 2, time: Date.UTC(1935, 0, 1) }), false)).toBe(true);
-      expect(isDated(timeAt({}), false)).toBe(false);
-    });
-
-    test('with a plan, names today too, and never its future', () => {
-      expect(isDated(timeAt({}), true)).toBe(true);
-      expect(isDated(timeAt({ future: true, cursor: 5 }), true)).toBe(false);
-    });
-
-    test('names nothing before the map mounts', () => {
-      expect(isDated(null, false)).toBe(false);
     });
   });
 });

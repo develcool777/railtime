@@ -9,6 +9,8 @@ import type { ActiveStepLayer, NetworkLayer } from './network.service';
 export type FrameParts = {
   index: NetworkEngine['index'];
   timeline: NetworkEngine['timeline'];
+  /** Where in the history the map can be: whether the player's playhead is today's, or where the map rests. */
+  playheads: NetworkEngine['playheads'];
   player: Player;
   network: NetworkLayer;
   activeStep: ActiveStepLayer;
