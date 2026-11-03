@@ -124,7 +124,7 @@ export type TimeState = Playhead & {
   /** The playhead is where the map rests: today, or for a network with a plan the plan built. */
   atRest: boolean;
   /** The map shows a plan: a planned change done, or one being drawn. `time` is then the end of the dates. */
-  future: boolean;
+  inPlan: boolean;
   playing: boolean;
   stats: NetworkStats;
 };

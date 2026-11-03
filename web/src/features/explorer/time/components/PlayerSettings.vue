@@ -2,11 +2,11 @@
   <UPopover :content="{ align: 'end', side: 'top', sideOffset: 8 }">
     <UTooltip text="Player settings">
       <UButton
-        icon="i-lucide-settings-2"
+        icon="i-lucide-settings"
         color="neutral"
-        variant="outline"
+        variant="ghost"
         square
-        class="size-9 flex-none justify-center rounded-full"
+        class="size-8 flex-none justify-center rounded-full"
         aria-label="Player settings" />
     </UTooltip>
 

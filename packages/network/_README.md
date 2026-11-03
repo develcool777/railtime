@@ -46,7 +46,7 @@ A station's names in other languages (`names`) are on its label, beneath its Eng
 (`buildPlan` in `@railtime/schema`). A plan is undated: the timeline puts its sections after every
 dated step, as `planned` steps at time `Infinity`, and the player plays them one by one once the
 clock reaches its end, the clock standing there. Their track is drawn dashed in its line's colour, growing too, a
-station only they reach is a ring, their `StepInfo.time` is `null`, and `TimeState.future` is true
+station only they reach is a ring, their `StepInfo.time` is `null`, and `TimeState.inPlan` is true
 while one plays or once one has. A different plan is a new `NetworkFacts`; `plans()` and `summary()`
 are of the network as stored, whichever plan is built.
 

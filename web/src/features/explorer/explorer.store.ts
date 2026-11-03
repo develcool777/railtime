@@ -92,7 +92,7 @@ export const useExplorerStore = defineStore('explorer', () => {
 
   /** The plan picked, if any: shown while every line it builds on is, and kept in the address either way. */
   const pickedPlan = ref<string | undefined>(undefined);
-  /** The plan shown, if any: its future is what plays, and its built network is "at rest". */
+  /** The plan shown, if any: its changes are what plays, and the network it builds is "at rest". */
   const plan = computed(() => facts.value?.plan ?? undefined);
   /** Each network with the lines that may be shown or hidden, hidden ones too. */
   const networkChoices = computed(() => facts.value?.networkChoices() ?? []);
@@ -215,7 +215,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   };
 
   /**
-   * Shows another plan, or the network as built, at the plan's future (else today).
+   * Shows another plan, or the network as built, with the plan built (else today).
    *
    * @param shownPlan - The plan to show built on it; none for the network as built.
    */
@@ -409,10 +409,10 @@ export const useExplorerStore = defineStore('explorer', () => {
   /**
    * Shows what the timeline was picked at: playing, it plays on from there.
    *
-   * @param target - A date, a change, or the future.
+   * @param target - A date, a change, or the plan built.
    */
   const pick = (target: TimelineTarget) => {
-    if (target.kind === 'future') seekTo(playheads => playheads.end());
+    if (target.kind === 'planBuilt') seekTo(playheads => playheads.end());
     else if (target.kind === 'change') seekTo(playheads => playheads.after(target.index + 1));
     else seekTo(playheads => playheads.on(target.time));
   };

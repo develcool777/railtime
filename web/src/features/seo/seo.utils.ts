@@ -58,7 +58,7 @@ export const citySeo = (city: string, entry: CityIndexEntry): PageSeo => {
   const name = cityNameOf(city);
   const networks = entry.networks.join(', ');
   const size = `${counted(entry.lines, 'line')} and ${counted(entry.stations, 'station')}`;
-  const plans = entry.plans > 0 ? `, or open one of its ${counted(entry.plans, 'plan')} for the future` : '';
+  const plans = entry.plans > 0 ? `, or open one of its ${counted(entry.plans, 'plan')}` : '';
   const description = entry.planOnly
     ? `${name} never built a metro: see ${networks} as planned, ${size}, on the real map, and play it section by section.`
     : `${networks} on the real map: ${size}, on any day since ${entry.openedYear}. Play its history one opening at a time${plans}.`;

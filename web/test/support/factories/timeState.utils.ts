@@ -12,7 +12,7 @@ export const timeAt = (overrides: Partial<TimeState>): TimeState => ({
   progress: 0,
   atToday: true,
   atRest: true,
-  future: false,
+  inPlan: false,
   playing: false,
   stats: { stations: 0, km: 0, lines: 0 },
   ...overrides,

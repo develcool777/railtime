@@ -47,9 +47,9 @@ export const formatStats = (stats: NetworkStats, short = false): string => {
  * The decade a timestamp falls in, as a heading.
  *
  * @param time - A timestamp; `null` for a plan's change, which has no date.
- * @returns "1930s", or "Future".
+ * @returns "1930s", or "Plan" for a plan's change, which has no date.
  */
-export const decadeHeading = (time: number | null): string => (time === null ? 'Future' : `${decadeOf(yearOf(time))}s`);
+export const decadeHeading = (time: number | null): string => (time === null ? 'Plan' : `${decadeOf(yearOf(time))}s`);
 
 /**
  * A line's colour as CSS, in whichever theme the page is in: the browser picks by the page's

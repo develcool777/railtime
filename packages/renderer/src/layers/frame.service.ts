@@ -136,14 +136,14 @@ export class FrameRenderer {
   public timeState(): TimeState | null {
     const { player, playheads } = this.parts;
     const { playhead, playing } = player;
-    const key = `${Math.floor(playhead.time / DAY_MS)}|${playhead.cursor}|${Math.round(playhead.progress * 100)}|${playing}|${player.inFuture}`;
+    const key = `${Math.floor(playhead.time / DAY_MS)}|${playhead.cursor}|${Math.round(playhead.progress * 100)}|${playing}|${player.inPlan}`;
     if (key === this.lastTimeKey) return null;
     this.lastTimeKey = key;
     return {
       ...playhead,
       atToday: playheads.isToday(playhead),
       atRest: playheads.isRest(playhead),
-      future: player.inFuture,
+      inPlan: player.inPlan,
       playing,
       stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },
     };

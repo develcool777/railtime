@@ -1,17 +1,17 @@
 import { clamp } from '@railtime/core/number.utils';
 import type { ChangeInfo } from '@railtime/network/facts.types';
-import { FUTURE_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/explorer/time/time.constants';
+import { PLAN_SHARE, MAX_TICK_LEVEL, TIMELINE_LABEL_YEARS } from '~/features/explorer/time/time.constants';
 import { yearOf } from '@railtime/core/date.utils';
 import { lineColor } from '~/features/explorer/format.utils';
 import type { TickMark, TimelineLabel, TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
 
 /**
- * The share of the width the dates take: all of it, or what the Future zone leaves.
+ * The share of the width the dates take: all of it, or what the plan zone leaves.
  *
  * @param scale - The timeline's scale.
  * @returns A fraction.
  */
-const datedShare = (scale: TimelineScale): number => (scale.plannedCount > 0 ? 1 - FUTURE_SHARE : 1);
+export const datedShare = (scale: TimelineScale): number => (scale.plannedCount > 0 ? 1 - PLAN_SHARE : 1);
 
 /**
  * Where a date sits.
@@ -26,18 +26,18 @@ export const positionOf = (scale: TimelineScale, time: number): number => {
 };
 
 /**
- * Where the thumb sits: on the date, or in the Future zone, past the plan's changes built so far.
+ * Where the thumb sits: on the date, or in the plan zone, past the plan's changes built so far.
  *
  * @param scale - The timeline's scale.
  * @param time - The clock.
  * @param cursor - Changes played so far.
- * @param future - Whether the map shows the plan's future.
+ * @param inPlan - Whether the map shows the plan.
  * @returns A fraction of the width.
  */
-export const thumbPosition = (scale: TimelineScale, time: number, cursor: number, future: boolean): number => {
-  if (!future || scale.plannedCount === 0) return positionOf(scale, time);
+export const thumbPosition = (scale: TimelineScale, time: number, cursor: number, inPlan: boolean): number => {
+  if (!inPlan || scale.plannedCount === 0) return positionOf(scale, time);
   const built = Math.min(scale.plannedCount, Math.max(0, cursor - scale.datedCount));
-  return 1 - FUTURE_SHARE + (FUTURE_SHARE * built) / scale.plannedCount;
+  return 1 - PLAN_SHARE + (PLAN_SHARE * built) / scale.plannedCount;
 };
 
 /**
@@ -64,8 +64,8 @@ export const timelineTicks = (scale: TimelineScale, changes: ChangeInfo[]): Time
   return changes.map(change => {
     if (change.time === null) {
       const built = change.index - scale.datedCount + 1;
-      const left = 1 - FUTURE_SHARE + (FUTURE_SHARE * built) / Math.max(1, scale.plannedCount);
-      return { index: change.index, left, level: 0, color: lineColor(change.color), mark: markOf(change.kind), label: `Future · ${change.title}` };
+      const left = 1 - PLAN_SHARE + (PLAN_SHARE * built) / Math.max(1, scale.plannedCount);
+      return { index: change.index, left, level: 0, color: lineColor(change.color), mark: markOf(change.kind), label: `Plan · ${change.title}` };
     }
     const year = yearOf(change.time);
     const level = perYear.get(year) ?? 0;
@@ -82,27 +82,31 @@ export const timelineTicks = (scale: TimelineScale, changes: ChangeInfo[]): Time
 };
 
 /**
- * The years written under the timeline: the first, each round year between, and "Today" at the end.
+ * The years written under the timeline: the first, each round year between that keeps clear of the
+ * labels beside it, and "Today" at the end of the dates; a plan's zone ends with "Plan". Today and the
+ * plan are places to go to.
  *
  * @param scale - The timeline's scale.
+ * @param gap - The least room between two labels' marks, as a fraction of the width: narrower, fewer years.
  * @returns The labels, left to right.
  */
-export const timelineLabels = (scale: TimelineScale): TimelineLabel[] => {
+export const timelineLabels = (scale: TimelineScale, gap: number): TimelineLabel[] => {
   const first = yearOf(scale.start);
   const last = yearOf(scale.end);
   const share = datedShare(scale);
-  const labels: TimelineLabel[] = [{ text: String(first), left: 0, today: false }];
+  const labels: TimelineLabel[] = [{ text: String(first), left: 0, place: null }];
   for (let year = Math.ceil((first + 1) / TIMELINE_LABEL_YEARS) * TIMELINE_LABEL_YEARS; year < last; year += TIMELINE_LABEL_YEARS) {
     const left = positionOf(scale, Date.UTC(year, 0, 1));
-    // Kept clear of the ends' labels.
-    if (left > 0.1 * share && left < 0.92 * share) labels.push({ text: String(year), left, today: false });
+    const previous = labels.at(-1)?.left ?? 0;
+    if (left - previous >= gap && share - left >= gap) labels.push({ text: String(year), left, place: null });
   }
-  labels.push({ text: 'Today', left: share, today: true });
+  labels.push({ text: 'Today', left: share, place: 'today' });
+  if (scale.plannedCount > 0) labels.push({ text: 'Plan', left: 1, place: 'end' });
   return labels;
 };
 
 /**
- * What a point on the timeline stands for: a date, or in the Future zone the plan built to the
+ * What a point on the timeline stands for: a date, or in the plan zone the plan built to the
  * nearest of its changes, all of them at the right end.
  *
  * @param scale - The timeline's scale.
@@ -112,8 +116,8 @@ export const timelineLabels = (scale: TimelineScale): TimelineLabel[] => {
 export const targetAt = (scale: TimelineScale, fraction: number): TimelineTarget => {
   const share = datedShare(scale);
   if (scale.plannedCount > 0 && fraction > share) {
-    const built = Math.round(((fraction - share) / FUTURE_SHARE) * scale.plannedCount);
-    if (built >= scale.plannedCount) return { kind: 'future' };
+    const built = Math.round(((fraction - share) / PLAN_SHARE) * scale.plannedCount);
+    if (built >= scale.plannedCount) return { kind: 'planBuilt' };
     if (built > 0) return { kind: 'change', index: scale.datedCount + built - 1 };
     return { kind: 'date', time: scale.end };
   }

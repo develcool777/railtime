@@ -50,10 +50,10 @@ export const sectionTop = (input: SectionTopInput): PanelTopContent => {
   }
   if (section === 'stations') return { title: input.label, context: `${counted(input.stationCount, 'station')} on the map` };
   if (section === 'changes') {
-    const playingTitle = input.hasPlan ? 'Playing the future' : 'Playing history';
+    const playingTitle = input.hasPlan ? 'Playing the plan' : 'Playing history';
     const title = playing ? playingTitle : input.label;
     if (playing && currentChange !== null && time)
-      return { title, context: `${currentChange + 1} of ${changes.length} · ${time.future ? 'Future' : formatDay(time.time)}` };
+      return { title, context: `${currentChange + 1} of ${changes.length} · ${time.inPlan ? 'Plan' : formatDay(time.time)}` };
     const first = changes.find(change => change.time !== null)?.time;
     const count = counted(changes.length, 'change');
     return { title, context: first ? `${count} since ${yearOf(first)}` : count };

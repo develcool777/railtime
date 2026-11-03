@@ -40,7 +40,7 @@ export type ExplorerPanel = {
   currentChange: ComputedRef<number | null>;
   /** What the panel's top says. */
   panelTop: ComputedRef<PanelTopContent>;
-  /** The date shown, for what had opened by then; `null` in a plan's future. */
+  /** The date shown, for what had opened by then; `null` in a plan. */
   shownDate: ComputedRef<number | null>;
   /** The route between the two stations picked, on the date shown; `null` until both are picked, while it is not drawn, or with none. */
   foundRoute: ComputedRef<RouteInfo | null>;
@@ -52,11 +52,11 @@ export type ExplorerPanel = {
   hasHistory: ComputedRef<boolean>;
   /** Its records on the date shown. */
   records: ComputedRef<NetworkRecords | null>;
-  /** The year shown on the map; `null` in a plan's future. */
+  /** The year shown on the map; `null` in a plan. */
   shownYear: ComputedRef<number | null>;
-  /** The plan shown: its name and what it adds, for the time control. */
-  planSummary: ComputedRef<{ name: string; facts: string } | undefined>;
-  /** The legend for the plan's dashed track, while the map shows its future: its first line's colour, as CSS. */
+  /** The plan shown: its name, what became of it (its status) and what it adds, for the time control. */
+  planSummary: ComputedRef<{ name: string; status: string; facts: string } | undefined>;
+  /** The legend for the plan's dashed track, while the map shows it: its first line's colour, as CSS. */
   planLegend: ComputedRef<{ name: string; color: string } | null>;
   /** What is built today, for the Plans section's first card. */
   builtFacts: ComputedRef<string>;

@@ -162,8 +162,7 @@
               @pause="store.pause"
               @previous="store.previousChange"
               @skip="store.nextChange"
-              @today="store.leaveTo('today')"
-              @future="store.leaveTo('end')"
+              @leave="store.leaveTo"
               @pick="store.pick"
               @settings="store.setPlayer" />
           </div>

@@ -107,7 +107,7 @@ describe('FrameRenderer', () => {
     expect(frames.timeState()).toMatchObject({ time: toTimestamp('1935-01-01'), stats: { stations: 0 } });
     expect(frames.timeState()).toBeNull();
     frames.draw(0, null);
-    expect(frames.timeState()).toMatchObject({ stats: { stations: 4, lines: 2 }, playing: false, future: false });
+    expect(frames.timeState()).toMatchObject({ stats: { stations: 4, lines: 2 }, playing: false, inPlan: false });
     playback.player.seek(playback.facts.playheads.on(toTimestamp('1935-01-02')));
     expect(frames.timeState()?.time).toBe(toTimestamp('1935-01-02'));
     expect(frames.timeState()).toBeNull();

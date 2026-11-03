@@ -23,12 +23,12 @@ const CHANGES = [change(0, 1863), change(1, 1868), change(2, 1933), change(3, 19
 
 describe('ChangesUtils', () => {
   describe('changesByDecade', () => {
-    test('puts each change under its decade, a plan’s under the future', () => {
+    test('puts each change under its decade, a plan’s under Plan', () => {
       const groups = changesByDecade(CHANGES);
       expect(groups.map(group => [group.decade, group.changes.map(entry => entry.index)])).toEqual([
         ['1860s', [0, 1]],
         ['1930s', [2, 3]],
-        ['Future', [4]],
+        ['Plan', [4]],
       ]);
     });
   });
@@ -61,8 +61,8 @@ describe('ChangesUtils', () => {
       expect(currentChangeIndex(CHANGES, timeAt({ time: Date.UTC(1950, 0, 1), cursor: 4 }), false)).toBeNull();
     });
 
-    test('is none in a plan’s future', () => {
-      expect(currentChangeIndex(CHANGES, timeAt({ future: true, cursor: 5 }), false)).toBeNull();
+    test('is none in a plan', () => {
+      expect(currentChangeIndex(CHANGES, timeAt({ inPlan: true, cursor: 5 }), false)).toBeNull();
     });
   });
 
@@ -88,7 +88,7 @@ describe('ChangesUtils', () => {
         [1, null, true],
         [2, '1930s', false],
         [3, null, true],
-        [4, 'Future', true],
+        [4, 'Plan', true],
       ]);
       expect(new Set(rows.map(row => row.key)).size).toBe(rows.length);
     });

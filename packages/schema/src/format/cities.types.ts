@@ -15,7 +15,7 @@ export type CityIndexEntry = {
   openedYear: number | null;
   /** Nothing built: its lines and stations are its first plan's. */
   planOnly: boolean;
-  /** How many futures it has. */
+  /** How many plans it has. */
   plans: number;
   /** How many lines it has (or its first plan, for a network never built). */
   lines: number;

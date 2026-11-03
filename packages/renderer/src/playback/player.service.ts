@@ -81,7 +81,7 @@ export class Player {
    * Whether the map shows a plan: its playhead in one (`Playheads.inPlan`), or the camera on its way to
    * a planned change about to draw, which no playhead tells.
    */
-  public get inFuture(): boolean {
+  public get inPlan(): boolean {
     return this.playheads.inPlan(this.playhead) || this.current?.animation.step.planned === true;
   }
 

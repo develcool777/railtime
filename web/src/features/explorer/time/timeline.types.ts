@@ -6,7 +6,7 @@ export type TimelineScale = {
   end: number;
   /** Changes with a date, which come first. */
   datedCount: number;
-  /** A plan's changes, after the dated ones: they share the Future zone at the right. */
+  /** A plan's changes, after the dated ones: they share the plan zone at the right. */
   plannedCount: number;
 };
 
@@ -27,8 +27,8 @@ export type TimelineTick = {
   label: string;
 };
 
-/** A year written under the timeline. */
-export type TimelineLabel = { text: string; left: number; today: boolean };
+/** A year written under the timeline, or a place the map leaves for when it is clicked (`leaveTo`): today, or the end, the plan built. */
+export type TimelineLabel = { text: string; left: number; place: 'today' | 'end' | null };
 
 /** What a point on the timeline stands for. */
-export type TimelineTarget = { kind: 'date'; time: number } | { kind: 'change'; index: number } | { kind: 'future' };
+export type TimelineTarget = { kind: 'date'; time: number } | { kind: 'change'; index: number } | { kind: 'planBuilt' };

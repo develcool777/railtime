@@ -145,7 +145,7 @@ export type PlanTrack = {
 export type PlanStatus = 'under-construction' | 'planned' | 'proposed' | 'concept' | 'abandoned';
 
 /**
- * A future the network may have: lines and stations it would add, and the sections it would build,
+ * A plan drawn up for the network, whatever became of it (its `status`): lines and stations it would add, and the sections it would build,
  * in the order they are built. Undated: its order is all the time it has (see `buildPlan`).
  */
 export type Plan = {
@@ -179,6 +179,6 @@ export type Network = {
   segments: Segment[];
   /** Changes between stations that are not one station: drawn linked, wherever both are open. */
   transfers?: Transfer[];
-  /** Futures it may have, by id: none is part of the network until chosen (see `buildPlan`). */
+  /** Its plans, by id: none is part of the network until chosen (see `buildPlan`). */
   plans?: Record<string, Plan>;
 };

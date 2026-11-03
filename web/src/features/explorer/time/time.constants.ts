@@ -19,7 +19,7 @@ export const CAMERA_OPTIONS: { label: string; value: CameraMode; description: st
 ];
 
 /** The share of the timeline a plan's changes take, at its right end. */
-export const FUTURE_SHARE = 0.16;
+export const PLAN_SHARE = 0.16;
 
 /** How many marks of one year stack on the timeline before they overlap. */
 export const MAX_TICK_LEVEL = 3;
@@ -33,3 +33,6 @@ export const TICK_LOOK: Record<TickMark, string> = {
   closure: 'h-2 opacity-40',
   rename: 'h-1',
 };
+
+/** The least room between two labels' marks under the timeline, pixels: a year's width and Today's, with air. */
+export const TIMELINE_LABEL_GAP_PX = 56;

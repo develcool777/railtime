@@ -124,7 +124,7 @@ describe('PanelUtils', () => {
       );
       expect(top.title).toBe('Playing history');
       expect(top.context).toMatch(/^2 of 3 · .*1950$/);
-      expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true })).title).toBe('Playing the future');
+      expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true })).title).toBe('Playing the plan');
     });
 
     test('counts the changes alone when none is dated, and while playing between changes', () => {
@@ -135,11 +135,11 @@ describe('PanelUtils', () => {
       });
     });
 
-    test("while playing a plan's future, Changes says Future, not a date", () => {
+    test('while playing a plan, Changes says Plan, not a date', () => {
       const top = sectionTop(
-        sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true, currentChange: 2, time: timeAt({ future: true }) }),
+        sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true, currentChange: 2, time: timeAt({ inPlan: true }) }),
       );
-      expect(top).toEqual({ title: 'Playing the future', context: '3 of 3 · Future' });
+      expect(top).toEqual({ title: 'Playing the plan', context: '3 of 3 · Plan' });
     });
 
     test('while playing with no time yet, Changes counts them', () => {
