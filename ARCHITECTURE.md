@@ -14,6 +14,7 @@ rule here broken changes this file first.
 | `renderer` | **Drawing**: a network on a map, and playing its history                       | core, network, schema, MapLibre          |
 | `data`     | **Storage**: every city's files, and the commands that keep them               | network (summaries), renderer (pictures) |
 | `web`      | **The app**: what is open, the layout, how numbers and dates are written       | all of them                              |
+| `video`    | **Videos of the app**: a page of it recorded frame by frame, as an MP4         | — (the app, served; Chrome; ffmpeg)      |
 
 - **A fact is asked of `network`, never worked out where it is needed.** A count, a length, a
   station's neighbours, a route, a caption, what a plan adds: `web` and `data` ask `network`. What
@@ -21,6 +22,8 @@ rule here broken changes this file first.
 - **`schema` is the format and nothing else.** Building a plan stays in it: its validation builds every
   plan to check it fits, so `network` cannot hold it without a cycle.
 - **`renderer` draws and plays, and knows nothing it can ask `network`.**
+- **`video` records, and knows nothing of what it records.** It takes a page of the app by its address,
+  on a clock it moves a frame at a time; what a video shows is the app's, in `web`.
 - **A helper used in two packages lives once, in `core`, the bottom of the stack.** Never a copy: a
   date, a distance, a bounding box, `clamp`, `pushTo`, `required`, and the coordinate and date types.
   Within one package, one helper too: the app's counts and numbers are `web/src/utils/format.utils.ts`.

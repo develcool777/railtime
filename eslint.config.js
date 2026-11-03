@@ -30,7 +30,7 @@ const SHARED_SYNTAX = [
 
 /** A package is reached through its door (`exports`), never by a path into its folders. */
 const ACROSS_PACKAGES = {
-  regex: '(^|/)(core|schema|network|renderer|data|tooling)/(src|test)/',
+  regex: '(^|/)(core|schema|network|renderer|data|tooling|video)/(src|test)/',
   message: "Import another package by its exports (`@railtime/<package>/…`, its tests' helpers from `@railtime/<package>/testing/…`).",
 };
 
@@ -191,7 +191,7 @@ export default defineConfig(
     rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE] }] },
   },
   {
-    files: ['packages/data/src/**/*.ts'],
+    files: ['packages/{data,video}/src/**/*.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE, NAMED_FILE] }] },
   },
 

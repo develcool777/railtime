@@ -30,6 +30,10 @@
       "project": ["src/**/*.{ts,vue,css}", "test/**/*.ts"],
       "ignoreDependencies": ["@iconify-json/lucide", "vue-tsc"]
     },
+    "packages/video": {
+      "entry": ["src/*/cli.ts", "test/**/*.@(test|spec).ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
     "packages/tooling": {
       "entry": ["src/cli.*.ts", "test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]

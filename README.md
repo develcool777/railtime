@@ -29,6 +29,9 @@ pnpm test-mutation packages/schema   # Stryker: which deliberate bugs the folder
 pnpm data:summaries  # sum up every city into cities/cities.json, the landing page's list
 pnpm data:previews london  # draw its card's pictures (needs Chrome)
 pnpm data:boundary london  # fetch its outline from OpenStreetMap again; add a relation id for a new city
+
+pnpm video:record kyiv     # record its history playing, from pnpm dev, into packages/video/videos/kyiv.mp4
+                           # (needs Chrome and ffmpeg: brew install ffmpeg; --fps, --size, --query "mapOnly=1", --seconds)
 ```
 
 ## How it's built
@@ -43,7 +46,8 @@ railtime/
 │   ├── renderer/    the engine, TransitMap: draws a network on MapLibre and plays its history; no UI
 │   ├── data/        every city's network, by country (cities/<country>/<city>/), their summaries
 │                    (cities/cities.json), pnpm data:summaries, and a test per city
-│   └── tooling/     the repo's own tools: pnpm test-mutation
+│   ├── tooling/     the repo's own tools: pnpm test-mutation
+│   └── video/       videos of the app: pnpm video:record, a page recorded frame by frame into an MP4
 ├── web/             the app: Nuxt 4 and Nuxt UI around the renderer; src/ by surface (features/explorer,
 │                    features/landing, features/seo), shared code at its top
 └── .github/         CI (checks on every pull request) and the GitHub Pages deploy

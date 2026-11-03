@@ -14,7 +14,9 @@ and its plans; `NetworkEngine`, `facts.engine`, the raw network the renderer pla
 `packages/renderer` (drawing: the MapLibre engine, `TransitMap`), `packages/data` (storage: every
 city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline and pictures; the index
 of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
-`boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`) and `web`
+`boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`),
+`packages/video` (videos of the app: `pnpm video:record <city>` records its page frame by frame, on a
+clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `web`) and `web`
 (the app: the Nuxt 4 + Nuxt UI explorer).
 `README.md` has the commands; `ARCHITECTURE.md` the contract between the parts;
 `packages/network/_README.md` steps and cursors; `packages/renderer/_README.md` the frame model.

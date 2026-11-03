@@ -11,3 +11,5 @@ dist
 test-reports/*
 !test-reports/mutation-scores.json
 .stryker-tmp/
+# The videos recorded (`pnpm video:record`): uploaded, not kept here.
+packages/video/videos/
