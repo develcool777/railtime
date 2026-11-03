@@ -1,6 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { Theme } from '@railtime/network/facts.types';
-import type { MapView } from '../transitMap.types';
+import type { CreateMap, MapView } from '../transitMap.types';
 
 /** What a `BasemapStill` is created with. */
 export type BasemapStillOptions = {
@@ -9,6 +9,8 @@ export type BasemapStillOptions = {
   basemap?: string;
   /** Where MapLibre's worker script is served, as for `TransitMap`. */
   workerUrl?: string;
+  /** Makes the hidden map: MapLibre's own unless a test gives a stand-in. */
+  createMap?: CreateMap;
 };
 
 /** A line's track drawn over a still, in one theme's colour: dashed for track not built. */

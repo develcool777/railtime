@@ -1,6 +1,7 @@
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { TestProjectInlineConfiguration } from 'vitest/config';
 
 /**
  * What every project's tests run with, as in dataroom-ui: every mock and stubbed global is reset
@@ -18,6 +19,19 @@ export const SHARED_TEST_OPTIONS = {
 } as const;
 
 /**
+ * A package's projects, as in dataroom-ui, where a test file's name picks its environment: a
+ * `*.test.ts` runs in node, a `*.spec.ts` in happy-dom, for code that makes elements of its own
+ * (an inset over the map, a hidden container). Each is a project of its own.
+ *
+ * @param name - The package's project name; its specs' is `<name>-dom`.
+ * @returns The two projects.
+ */
+export const projectsOf = (name: string): TestProjectInlineConfiguration[] => [
+  { test: { ...SHARED_TEST_OPTIONS, name, include: ['test/unit/**/*.test.ts'] } },
+  { test: { ...SHARED_TEST_OPTIONS, name: `${name}-dom`, environment: 'happy-dom', include: ['test/unit/**/*.spec.ts'] } },
+];
+
+/**
  * Refuses to start while a test file has no source file to mirror: `test/unit/model/timeline.test.ts`
  * tests `src/model/timeline.*.ts`, so a test is found where its code is, and one left behind by a
  * rename or a delete is caught.
@@ -27,8 +41,8 @@ export const SHARED_TEST_OPTIONS = {
  * @param sourceDir - The code they mirror, relative to `root`.
  */
 export const assertTestsMirrorSource = (root: string, testDir: string, sourceDir: string): void => {
-  const orphans = globSync('**/*.test.ts', { cwd: join(root, testDir) }).filter(
-    testPath => globSync(`${testPath.replace(/\.test\.ts$/, '')}.*.ts`, { cwd: join(root, sourceDir) }).length === 0,
+  const orphans = globSync('**/*.@(test|spec).ts', { cwd: join(root, testDir) }).filter(
+    testPath => globSync(`${testPath.replace(/\.(test|spec)\.ts$/, '')}.*.ts`, { cwd: join(root, sourceDir) }).length === 0,
   );
   if (orphans.length > 0) {
     throw new Error(`A test mirrors the source file it tests; these have none in ${join(root, sourceDir)}:\n${orphans.join('\n')}`);

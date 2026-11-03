@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import type { LayerSpecification } from 'maplibre-gl';
 import { toTimestamp } from '@railtime/core/date.utils';
-import type { FeatureCollection } from '../../src/layers/snapshot.types';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
-import { DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT } from '../../src/layers/theme.constants';
+import { DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from '../../src/layers/theme.constants';
+import { MINIMAP_SOURCES, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from '../../src/minimap/minimap.constants';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { TransitMap } from '../../src/transitMap.service';
-import { MAX_TILE_WAIT_SECONDS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
-import type { MapProps, TransitMapListeners } from '../../src/transitMap.types';
+import { FIT_NETWORK_MS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
+import { END_OVERVIEW_MS, MAX_TILE_WAIT_SECONDS } from '../../src/playback/playback.constants';
+import type { MapProps, TransitMapListeners, TransitMapOptions } from '../../src/transitMap.types';
 import { openingOf } from '../../src/transitMap.utils';
 import { fakeMap } from '../support/factories/fakeMap.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
@@ -19,10 +20,19 @@ import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
  * @param props - Its props at first.
  * @param on - Its listeners, besides the one recording every event.
  * @param style - The basemap's layers.
- * @returns The map, the stand-in, a frame stepper, the events delivered, in order, and where its network's playheads are.
+ * @param minimapContainer - Where to draw a minimap, on a stand-in of its own; none without.
+ * @param options - Its other options: where it opens, its basemap, its credits.
+ * @returns The map, the stand-ins, a frame stepper, the events delivered, in order, its network, and where its playheads are.
  */
-const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, style: LayerSpecification[] = []) => {
+const mapOf = (
+  props: Partial<MapProps> = {},
+  on: TransitMapListeners = {},
+  style: LayerSpecification[] = [],
+  minimapContainer?: HTMLElement,
+  options: Partial<TransitMapOptions> = {},
+) => {
   const fake = fakeMap(style);
+  const mini = fakeMap();
   const pending: ((now: number) => void)[] = [];
   const events: { name: string; payload: unknown }[] = [];
   const recordAll = Object.fromEntries(
@@ -39,7 +49,9 @@ const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, styl
     container: {} as HTMLElement,
     props: { ...props, facts },
     on: recordAll,
-    createMap: () => fake.map,
+    ...options,
+    minimapContainer,
+    createMap: options => (options.container === minimapContainer ? mini.map : fake.map),
     scheduler: { request: frame => pending.push(frame), cancel: () => (pending.length = 0) },
   });
   let now = 0;
@@ -52,17 +64,8 @@ const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, styl
     frame();
   };
   const named = (name: string) => events.filter(event => event.name === name).map(event => event.payload);
-  return { map, fake, frame, ready, events, named, pending, playheads: facts.playheads };
+  return { map, fake, mini, frame, ready, events, named, pending, facts, playheads: facts.playheads };
 };
-
-/**
- * What a source holds, as last set.
- *
- * @param fake - The stand-in.
- * @param source - The source.
- * @returns Its features.
- */
-const featuresIn = (fake: ReturnType<typeof fakeMap>, source: string) => (fake.data.get(source) as FeatureCollection<never> | undefined)?.features ?? [];
 
 describe('TransitMapUtils', () => {
   describe('openingOf', () => {
@@ -104,7 +107,7 @@ describe('TransitMap', () => {
     ready();
     expect(map.status).toBe('ready');
     expect(fake.layers.get(LAYERS.labels)?.layout.visibility).toBe('none');
-    expect(featuresIn(fake, SOURCES.selection)).toHaveLength(1);
+    expect(fake.featuresIn(SOURCES.selection)).toHaveLength(1);
     expect(fake.moves.some(move => move.kind === 'ease' && move.options.pitch === VIEW_3D_PITCH)).toBe(true);
   });
 
@@ -172,23 +175,23 @@ describe('TransitMap', () => {
     frame();
     expect(fake.moves).toHaveLength(moves);
     expect((named('time').at(-1) as { time: number }).time).toBe(toTimestamp('2026-01-01'));
-    expect(featuresIn(fake, SOURCES.planned)).toHaveLength(0);
+    expect(fake.featuresIn(SOURCES.planned)).toHaveLength(0);
     map.seek(planned.playheads.end());
     frame();
-    expect(featuresIn(fake, SOURCES.planned).length).toBeGreaterThan(0);
+    expect(fake.featuresIn(SOURCES.planned).length).toBeGreaterThan(0);
   });
 
   test("hides the ring of a station the moment took off the map, says so, and rings it again when it is back: the prop is the app's", () => {
     const { map, fake, frame, ready, named, playheads } = mapOf({ selectedStation: 'c' });
     ready();
-    expect(featuresIn(fake, SOURCES.selection)).toHaveLength(1);
+    expect(fake.featuresIn(SOURCES.selection)).toHaveLength(1);
     map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
     expect(named('selectionGone')).toEqual(['c']);
-    expect(featuresIn(fake, SOURCES.selection)).toHaveLength(0);
+    expect(fake.featuresIn(SOURCES.selection)).toHaveLength(0);
     map.seek(playheads.today());
     frame();
-    expect(featuresIn(fake, SOURCES.selection)).toHaveLength(1);
+    expect(fake.featuresIn(SOURCES.selection)).toHaveLength(1);
     expect(named('selectionGone')).toEqual(['c']);
   });
 
@@ -259,6 +262,134 @@ describe('TransitMap', () => {
     expect(late).toBeLessThanOrEqual(31);
   });
 
+  test('pauses where it is: the clock stands still until played again', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.seek(playheads.on(toTimestamp('1901-01-01')));
+    map.play();
+    for (let tick = 0; tick < 5; tick++) frame();
+    map.pause();
+    frame();
+    const paused = named('time').at(-1) as { time: number; playing: boolean };
+    for (let tick = 0; tick < 5; tick++) frame();
+    expect(paused.playing).toBe(false);
+    expect(named('time').at(-1)).toEqual(paused);
+  });
+
+  test('stops: pauses, and the camera goes back to the whole network', () => {
+    const { map, fake, frame, ready, named, facts } = mapOf();
+    ready();
+    map.play();
+    frame();
+    map.stop();
+    frame();
+    expect(named('time').at(-1)).toMatchObject({ playing: false });
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'fit', target: facts.engine.index.bounds, options: { duration: FIT_NETWORK_MS } });
+  });
+
+  test('skips the change drawn in part to its end, then, between changes, starts the next at once', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.seek(playheads.after(1, 0.5));
+    map.skip();
+    frame();
+    expect(named('time').at(-1)).toMatchObject({ cursor: 2, progress: 0 });
+    map.skip();
+    frame();
+    expect(named('step').at(-1)).toMatchObject({ index: 2 });
+  });
+
+  test('moves a year on or back from the date shown, with every change in between done or undone', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.seek(playheads.on(toTimestamp('1919-08-01')));
+    map.stepYear(1);
+    frame();
+    expect(named('time').at(-1)).toMatchObject({ cursor: 3 });
+    map.stepYear(-1);
+    frame();
+    expect(named('time').at(-1)).toMatchObject({ cursor: 2 });
+  });
+
+  test('goes back to just before the change before the last played, and plays it again if playing', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.seek(playheads.after(4));
+    map.previousChange();
+    frame();
+    expect(named('time').at(-1)).toMatchObject(playheads.before(2));
+    map.play();
+    for (let tick = 0; tick < 5 && named('step').at(-1) === null; tick++) frame();
+    expect(named('step').at(-1)).toMatchObject({ index: 2 });
+  });
+
+  test('zooms a step in and out, and jumps to a view at once', () => {
+    const { map, fake, ready } = mapOf();
+    ready();
+    const zoom = fake.view.zoom;
+    map.zoomIn();
+    expect(fake.view.zoom).toBe(zoom + 1);
+    map.zoomOut();
+    expect(fake.view.zoom).toBe(zoom);
+    map.jumpTo({ center: [0.01, 51.5], zoom: 13 });
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'jump', target: [0.01, 51.5], options: { zoom: 13 } });
+  });
+
+  test('tells the app where it looks once a move ends', () => {
+    const { fake, frame, ready, named } = mapOf();
+    ready();
+    Object.assign(fake.view, { center: [0.02, 51.4], zoom: 12 });
+    fake.fire('moveend');
+    frame();
+    expect(named('view')).toEqual([{ center: [0.02, 51.4], zoom: 12 }]);
+  });
+
+  test('reports the station clicked, or none for a click away from any, once ready; and points at a station under the cursor', () => {
+    const { fake, frame, ready, named } = mapOf();
+    fake.rendered.push({ properties: { id: 'b' } });
+    fake.fire('click', { point: [0, 0] });
+    frame();
+    expect(named('stationClick')).toEqual([]);
+    ready();
+    fake.fire('click', { point: [0, 0] });
+    fake.rendered.length = 0;
+    fake.fire('click', { point: [0, 0] });
+    frame();
+    expect(named('stationClick')).toEqual(['b', null]);
+    fake.fire('mouseenter');
+    expect(fake.canvas.style.cursor).toBe('pointer');
+    fake.fire('mouseleave');
+    expect(fake.canvas.style.cursor).toBe('');
+  });
+
+  test('captions each change while it plays, clears it before the next, and at the end tells so and shows the whole network', () => {
+    const { map, fake, frame, ready, named, facts, playheads } = mapOf();
+    ready();
+    map.seek(playheads.before(8));
+    map.play();
+    for (let tick = 0; tick < 5000 && named('end').length === 0; tick++) frame();
+    const captions = named('step').map(change => (change as { index: number } | null)?.index ?? null);
+    expect(captions).toEqual([null, 8, null, 9, null, 10, null, null]);
+    expect(named('end')).toHaveLength(1);
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'fit', target: facts.engine.index.bounds, options: { duration: END_OVERVIEW_MS } });
+  });
+
+  test('draws the network on a minimap, frames another network on it, colours it with the theme, and takes it down with the map', () => {
+    const container = document.createElement('div');
+    const { map, mini, ready } = mapOf({}, {}, [], container);
+    ready();
+    mini.fire('style.load');
+    expect(mini.featuresIn(MINIMAP_SOURCES.lines).length).toBeGreaterThan(0);
+    const fits = mini.moves.length;
+    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: 'extension', today: toTimestamp('2026-01-01') }) });
+    expect(mini.moves.slice(fits)).toEqual([expect.objectContaining({ kind: 'fit' })]);
+    map.update({ theme: 'light' });
+    const box = container.querySelector<HTMLElement>(`.${MINIMAP_VIEWPORT_CLASS}`);
+    expect(box?.style.getPropertyValue(MINIMAP_VIEWPORT_COLOR)).toBe(PALETTES.light.viewport);
+    map.destroy();
+    expect([mini.isRemoved(), container.childElementCount]).toEqual([true, 0]);
+  });
+
   test('takes it all down once: the map removed, no frames, no events, and every later call does nothing', () => {
     const { map, fake, frame, ready, events, pending, playheads } = mapOf();
     ready();
@@ -267,12 +398,91 @@ describe('TransitMap', () => {
     expect([map.status, fake.isRemoved(), pending.length]).toEqual(['destroyed', true, 0]);
     map.update({ viewMode: '3d' });
     map.seek(playheads.end());
-    map.play();
+    map.play(playheads.start());
+    map.pause();
     map.stop();
+    map.skip();
+    map.stepYear(1);
+    map.previousChange();
     map.zoomIn();
+    map.zoomOut();
+    map.fitNetwork();
+    map.jumpTo({ center: [0, 0], zoom: 1 });
     map.destroy();
     fake.fire('click', { point: [0, 0] });
     frame();
     expect(events).toHaveLength(delivered);
+    expect([fake.view.zoom, fake.moves.filter(move => move.kind === 'jump' && move.options.zoom === 1)]).toEqual([10, []]);
+  });
+
+  test('a listener may destroy the map: no frame is asked for after it', () => {
+    const { map, ready, pending } = mapOf({}, { status: () => map.destroy() });
+    ready();
+    expect([map.status, pending.length]).toEqual(['destroyed', 0]);
+  });
+
+  test('installs its layers once, however often the style says it loaded', () => {
+    const { fake, ready } = mapOf();
+    ready();
+    const layers = fake.layers.size;
+    fake.fire('style.load');
+    expect(fake.layers.size).toBe(layers);
+  });
+
+  test('opens on a linked view as it is, its centre in the middle of what the panels leave; else fits the network clear of them', () => {
+    const cover = { top: 0, right: 0, bottom: 0, left: 300 };
+    const linked = mapOf({ cover }, {}, [], undefined, { view: { center: [0.01, 51.5], zoom: 13 } });
+    expect([linked.fake.view.cover, linked.fake.moves]).toEqual([cover, []]);
+    const fitted = mapOf({ cover });
+    expect(fitted.fake.moves).toEqual([expect.objectContaining({ kind: 'jump', options: expect.objectContaining({ padding: cover }) })]);
+  });
+
+  test('credits only OpenStreetMap on another basemap, whose credits are its own', () => {
+    const { map } = mapOf({}, {}, [], undefined, { basemap: 'https://tiles.invalid/style.json', attributionControl: false });
+    expect(map.credits).toEqual([OPENSTREETMAP_CREDIT]);
+  });
+
+  test('plays from a playhead given, captioning the change it starts in', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.play(playheads.after(2, 0.3));
+    frame();
+    expect(named('step').at(-1)).toMatchObject({ index: 2 });
+    expect(named('time').at(-1)).toMatchObject({ cursor: 2, playing: true });
+  });
+
+  test('turned into 3D on its way to a change, flies to where the change starts', () => {
+    const { map, fake, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.seek(playheads.before(1));
+    map.play();
+    for (let tick = 0; tick < 50 && named('step').at(-1) == null; tick++) frame();
+    const moves = fake.moves.length;
+    map.update({ viewMode: '3d' });
+    expect(fake.moves.slice(moves).filter(move => move.kind === 'ease' || move.kind === 'fit').length).toBeGreaterThan(1);
+  });
+
+  test('a free camera starts each change after a beat, the camera left where it is', () => {
+    /**
+     * Frames from playing until the first change grows.
+     *
+     * @param camera - How the camera moves.
+     * @returns The frames, and whether the camera moved meanwhile.
+     */
+    const framesToGrow = (camera: MapProps['camera']) => {
+      const { map, fake, frame, ready, named, playheads } = mapOf({ camera });
+      ready();
+      map.seek(playheads.before(1));
+      const moves = fake.moves.length;
+      map.play();
+      let frames = 0;
+      for (; frames < 1000 && named('stepProgress').length === 0; frames++) frame();
+      return { frames, moved: fake.moves.length > moves };
+    };
+    const free = framesToGrow('free');
+    const follow = framesToGrow('follow');
+    expect(free.moved).toBe(false);
+    expect(follow.moved).toBe(true);
+    expect(free.frames).toBeLessThan(follow.frames);
   });
 });

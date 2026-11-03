@@ -65,6 +65,9 @@ export type MapProps = {
   boundary: CityBoundary | null;
 };
 
+/** Makes a MapLibre map: MapLibre's own, or a test's stand-in. */
+export type CreateMap = (options: MapOptions) => MapLibreMap;
+
 /** Asks for the next frame, and cancels one asked for: `requestAnimationFrame` unless a test steps frames by hand. */
 export type FrameScheduler = {
   request: (frame: (now: number) => void) => number;
@@ -94,8 +97,8 @@ export type TransitMapOptions = {
   workerUrl?: string;
   /** Whether MapLibre draws its credits on the map (the default). Without them the app must show `credits` itself, as the licences ask. */
   attributionControl?: boolean;
-  /** Makes the MapLibre map: MapLibre's own unless a test gives a stand-in. */
-  createMap?: (options: MapOptions) => MapLibreMap;
+  /** Makes the MapLibre maps, the main one and the minimap's: MapLibre's own unless a test gives a stand-in. */
+  createMap?: CreateMap;
   /** Asks for frames: `requestAnimationFrame` unless a test steps them by hand. */
   scheduler?: FrameScheduler;
 };

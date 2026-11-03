@@ -115,7 +115,7 @@ packages/network/
   test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries:
                             exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
 packages/renderer/
-  test/unit/                mirrors src/, as network's; transitMap.test.ts tests the contract whole
+  test/unit/                mirrors src/, as network's; transitMap.spec.ts tests the contract whole
   test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it, and what
                             the map draws: `@railtime/renderer/testing/playback` for data's city tests)
 packages/data/
@@ -133,8 +133,12 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 
 - `pnpm test-unit` at the root runs every project (`vitest.config.ts`); options shared by all are in
   `vitest.shared.ts`: mocks reset between tests, random order, node.
+- **A test file's name picks its environment**, as in dataroom-ui: `*.test.ts` runs in node, `*.spec.ts`
+  in happy-dom, for code that makes elements of its own (the minimap's box, `BasemapStill`'s hidden
+  container); each is a project of its own (`projectsOf` in `vitest.shared.ts`). Never a
+  `@vitest-environment` comment.
 - **Tests run the real code.** No `vi.mock` (ESLint): build the input with a factory in `test/support/`.
-- A test mirrors one source file, or Vitest refuses to start; `*.test.ts` only in `test/unit/`,
+- A test mirrors one source file, or Vitest refuses to start; `*.test.ts` and `*.spec.ts` only in `test/unit/`,
   helpers only in `test/support/` (ESLint).
 - `describe('<Module>')` (`Timeline`, `GrowthUtils`), a nested `describe` per function for a utils
   module, then `test('does what, when')`; never `it`.

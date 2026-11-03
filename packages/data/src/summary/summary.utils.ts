@@ -5,6 +5,7 @@ import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { SUMMARIES_PATH, cities, readNetwork } from '../city.utils.ts';
+import type { City } from '../city.types.ts';
 
 /**
  * One city, summed up for the landing page: its name and country, and its network's summary
@@ -51,18 +52,20 @@ export const formatSummaries = (summaries: CityIndex): string =>
 /**
  * Sums up every city and writes `cities/cities.json`, the list the site shows, keeping its order.
  *
+ * @param found - The cities: every city kept, unless given.
+ * @param path - Where the list is kept: `cities/cities.json`, unless given.
  * @throws {z.ZodError} If the schema refuses a city's network.
  * @throws {Error} If a city is not in its country's folder.
  */
-export const writeSummaries = (): void => {
+export const writeSummaries = (found: City[] = cities(), path = SUMMARIES_PATH): void => {
   const summaries = Object.fromEntries(
-    cities().map(city => {
+    found.map(city => {
       const network = readNetwork(city);
       if (slugOf(network.meta.country) !== city.country) throw new Error(`${city.networkPath}: its country, ${network.meta.country}, is not its folder's`);
       return [city.id, summaryOf(network)];
     }),
   );
-  const previous: CityIndex = existsSync(SUMMARIES_PATH) ? JSON.parse(readFileSync(SUMMARIES_PATH, 'utf8')) : {};
-  writeFileSync(SUMMARIES_PATH, formatSummaries(inListOrder(summaries, previous)));
-  console.log(`${SUMMARIES_PATH}: ${Object.keys(summaries).length} cities`);
+  const previous: CityIndex = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+  writeFileSync(path, formatSummaries(inListOrder(summaries, previous)));
+  console.log(`${path}: ${Object.keys(summaries).length} cities`);
 };

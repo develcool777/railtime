@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { PANEL_WIDTH, SHEET_HEIGHTS, TAB_LABELS_HEIGHT } from '~/features/explorer/explorer.constants';
-import { draggedPanelWidth, mapPaddingFor, sheetHeightOf } from '~/features/explorer/layout.utils';
+import { draggedPanelWidth, mapPaddingFor, panelCoverOf, sheetHeightOf } from '~/features/explorer/layout.utils';
 
 describe('LayoutUtils', () => {
   describe('mapPaddingFor', () => {
@@ -20,6 +20,19 @@ describe('LayoutUtils', () => {
       expect(sheetHeightOf('peek', true)).toBe(SHEET_HEIGHTS.peek + TAB_LABELS_HEIGHT);
       expect(sheetHeightOf('half', true)).toBe(SHEET_HEIGHTS.half);
       expect(sheetHeightOf('full', false)).toBe(SHEET_HEIGHTS.half);
+    });
+  });
+
+  describe('panelCoverOf', () => {
+    test('covers its width while open beside the map', () => {
+      expect(panelCoverOf({ phone: false, mapOnly: false, panelOpen: true, panelWidth: 360 })).toBe(360);
+    });
+
+    test('covers nothing on a phone, in map only, or folded', () => {
+      const open = { phone: false, mapOnly: false, panelOpen: true, panelWidth: 360 };
+      expect([panelCoverOf({ ...open, phone: true }), panelCoverOf({ ...open, mapOnly: true }), panelCoverOf({ ...open, panelOpen: false })]).toEqual([
+        0, 0, 0,
+      ]);
     });
   });
 

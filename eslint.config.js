@@ -55,7 +55,8 @@ const SHORT_NAMES = ['id', 'x', 'y', 'km', 'on', 'to', '_'];
 
 /** What a source file may be called: `<camelName>.<role>.ts`, or `<camelName>.<role>.types.ts` for the types of one file. */
 const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store)).@(service|utils|constants|types|schema|composable|store)';
-const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|utils|types)';
+/** What a test file may be called: `<camelName>.test.ts`, run in node, `.spec.ts`, in happy-dom (`vitest.shared.ts`), or a support file's `.utils.ts`/`.types.ts`/`.constants.ts`. */
+const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|spec|utils|types|constants)';
 
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */
 const TEST_FILES = ['packages/*/test/**/*.ts', 'web/test/**/*.ts'];
@@ -152,7 +153,7 @@ export default defineConfig(
   // ---- JSDoc on every class, member and export ---------------------------------
   {
     files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'web/src/**/*.ts'],
-    ignores: ['**/*.test.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
     plugins: { jsdoc },
     rules: {
       'jsdoc/require-jsdoc': [
@@ -211,7 +212,7 @@ export default defineConfig(
       'check-file/filename-naming-convention': ['error', { '**/*.ts': TEST_FILE }],
       'check-file/folder-naming-convention': ['error', { '**/': 'CAMEL_CASE' }],
       // A test is in `test/unit/` (beside the code it mirrors) or helps them from `test/support/`.
-      'check-file/folder-match-with-fex': ['error', { '*.test.ts': '**/test/unit/**', '*.utils.ts': '**/test/support/**' }],
+      'check-file/folder-match-with-fex': ['error', { '*.test.ts': '**/test/unit/**', '*.spec.ts': '**/test/unit/**', '*.utils.ts': '**/test/support/**' }],
     },
   },
   {

@@ -52,7 +52,7 @@ describe('TargetUtils', () => {
     test("mutates each folder's code against its own tests, with a report and a cache of its own", () => {
       expect(targetOf(['packages/schema/src/plan', 'packages/schema/src/core'], { fresh: true, disableBail: false, concurrency: 4 })).toEqual({
         mutate: ['packages/schema/src/plan/**/*.ts', 'packages/schema/src/core/**/*.ts', '!**/*.types.ts', '!**/*.constants.ts', '!**/cli.*.ts'],
-        testFiles: ['packages/schema/test/unit/plan/**/*.test.ts', 'packages/schema/test/unit/core/**/*.test.ts'],
+        testFiles: ['packages/schema/test/unit/plan/**/*.@(test|spec).ts', 'packages/schema/test/unit/core/**/*.@(test|spec).ts'],
         incrementalFile: 'test-reports/stryker-incremental/packages-schema-src-plan+packages-schema-src-core.json',
         force: true,
         disableBail: false,

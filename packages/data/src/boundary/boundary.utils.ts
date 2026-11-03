@@ -123,13 +123,14 @@ export const boundaryArgsOf = (args: string[]): BoundaryArgs => {
 };
 
 /**
- * Fetches one city's outline from Nominatim and writes it, if the schema takes it and it is the city's.
+ * Fetches one city's outline from Nominatim and writes it to its `boundaryPath`, if the schema takes it
+ * and it is the city's.
  *
  * @param city - The city.
  * @param relationGiven - The relation to fetch it from; `null` for the one its outline names.
  * @throws {Error} If it is not written: no relation, Nominatim's answer, the schema, or an outline that is not the city's.
  */
-const fetchBoundary = async (city: City, relationGiven: number | null): Promise<void> => {
+export const fetchBoundary = async (city: City, relationGiven: number | null): Promise<void> => {
   const kept: CityBoundary | null = existsSync(city.boundaryPath) ? parseBoundary(JSON.parse(readFileSync(city.boundaryPath, 'utf8'))) : null;
   const relation = relationGiven ?? (kept && relationOf(kept));
   if (!relation) throw new Error(`no outline yet: give its relation, pnpm data:boundary ${city.id} <relation>`);

@@ -155,7 +155,7 @@ TransitMap            facade: owns MapLibre, the frame loop and the event queue;
 
 One owner per value, inside as out; data flows one way: props and commands in, events out.
 `TransitMap` takes its MapLibre map and frame scheduler from factories, so its contract is tested
-whole on the stand-in map (`test/unit/transitMap.test.ts`).
+whole on the stand-in map (`test/unit/transitMap.spec.ts`).
 
 ## `web`: one store, one adapter
 

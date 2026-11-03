@@ -22,19 +22,18 @@ export class BasemapStill {
   private readonly container: HTMLDivElement;
   /** The style has loaded and been recoloured. */
   private readonly loaded: Promise<void>;
-  /** The last still asked for: each waits for the one before. */
+  /** The last still or theme asked for: each waits for the one before. */
   private queue: Promise<unknown> = Promise.resolve();
-  /** The theme the basemap is coloured in. */
-  private theme: Theme;
 
   public constructor(options: BasemapStillOptions = {}) {
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
-    this.theme = options.theme ?? 'dark';
+    const theme = options.theme ?? 'dark';
     this.container = document.createElement('div');
     // Laid out, so MapLibre draws, but off screen and out of the way.
     Object.assign(this.container.style, { position: 'fixed', left: '-10000px', top: '0', width: '320px', height: '180px', pointerEvents: 'none' });
     document.body.append(this.container);
-    this.map = new MapLibreMap({
+    const createMap = options.createMap ?? (mapOptions => new MapLibreMap(mapOptions));
+    this.map = createMap({
       container: this.container,
       style: options.basemap ?? DEFAULT_BASEMAP,
       interactive: false,
@@ -45,7 +44,7 @@ export class BasemapStill {
     });
     this.loaded = new Promise(resolve =>
       this.map.once('style.load', () => {
-        recolorBasemap(this.map, PALETTES[this.theme], { labels: true });
+        recolorBasemap(this.map, PALETTES[theme], { labels: true });
         this.installTrack();
         resolve();
       }),
@@ -58,11 +57,10 @@ export class BasemapStill {
    * @param theme - The theme.
    */
   public setTheme(theme: Theme): void {
-    this.theme = theme;
     // In the queue: a still asked for before the change is taken in the old colours.
     this.queue = this.queue.then(async () => {
       await this.loaded;
-      recolorBasemap(this.map, PALETTES[this.theme], { labels: true });
+      recolorBasemap(this.map, PALETTES[theme], { labels: true });
     });
   }
 
