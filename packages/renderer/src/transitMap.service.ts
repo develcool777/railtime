@@ -354,9 +354,15 @@ export class TransitMap {
         this.drawOverlay();
       },
       // Into 3D the buildings rise and the camera comes down to them; back, it lies flat and faces north.
+      // The change playing goes on as now seen, from as far as it had got: in 3D the camera rides along it
+      // from where it has grown to, or, still on its way there, flies to where it starts. (Back flat, it
+      // only lies flat: framing it then would cut the tilt short.)
       viewMode: () => {
-        this.buildingsLayer.show(this.props.current.viewMode === '3d');
-        this.camera.tilt();
+        const view = this.props.current.viewMode;
+        this.buildingsLayer.show(view === '3d');
+        this.player.rebuild();
+        this.camera.tilt(this.frames.growing());
+        if (view === '3d' && this.player.phase === 'pre') this.focusActive();
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
       streetLabels: () => showBasemapLabels(this.map, this.props.current.streetLabels),
@@ -506,6 +512,14 @@ export class TransitMap {
     if (!active) return;
     this.frames.stepStarted();
     this.tileWait = 0;
+    this.focusActive();
+    this.notify('step', this.facts.change(active.animation.step.index));
+  }
+
+  /** Frames the change playing, as the view and camera are set, and waits for the camera before it draws. */
+  private focusActive(): void {
+    const active = this.player.active;
+    if (!active) return;
     const speed = this.player.speed;
     const { index, timeline } = this.engine;
     const moveMs = this.camera.focusStep(
@@ -516,7 +530,6 @@ export class TransitMap {
     );
     // At once, after a beat, where it stays.
     this.player.retimeLeadIn(moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed);
-    this.notify('step', this.facts.change(active.animation.step.index));
   }
 
   /**

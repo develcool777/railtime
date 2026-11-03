@@ -135,6 +135,18 @@ export class Player {
   }
 
   /**
+   * Builds the change playing again, as the map is now seen (another view draws it at another pace), as
+   * far through each phase as it was: the playhead stays where it is.
+   */
+  public rebuild(): void {
+    const active = this.current;
+    if (!active) return;
+    const [phase, fraction] = [this.phase ?? 'pre', this.phaseProgress];
+    const animation = this.createAnimation(active.animation.step);
+    this.current = { ...active, animation, elapsed: this.elapsedAt(animation, active.preSeconds, phase, fraction) };
+  }
+
+  /**
    * Plays: on from here, or from a playhead. At the end, where everything has played, it starts again:
    * from history's first date or, for a network with a plan, from today, where the plan starts.
    *
@@ -169,7 +181,7 @@ export class Player {
     if (!next || progress === 0) return;
     const animation = this.createAnimation(next);
     // Past the camera's beat, as far through drawing as it was: a step drawn whole holds.
-    this.current = { animation, elapsed: this.leadIn + progress * animation.drawSeconds, preSeconds: this.leadIn };
+    this.current = { animation, elapsed: this.elapsedAt(animation, this.leadIn, 'draw', progress), preSeconds: this.leadIn };
   }
 
   /**
@@ -242,6 +254,29 @@ export class Player {
       this.running = false;
       events.push({ type: 'end' });
     }
+  }
+
+  /** How far through its phase the change playing is, 0 to 1: the camera's beat, drawing, or held. */
+  private get phaseProgress(): number {
+    const active = this.current;
+    if (!active) return 0;
+    if (this.phase === 'pre') return active.preSeconds > 0 ? active.elapsed / active.preSeconds : 0;
+    return this.phase === 'draw' ? this.progress : this.holdProgress;
+  }
+
+  /**
+   * Seconds into a change, at 1×, at a point in one of its phases.
+   *
+   * @param animation - The change's animation: how long it draws and is held.
+   * @param preSeconds - The camera's beat before it draws.
+   * @param phase - The phase.
+   * @param fraction - How far through that phase, 0 to 1.
+   * @returns The seconds.
+   */
+  private elapsedAt(animation: ActivePlayback['animation'], preSeconds: number, phase: Phase, fraction: number): number {
+    if (phase === 'pre') return fraction * preSeconds;
+    if (phase === 'draw') return preSeconds + fraction * animation.drawSeconds;
+    return preSeconds + animation.drawSeconds + fraction * animation.holdSeconds;
   }
 
   /**

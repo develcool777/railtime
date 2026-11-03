@@ -1,6 +1,6 @@
 import { clamp } from '@railtime/core/number.utils';
 import { DAY_MS } from '@railtime/core/date.utils';
-import type { StepDrawing } from '../steps/animation.types';
+import type { ChaseTarget, StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
 import type { TimeState } from '../transitMap.types';
@@ -83,9 +83,8 @@ export class FrameRenderer {
     const refreshed = this.stale || state.identityProgress !== null;
     if (refreshed) this.refreshSnapshot(state);
     const snapshot = this.snapshot!;
-    const drawing = emptyDrawing();
+    const drawing = this.drawActive(state, snapshot);
     const drawingStep = active !== null && player.phase !== 'pre';
-    if (drawingStep) active.animation.draw({ state, snapshot, progress: player.progress, holdProgress: player.holdProgress }, drawing);
     activeStep.update(drawing);
     this.updateMinimapActive(drawing);
 
@@ -119,6 +118,16 @@ export class FrameRenderer {
   }
 
   /**
+   * Where the change playing has grown to, and which way it goes on, for the camera to ride along it
+   * from there: as this frame draws it.
+   *
+   * @returns The target; `null` when nothing grows.
+   */
+  public growing(): ChaseTarget | null {
+    return this.snapshot ? this.drawActive(this.renderState(), this.snapshot).chase : null;
+  }
+
+  /**
    * The playhead and the network's size, when the day, the cursor, the change's progress (to a
    * hundredth), the playing state or the snapshot changed since last asked.
    *
@@ -138,6 +147,21 @@ export class FrameRenderer {
       playing,
       stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },
     };
+  }
+
+  /**
+   * What the change playing draws this frame: nothing while the camera gets there.
+   *
+   * @param state - The render state.
+   * @param snapshot - The network on the map.
+   * @returns The drawing.
+   */
+  private drawActive(state: RenderState, snapshot: NetworkSnapshot): StepDrawing {
+    const { player } = this.parts;
+    const drawing = emptyDrawing();
+    if (player.active && player.phase !== 'pre')
+      player.active.animation.draw({ state, snapshot, progress: player.progress, holdProgress: player.holdProgress }, drawing);
+    return drawing;
   }
 
   /**

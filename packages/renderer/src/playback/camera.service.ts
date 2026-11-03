@@ -64,18 +64,20 @@ export class CameraDirector {
 
   /**
    * Tilts the map as the settings' view says, if it is not so already: into 3D, the camera tilts and
-   * comes down to where the buildings stand; back, it lies flat and faces north, where it is.
+   * comes down to where the buildings stand, or, following a change as it grows, eases straight into
+   * riding along it from where it has grown to; back, it lies flat and faces north, where it is.
+   *
+   * @param growing - Where the change playing has grown to, and which way it goes on; `null` when nothing grows.
    */
-  public tilt(): void {
+  public tilt(growing: ChaseTarget | null = null): void {
     const view = this.viewMode;
     if (view === this.tilted) return;
     this.tilted = view;
-    this.chase = null;
-    this.map.easeTo(
-      view === '3d'
-        ? { pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: Math.max(this.map.getZoom(), VIEW_3D_ENTRY_ZOOM), duration: VIEW_TILT_MS }
-        : { pitch: 0, bearing: 0, duration: VIEW_TILT_MS },
-    );
+    this.chase = view === '3d' && this.mode === 'follow' && growing ? chaseStartOf(growing.center, growing.ahead, this.map.getBearing()) : null;
+    if (view === '2d') this.map.easeTo({ pitch: 0, bearing: 0, duration: VIEW_TILT_MS });
+    else if (this.chase)
+      this.map.easeTo({ center: this.chase.center, bearing: this.chase.bearing, pitch: VIEW_3D_PITCH, zoom: CHASE_ZOOM, duration: VIEW_TILT_MS });
+    else this.map.easeTo({ pitch: VIEW_3D_PITCH, bearing: VIEW_3D_BEARING, zoom: Math.max(this.map.getZoom(), VIEW_3D_ENTRY_ZOOM), duration: VIEW_TILT_MS });
   }
 
   /**

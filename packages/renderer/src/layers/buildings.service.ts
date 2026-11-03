@@ -25,7 +25,8 @@ export class BuildingsLayer extends MapLayer {
   public install(_font: string[]): void {
     if (!this.map.getSource(BASEMAP_BUILDINGS.source)) return;
     /**
-     * A building's height in metres, rising with the zoom.
+     * A building's height in metres, rising with the zoom. One the basemap gives none of is the ground's:
+     * no base stands on it, no top lies flat.
      *
      * @param property - Its top's or its bottom's.
      * @returns The expression.
@@ -37,7 +38,7 @@ export class BuildingsLayer extends MapLayer {
       BUILDINGS_RISE_ZOOM,
       0,
       BUILDINGS_FULL_ZOOM,
-      ['get', property],
+      ['coalesce', ['get', property], 0],
     ];
     this.map.addLayer({
       id: LAYERS.buildings,
