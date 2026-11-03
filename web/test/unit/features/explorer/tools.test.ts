@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { mapOverlayOf, overlayRequestOf, stationPickOf } from '~/features/explorer/tools.utils';
+import { mapOverlayOf, overlayRequestOf, routeAimOf, stationPickOf } from '~/features/explorer/tools.utils';
 
 describe('ToolsUtils', () => {
   describe('mapOverlayOf', () => {
@@ -36,35 +36,47 @@ describe('ToolsUtils', () => {
     });
   });
 
+  describe('routeAimOf', () => {
+    const bank = { id: 'bank', name: 'Bank' };
+    const oval = { id: 'oval', name: 'Oval' };
+
+    test('aims at where the route starts until it has one, then at where it ends', () => {
+      expect(routeAimOf({ from: null, to: null })).toBe('from');
+      expect(routeAimOf({ from: null, to: oval })).toBe('from');
+      expect(routeAimOf({ from: bank, to: null })).toBe('to');
+      expect(routeAimOf({ from: bank, to: oval })).toBe('to');
+    });
+  });
+
   describe('stationPickOf', () => {
     const bank = { id: 'bank', name: 'Bank' };
     const oval = { id: 'oval', name: 'Oval' };
     const kennington = { id: 'kennington', name: 'Kennington' };
     const empty = { from: null, to: null };
+    const pick = (routeEnds: { from: typeof bank | null; to: typeof bank | null }, routeAim: 'from' | 'to', stop: typeof bank) =>
+      stationPickOf({ section: 'route', picking: true, routeEnds, routeAim }, stop);
 
-    test("picks a route's start, then its end, then its end again", () => {
-      const pick = (routeEnds: { from: typeof bank | null; to: typeof bank | null }, stop: typeof bank) =>
-        stationPickOf({ section: 'route', picking: true, routeEnds }, stop);
-      expect(pick(empty, bank)).toEqual({ kind: 'route', ends: { from: bank, to: null } });
-      expect(pick({ from: bank, to: null }, oval)).toEqual({ kind: 'route', ends: { from: bank, to: oval } });
-      expect(pick({ from: bank, to: oval }, kennington)).toEqual({ kind: 'route', ends: { from: bank, to: kennington } });
+    test('fills the end of the route aimed at, picked or not', () => {
+      expect(pick(empty, 'from', bank)).toEqual({ kind: 'route', ends: { from: bank, to: null } });
+      expect(pick({ from: bank, to: null }, 'to', oval)).toEqual({ kind: 'route', ends: { from: bank, to: oval } });
+      expect(pick({ from: bank, to: oval }, 'to', kennington)).toEqual({ kind: 'route', ends: { from: bank, to: kennington } });
+      expect(pick({ from: bank, to: oval }, 'from', kennington)).toEqual({ kind: 'route', ends: { from: kennington, to: oval } });
+      expect(pick(empty, 'to', oval)).toEqual({ kind: 'route', ends: { from: null, to: oval } });
     });
 
-    test('ends nothing at its own start', () => {
-      expect(stationPickOf({ section: 'route', picking: true, routeEnds: { from: bank, to: null } }, bank)).toEqual({
-        kind: 'route',
-        ends: { from: bank, to: null },
-      });
+    test("leaves the route as it is at its other end's station", () => {
+      expect(pick({ from: bank, to: null }, 'to', bank)).toEqual({ kind: 'route', ends: { from: bank, to: null } });
+      expect(pick({ from: bank, to: oval }, 'from', oval)).toEqual({ kind: 'route', ends: { from: bank, to: oval } });
     });
 
     test("picks a reach's start with Reach in sight", () => {
-      expect(stationPickOf({ section: 'reach', picking: true, routeEnds: empty }, oval)).toEqual({ kind: 'reach', from: oval });
+      expect(stationPickOf({ section: 'reach', picking: true, routeEnds: empty, routeAim: 'from' }, oval)).toEqual({ kind: 'reach', from: oval });
     });
 
     test('opens the station in any other section, out of sight, or under a view pushed over it', () => {
-      expect(stationPickOf({ section: 'lines', picking: true, routeEnds: empty }, bank)).toEqual({ kind: 'open' });
-      expect(stationPickOf({ section: 'route', picking: false, routeEnds: empty }, bank)).toEqual({ kind: 'open' });
-      expect(stationPickOf({ section: 'reach', picking: false, routeEnds: empty }, bank)).toEqual({ kind: 'open' });
+      expect(stationPickOf({ section: 'lines', picking: true, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
+      expect(stationPickOf({ section: 'route', picking: false, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
+      expect(stationPickOf({ section: 'reach', picking: false, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
     });
   });
 });

@@ -317,7 +317,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     if (!id || !facts.value || !time.value) return closeStation();
     const stop = { id, name: facts.value.asOf(time.value).station(id).name };
     const picking = views.value.length === 0 && (phone.value || panelOpen.value);
-    const pick = stationPickOf({ section: section.value, picking, routeEnds: tools.routeEnds }, stop);
+    const pick = stationPickOf({ section: section.value, picking, routeEnds: tools.routeEnds, routeAim: tools.routeAim }, stop);
     if (pick.kind === 'route') tools.setRouteEnds(pick.ends);
     else if (pick.kind === 'reach') tools.setReachFrom(pick.from);
     else pickStation(id);
