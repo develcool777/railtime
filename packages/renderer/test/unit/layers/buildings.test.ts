@@ -21,7 +21,9 @@ describe('BuildingsLayer', () => {
     expect(buildings).toMatchObject({ type: 'fill-extrusion', source: BASEMAP_BUILDINGS.source, 'source-layer': BASEMAP_BUILDINGS.sourceLayer });
     expect(buildings?.layout.visibility).toBe('none');
     expect(buildings?.paint['fill-extrusion-color']).toBe(PALETTES.dark.landuse);
-    expect(buildings?.paint['fill-extrusion-height']).toEqual(['interpolate', ['linear'], ['zoom'], 13, 0, 15, ['get', 'render_height']]);
+    // A building the basemap gives no height stands on the ground: never a null for MapLibre to warn of.
+    expect(buildings?.paint['fill-extrusion-height']).toEqual(['interpolate', ['linear'], ['zoom'], 13, 0, 15, ['coalesce', ['get', 'render_height'], 0]]);
+    expect(buildings?.paint['fill-extrusion-base']).toEqual(['interpolate', ['linear'], ['zoom'], 13, 0, 15, ['coalesce', ['get', 'render_min_height'], 0]]);
     layer.show(true);
     expect(buildings?.layout.visibility).toBe('visible');
     layer.show(false);

@@ -205,6 +205,22 @@ describe('TransitMap', () => {
     expect(named('step').at(-1)).toBeNull();
   });
 
+  test('turned into 3D while a change plays, goes on drawing it as now seen, from as far as it had got', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    map.seek(playheads.after(1, 0.4));
+    map.play();
+    frame();
+    const before = named('time').at(-1) as { cursor: number; progress: number };
+    map.update({ viewMode: '3d' });
+    frame();
+    const after = named('time').at(-1) as { cursor: number; progress: number };
+    // The same change, drawn on from where it was, at 3D's slower pace: a frame on, a little further.
+    expect(after.cursor).toBe(before.cursor);
+    expect(after.progress).toBeGreaterThanOrEqual(before.progress);
+    expect(after.progress - before.progress).toBeLessThan(0.05);
+  });
+
   test('works the overlay out again as the date moves on, and reports it', () => {
     const { map, frame, ready, named, playheads } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', preference: 'fastest' } });
     ready();

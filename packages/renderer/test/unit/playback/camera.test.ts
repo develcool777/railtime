@@ -94,6 +94,27 @@ describe('CameraDirector', () => {
     expect(fake.moves).toHaveLength(3);
   });
 
+  test('turned into 3D while a line grows, eases straight into riding along it from where it has grown to, and follows on', () => {
+    const { fake, camera, settings, coordOf } = stepAfter('1905-01-01');
+    const growing = { center: coordOf('c'), behind: coordOf('b'), ahead: coordOf('d') };
+    settings.viewMode = '3d';
+    camera.tilt(growing);
+    expect(fake.moves.at(-1)).toMatchObject({
+      kind: 'ease',
+      target: coordOf('c'),
+      options: { pitch: VIEW_3D_PITCH, zoom: CHASE_ZOOM, duration: VIEW_TILT_MS },
+    });
+    camera.follow({ ...growing, center: coordOf('d') }, 0.1);
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'jump', target: coordOf('d') });
+    // Back flat, it lies flat; into 3D with nothing growing, it only tilts.
+    settings.viewMode = '2d';
+    camera.tilt(growing);
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'ease', options: { pitch: 0, bearing: 0 } });
+    settings.viewMode = '3d';
+    camera.tilt(null);
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'ease', options: { bearing: VIEW_3D_BEARING, zoom: VIEW_3D_ENTRY_ZOOM } });
+  });
+
   test('in 3D, jumps to where a line starts growing from across the city, not gliding there at street level', () => {
     const { fake, camera, view, animation, coordOf } = stepAfter('1905-01-01');
     view('3d');

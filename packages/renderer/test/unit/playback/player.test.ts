@@ -4,6 +4,9 @@ import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playb
 import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
+import { Player } from '../../../src/playback/player.service';
+import { StepAnimation } from '../../../src/steps/animation.service';
+import type { ViewMode } from '../../../src/transitMap.types';
 
 describe('Player', () => {
   test('stops on each step and plays it through its phases to the end', () => {
@@ -69,6 +72,30 @@ describe('Player', () => {
     player.seek({ cursor: -2, time: toTimestamp('1800-01-01'), progress: 0 });
     expect([player.cursor, player.clock]).toEqual([0, timeline.start]);
     expect(facts.playheads.after(0).time).toBe(timeline.start);
+  });
+
+  test('builds the change playing again as the map is now seen, as far through each phase as it was', () => {
+    const facts = playbackOf(tinyNetwork()).facts;
+    const { index, timeline } = facts.engine;
+    let view: ViewMode = '2d';
+    const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
+    player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
+    player.skip();
+    player.play();
+    player.tick(1);
+    player.tick(player.active!.animation.drawSeconds * 0.4);
+    const flat = player.active!.animation.drawSeconds;
+    view = '3d';
+    player.rebuild();
+    // Drawn slower in 3D, from as far as it had got.
+    expect(player.active!.animation.drawSeconds).toBeGreaterThan(flat);
+    expect([player.phase, player.progress]).toEqual(['draw', expect.closeTo(0.4)]);
+    expect(player.playhead).toMatchObject({ cursor: 1, progress: expect.closeTo(0.4) });
+    // Held, it is held as far through.
+    player.tick(player.active!.animation.drawSeconds * 0.6 + player.active!.animation.holdSeconds / 2);
+    view = '2d';
+    player.rebuild();
+    expect([player.phase, player.holdProgress]).toEqual(['hold', expect.closeTo(0.5)]);
   });
 
   test('jumps to the end, the plan built', () => {
