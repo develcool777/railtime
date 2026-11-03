@@ -19,7 +19,7 @@ import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
  * @param props - Its props at first.
  * @param on - Its listeners, besides the one recording every event.
  * @param style - The basemap's layers.
- * @returns The map, the stand-in, a frame stepper and the events delivered, in order.
+ * @returns The map, the stand-in, a frame stepper, the events delivered, in order, and where its network's playheads are.
  */
 const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, style: LayerSpecification[] = []) => {
   const fake = fakeMap(style);
@@ -34,9 +34,10 @@ const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, styl
       },
     ]),
   );
+  const facts = props.facts ?? NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01') });
   const map = new TransitMap({
     container: {} as HTMLElement,
-    props: { facts: NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01') }), ...props },
+    props: { ...props, facts },
     on: recordAll,
     createMap: () => fake.map,
     scheduler: { request: frame => pending.push(frame), cancel: () => (pending.length = 0) },
@@ -51,7 +52,7 @@ const mapOf = (props: Partial<MapProps> = {}, on: TransitMapListeners = {}, styl
     frame();
   };
   const named = (name: string) => events.filter(event => event.name === name).map(event => event.payload);
-  return { map, fake, frame, ready, events, named, pending };
+  return { map, fake, frame, ready, events, named, pending, playheads: facts.playheads };
 };
 
 /**
@@ -125,9 +126,9 @@ describe('TransitMap', () => {
   });
 
   test('says nothing inside a call: what happens is delivered at the end of the frame, to listeners given at the start', () => {
-    const { map, fake, frame, events } = mapOf({ overlay: { kind: 'reach', from: 'b' } });
+    const { map, fake, frame, events, playheads } = mapOf({ overlay: { kind: 'reach', from: 'b' } });
     fake.fire('style.load');
-    map.seek({ time: toTimestamp('1935-01-01') });
+    map.seek(playheads.on(toTimestamp('1935-01-01')));
     expect(events).toEqual([]);
     frame();
     expect(events.map(event => event.name)).toEqual(expect.arrayContaining(['status', 'overlay', 'step', 'time']));
@@ -161,39 +162,53 @@ describe('TransitMap', () => {
   });
 
   test("draws another network on the same map: the camera where it was, the clock at the new one's today, a plan's track once built", () => {
-    const { map, fake, frame, ready, named } = mapOf();
+    const { map, fake, frame, ready, named, playheads } = mapOf();
     ready();
-    map.seek({ time: toTimestamp('1905-01-01') });
+    map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
     const moves = fake.moves.length;
-    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: 'extension', today: toTimestamp('2026-01-01') }) });
+    const planned = NetworkFacts.create(tinyNetwork(), { plan: 'extension', today: toTimestamp('2026-01-01') });
+    map.update({ facts: planned });
     frame();
     expect(fake.moves).toHaveLength(moves);
     expect((named('time').at(-1) as { time: number }).time).toBe(toTimestamp('2026-01-01'));
     expect(featuresIn(fake, SOURCES.planned)).toHaveLength(0);
-    map.seek('future');
+    map.seek(planned.playheads.end());
     frame();
     expect(featuresIn(fake, SOURCES.planned).length).toBeGreaterThan(0);
   });
 
   test("hides the ring of a station the moment took off the map, says so, and rings it again when it is back: the prop is the app's", () => {
-    const { map, fake, frame, ready, named } = mapOf({ selectedStation: 'c' });
+    const { map, fake, frame, ready, named, playheads } = mapOf({ selectedStation: 'c' });
     ready();
     expect(featuresIn(fake, SOURCES.selection)).toHaveLength(1);
-    map.seek({ time: toTimestamp('1905-01-01') });
+    map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
     expect(named('selectionGone')).toEqual(['c']);
     expect(featuresIn(fake, SOURCES.selection)).toHaveLength(0);
-    map.seek('today');
+    map.seek(playheads.today());
     frame();
     expect(featuresIn(fake, SOURCES.selection)).toHaveLength(1);
     expect(named('selectionGone')).toEqual(['c']);
   });
 
-  test('works the overlay out again as the date moves on, and reports it', () => {
-    const { map, frame, ready, named } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', preference: 'fastest' } });
+  test('stands on a change drawn in part as a seek leaves it: told as the playhead, captioned with the change', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
     ready();
-    map.seek({ time: toTimestamp('1905-01-01') });
+    const halfway = playheads.after(1, 0.5);
+    map.seek(halfway);
+    frame();
+    expect(named('time').at(-1)).toMatchObject({ ...halfway, progress: expect.closeTo(0.5) });
+    expect(named('step').at(-1)).toMatchObject({ index: 1 });
+    map.seek(playheads.after(2));
+    frame();
+    expect(named('step').at(-1)).toBeNull();
+  });
+
+  test('works the overlay out again as the date moves on, and reports it', () => {
+    const { map, frame, ready, named, playheads } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', preference: 'fastest' } });
+    ready();
+    map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
     const results = named('overlay') as { kind: string; route: unknown }[];
     expect(results.at(0)?.route).not.toBeNull();
@@ -229,13 +244,13 @@ describe('TransitMap', () => {
   });
 
   test('takes it all down once: the map removed, no frames, no events, and every later call does nothing', () => {
-    const { map, fake, frame, ready, events, pending } = mapOf();
+    const { map, fake, frame, ready, events, pending, playheads } = mapOf();
     ready();
     const delivered = events.length;
     map.destroy();
     expect([map.status, fake.isRemoved(), pending.length]).toEqual(['destroyed', true, 0]);
     map.update({ viewMode: '3d' });
-    map.seek('future');
+    map.seek(playheads.end());
     map.play();
     map.stop();
     map.zoomIn();

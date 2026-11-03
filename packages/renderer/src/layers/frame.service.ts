@@ -28,7 +28,7 @@ export class FrameRenderer {
   private revealedCount = 0;
   /** The minimap was last sent a non-empty active drawing. */
   private minimapShowsActive = false;
-  /** Clock day, cursor and playing state at the last time state, to give one only on change. */
+  /** Clock day, cursor, progress to a hundredth and playing state at the last time state, to give one only on change. */
   private lastTimeKey = '';
 
   public constructor(parts: FrameParts) {
@@ -119,22 +119,21 @@ export class FrameRenderer {
   }
 
   /**
-   * The clock, the cursor and the network's size, when the day, the cursor, the playing state or the
-   * snapshot changed since last asked.
+   * The playhead and the network's size, when the day, the cursor, the change's progress (to a
+   * hundredth), the playing state or the snapshot changed since last asked.
    *
    * @returns The time state, or `null` when nothing changed.
    */
   public timeState(): TimeState | null {
-    const { player, timeline } = this.parts;
-    const { clock, cursor, playing } = player;
-    const key = `${Math.floor(clock / DAY_MS)}|${cursor}|${playing}|${player.inFuture}`;
+    const { player, playheads } = this.parts;
+    const { playhead, playing } = player;
+    const key = `${Math.floor(playhead.time / DAY_MS)}|${playhead.cursor}|${Math.round(playhead.progress * 100)}|${playing}|${player.inFuture}`;
     if (key === this.lastTimeKey) return null;
     this.lastTimeKey = key;
     return {
-      time: clock,
-      cursor,
-      stepCount: timeline.steps.length,
-      todayCursor: timeline.cursorAt(player.today),
+      ...playhead,
+      atToday: playheads.isToday(playhead),
+      atRest: playheads.isRest(playhead),
       future: player.inFuture,
       playing,
       stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },

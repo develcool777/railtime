@@ -93,7 +93,7 @@
 
   const playing = computed(() => props.mode === 'playing' && (props.time?.playing ?? false));
   const isFuture = computed(() => props.time?.future === true);
-  const atToday = computed(() => !props.time || (props.time.cursor === props.time.todayCursor && !isFuture.value));
+  const atToday = computed(() => !props.time || props.time.atToday);
   const hasHistory = computed(() => !props.planOnly);
   // A network never built has no dates to slide through: it plays its plan, and steps through it.
   const hasTimeline = computed(() => !props.planOnly);

@@ -3,7 +3,7 @@ import { YEAR_MS } from '@railtime/core/date.utils';
 import type { Step } from '@railtime/network/engine.types';
 import { clamp } from '@railtime/core/number.utils';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
-import type { PlayFrom, SeekTarget } from '../transitMap.types';
+import type { Playhead } from '@railtime/network/facts.types';
 import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './player.types';
 
 /**
@@ -32,18 +32,21 @@ export class Player {
   public readonly end: number;
   /** The steps to play. */
   private readonly timeline: NetworkEngine['timeline'];
+  /** Where in the history it can be, and the dates its changes play on. */
+  private readonly playheads: NetworkEngine['playheads'];
   /** Builds each step's animation as it starts. */
   private readonly createAnimation: AnimationFactory;
 
-  public constructor(engine: Pick<NetworkEngine, 'timeline' | 'range'>, createAnimation: AnimationFactory) {
-    const { timeline, range } = engine;
-    const today = range.today;
+  public constructor(engine: Pick<NetworkEngine, 'timeline' | 'range' | 'playheads'>, createAnimation: AnimationFactory) {
+    const { timeline, range, playheads } = engine;
     this.timeline = timeline;
-    this.today = today;
+    this.playheads = playheads;
+    this.today = range.today;
     this.end = range.end;
     this.createAnimation = createAnimation;
-    this.time = today;
-    this.stepsDone = timeline.cursorAt(today);
+    const opening = playheads.today();
+    this.time = opening.time;
+    this.stepsDone = opening.cursor;
   }
 
   /** The clock, as a UTC timestamp. */
@@ -71,9 +74,17 @@ export class Player {
     return this.current;
   }
 
-  /** Whether the map shows a plan's future: a planned step is playing or has played. */
+  /** Where it is: the changes done, the clock, and how far the next change has been drawn. */
+  public get playhead(): Playhead {
+    return { cursor: this.stepsDone, time: this.time, progress: this.progress };
+  }
+
+  /**
+   * Whether the map shows a plan: its playhead in one (`Playheads.inPlan`), or the camera on its way to
+   * a planned change about to draw, which no playhead tells.
+   */
   public get inFuture(): boolean {
-    return this.stepsDone > this.timeline.datedCount || this.current?.animation.step.planned === true;
+    return this.playheads.inPlan(this.playhead) || this.current?.animation.step.planned === true;
   }
 
   /** The active step's phase, or `null` between steps. */
@@ -124,15 +135,14 @@ export class Player {
   }
 
   /**
-   * Plays: on from here, from history's start, or from a change.
+   * Plays: on from here, or from a playhead. At the end, where everything has played, it starts again:
+   * from history's first date or, for a network with a plan, from today, where the plan starts.
    *
-   * @param from - `here` (the default; from the start again once at the end), `start` (history's
-   * first date; for a network with a plan, today, where its future starts), or a change.
+   * @param from - Where from: here, unless given.
    */
-  public play(from: PlayFrom = 'here'): void {
-    if (from === 'start') this.seekTime(this.timeline.datedCount < this.timeline.steps.length ? this.today : this.timeline.start);
-    else if (from !== 'here') this.seekStep(from.change, false);
-    else if (this.stepsDone >= this.timeline.steps.length && this.time >= this.end) this.seekTime(this.timeline.start);
+  public play(from?: Playhead): void {
+    if (from) this.seek(from);
+    else if (this.stepsDone >= this.timeline.steps.length && this.time >= this.end) this.seek(this.playheads.start());
     this.running = true;
   }
 
@@ -142,19 +152,24 @@ export class Player {
   }
 
   /**
-   * Moves through time as a video player's seek does: playing, it plays on from there; paused, it
-   * stays paused. The future, where everything has played, pauses.
+   * Moves to a playhead, as a video player's seek does: playing, it plays on from there; paused, it
+   * stays paused (at the end, where everything has played, playing ends on the next frame). The cursor
+   * is held to the timeline and the clock to its change's years: from the last change done's date
+   * (history's start for none) to the next one's (the end for a plan's). A change drawn in part stands
+   * on its date, drawn so far, as playing left it.
    *
-   * @param to - A day, just after a change or just before one, today, or the future.
+   * @param to - Where to.
    */
-  public seek(to: SeekTarget): void {
-    if (to === 'future') {
-      this.running = false;
-      this.seekEnd();
-    } else if (to === 'today') this.seekTime(this.today);
-    else if ('change' in to) this.seekStep(to.change, true);
-    else if ('beforeChange' in to) this.seekStep(to.beforeChange, false);
-    else this.seekTime(to.time);
+  public seek(to: Playhead): void {
+    const { cursor, time, progress } = this.playheads.hold(to);
+    this.stepsDone = cursor;
+    this.time = time;
+    this.current = null;
+    const next = this.timeline.steps[cursor];
+    if (!next || progress === 0) return;
+    const animation = this.createAnimation(next);
+    // Past the camera's beat, as far through drawing as it was: a step drawn whole holds.
+    this.current = { animation, elapsed: this.leadIn + progress * animation.drawSeconds, preSeconds: this.leadIn };
   }
 
   /**
@@ -163,31 +178,13 @@ export class Player {
    * @param direction - Back (-1) or on (1).
    */
   public stepYear(direction: -1 | 1): void {
-    this.seekTime(this.time + direction * YEAR_MS);
+    this.seek(this.playheads.on(this.time + direction * YEAR_MS));
   }
 
   /** To just before the change before the one playing (or last played): it plays again if playing. */
   public previousChange(): void {
     const current = this.current?.animation.step.index ?? this.stepsDone - 1;
-    this.seekStep(Math.max(current - 1, 0), false);
-  }
-
-  /**
-   * Jumps to the end of a day, with nothing animating.
-   *
-   * @param time - A timestamp on that day; clamped to the timeline.
-   */
-  private seekTime(time: number): void {
-    this.time = clamp(time, this.timeline.start, this.end);
-    this.stepsDone = this.timeline.cursorAt(this.time);
-    this.current = null;
-  }
-
-  /** Jumps past every step, planned ones too, with nothing animating: the network as it ends. */
-  private seekEnd(): void {
-    this.time = this.end;
-    this.stepsDone = this.timeline.steps.length;
-    this.current = null;
+    this.seek(this.playheads.before(Math.max(current - 1, 0)));
   }
 
   /**
@@ -219,7 +216,7 @@ export class Player {
     const next = this.timeline.steps[this.stepsDone];
     if (this.current) this.finishStep(events);
     else if (next) {
-      this.time = next.planned ? this.end : next.time;
+      this.time = this.playheads.dateOf(next.index);
       this.startStep(next, events);
     }
     return events;
@@ -234,7 +231,7 @@ export class Player {
    */
   private advanceClock(seconds: number, events: PlayerEvent[]): void {
     const next = this.timeline.steps[this.stepsDone];
-    const target = next && !next.planned ? next.time : this.end;
+    const target = next ? this.playheads.dateOf(next.index) : this.end;
     // As many years a second as are left, between the two speeds: it slows steadily into the date, never with a jolt.
     const yearsPerSecond = clamp((target - this.time) / YEAR_MS, SLOW_YEARS_PER_SECOND, FAST_YEARS_PER_SECOND);
     this.time = Math.min(target, this.time + yearsPerSecond * this.rate * seconds * YEAR_MS);
@@ -245,20 +242,6 @@ export class Player {
       this.running = false;
       events.push({ type: 'end' });
     }
-  }
-
-  /**
-   * Puts the clock on a step's date, the end for a planned one, and the cursor on it or past it.
-   *
-   * @param index - The step's position in the timeline; clamped to it.
-   * @param past - Whether the cursor goes past the step, or stays on it.
-   */
-  private seekStep(index: number, past: boolean): void {
-    const step = this.timeline.steps[clamp(index, 0, this.timeline.steps.length - 1)];
-    if (!step) return;
-    this.time = step.planned ? this.end : clamp(step.time, this.timeline.start, this.end);
-    this.stepsDone = step.index + (past ? 1 : 0);
-    this.current = null;
   }
 
   /**

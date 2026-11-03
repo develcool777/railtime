@@ -3,7 +3,7 @@ import { cumulativeDistances } from '@railtime/core/geometry.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { pushTo } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
-import type { LineSketch, NetworkRecords, NetworkSummary, NetworkTime, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
+import type { LineSketch, NetworkRecords, NetworkSummary, Playhead, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
 import { networkAt } from '../engine/history.utils.ts';
 import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
@@ -143,7 +143,7 @@ export const reachedSegments = (
  * @param moment - The moment.
  * @returns The records.
  */
-export const recordsOf = (source: RecordsSource, count: number, moment: NetworkTime): NetworkRecords => {
+export const recordsOf = (source: RecordsSource, count: number, moment: Playhead): NetworkRecords => {
   const { index, timeline, firstYears, colorOf } = source;
   const { stations } = networkAt(index, timeline, moment.cursor);
   const name = (station: string) => index.stationName(station, moment.time);

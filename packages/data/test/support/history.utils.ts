@@ -67,7 +67,7 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
  */
 export const playWholeHistory = (network: Network, shown: { plan?: string; hidden?: readonly string[] } = {}): PlayedHistory => {
   const playback = playbackOf(network, shown);
-  playback.player.seek({ time: playback.timeline.start });
+  playback.player.seek(playback.facts.playheads.on(playback.timeline.start));
   return playOut(playback, 0);
 };
 

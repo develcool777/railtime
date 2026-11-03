@@ -162,8 +162,8 @@
               @pause="store.pause"
               @previous="store.previousChange"
               @skip="store.nextChange"
-              @today="store.leaveTo({ kind: 'date', time: range.today })"
-              @future="store.leaveTo({ kind: 'future' })"
+              @today="store.leaveTo('today')"
+              @future="store.leaveTo('end')"
               @pick="store.pick"
               @settings="store.setPlayer" />
           </div>

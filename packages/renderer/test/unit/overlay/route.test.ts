@@ -69,7 +69,7 @@ describe('RouteLayerUtils', () => {
   /** A route from A to D in 1935, along red, and the network it runs on. */
   const routeAtoD = () => {
     const playback = playbackOf(tinyNetwork());
-    playback.player.seek({ time: toTimestamp('1935-01-01') });
+    playback.player.seek(playback.facts.playheads.on(toTimestamp('1935-01-01')));
     return { index: playback.index, route: networkNow(playback).route('a', 'd', 'fastest')! };
   };
 

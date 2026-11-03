@@ -13,7 +13,7 @@ import { networkNow, playbackOf } from '../../support/playback.utils';
 /** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */
 const reachFromA = () => {
   const playback = playbackOf(tinyNetwork());
-  playback.player.seek({ time: toTimestamp('1955-01-01') });
+  playback.player.seek(playback.facts.playheads.on(toTimestamp('1955-01-01')));
   return { playback, reach: networkNow(playback).reach('a')! };
 };
 

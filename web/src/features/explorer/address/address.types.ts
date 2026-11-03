@@ -1,12 +1,19 @@
-import type { CoverageDistance } from '@railtime/network/facts.types';
+import type { CoverageDistance, Playhead } from '@railtime/network/facts.types';
 import type { MapView, ViewMode } from '@railtime/renderer/transitMap.types';
 
 import type { Section } from '~/features/explorer/explorer.types';
 
+/**
+ * A playhead as an address holds it, `at=202.4` or `at=202,1928-06-01`: its time only where its cursor
+ * and progress do not imply it (the last change done's date, or the next one's while it is drawn), and
+ * then to the day.
+ */
+export type LinkedPlayhead = Omit<Playhead, 'time'> & { time?: number };
+
 /** What an explorer address holds: each part only when it is not the default. */
 export type ExplorerUrlState = {
-  /** The day shown; today without one. */
-  date?: number;
+  /** Where in the network's history the map is; today, or with a plan the plan built, without one. */
+  at?: LinkedPlayhead;
   /** Where the map looks; the whole network without one. */
   view?: MapView;
   /** The station whose panel is open. */

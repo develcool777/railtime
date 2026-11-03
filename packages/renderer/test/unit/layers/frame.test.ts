@@ -18,8 +18,8 @@ import { playbackOf } from '../../support/playback.utils';
  */
 const framesOn = (date: string, plan?: string) => {
   const playback = playbackOf(tinyNetwork(), { plan });
-  if (plan) playback.player.seek('future');
-  else playback.player.seek({ time: toTimestamp(date) });
+  if (plan) playback.player.seek(playback.facts.playheads.end());
+  else playback.player.seek(playback.facts.playheads.on(toTimestamp(date)));
   const fake = fakeMap();
   const network = new NetworkLayer(fake.map);
   const activeStep = new ActiveStepLayer(fake.map);
@@ -33,6 +33,7 @@ const framesOn = (date: string, plan?: string) => {
   const minimap = { networks: [] as Pick<NetworkSnapshot, 'lines' | 'planned'>[], active: [] as FeatureCollection<LineFeature>[] };
   const frames = new FrameRenderer({
     ...playback,
+    playheads: playback.facts.engine.playheads,
     network,
     activeStep,
     stations,
@@ -107,7 +108,7 @@ describe('FrameRenderer', () => {
     expect(frames.timeState()).toBeNull();
     frames.draw(0, null);
     expect(frames.timeState()).toMatchObject({ stats: { stations: 4, lines: 2 }, playing: false, future: false });
-    playback.player.seek({ time: toTimestamp('1935-01-02') });
+    playback.player.seek(playback.facts.playheads.on(toTimestamp('1935-01-02')));
     expect(frames.timeState()?.time).toBe(toTimestamp('1935-01-02'));
     expect(frames.timeState()).toBeNull();
   });
@@ -115,7 +116,7 @@ describe('FrameRenderer', () => {
   test("blends a line's colour on every frame while its identity changes", () => {
     const { frames, fake, playback } = framesOn('1989-06-01');
     const identity = playback.timeline.steps.find(step => step.kind === 'identity')!;
-    playback.player.seek({ beforeChange: identity.index });
+    playback.player.seek(playback.facts.playheads.before(identity.index));
     frames.draw(0, null);
     playback.player.play();
     playback.player.tick(1 / 60);

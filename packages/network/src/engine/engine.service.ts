@@ -2,6 +2,7 @@ import type { Network } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import type { LineGap } from './engine.types';
 import { NetworkIndex } from './index.service.ts';
+import { Playheads } from './playheads.service.ts';
 import { Timeline } from './timeline.service.ts';
 
 /**
@@ -17,6 +18,8 @@ export class NetworkEngine {
   public readonly timeline: Timeline;
   /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's future plays at `end`. */
   public readonly range: { start: number; end: number; today: number };
+  /** Where in its history the map can be, and the rules of it: what the player seeks and runs its clock to. */
+  public readonly playheads: Playheads;
 
   /**
    * @param network - The network: with its lines hidden left out (`withLinesHidden`).
@@ -29,5 +32,6 @@ export class NetworkEngine {
     this.index = new NetworkIndex(built?.network ?? network, built?.sections, gaps);
     this.timeline = new Timeline(this.index);
     this.range = { start: this.timeline.start, end: Math.max(today, this.timeline.lastDate), today };
+    this.playheads = new Playheads(this.timeline, this.range);
   }
 }

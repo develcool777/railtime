@@ -11,7 +11,7 @@ import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTE
 import { Minimap } from './minimap/minimap.service';
 import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { NetworkTime } from '@railtime/network/facts.types';
+import type { Playhead } from '@railtime/network/facts.types';
 import { OverlayController } from './overlay/controller.service';
 import { ReachLayer } from './overlay/reach.service';
 import { RouteLayer } from './overlay/route.service';
@@ -32,18 +32,7 @@ import {
   SELECTED_STATION_ZOOM,
   SELECT_FLY_MS,
 } from './transitMap.constants';
-import type {
-  Credit,
-  FrameScheduler,
-  MapProps,
-  MapView,
-  NetworkParts,
-  Padding,
-  PlayFrom,
-  SeekTarget,
-  TransitMapEvents,
-  TransitMapOptions,
-} from './transitMap.types';
+import type { Credit, FrameScheduler, MapProps, MapView, NetworkParts, Padding, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
 import { emptyCollection } from './layers/snapshot.utils';
 
@@ -182,27 +171,28 @@ export class TransitMap {
   }
 
   /**
-   * Moves through time as a video player's seek does: playing, it plays on from there; paused, it
-   * stays paused. The future, where every change has played, pauses.
+   * Moves to a playhead, as a video player's seek does: playing, it plays on from there; paused, it
+   * stays paused. `NetworkFacts.playheads` gives one for a day, a change, today or the end; the `time`
+   * event's `TimeState` is one too.
    *
-   * @param to - A day, just after a change or just before one, today, or the future.
+   * @param to - Where to.
    */
-  public seek(to: SeekTarget): void {
+  public seek(to: Playhead): void {
     if (this.life === 'destroyed') return;
     this.player.seek(to);
     this.jumped();
   }
 
   /**
-   * Plays: on from here (from the start again once at the end), from history's start (for a network
-   * with a plan, today, where its future starts), or from a change.
+   * Plays: on from here (from the start again once at the end: history's first date, or for a network
+   * with a plan, today, where its plan starts), or from a playhead.
    *
-   * @param from - Where from.
+   * @param from - Where from: here, unless given.
    */
-  public play(from: PlayFrom = 'here'): void {
+  public play(from?: Playhead): void {
     if (this.life === 'destroyed') return;
     this.player.play(from);
-    if (from !== 'here') this.jumped();
+    if (from) this.jumped();
   }
 
   /** Pauses where it is. */
@@ -320,13 +310,14 @@ export class TransitMap {
       reach: this.reachLayer,
       coverage: this.coverageLayer,
       camera: this.camera,
-      moment: () => this.moment(),
+      moment: () => this.player.playhead,
       theme: () => this.props.current.theme,
       report: result => this.notify('overlay', result),
     });
     const frames = new FrameRenderer({
       index,
       timeline,
+      playheads: facts.engine.playheads,
       player,
       network: this.networkLayer,
       activeStep: this.activeStepLayer,
@@ -419,15 +410,6 @@ export class TransitMap {
   }
 
   /**
-   * The moment the map shows, for the network's questions.
-   *
-   * @returns The cursor and the clock.
-   */
-  private moment(): NetworkTime {
-    return { cursor: this.player.cursor, time: this.player.clock };
-  }
-
-  /**
    * Where the map looks now.
    *
    * @returns Its centre and zoom.
@@ -496,11 +478,13 @@ export class TransitMap {
     return new StepAnimation(step, { index, timeline, view: this.props.current.viewMode });
   }
 
-  /** Redraws at once after a jump in time, nothing pulsing and no caption. */
+  /** Redraws at once after a jump in time, nothing pulsing; the caption is the change left drawn in part, if any. */
   private jumped(): void {
+    const active = this.player.active;
     this.stationLayer.resetPulses();
+    if (active) this.frames.stepStarted();
     this.frames.redraw(true);
-    this.notify('step', null);
+    this.notify('step', active ? this.facts.change(active.animation.step.index) : null);
   }
 
   /**
