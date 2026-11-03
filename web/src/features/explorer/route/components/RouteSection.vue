@@ -5,7 +5,7 @@
       <div class="relative flex min-w-0 flex-1 flex-col gap-2">
         <span class="border-accented pointer-events-none absolute top-[22px] bottom-[22px] left-[16px] border-l-2 border-dotted" aria-hidden="true" />
         <StationField
-          v-for="end in ENDS"
+          v-for="end in ROUTE_ENDS"
           :key="end.key"
           :stations
           :stop="ends[end.key]"
@@ -102,13 +102,9 @@
   import { computed } from 'vue';
 
   import { lineColor } from '~/features/explorer/format.utils';
+  import { ROUTE_ENDS } from '~/features/explorer/route/route.constants';
   import { routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
   import type { RouteEnds } from '~/features/explorer/tools.types';
-
-  const ENDS = [
-    { key: 'from', label: 'from', placeholder: 'From' },
-    { key: 'to', label: 'to', placeholder: 'To' },
-  ] as const;
 
   const props = defineProps<{
     /** The stations on the map on the date shown, to pick from. */
