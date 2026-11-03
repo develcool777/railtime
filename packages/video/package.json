@@ -1,0 +1,16 @@
+{
+  "name": "@railtime/video",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "record": "node src/recorder/cli.ts",
+    "test-unit": "vitest",
+    "test-unit-ci": "vitest run"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.60.0",
+    "vitest": "^5.0.5"
+  }
+}
