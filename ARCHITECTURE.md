@@ -177,7 +177,7 @@ whole on the stand-in map (`test/unit/transitMap.test.ts`).
 | The clock, the cursor, playing, the step playing   | `Player` (`renderer`)         | the store: a copy from `time`, `step` |
 | How the map is set (`MapProps`)                    | the store (`web`)             | `TransitMap`: the props last applied  |
 | The camera between commands                        | MapLibre, and the user's hand | the store: a copy from `view`         |
-| What is open: tabs, panels, dialogs, the time card | the store                     | the address, cookies                  |
+| What is open: tabs, panels, dialogs, the time card | the store                     | the address                           |
 
 ## Adding a feature
 

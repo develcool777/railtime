@@ -1,5 +1,5 @@
 import type { CoverageDistance, Playhead } from '@railtime/network/facts.types';
-import type { MapView, ViewMode } from '@railtime/renderer/transitMap.types';
+import type { CameraMode, MapView, ViewMode } from '@railtime/renderer/transitMap.types';
 
 import type { Section } from '~/features/explorer/explorer.types';
 
@@ -34,6 +34,14 @@ export type ExplorerUrlState = {
   streetNames?: false;
   /** Only the map; the page around it without one. */
   mapOnly?: true;
+  /** The panel folded; open without one. */
+  panelOpen?: false;
+  /** Playback's speed, one of those offered; the default without one. */
+  speed?: number;
+  /** Playback's camera; following without one. */
+  camera?: CameraMode;
+  /** The minimap hidden while playing; shown without one. */
+  minimap?: false;
 };
 
 /** An address's query, as the router gives it and takes it. */

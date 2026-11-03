@@ -1,24 +1,26 @@
 import { useRoute, useRouter } from '#imports';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import { storeToRefs } from 'pinia';
-import { computed, onScopeDispose, ref, watch } from 'vue';
+import { watchThrottled } from '@vueuse/core';
+import { computed, ref, watch } from 'vue';
 
 import { ADDRESS_WRITE_MS } from '~/features/explorer/address/address.constants';
 import { formatExplorerQuery, linkedPlayheadOf, sameQuery } from '~/features/explorer/address/address.utils';
 import type { ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
+import { DEFAULT_PLAYER } from '~/features/explorer/time/time.constants';
 import type { Section } from '~/features/explorer/explorer.types';
 
 /**
  * The address follows what is looked at, so it can be shared: the playhead (`at`) and the view, the tab, the line
- * or station open, coverage's distance, 3D, the station names, map only. The store opened on what it said (`open`); from
+ * or station open, coverage's distance, 3D, the station and street names, map only, the panel folded, how playback is set. The store opened on what it said (`open`); from
  * then on it is written from the store, playing too, at most every `ADDRESS_WRITE_MS`: a reload or a link opens where the map is.
  *
  * @param opening - What the address said when the page opened.
  * @param openingSection - The section a page opens on without a tab in its address: left out of it.
  */
 export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Section): void => {
-  const { section, openStation, openLine, viewMode, stationNames, streetNames, mapOnly, time, view, pickedPlan, coverageMetres, facts } =
+  const { section, openStation, openLine, viewMode, stationNames, streetNames, mapOnly, panelOpen, player, time, view, pickedPlan, coverageMetres, facts } =
     storeToRefs(useExplorerStore());
   const route = useRoute();
   const router = useRouter();
@@ -41,21 +43,18 @@ export const useExplorerAddress = (opening: ExplorerUrlState, openingSection: Se
       ...(stationNames.value ? {} : { stationNames: false as const }),
       ...(streetNames.value ? {} : { streetNames: false as const }),
       ...(mapOnly.value ? { mapOnly: true as const } : {}),
+      ...(panelOpen.value ? {} : { panelOpen: false as const }),
+      ...(player.value.speed === DEFAULT_PLAYER.speed ? {} : { speed: player.value.speed }),
+      ...(player.value.camera === DEFAULT_PLAYER.camera ? {} : { camera: player.value.camera }),
+      ...(player.value.minimap ? {} : { minimap: false as const }),
     }),
   );
   // Written at once, then at most every ADDRESS_WRITE_MS, the last one always.
-  let lastWrite = 0;
-  let pending: ReturnType<typeof setTimeout> | undefined;
-  const write = () => {
-    pending = undefined;
-    lastWrite = Date.now();
-    if (!sameQuery(query.value, route.query)) void router.replace({ query: query.value });
-  };
-  watch(query, () => {
-    if (pending) return;
-    const wait = lastWrite + ADDRESS_WRITE_MS - Date.now();
-    if (wait <= 0) write();
-    else pending = setTimeout(write, wait);
-  });
-  onScopeDispose(() => clearTimeout(pending));
+  watchThrottled(
+    query,
+    next => {
+      if (!sameQuery(next, route.query)) void router.replace({ query: next });
+    },
+    { throttle: ADDRESS_WRITE_MS },
+  );
 };
