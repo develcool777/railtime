@@ -45,6 +45,17 @@ export const findStations = (stations: StationSummary[], query: string, limit: n
 };
 
 /**
+ * What a station search lists: the stations a query finds, best first; before anything is typed,
+ * every station A to Z, to scroll through.
+ *
+ * @param stations - The stations to choose from.
+ * @param query - What was typed.
+ * @returns The stations listed.
+ */
+export const stationChoices = (stations: StationSummary[], query: string): StationSummary[] =>
+  foldName(query) ? findStations(stations, query, stations.length) : [...stations].sort((first, second) => first.name.localeCompare(second.name));
+
+/**
  * The stations A to Z, under the first letter of their names (accents dropped, so "Náměstí" is
  * under N).
  *

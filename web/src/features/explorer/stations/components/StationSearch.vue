@@ -4,10 +4,15 @@
     :modelValue="undefined"
     :items="matches"
     ignoreFilter
+    openOnClick
+    openOnFocus
+    virtualize
+    :highlight
     :placeholder
     variant="outline"
     class="w-full"
     :aria-label="placeholder"
+    @focus="emit('focus')"
     @update:modelValue="choose">
     <!-- Where the route starts, hollow; where it ends, filled. -->
     <template #leading>
@@ -20,7 +25,7 @@
       </span>
     </template>
     <template #empty>
-      <span class="text-muted text-sm">{{ query.trim() ? 'No station on the map matches.' : 'Type a station’s name.' }}</span>
+      <span class="text-muted text-sm">No station on the map matches.</span>
     </template>
   </UInputMenu>
 </template>
@@ -29,11 +34,8 @@
   import type { StationSummary } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
 
-  import { findStations } from '~/features/explorer/stations/station.utils';
+  import { stationChoices } from '~/features/explorer/stations/station.utils';
   import { lineColor } from '~/features/explorer/format.utils';
-
-  /** How many matches the menu lists. */
-  const MAX_MATCHES = 30;
 
   const props = withDefaults(
     defineProps<{
@@ -42,18 +44,21 @@
       placeholder?: string;
       /** The end of a route it picks. */
       end: 'from' | 'to';
+      /** A station left out: the route's other end. */
+      omit?: string | null;
+      /** Ringed as if focused: the field a station clicked on the map fills. */
+      highlight?: boolean;
     }>(),
-    { placeholder: 'Find a station' },
+    { placeholder: 'Find a station', omit: null, highlight: false },
   );
-  const emit = defineEmits<{ select: [station: string] }>();
+  const emit = defineEmits<{ select: [station: string]; focus: [] }>();
 
   const query = ref('');
+  /** Every station A to Z as it opens, to scroll through; what the query finds once typed. */
   const matches = computed(() =>
-    findStations(props.stations, query.value, MAX_MATCHES).map(station => ({
-      ...station,
-      label: station.name,
-      description: station.otherNames[0],
-    })),
+    stationChoices(props.stations, query.value)
+      .filter(station => station.id !== props.omit)
+      .map(station => ({ ...station, label: station.name, description: station.otherNames[0] })),
   );
 
   const choose = (item: { id: string } | undefined) => {

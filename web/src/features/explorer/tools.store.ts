@@ -8,6 +8,7 @@ import { ref, shallowRef } from 'vue';
 
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import type { RouteEnds } from '~/features/explorer/tools.types';
+import { routeAimOf } from '~/features/explorer/tools.utils';
 
 /**
  * The map's tools, and what changes them: a route's ends and the way between them drawn, a reach's
@@ -19,6 +20,8 @@ export const useToolsStore = defineStore('explorerTools', () => {
   const routeEnds = ref<RouteEnds>({ from: null, to: null });
   /** The way between the route's ends drawn, fastest first. */
   const routeOption = ref(0);
+  /** The end of the route a station clicked on the map fills: shown on its field. */
+  const routeAim = ref<keyof RouteEnds>('from');
   const reachFrom = ref<Stop | null>(null);
   const coverageMetres = ref<CoverageDistance>(COVERAGE_DEFAULT_METRES);
   /** The city's outline, coverage's, once fetched: written by the coverage part. */
@@ -37,6 +40,7 @@ export const useToolsStore = defineStore('explorerTools', () => {
     const stop = (id: string | undefined) => (id ? facts.find('station', id) : null);
     routeEnds.value = { from: stop(address.route?.from), to: stop(address.route?.to) };
     routeOption.value = address.route?.option ?? 0;
+    routeAim.value = routeAimOf(routeEnds.value);
     reachFrom.value = stop(address.reach);
     coverageMetres.value = address.walk ?? COVERAGE_DEFAULT_METRES;
     boundary.value = null;
@@ -51,17 +55,20 @@ export const useToolsStore = defineStore('explorerTools', () => {
   const keepOn = (facts: NetworkFacts) => {
     const keep = (stop: Stop | null) => (stop && facts.find('station', stop.id) ? stop : null);
     routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
+    routeAim.value = routeAimOf(routeEnds.value);
     reachFrom.value = keep(reachFrom.value);
   };
 
   /**
-   * Sets where the route starts and ends: other ends, the fastest way between them again.
+   * Sets where the route starts and ends: other ends, the fastest way between them again, and the
+   * map aimed at the next end to fill.
    *
    * @param ends - The ends.
    */
   const setRouteEnds = (ends: RouteEnds) => {
     routeEnds.value = ends;
     routeOption.value = 0;
+    routeAim.value = routeAimOf(ends);
   };
   /**
    * Sets one end of the route, or clears it.
@@ -70,6 +77,14 @@ export const useToolsStore = defineStore('explorerTools', () => {
    * @param stop - The station, or `null`.
    */
   const setRouteEnd = (end: keyof RouteEnds, stop: Stop | null) => setRouteEnds({ ...routeEnds.value, [end]: stop });
+  /**
+   * Aims the map at one end of the route: the next station clicked on it is that end.
+   *
+   * @param end - Where it starts, or where it ends.
+   */
+  const aimRoute = (end: keyof RouteEnds) => (routeAim.value = end);
+  /** Clears both ends of the route, to start again. */
+  const clearRoute = () => setRouteEnds({ from: null, to: null });
   /** Swaps where the route starts and ends. */
   const swapEnds = () => setRouteEnds({ from: routeEnds.value.to, to: routeEnds.value.from });
   /**
@@ -94,6 +109,7 @@ export const useToolsStore = defineStore('explorerTools', () => {
   return {
     routeEnds,
     routeOption,
+    routeAim,
     reachFrom,
     coverageMetres,
     boundary,
@@ -102,6 +118,8 @@ export const useToolsStore = defineStore('explorerTools', () => {
     keepOn,
     setRouteEnds,
     setRouteEnd,
+    aimRoute,
+    clearRoute,
     swapEnds,
     chooseRoute,
     setReachFrom,

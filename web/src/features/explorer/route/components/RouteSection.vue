@@ -5,14 +5,33 @@
       <div class="relative flex min-w-0 flex-1 flex-col gap-2">
         <span class="border-accented pointer-events-none absolute top-[22px] bottom-[22px] left-[16px] border-l-2 border-dotted" aria-hidden="true" />
         <template v-for="end in ENDS" :key="end.key">
-          <div v-if="ends[end.key]" class="border-default bg-default flex h-9 min-w-0 items-center gap-2.5 rounded-lg border pr-1 pl-3">
+          <!-- The end a station clicked on the map fills is ringed; a picked one, clicked, is aimed at again. -->
+          <div
+            v-if="ends[end.key]"
+            class="border-default bg-default flex h-9 min-w-0 items-center gap-2.5 rounded-lg border pr-1 pl-3 transition-shadow"
+            :class="{ 'ring-primary ring-2 ring-inset': aim === end.key }">
             <span
               class="relative size-2 flex-none rounded-full border-2 border-(--ui-text-highlighted)"
               :class="end.key === 'to' ? 'bg-(--ui-text-highlighted)' : 'bg-default'" />
-            <span class="text-highlighted min-w-0 flex-1 truncate text-sm font-medium">{{ ends[end.key]?.name }}</span>
+            <button
+              type="button"
+              class="text-highlighted min-w-0 flex-1 cursor-pointer self-stretch truncate text-left text-sm font-medium"
+              :aria-pressed="aim === end.key"
+              :title="`Pick ${end.label} on the map`"
+              @click="emit('aim', end.key)">
+              {{ ends[end.key]?.name }}
+            </button>
             <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" :aria-label="`Clear ${end.label}`" @click="emit('end', end.key, null)" />
           </div>
-          <StationSearch v-else :stations :placeholder="end.placeholder" :end="end.key" @select="choose(end.key, $event)" />
+          <StationSearch
+            v-else
+            :stations
+            :placeholder="end.placeholder"
+            :end="end.key"
+            :omit="ends[end.key === 'from' ? 'to' : 'from']?.id"
+            :highlight="aim === end.key"
+            @focus="emit('aim', end.key)"
+            @select="choose(end.key, $event)" />
         </template>
       </div>
       <UTooltip text="Swap">
@@ -26,10 +45,22 @@
           @click="emit('swap')" />
       </UTooltip>
     </div>
-    <p v-if="!ends.from || !ends.to" class="text-dimmed -mt-2 flex items-center gap-1.5 text-xs">
-      <UIcon name="i-lucide-mouse-pointer-click" class="size-3.5" />
-      Or pick {{ ends.from ? 'where it ends' : 'where it starts' }} on the map.
-    </p>
+    <!-- Which end the map fills, as the ring shows; and both ends cleared at once. -->
+    <div class="-mt-2 flex min-h-6 items-center justify-between gap-2">
+      <p class="text-dimmed flex min-w-0 items-center gap-1.5 text-xs">
+        <UIcon name="i-lucide-mouse-pointer-click" class="size-3.5 flex-none" />
+        <span class="truncate">{{ aimHint }}</span>
+      </p>
+      <UButton
+        v-if="ends.from || ends.to"
+        label="Clear"
+        icon="i-lucide-rotate-ccw"
+        color="neutral"
+        variant="link"
+        size="xs"
+        class="flex-none"
+        @click="emit('clear')" />
+    </div>
 
     <UEmpty
       v-if="!ends.from || !ends.to"
@@ -104,11 +135,15 @@
     stations: StationSummary[];
     /** Where the route starts and ends, once picked. */
     ends: RouteEnds;
+    /** The end a station clicked on the map fills. */
+    aim: keyof RouteEnds;
     /** The ways between them on the date shown, fastest first, and the one drawn; `null` while none is drawn. */
     found: { routes: RouteInfo[]; shown: number | null } | null;
   }>();
   const emit = defineEmits<{
     end: [end: keyof RouteEnds, stop: Stop | null];
+    aim: [end: keyof RouteEnds];
+    clear: [];
     swap: [];
     option: [option: number];
     station: [station: string];
@@ -116,6 +151,12 @@
 
   /** The fastest way, which the others are told against. */
   const fastest = computed(() => props.found?.routes[0] ?? null);
+
+  /** What a station clicked on the map does: sets the end aimed at, or changes it. */
+  const aimHint = computed(() => {
+    const end = props.aim === 'from' ? 'start' : 'end';
+    return props.ends[props.aim] ? `Click the map to change the ${end}.` : `Click the map for the ${end}.`;
+  });
 
   /** Sets one end from a station picked in the search. */
   const choose = (end: keyof RouteEnds, id: string) => {

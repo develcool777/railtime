@@ -44,29 +44,40 @@ export const overlayRequestOf = (input: OverlayInput): OverlayRequest | null => 
   return null;
 };
 
+/**
+ * The end of a route a station clicked on the map fills next: where it starts, until it has one;
+ * then where it ends, again and again.
+ *
+ * @param ends - The route's ends.
+ * @returns The end.
+ */
+export const routeAimOf = (ends: RouteEnds): keyof RouteEnds => (ends.from ? 'to' : 'from');
+
 /** What a station clicked on the map is picked for is worked out from. */
 type PickInput = {
   section: Section;
   /** The panel is in sight with nothing pushed over its section. */
   picking: boolean;
   routeEnds: RouteEnds;
+  /** The end of the route it fills. */
+  routeAim: keyof RouteEnds;
 };
 
 /**
- * What a station clicked on the map does: with Route in sight it is the route's next end (where it
- * starts, then where it ends, then where it ends again); with Reach in sight, where the reach starts;
- * else, or over a station or line already open, it opens.
+ * What a station clicked on the map does: with Route in sight it is the end of the route aimed at
+ * (`routeAimOf`, or the one chosen); with Reach in sight, where the reach starts; else, or over a
+ * station or line already open, it opens.
  *
- * @param input - The section open, whether the panel is in sight with nothing pushed over it, and the route's ends.
+ * @param input - The section open, whether the panel is in sight with nothing pushed over it, the route's ends and the one aimed at.
  * @param stop - The station clicked.
  * @returns What it does.
  */
 export const stationPickOf = (input: PickInput, stop: Stop): StationPick => {
-  const { section, picking, routeEnds } = input;
+  const { section, picking, routeEnds, routeAim } = input;
   if (!picking || (section !== 'route' && section !== 'reach')) return { kind: 'open' };
   if (section === 'reach') return { kind: 'reach', from: stop };
-  if (!routeEnds.from) return { kind: 'route', ends: { ...routeEnds, from: stop } };
-  // The start again ends nothing.
-  if (routeEnds.from.id === stop.id) return { kind: 'route', ends: routeEnds };
-  return { kind: 'route', ends: { ...routeEnds, to: stop } };
+  // The route's other end again leaves it as it is: a route from a station to itself is none.
+  const other = routeEnds[routeAim === 'from' ? 'to' : 'from'];
+  if (other?.id === stop.id) return { kind: 'route', ends: routeEnds };
+  return { kind: 'route', ends: { ...routeEnds, [routeAim]: stop } };
 };

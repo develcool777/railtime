@@ -40,9 +40,10 @@ At the top, what every part shares or what ties them together:
   `mapPropsOf`…), and tested. A station clicked on the map is picked for the tool in sight, or opens
   (`clickStation`, `stationPickOf`).
 - `tools.store.ts` (`useToolsStore`): the map's tools. A route's ends and the way between them drawn
-  (another pair of ends, the fastest again), a reach's start, coverage's distance and the city's
+  (another pair of ends, the fastest again), the end a station clicked on the map fills (`routeAim`:
+  the start until it has one, then the end, or the one whose field was clicked), a reach's start, coverage's distance and the city's
   outline, and what the map found for the one drawn. The explorer's store reads them for `mapProps`;
-  their rules are in `tools.utils.ts` (`mapOverlayOf`, `overlayRequestOf`, `stationPickOf`).
+  their rules are in `tools.utils.ts` (`mapOverlayOf`, `overlayRequestOf`, `routeAimOf`, `stationPickOf`).
 - `components/ExplorerView.vue`: the frame. It opens the store on the network and the address, calls each part's composable and lays out what they give; it decides nothing itself.
 - `layout.composable.ts`: what the layout takes from the browser: phone or not, the panel's edge
   dragged, full screen kept with map only.

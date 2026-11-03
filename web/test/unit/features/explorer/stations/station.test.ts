@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { findStations, foldName, stationRows, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
+import { findStations, foldName, stationChoices, stationRows, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
 
 /**
  * A station as the map lists it, red.
@@ -48,6 +48,23 @@ describe('StationUtils', () => {
     test('finds nothing for an empty query, and no more than asked', () => {
       expect(findStations(STATIONS, '  ', 5)).toEqual([]);
       expect(findStations(STATIONS, 'c', 2)).toHaveLength(2);
+    });
+  });
+
+  describe('stationChoices', () => {
+    test('lists every station A to Z before anything is typed', () => {
+      expect(stationChoices(STATIONS, ' ').map(found => found.name)).toEqual([
+        'Circus Road',
+        'Dalston Kingsland',
+        'Khreshchatyk',
+        "King's Cross St. Pancras",
+        'Náměstí Míru',
+        'Oxford Circus',
+      ]);
+    });
+
+    test('lists every station a query finds, best first', () => {
+      expect(stationChoices(STATIONS, 'circus').map(found => found.name)).toEqual(['Circus Road', 'Oxford Circus']);
     });
   });
 

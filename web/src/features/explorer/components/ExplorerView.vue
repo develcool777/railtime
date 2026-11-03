@@ -54,8 +54,11 @@
               v-else-if="section === 'route'"
               :stations
               :ends="tools.routeEnds"
+              :aim="tools.routeAim"
               :found="foundRoutes"
               @end="tools.setRouteEnd"
+              @aim="tools.aimRoute"
+              @clear="tools.clearRoute"
               @swap="tools.swapEnds"
               @option="tools.chooseRoute"
               @station="store.pickStation" />
