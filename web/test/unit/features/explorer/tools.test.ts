@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { mapOverlayOf, overlayRequestOf, routeAimOf, stationPickOf } from '~/features/explorer/tools.utils';
+import { mapOverlayOf, mapPickHint, overlayRequestOf, routeAimOf, stationPickOf } from '~/features/explorer/tools.utils';
 
 describe('ToolsUtils', () => {
   describe('mapOverlayOf', () => {
@@ -77,6 +77,13 @@ describe('ToolsUtils', () => {
       expect(stationPickOf({ section: 'lines', picking: true, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
       expect(stationPickOf({ section: 'route', picking: false, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
       expect(stationPickOf({ section: 'reach', picking: false, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
+    });
+  });
+
+  describe('mapPickHint', () => {
+    test('says a click on the map picks the end, or changes it once picked', () => {
+      expect(mapPickHint('start', false)).toBe('Click the map for the start.');
+      expect(mapPickHint('end', true)).toBe('Click the map to change the end.');
     });
   });
 });

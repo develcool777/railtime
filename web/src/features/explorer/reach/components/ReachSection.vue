@@ -1,17 +1,14 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
-    <div v-if="from" class="border-default bg-default flex h-9 min-w-0 items-center gap-2.5 rounded-lg border pr-1 pl-3">
-      <span class="size-2 flex-none rounded-full border-2 border-(--ui-text-highlighted)" />
-      <span class="text-highlighted min-w-0 flex-1 truncate text-sm font-medium">{{ from.name }}</span>
-      <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" aria-label="Clear the station" @click="emit('from', null)" />
-    </div>
-    <StationSearch v-else :stations placeholder="From" end="from" @select="choose" />
+    <!-- A station clicked on the map always starts it: its field ringed, as Route's. -->
+    <StationField :stations :stop="from" end="from" label="the station" placeholder="From" aimed @pick="emit('from', $event)" />
+    <MapPickHint end="start" :picked="!!from" class="-mt-2" />
 
     <UEmpty
       v-if="!from"
       icon="i-lucide-radar"
       title="How far can you get?"
-      description="Pick a station to see how far you get from it, and how long it takes." />
+      description="Pick a station, here or on the map, to see how far you get from it and how long it takes." />
     <UEmpty v-else-if="!reach" icon="i-lucide-train-front" title="No line calls there" description="Not on the date shown." />
     <template v-else>
       <div class="flex flex-col gap-2">
@@ -92,11 +89,5 @@
     if (next.has(position)) next.delete(position);
     else next.add(position);
     unfolded.value = next;
-  };
-
-  /** Starts the reach at a station picked in the search. */
-  const choose = (id: string) => {
-    const station = props.stations.find(candidate => candidate.id === id);
-    if (station) emit('from', { id, name: station.name });
   };
 </script>
