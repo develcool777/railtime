@@ -9,6 +9,8 @@ export type FakeMap = {
   map: MapLibreMap;
   /** Each source's data, as last set. */
   data: Map<string, unknown>;
+  /** What a GeoJSON source holds, as last set: its features, none before it is added. */
+  featuresIn: <Feature = { type: 'Feature'; properties: Record<string, unknown>; geometry: unknown }>(source: string) => Feature[];
   /** Each image source's picture and corners, as last set. */
   images: Map<string, { url: string; coordinates: unknown }>;
   /** How many times each source's data was set. */
@@ -31,10 +33,14 @@ export type FakeMap = {
     /** Whether every tile in view has loaded, as `areTilesLoaded` answers. */
     tilesLoaded: boolean;
   };
+  /** The map's one canvas: the cursor set on its style, and the picture `toDataURL` gives (its format and quality). Replace `toDataURL` to fail it. */
+  canvas: { style: Record<string, string>; toDataURL: (format?: string, quality?: number) => string };
   /** What `queryRenderedFeatures` answers. */
   rendered: { properties: Record<string, unknown> }[];
-  /** Fires a map event, as MapLibre would: `style.load`, `click`, `moveend`. */
+  /** Fires a map event, as MapLibre would: `style.load`, `click`, `moveend`; a repaint fires `idle` once the tiles are in. */
   fire: (event: string, payload?: unknown) => void;
   /** Whether `remove` was called. */
   isRemoved: () => boolean;
+  /** How many times `resize` was called. */
+  resizes: () => number;
 };

@@ -1,3 +1,4 @@
+import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import { CITIES, CITY_SUMMARIES } from '~/constants/city.constants';
@@ -38,9 +39,13 @@ export const cityMenu = (): { type?: 'label'; label: string; value?: string }[][
  *
  * @param city - A city id.
  * @returns Its path, relative to the base URL: `data/<country>/<city>/<city>.json`.
+ * @throws {Error} For a city not in the catalogue.
  */
 export const networkUrlOf = (city: string): string => {
-  const country = CITIES.find(candidate => candidate.value === city)?.country ?? '';
+  const { country } = required(
+    CITIES.find(candidate => candidate.value === city),
+    `city ${city}`,
+  );
   return `data/${slugOf(country)}/${city}/${city}.json`;
 };
 

@@ -46,7 +46,7 @@ const frameOf = (overrides: Partial<StationFrame>): StationFrame => ({
  * @returns The features.
  */
 const drawnIn = <Properties extends { id: string }, Look>(fake: ReturnType<typeof fakeMap>, source: string): PointFeature<Properties & Look>[] =>
-  (fake.data.get(source) as { features: PointFeature<Properties>[] }).features.map(feature => ({
+  fake.featuresIn<PointFeature<Properties>>(source).map(feature => ({
     ...feature,
     properties: { ...feature.properties, ...(fake.states.get(`${source}|${feature.properties.id}`) as Look) },
   }));

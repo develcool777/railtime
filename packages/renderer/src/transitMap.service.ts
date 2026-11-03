@@ -17,21 +17,12 @@ import { ReachLayer } from './overlay/reach.service';
 import { RouteLayer } from './overlay/route.service';
 import { StationLayer } from './layers/stations.service';
 import { PropsReconciler } from './support/reconciler.service';
-import type { Step } from '@railtime/network/engine.types';
 import { CameraDirector } from './playback/camera.service';
-import { CAMERA_PRE_SECONDS, FREE_CAMERA_PRE_SECONDS } from './playback/player.constants';
 import { Player } from './playback/player.service';
-import type { PlayerEvent } from './playback/player.types';
+import { Playback } from './playback/playback.service';
+import type { Step } from '@railtime/network/engine.types';
 import { StepAnimation } from './steps/animation.service';
-import {
-  DEFAULT_MAP_PROPS,
-  END_OVERVIEW_MS,
-  FIT_NETWORK_MS,
-  MAX_FRAME_SECONDS,
-  MAX_TILE_WAIT_SECONDS,
-  SELECTED_STATION_ZOOM,
-  SELECT_FLY_MS,
-} from './transitMap.constants';
+import { DEFAULT_MAP_PROPS, FIT_NETWORK_MS, MAX_FRAME_SECONDS, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from './transitMap.constants';
 import type { Credit, FrameScheduler, MapProps, MapView, NetworkParts, Padding, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
 import { emptyCollection } from './layers/snapshot.utils';
@@ -82,18 +73,16 @@ export class TransitMap {
   private readonly buildingsLayer: BuildingsLayer;
   /** The overview inset, if the app gave it a container. */
   private readonly minimap: Minimap | null;
+  /** The history played on the map, frame by frame. */
+  private readonly playback: Playback;
   /** Events raised since the last frame, delivered at its end. */
   private queue: (() => void)[] = [];
   /** Where the map is in its life. */
   private life: 'loading' | 'ready' | 'destroyed' = 'loading';
-  /** The selected station is off the map at the moment shown: its ring hidden until it is back. */
-  private selectionAway = false;
   /** The pending frame. */
   private frameRequest = 0;
   /** When the last frame ran. */
   private lastFrameAt = 0;
-  /** Real seconds the playing step has waited, at the end of its camera move, for the map's tiles. */
-  private tileWait = 0;
 
   public constructor(options: TransitMapOptions) {
     // Before the first map: MapLibre starts its workers with it.
@@ -132,14 +121,25 @@ export class TransitMap {
       // Asked of the network drawn now: another has its own lines.
       (first, second) => this.engine.index.compareLines(first, second),
     );
-    this.minimap = options.minimapContainer ? new Minimap(options.minimapContainer, basemap, bounds, PALETTES[props.theme]) : null;
+    const { minimapContainer } = options;
+    this.minimap = minimapContainer
+      ? new Minimap({ container: minimapContainer, main: this.map, createMap, style: basemap, bounds, palette: PALETTES[props.theme] })
+      : null;
     this.parts = this.partsFor(props.facts);
+    this.playback = new Playback({
+      parts: () => this.parts,
+      props: () => this.props.current,
+      camera: this.camera,
+      stations: this.stationLayer,
+      tilesLoaded: () => this.map.areTilesLoaded(),
+      fitNetwork: durationMs => this.fitNetwork(durationMs),
+      notify: (event, payload) => this.notify(event, payload),
+    });
 
     this.map.on('style.load', () => this.install());
     this.map.on('click', event => this.onMapClick(event));
     this.map.on('mouseenter', LAYERS.stations, () => (this.map.getCanvas().style.cursor = 'pointer'));
     this.map.on('mouseleave', LAYERS.stations, () => (this.map.getCanvas().style.cursor = ''));
-    this.map.on('move', () => this.updateMinimapViewport());
     this.map.on('moveend', () => this.notify('view', this.view()));
     this.frameRequest = this.scheduler.request(this.renderFrame);
   }
@@ -180,7 +180,7 @@ export class TransitMap {
   public seek(to: Playhead): void {
     if (this.life === 'destroyed') return;
     this.player.seek(to);
-    this.jumped();
+    this.playback.jumped();
   }
 
   /**
@@ -192,7 +192,7 @@ export class TransitMap {
   public play(from?: Playhead): void {
     if (this.life === 'destroyed') return;
     this.player.play(from);
-    if (from) this.jumped();
+    if (from) this.playback.jumped();
   }
 
   /** Pauses where it is. */
@@ -209,7 +209,7 @@ export class TransitMap {
 
   /** Finishes the change playing now, or goes to the next one. */
   public skip(): void {
-    if (this.life !== 'destroyed') this.handlePlayerEvents(this.player.skip());
+    if (this.life !== 'destroyed') this.playback.handle(this.player.skip());
   }
 
   /**
@@ -220,14 +220,14 @@ export class TransitMap {
   public stepYear(direction: -1 | 1): void {
     if (this.life === 'destroyed') return;
     this.player.stepYear(direction);
-    this.jumped();
+    this.playback.jumped();
   }
 
   /** To just before the change before the one playing, or the last played: playing, it plays again. */
   public previousChange(): void {
     if (this.life === 'destroyed') return;
     this.player.previousChange();
-    this.jumped();
+    this.playback.jumped();
   }
 
   /** Zooms in a step, about the centre. */
@@ -267,11 +267,6 @@ export class TransitMap {
     this.minimap?.destroy();
     this.map.remove();
     this.events.clear();
-  }
-
-  /** The network drawn, its history and every question about it. */
-  private get facts(): NetworkFacts {
-    return this.parts.facts;
   }
 
   /** The raw network the facts come from: what it plays and draws. */
@@ -337,12 +332,11 @@ export class TransitMap {
         const { facts } = this.props.current;
         if (facts === this.parts.facts) return;
         this.parts = this.partsFor(facts);
-        this.tileWait = 0;
         this.minimap?.frame(facts.engine.index.bounds);
         this.minimap?.setActive(emptyCollection());
         const effects = this.effects;
-        for (const effect of [effects.speed, effects.camera, effects.overlay]) effect();
-        this.jumped();
+        for (const effect of [effects.speed, effects.overlay]) effect();
+        this.playback.jumped();
       },
       theme: () => {
         const palette = PALETTES[this.props.current.theme];
@@ -362,23 +356,22 @@ export class TransitMap {
         this.buildingsLayer.show(view === '3d');
         this.player.rebuild();
         this.camera.tilt(this.frames.growing());
-        if (view === '3d' && this.player.phase === 'pre') this.focusActive();
+        if (view === '3d' && this.player.phase === 'pre') this.playback.focusActive();
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
       streetLabels: () => showBasemapLabels(this.map, this.props.current.streetLabels),
       focusedLines: () => this.applyBackdrop(),
       selectedStation: () => {
         const station = this.props.current.selectedStation;
-        this.selectionAway = false;
-        this.stationLayer.select(station);
+        this.playback.select(station);
         if (station) this.camera.flyTo(this.engine.index.coordOf(station), SELECTED_STATION_ZOOM, SELECT_FLY_MS);
       },
       overlay: () => this.drawOverlay(),
       boundary: () => this.drawOverlay(),
       speed: () => this.player.setSpeed(this.props.current.speed),
-      // A free camera does not move, so a step needs no time before it to frame it.
-      camera: () => this.player.setLeadIn(this.props.current.camera === 'free' ? FREE_CAMERA_PRE_SECONDS : CAMERA_PRE_SECONDS),
-      // The camera reads it each time it frames.
+      // The camera reads them each time it frames; a change waits as long as the camera's move to it
+      // takes, a free camera's none (`Playback.focusActive`).
+      camera: () => undefined,
       padding: () => undefined,
       cover: () => this.coverEdges(this.props.current.cover),
     };
@@ -460,7 +453,6 @@ export class TransitMap {
     this.life = 'ready';
     this.props.start();
     this.frames.redraw(true);
-    this.updateMinimapViewport();
     this.notify('status', 'ready');
   }
 
@@ -484,75 +476,8 @@ export class TransitMap {
     return new StepAnimation(step, { index, timeline, view: this.props.current.viewMode });
   }
 
-  /** Redraws at once after a jump in time, nothing pulsing; the caption is the change left drawn in part, if any. */
-  private jumped(): void {
-    const active = this.player.active;
-    this.stationLayer.resetPulses();
-    if (active) this.frames.stepStarted();
-    this.frames.redraw(true);
-    this.notify('step', active ? this.facts.change(active.animation.step.index) : null);
-  }
-
   /**
-   * Reacts to what the player did.
-   *
-   * @param events - The player's events.
-   */
-  private handlePlayerEvents(events: PlayerEvent[]): void {
-    for (const event of events) {
-      if (event.type === 'stepStart') this.onStepStart();
-      else if (event.type === 'stepEnd') this.onStepEnd(event.step);
-      else this.onPlaybackEnd();
-    }
-  }
-
-  /** Frames a starting step and announces it: the change starts drawing as the camera arrives. */
-  private onStepStart(): void {
-    const active = this.player.active;
-    if (!active) return;
-    this.frames.stepStarted();
-    this.tileWait = 0;
-    this.focusActive();
-    this.notify('step', this.facts.change(active.animation.step.index));
-  }
-
-  /** Frames the change playing, as the view and camera are set, and waits for the camera before it draws. */
-  private focusActive(): void {
-    const active = this.player.active;
-    if (!active) return;
-    const speed = this.player.speed;
-    const { index, timeline } = this.engine;
-    const moveMs = this.camera.focusStep(
-      active.animation,
-      timeline.stationsOnMap(this.player.cursor),
-      station => index.coordOf(station),
-      (active.preSeconds * 1000) / speed,
-    );
-    // At once, after a beat, where it stays.
-    this.player.retimeLeadIn(moveMs === 0 ? FREE_CAMERA_PRE_SECONDS : (moveMs / 1000) * speed);
-  }
-
-  /**
-   * Clears the caption when the next step is on another date.
-   *
-   * @param step - The step that ended.
-   */
-  private onStepEnd(step: Step): void {
-    this.frames.redraw();
-    const next = this.engine.timeline.steps[step.index + 1];
-    if (!next || next.time !== step.time) this.notify('step', null);
-  }
-
-  /** Playback reached its end: the whole network in view. */
-  private onPlaybackEnd(): void {
-    this.notify('step', null);
-    this.notify('end', undefined);
-    this.fitNetwork(END_OVERVIEW_MS);
-  }
-
-  /**
-   * One frame: advance playback; once ready, draw what changed, follow the date with the overlay and
-   * report the time; then deliver the frame's events.
+   * One frame: playback moved on and, once ready, drawn and reported; then the frame's events delivered.
    *
    * @param now - The frame time.
    */
@@ -560,61 +485,9 @@ export class TransitMap {
     if (this.life === 'destroyed') return;
     const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt || now)) / 1000);
     this.lastFrameAt = now;
-    this.handlePlayerEvents(this.player.tick(this.waitsForTiles(seconds) ? 0 : seconds));
-    if (this.life === 'ready') this.draw(now, seconds);
+    this.playback.frame(now, seconds, this.life === 'ready');
     this.flush();
     // A listener may have destroyed it.
     if (this.alive()) this.frameRequest = this.scheduler.request(this.renderFrame);
   };
-
-  /**
-   * Whether the playing step waits this frame for the map's tiles: as its camera move ends, where the
-   * camera arrived is not drawn yet (a jump across the city, at street level, on a sharp screen), and
-   * it has not waited `MAX_TILE_WAIT_SECONDS` already. The line then starts growing over streets, not
-   * a blank that fills in as it goes.
-   *
-   * @param seconds - The time since the last frame.
-   * @returns Whether to hold the step this frame.
-   */
-  private waitsForTiles(seconds: number): boolean {
-    const active = this.player.active;
-    if (!active || !this.player.playing || this.life !== 'ready') return false;
-    const arriving = active.elapsed < active.preSeconds && active.elapsed + seconds * this.player.speed >= active.preSeconds;
-    if (!arriving || this.tileWait >= MAX_TILE_WAIT_SECONDS || this.map.areTilesLoaded()) return false;
-    this.tileWait += seconds;
-    return true;
-  }
-
-  /**
-   * Draws the frame; hides the ring of a selected station the moment took off the map, and says so.
-   *
-   * @param now - The frame time.
-   * @param seconds - The time since the last frame.
-   */
-  private draw(now: number, seconds: number): void {
-    const selected = this.props.current.selectedStation;
-    const { revealed, selectionGone, chase } = this.frames.draw(now, selected);
-    this.camera.follow(chase, seconds);
-    if (revealed !== null) this.notify('stepProgress', revealed);
-    if (selected && selectionGone !== this.selectionAway) {
-      this.selectionAway = selectionGone;
-      this.stationLayer.select(selectionGone ? null : selected);
-      if (selectionGone) this.notify('selectionGone', selected);
-    }
-    // The overlay first, so the app hears of the new date with what the overlay came to on it.
-    const { overlay, boundary } = this.props.current;
-    this.overlay.follow(overlay, boundary);
-    const time = this.frames.timeState();
-    if (time) this.notify('time', time);
-  }
-
-  /** Outlines the main camera's view on the minimap. */
-  private updateMinimapViewport(): void {
-    if (!this.minimap) return;
-    const bounds = this.map.getBounds();
-    this.minimap.setViewport([
-      [bounds.getWest(), bounds.getSouth()],
-      [bounds.getEast(), bounds.getNorth()],
-    ]);
-  }
 }

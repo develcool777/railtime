@@ -66,7 +66,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const moves: FakeMap['moves'] = [];
   const rendered: FakeMap['rendered'] = [];
   const handlers = new Map<string, ((payload: unknown) => void)[]>();
-  const life = { removed: false };
+  const life = { removed: false, resizes: 0 };
+  const canvas: FakeMap['canvas'] = { style: {}, toDataURL: (format, quality) => `data:${format};quality=${quality}` };
   // MapLibre refuses a layer the style spec does not allow (an expression it cannot read, a value not
   // among its options): checked as each is added or changed. A basemap layer's own tiles are a stand-in.
   const assertValid = (layer: FakeLayer): void => {
@@ -95,6 +96,9 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     const layer = layers.get(id);
     if (!layer) throw new Error(`no layer ${id}`);
     return layer;
+  };
+  const fire = (event: string, payload?: unknown) => {
+    for (const handler of handlers.get(event) ?? []) handler(payload);
   };
   const map = {
     addSource: (id: string, source: { type: string; data?: unknown; url?: string; coordinates?: unknown }) => {
@@ -177,7 +181,22 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       const handler = rest.at(-1) as (payload: unknown) => void;
       handlers.set(event, [...(handlers.get(event) ?? []), handler]);
     },
-    getCanvas: () => ({ style: {} }),
+    once: (event: string, handler: (payload: unknown) => void) => {
+      const once = (payload: unknown) => {
+        handlers.set(
+          event,
+          (handlers.get(event) ?? []).filter(held => held !== once),
+        );
+        handler(payload);
+      };
+      handlers.set(event, [...(handlers.get(event) ?? []), once]);
+    },
+    // A repaint leaves the map idle once its tiles are in.
+    triggerRepaint: () => {
+      if (view.tilesLoaded) fire('idle');
+    },
+    resize: () => (life.resizes += 1),
+    getCanvas: () => canvas,
     getCenter: () => ({ lng: view.center[0], lat: view.center[1] }),
     getBounds: () => ({
       getWest: () => view.center[0] - 1,
@@ -194,12 +213,10 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     zoomOut: () => (view.zoom -= 1),
     remove: () => (life.removed = true),
   };
-  const fire = (event: string, payload?: unknown) => {
-    for (const handler of handlers.get(event) ?? []) handler(payload);
-  };
   return {
     map: map as unknown as MapLibreMap,
     data,
+    featuresIn: <Feature>(source: string) => (data.get(source) as { features?: Feature[] } | undefined)?.features ?? [],
     images,
     sends,
     states,
@@ -207,7 +224,9 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     moves,
     rendered,
     view,
+    canvas,
     fire,
     isRemoved: () => life.removed,
+    resizes: () => life.resizes,
   };
 };

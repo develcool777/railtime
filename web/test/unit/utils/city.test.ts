@@ -1,13 +1,20 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import { citiesByCountry, cityMenu, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
+import { boundaryUrlOf, citiesByCountry, cityMenu, cityNameOf, citySummaryOf, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
 import { CITIES } from '~/constants/city.constants';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));
 
 describe('CityUtils', () => {
+  describe('isCity', () => {
+    test('takes a city with a dataset, and nothing else', () => {
+      expect(isCity('kyiv')).toBe(true);
+      expect([isCity('atlantis'), isCity(''), isCity(undefined), isCity(['kyiv'])]).toEqual([false, false, false, false]);
+    });
+  });
+
   describe('citiesByCountry', () => {
     test('groups every city under its country, in menu order', () => {
       const groups = citiesByCountry();
@@ -28,9 +35,37 @@ describe('CityUtils', () => {
       for (const city of CITIES) expect(existsSync(`${SERVED}${networkUrlOf(city.value).replace(/^data\//, '')}`), city.value).toBe(true);
     });
 
+    test('refuses a city it does not know, rather than give a path to nothing', () => {
+      expect(() => networkUrlOf('atlantis')).toThrow('atlantis');
+    });
+
     test("finds every city's previews beside its dataset", () => {
       expect(previewUrlOf('kyiv', 'dark')).toBe('data/ukraine/kyiv/kyiv.dark.webp');
       for (const city of CITIES) expect(existsSync(`${SERVED}${previewUrlOf(city.value, 'light').replace(/^data\//, '')}`), city.value).toBe(true);
+    });
+  });
+
+  describe('boundaryUrlOf', () => {
+    test("finds every city's outline beside its dataset", () => {
+      expect(boundaryUrlOf('kyiv')).toBe('data/ukraine/kyiv/kyiv.boundary.json');
+      for (const city of CITIES) expect(existsSync(`${SERVED}${boundaryUrlOf(city.value).replace(/^data\//, '')}`), city.value).toBe(true);
+    });
+  });
+
+  describe('cityNameOf', () => {
+    test("gives a city's name as the menu does, or the id for a city it does not know", () => {
+      expect(cityNameOf('tyne-and-wear')).toBe('Tyne and Wear');
+      expect(cityNameOf('atlantis')).toBe('atlantis');
+    });
+  });
+
+  describe('citySummaryOf', () => {
+    test("gives a city's entry in cities.json", () => {
+      expect(citySummaryOf('kyiv')).toMatchObject({ name: 'Kyiv', country: 'Ukraine' });
+    });
+
+    test('refuses a city not in cities.json', () => {
+      expect(() => citySummaryOf('atlantis')).toThrow('atlantis is not in cities.json');
     });
   });
 });

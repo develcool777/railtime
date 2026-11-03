@@ -1,9 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { describe, expect, test } from 'vitest';
-import { SUMMARIES_PATH, cities, readNetwork } from '../../../src/city.utils.ts';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, test, vi } from 'vitest';
+import { folderApart } from '../../support/folders.utils.ts';
+import { required } from '@railtime/core/required.utils';
+import { SUMMARIES_PATH, cities, citiesNamed, readNetwork } from '../../../src/city.utils.ts';
 import type { CityIndex } from '@railtime/schema/cityIndex.types';
 import { slugOf } from '@railtime/core/text.utils';
-import { formatSummaries, inListOrder, summaryOf } from '../../../src/summary/summary.utils.ts';
+import { formatSummaries, inListOrder, summaryOf, writeSummaries } from '../../../src/summary/summary.utils.ts';
 
 /** Every city's network, with its country. */
 const CITIES = cities().map(city => ({ country: city.country, city: city.id, network: readNetwork(city) }));
@@ -64,6 +67,44 @@ describe('SummaryUtils', () => {
 
     test("keeps each city in its country's folder", () => {
       for (const { country, city, network } of CITIES) expect(slugOf(network.meta.country), city).toBe(country);
+    });
+  });
+
+  describe('writeSummaries', () => {
+    /** Two cities, in the order they are found. */
+    const FOUND = ['kyiv', 'london'].map(id => required(citiesNamed(id)[0], id));
+
+    /**
+     * Where a test's list is written, in a folder of its own.
+     *
+     * @returns The file's path.
+     */
+    const listApart = () => {
+      const folder = folderApart();
+      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      return join(folder, 'cities.json');
+    };
+
+    test('writes every city summed up, in the order found, and says how many', () => {
+      const path = listApart();
+      writeSummaries(FOUND, path);
+      expect(readFileSync(path, 'utf8')).toBe(formatSummaries({ kyiv: summaryOf(cityOf('kyiv').network), london: summaryOf(cityOf('london').network) }));
+      expect(console.log).toHaveBeenCalledWith(`${path}: 2 cities`);
+    });
+
+    test('keeps the order the list had', () => {
+      const path = listApart();
+      writeFileSync(path, formatSummaries({ london: summaryOf(cityOf('london').network), kyiv: summaryOf(cityOf('kyiv').network) }));
+      writeSummaries(FOUND, path);
+      expect(Object.keys(JSON.parse(readFileSync(path, 'utf8')))).toEqual(['london', 'kyiv']);
+    });
+
+    test("refuses a city outside its country's folder, and writes nothing", () => {
+      const path = listApart();
+      const [kyiv] = FOUND;
+      const astray = { ...required(kyiv, 'kyiv'), country: 'poland' };
+      expect(() => writeSummaries([astray], path)).toThrow(`${astray.networkPath}: its country, Ukraine, is not its folder's`);
+      expect(existsSync(path)).toBe(false);
     });
   });
 });

@@ -61,15 +61,9 @@ street level in 3D, a score of them. So while a line grows:
 - a source is sent only when what it holds changed; the highlight's fade is a paint value;
 - a station's or a ring's look (pop-in, fade, a ring growing) is feature state, never data: the
   stations are sent only when one is added, gone, or shows something new;
-- the minimap takes what changes every frame at most ten times a second;
+- the minimap takes what changes every frame at most thirty times a second (`MINIMAP_UPDATE_MS`);
 - as a step's camera move ends, it waits for the tiles where it arrived (`MAX_TILE_WAIT_SECONDS`), so
   the line grows over drawn streets, not a blank filling in.
-
-### Lines side by side
-
-Where several lines share a segment, each is drawn with a `line-offset` slot (…-1, -0.5, 0, 0.5, 1…)
-in the network's line order, signed by the segment's direction of travel so a line keeps its side
-from one segment to the next. Lines drawn as the same line (an alias) share a slot.
 
 ## Lines side by side
 
@@ -81,15 +75,19 @@ from one segment to the next. Lines drawn as the same line (an alias) share a sl
 
 A folder per subject; inside it, files are named for what they are, not for the folder again
 (`reach/layer.service.ts` holds `ReachLayer`). What takes no map (`*.utils.ts`, the player, `steps/`)
-runs in the unit tests as it is; the layers, and `TransitMap` whole, run on a stand-in map
-(`test/support/factories/fakeMap.utils.ts`) with frames stepped by hand.
+runs in the unit tests as it is; the layers, the minimap, `BasemapStill` and `TransitMap` whole run on a
+stand-in map (`test/support/factories/fakeMap.utils.ts`, given as their `createMap`) with frames stepped
+by hand; what adds elements of its own (the minimap, `BasemapStill`) in happy-dom, as `*.spec.ts`.
 
 ```text
 src/
-├── transitMap.service.ts      TransitMap: the facade; owns MapLibre, the frame loop and the event queue
-├── minimap/                   Minimap: the overview inset, and the box over it outlining the camera's view
+├── transitMap.service.ts      TransitMap: the facade; owns MapLibre, the props, the commands, the frame loop
+│                              and the event queue
+├── minimap/                   Minimap: the overview inset, and the box over it following the main camera's view
 │                              (`minimap.utils.ts` places it)
 ├── playback/
+│   ├── playback.service.ts    Playback: the history played on the map, each frame and each jump: the clock moved
+│   │                          on (held for the tiles), each change framed and captioned, the moment drawn, reported
 │   ├── player.service.ts      Player: the clock and each step's phases, moved by its commands; pure
 │   └── camera.service.ts      CameraDirector: framing a step; in 3D, following its line as it grows
 ├── steps/                     StepAnimation, one class for every kind of step: how long it takes, what it frames, what it

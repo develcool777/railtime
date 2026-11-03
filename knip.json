@@ -6,32 +6,32 @@
       "project": ["vitest.*.ts"]
     },
     "packages/data": {
-      "entry": ["src/*/cli.ts", "test/**/*.test.ts"],
+      "entry": ["src/*/cli.ts", "test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/core": {
-      "entry": ["test/**/*.test.ts"],
+      "entry": ["test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/schema": {
-      "entry": ["test/**/*.test.ts"],
+      "entry": ["test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/network": {
-      "entry": ["test/**/*.test.ts"],
+      "entry": ["test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/renderer": {
-      "entry": ["test/**/*.test.ts"],
+      "entry": ["test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "web": {
-      "entry": ["src/pages/**/*.vue", "test/**/*.test.ts"],
+      "entry": ["src/pages/**/*.vue", "test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.{ts,vue,css}", "test/**/*.ts"],
       "ignoreDependencies": ["@iconify-json/lucide", "vue-tsc"]
     },
     "packages/tooling": {
-      "entry": ["src/cli.*.ts", "test/**/*.test.ts"],
+      "entry": ["src/cli.*.ts", "test/**/*.@(test|spec).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     }
   }

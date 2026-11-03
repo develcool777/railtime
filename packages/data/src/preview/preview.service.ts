@@ -8,8 +8,9 @@ import type { AddressInfo } from 'node:net';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { citiesNamed, readNetwork } from '../city.utils.ts';
+import type { City } from '../city.types.ts';
 import { PREVIEW_PAGE_SCRIPT, PREVIEW_SIZE, PREVIEW_THEMES, PREVIEW_TIMEOUT_MS, SOCIAL_SIZE, SOCIAL_THEME } from './preview.constants.ts';
-import type { PreviewWindow, Served } from './preview.types.ts';
+import type { PreviewOptions, PreviewWindow, Served } from './preview.types.ts';
 import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.ts';
 
 /**
@@ -21,12 +22,18 @@ import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.t
  * MapLibre its worker.
  */
 export class PreviewRenderer {
+  /** Starts the browser. */
+  private readonly launch: () => Promise<Browser>;
   /** The local server the page loads from. */
   private server: Server | null = null;
   /** The browser, once started. */
   private browser: Browser | null = null;
   /** The page the previews are drawn in. */
   private page: Page | null = null;
+
+  public constructor(options: PreviewOptions = {}) {
+    this.launch = options.launch ?? (() => chromium.launch({ channel: 'chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] }));
+  }
 
   /**
    * Draws cities' pictures and writes them beside each one's network.
@@ -37,6 +44,16 @@ export class PreviewRenderer {
   public async draw(cityId: string | undefined): Promise<void> {
     const chosen = citiesNamed(cityId);
     if (chosen.length === 0) throw new Error(`no city ${cityId}: usage: pnpm data:previews [city]`);
+    await this.drawCities(chosen);
+  }
+
+  /**
+   * Draws these cities' pictures and writes them beside each one's network.
+   *
+   * @param chosen - The cities.
+   * @throws {Error} For a picture Chrome did not draw; Chrome and the server are closed either way.
+   */
+  public async drawCities(chosen: City[]): Promise<void> {
     try {
       await this.start();
       for (const city of chosen) {
@@ -63,7 +80,7 @@ export class PreviewRenderer {
   /** Bundles the preview page, serves it, starts Chrome and loads it. */
   private async start(): Promise<void> {
     const origin = await this.serve(await this.pageFiles());
-    this.browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+    this.browser = await this.launch();
     this.page = await this.browser.newPage();
     this.page.setDefaultTimeout(PREVIEW_TIMEOUT_MS);
     // What goes wrong in the page is said here: a preview drawn without its tiles looks blank.

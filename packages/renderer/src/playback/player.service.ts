@@ -22,8 +22,6 @@ export class Player {
   private running = false;
   /** Playback speed multiplier. */
   private rate = 1;
-  /** Seconds at 1× the camera gets before each step draws. */
-  private leadIn = CAMERA_PRE_SECONDS;
   /** The step playing now, if any. */
   private current: ActivePlayback | null = null;
   /** Today: where the map opens. */
@@ -117,15 +115,6 @@ export class Player {
   }
 
   /**
-   * Sets how long, at 1×, a step waits before it draws, for the camera to get there: from the next step on.
-   *
-   * @param seconds - The wait.
-   */
-  public setLeadIn(seconds: number): void {
-    this.leadIn = seconds;
-  }
-
-  /**
    * Sets how long the step playing waits before it draws, once the camera has said how long its move takes.
    *
    * @param seconds - The wait, at 1×.
@@ -181,7 +170,7 @@ export class Player {
     if (!next || progress === 0) return;
     const animation = this.createAnimation(next);
     // Past the camera's beat, as far through drawing as it was: a step drawn whole holds.
-    this.current = { animation, elapsed: this.elapsedAt(animation, this.leadIn, 'draw', progress), preSeconds: this.leadIn };
+    this.current = { animation, elapsed: this.elapsedAt(animation, CAMERA_PRE_SECONDS, 'draw', progress), preSeconds: CAMERA_PRE_SECONDS };
   }
 
   /**
@@ -286,7 +275,7 @@ export class Player {
    * @param events - Filled with what happened.
    */
   private startStep(step: Step, events: PlayerEvent[]): void {
-    this.current = { animation: this.createAnimation(step), elapsed: 0, preSeconds: this.leadIn };
+    this.current = { animation: this.createAnimation(step), elapsed: 0, preSeconds: CAMERA_PRE_SECONDS };
     events.push({ type: 'stepStart', playback: this.current });
   }
 

@@ -1,15 +1,16 @@
-import { type GeoJSONSource, type LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
+import type { GeoJSONSource, LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
 import { recolorBasemap } from '../layers/basemap.utils';
 import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../layers/snapshot.types';
 import { emptyCollection } from '../layers/snapshot.utils';
 import type { Palette } from '../layers/theme.types';
 import type { Bounds } from '@railtime/core/geometry.types';
 import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from './minimap.constants';
+import type { MinimapOptions } from './minimap.types';
 import { viewportBox } from './minimap.utils';
 
 /**
  * A small, fixed overview of the whole city: the network so far, the change happening now, and a
- * box showing where the main camera is looking. Updates sent before its style loads are kept and
+ * box showing where the main map's camera is looking, following it. Updates sent before its style loads are kept and
  * applied once it has; the line growing, which changes every frame, at most thirty times a second.
  * The box is an element over the map, styled by `transitMap.css`, not its data: following the camera
  * every frame, it costs no redraw.
@@ -33,13 +34,15 @@ export class Minimap {
   private flushedAt = -Infinity;
   /** The box outlining the main camera's view. */
   private readonly box: HTMLDivElement;
-  /** What the box outlines: the main map's visible bounds, once known. */
-  private viewport: Bounds | null = null;
+  /** The map whose view the box outlines. */
+  private readonly main: MapLibreMap;
 
-  public constructor(container: HTMLElement, style: string, bounds: Bounds, palette: Palette) {
+  public constructor(options: MinimapOptions) {
+    const { container, main, createMap, style, bounds, palette } = options;
     this.palette = palette;
     this.bounds = bounds;
-    this.map = new MapLibreMap({
+    this.main = main;
+    this.map = createMap({
       container,
       style,
       bounds: bounds as LngLatBoundsLike,
@@ -52,7 +55,8 @@ export class Minimap {
     this.box.className = MINIMAP_VIEWPORT_CLASS;
     this.box.style.setProperty(MINIMAP_VIEWPORT_COLOR, palette.viewport);
     container.append(this.box);
-    // The minimap's own camera moves only to frame the city again: the box goes with it.
+    // The box follows the main camera; the minimap's own moves only to frame the city again, and the box goes with it.
+    main.on('move', () => this.placeViewport());
     this.map.on('move', () => this.placeViewport());
     // Created hidden, it first fitted the city into nothing: fit it again whenever it gets a size.
     this.resizeObserver = new ResizeObserver(() => {
@@ -61,6 +65,7 @@ export class Minimap {
       this.map.fitBounds(this.bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
     });
     this.resizeObserver.observe(container);
+    this.placeViewport();
   }
 
   /**
@@ -93,16 +98,6 @@ export class Minimap {
   }
 
   /**
-   * Outlines where the main camera is looking.
-   *
-   * @param bounds - The main map's visible bounds.
-   */
-  public setViewport(bounds: Bounds): void {
-    this.viewport = bounds;
-    this.placeViewport();
-  }
-
-  /**
    * Recolours the minimap for a theme.
    *
    * @param palette - The theme's colours.
@@ -124,9 +119,8 @@ export class Minimap {
 
   /** Puts the box over the main camera's view, as the minimap projects it. */
   private placeViewport(): void {
-    if (!this.viewport) return;
-    const [[west, south], [east, north]] = this.viewport;
-    const { left, top, width, height } = viewportBox(this.map.project([west, north]), this.map.project([east, south]));
+    const view = this.main.getBounds();
+    const { left, top, width, height } = viewportBox(this.map.project([view.getWest(), view.getNorth()]), this.map.project([view.getEast(), view.getSouth()]));
     Object.assign(this.box.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
     this.box.dataset.shown = '';
   }

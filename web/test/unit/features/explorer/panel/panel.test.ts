@@ -127,8 +127,39 @@ describe('PanelUtils', () => {
       expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true })).title).toBe('Playing the future');
     });
 
+    test('counts the changes alone when none is dated, and while playing between changes', () => {
+      expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', changes: [change(0, null)] })).context).toBe('1 change');
+      expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, currentChange: null }))).toEqual({
+        title: 'Playing history',
+        context: '3 changes since 1900',
+      });
+    });
+
+    test("while playing a plan's future, Changes says Future, not a date", () => {
+      const top = sectionTop(
+        sectionInput({ section: 'changes', label: 'Changes', playing: true, hasPlan: true, currentChange: 2, time: timeAt({ future: true }) }),
+      );
+      expect(top).toEqual({ title: 'Playing the future', context: '3 of 3 · Future' });
+    });
+
+    test('while playing with no time yet, Changes counts them', () => {
+      expect(sectionTop(sectionInput({ section: 'changes', label: 'Changes', playing: true, currentChange: 1, time: null })).context).toBe(
+        '3 changes since 1900',
+      );
+    });
+
     test('counts the stations on the map', () => {
       expect(sectionTop(sectionInput({ section: 'stations', label: 'Stations' }))).toEqual({ title: 'Stations', context: '3 stations on the map' });
+    });
+
+    test('says what each tool section is for', () => {
+      expect((['route', 'insights', 'reach', 'coverage'] as const).map(section => sectionTop(sectionInput({ section, label: section })).context)).toEqual([
+        'Between any two stations, on the date shown',
+        'How the network grew, and its records',
+        'How far you get from a station',
+        'How much of the city is near a station',
+      ]);
+      expect(sectionTop(sectionInput({ section: 'route', label: 'Route' })).title).toBe('Route');
     });
 
     test('counts the plans, one in the singular', () => {

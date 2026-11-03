@@ -64,7 +64,7 @@ export const targetOf = (dirs: string[], options: Omit<MutationOptions, 'paths'>
   const files = (dir: string) => (dir.startsWith('web/') ? `${dir}/**/*.utils.ts` : `${dir}/**/*.ts`);
   return {
     mutate: [...dirs.map(files), ...NOT_MUTATED.map(pattern => `!${pattern}`)],
-    testFiles: dirs.map(dir => `${testDirOf(dir)}/**/*.test.ts`),
+    testFiles: dirs.map(dir => `${testDirOf(dir)}/**/*.@(test|spec).ts`),
     incrementalFile: `test-reports/stryker-incremental/${label}${disableBail ? '.all-tests' : ''}.json`,
     force: fresh,
     disableBail,
