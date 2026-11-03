@@ -1,63 +1,81 @@
 <template>
-  <div
-    ref="bar"
-    class="timeline relative h-[50px] cursor-pointer touch-none select-none"
-    role="slider"
-    tabindex="0"
-    :aria-label="label"
-    :aria-valuemin="yearOf(scale.start)"
-    :aria-valuemax="yearOf(scale.end)"
-    :aria-valuenow="time ? yearOf(time.time) : undefined"
-    :aria-valuetext="valueText"
-    @pointerdown="onPointerDown"
-    @pointermove="onPointerMove"
-    @pointerup="dragging = false"
-    @pointercancel="dragging = false"
-    @keydown="onKey">
-    <!-- The plan's changes, after every date: their own zone at the right. -->
+  <div class="relative h-[50px]">
     <div
-      v-if="scale.plannedCount > 0"
-      class="border-accented absolute top-0 right-0 bottom-0 border-l border-dashed"
-      :style="{ left: percent(1 - FUTURE_SHARE) }">
-      <span class="eyebrow text-muted absolute top-0 left-1.5 text-[10px]">Future</span>
+      ref="bar"
+      class="absolute inset-x-0 top-0 h-8 cursor-pointer touch-none select-none"
+      role="slider"
+      tabindex="0"
+      :aria-label="label"
+      :aria-valuemin="yearOf(scale.start)"
+      :aria-valuemax="yearOf(scale.end)"
+      :aria-valuenow="time ? yearOf(time.time) : undefined"
+      :aria-valuetext="valueText"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="dragging = false"
+      @pointercancel="dragging = false"
+      @keydown="onKey">
+      <span
+        v-for="tick in ticks"
+        :key="tick.index"
+        class="tick absolute w-[3px] -translate-x-1/2 rounded-sm"
+        :class="TICK_LOOK[tick.mark]"
+        :style="{ left: percent(tick.left), bottom: `${14 + tick.level * 5}px`, background: tickColor(tick) }"
+        :title="tick.label" />
+
+      <div class="bg-accented absolute top-[24px] left-0 h-1 rounded-full" :style="{ width: percent(share) }" />
+      <div class="bg-primary absolute top-[24px] left-0 h-1 rounded-full" :class="{ glide: playing }" :style="{ width: percent(Math.min(thumb, share)) }" />
+      <!-- A plan's changes, after every date: their track dashed, as on the map. -->
+      <template v-if="scale.plannedCount > 0">
+        <div class="dashed absolute top-[24px] right-0 h-1 text-(--ui-border-accented)" :style="{ left: percent(share) }" />
+        <div
+          class="dashed text-primary absolute top-[24px] h-1"
+          :class="{ glide: playing }"
+          :style="{ left: percent(share), width: percent(Math.max(0, thumb - share)) }" />
+      </template>
+      <div
+        class="border-primary bg-default shadow-card absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-[3px]"
+        :class="{ glide: playing }"
+        :style="{ left: percent(thumb) }" />
     </div>
 
-    <span
-      v-for="tick in ticks"
-      :key="tick.index"
-      class="tick absolute w-[3px] -translate-x-1/2 rounded-sm"
-      :class="TICK_LOOK[tick.mark]"
-      :style="{ left: percent(tick.left), bottom: `${32 + tick.level * 5}px`, background: tickColor(tick) }"
-      :title="tick.label" />
-
-    <div class="bg-accented absolute top-[24px] right-0 left-0 h-1 rounded-full" />
-    <div class="bg-primary absolute top-[24px] left-0 h-1 rounded-full" :class="{ glide: playing }" :style="{ width: percent(thumb) }" />
-    <div
-      class="border-primary bg-default shadow-card absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-[3px]"
-      :class="{ glide: playing }"
-      :style="{ left: percent(thumb) }" />
-
-    <span
-      v-for="entry in labels"
-      :key="entry.text"
-      class="absolute top-[33px] text-[11px] tabular-nums"
-      :class="[entry.today ? 'text-highlighted font-semibold' : 'text-muted', labelAlign(entry.left)]"
-      :style="{ left: percent(entry.left) }">
-      {{ entry.text }}
-    </span>
+    <template v-for="(entry, position) in labels" :key="entry.text">
+      <span
+        v-if="!entry.place"
+        class="text-muted absolute top-[33px] text-[11px] tabular-nums"
+        :class="labelAlign(entry.left)"
+        :style="{ left: percent(entry.left) }">
+        {{ entry.text }}
+      </span>
+      <!-- Today and the plan built are places to go: the right end is where the map rests (H). -->
+      <UTooltip
+        v-else
+        :text="entry.place === 'today' ? 'Back to today' : `${planName ?? 'The plan'}, built`"
+        :kbds="position === labels.length - 1 ? ['H'] : undefined">
+        <UButton
+          :label="entry.text"
+          color="neutral"
+          variant="link"
+          class="text-highlighted absolute top-[31px] p-0 text-[11px] font-semibold"
+          :class="labelAlign(entry.left)"
+          :style="{ left: percent(entry.left) }"
+          @click="emit('leave', entry.place)" />
+      </UTooltip>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
   import type { ChangeInfo } from '@railtime/network/facts.types';
   import type { TimeState } from '@railtime/renderer/transitMap.types';
+  import { useElementSize } from '@vueuse/core';
   import { computed, ref, useTemplateRef } from 'vue';
 
-  import { FUTURE_SHARE, TICK_LOOK } from '~/features/explorer/time/time.constants';
+  import { TICK_LOOK, TIMELINE_LABEL_GAP_PX } from '~/features/explorer/time/time.constants';
   import { YEAR_MS, yearOf } from '@railtime/core/date.utils';
   import { clamp } from '@railtime/core/number.utils';
   import type { TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
-  import { targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
+  import { datedShare, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 
   const props = defineProps<{
     changes: ChangeInfo[];
@@ -67,8 +85,10 @@
     label: string;
     /** History is playing: the changes still to come are grey, and the thumb glides between them. */
     playing?: boolean;
+    /** The plan shown, by name, for its label's tooltip. */
+    planName?: string;
   }>();
-  const emit = defineEmits<{ pick: [target: TimelineTarget] }>();
+  const emit = defineEmits<{ pick: [target: TimelineTarget]; leave: [place: 'today' | 'end'] }>();
 
   const bar = useTemplateRef<HTMLElement>('bar');
   const dragging = ref(false);
@@ -78,14 +98,16 @@
     return { start: props.range.start, end: props.range.end, datedCount: props.changes.length - plannedCount, plannedCount };
   });
   const ticks = computed(() => timelineTicks(scale.value, props.changes));
-  const labels = computed(() => timelineLabels(scale.value));
+  const { width } = useElementSize(bar);
+  const labels = computed(() => timelineLabels(scale.value, width.value > 0 ? TIMELINE_LABEL_GAP_PX / width.value : 0.1));
+  const share = computed(() => datedShare(scale.value));
   const thumb = computed(() => {
     const now = props.time;
-    return now ? thumbPosition(scale.value, now.time, now.cursor, now.future) : thumbPosition(scale.value, scale.value.end, 0, false);
+    return now ? thumbPosition(scale.value, now.time, now.cursor, now.inPlan) : thumbPosition(scale.value, scale.value.end, 0, false);
   });
   const valueText = computed(() => {
     if (!props.time) return '';
-    return props.time.future ? 'Future' : String(yearOf(props.time.time));
+    return props.time.inPlan ? 'Plan' : String(yearOf(props.time.time));
   });
 
   /** A tick's colour: its line's, and while playing grey for a change still to come. */
@@ -96,10 +118,10 @@
 
   const percent = (fraction: number): string => `${(fraction * 100).toFixed(3)}%`;
 
-  /** The first label reads rightwards from its mark, the last leftwards; the rest are centred. */
+  /** The first label reads rightwards from its mark; Today, at the end of the dates, and Plan leftwards; the rest are centred. */
   const labelAlign = (left: number): string => {
     if (left === 0) return '';
-    return left >= 1 - FUTURE_SHARE - 0.001 ? '-translate-x-full' : '-translate-x-1/2';
+    return left >= share.value - 0.001 ? '-translate-x-full' : '-translate-x-1/2';
   };
 
   /** Picks what the pointer is over. */
@@ -137,5 +159,12 @@
     transition:
       left 0.4s,
       width 0.4s;
+  }
+
+  /* A plan's track, dashed as the map draws it, in the text colour set on it. */
+  .dashed {
+    background-image: repeating-linear-gradient(90deg, currentcolor 0 6px, transparent 6px 10px);
+    background-clip: content-box;
+    padding-left: 4px;
   }
 </style>

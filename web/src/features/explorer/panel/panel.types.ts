@@ -20,7 +20,7 @@ export type SectionTopInput = {
   label: string;
   /** The time control is the player: Changes follows playback. */
   playing: boolean;
-  /** A plan is shown: what plays is its future. */
+  /** A plan is shown: what plays is the plan. */
   hasPlan: boolean;
   lines: LineInfo[];
   /** How many lines are hidden. */

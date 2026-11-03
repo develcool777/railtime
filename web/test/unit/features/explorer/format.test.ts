@@ -20,10 +20,10 @@ describe('FormatUtils', () => {
   });
 
   describe('decadeHeading', () => {
-    test('names the decade of a date, or the future for a plan', () => {
+    test("names the decade of a date, or Plan for a plan's change", () => {
       expect(decadeHeading(Date.UTC(1933, 6, 31))).toBe('1930s');
       expect(decadeHeading(Date.UTC(1940, 0, 1))).toBe('1940s');
-      expect(decadeHeading(null)).toBe('Future');
+      expect(decadeHeading(null)).toBe('Plan');
     });
   });
 

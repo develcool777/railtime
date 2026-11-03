@@ -72,7 +72,7 @@ export const playWholeHistory = (network: Network, shown: { plan?: string; hidde
 };
 
 /**
- * Plays a plan on its network from today, as "Play future" does: only the plan's sections.
+ * Plays a plan on its network from today, as "Play the plan" does: only the plan's sections.
  *
  * @param network - The network.
  * @param plan - One of its plans.

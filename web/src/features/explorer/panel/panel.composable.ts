@@ -9,6 +9,7 @@ import type { PanelView, Section } from '~/features/explorer/explorer.types';
 import { formatPlanFacts, formatStats, lineColor } from '~/features/explorer/format.utils';
 import type { ExplorerPanel } from '~/features/explorer/panel/panel.composable.types';
 import { lineTop, sectionTop, stationTop } from '~/features/explorer/panel/panel.utils';
+import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
 
 /**
  * What the panel and the page around the map show, as computeds of the store: the section open and
@@ -43,7 +44,7 @@ export const useExplorerPanel = (): ExplorerPanel => {
   const stationColors = computed(() => new Map(stations.value.map(entry => [entry.id, entry.colors])));
 
   const currentChange = computed(() => currentChangeIndex(changes.value, time.value, timeMode.value === 'playing' && step.value !== null));
-  const shownDate = computed(() => (!time.value || time.value.future ? null : time.value.time));
+  const shownDate = computed(() => (!time.value || time.value.inPlan ? null : time.value.time));
 
   /**
    * What a pushed view is called, for the back link over it.
@@ -83,16 +84,22 @@ export const useExplorerPanel = (): ExplorerPanel => {
   const growth = computed(() => facts.value?.growth() ?? null);
   const hasHistory = computed(() => facts.value?.hasHistory() ?? false);
   const records = computed(() => now.value?.records(5) ?? null);
-  // A plan's future has no year.
-  const shownYear = computed(() => (time.value && !time.value.future ? yearOf(time.value.time) : null));
+  // A plan has no year.
+  const shownYear = computed(() => (time.value && !time.value.inPlan ? yearOf(time.value.time) : null));
 
-  // The plan shown: its summary, and the legend for its dashed track while the map shows its future.
+  // The plan shown: its name, what became of it and what it adds, and the legend for its dashed track while the map shows it.
   const chosenPlan = computed(() => plans.value.find(entry => entry.id === plan.value));
   const planSummary = computed(() =>
-    chosenPlan.value ? { name: chosenPlan.value.name, facts: formatPlanFacts(chosenPlan.value.facts.stations, chosenPlan.value.facts.km) } : undefined,
+    chosenPlan.value
+      ? {
+          name: chosenPlan.value.name,
+          status: PLAN_STATUSES[chosenPlan.value.status].label,
+          facts: formatPlanFacts(chosenPlan.value.facts.stations, chosenPlan.value.facts.km),
+        }
+      : undefined,
   );
   const planLegend = computed(() => {
-    if (!chosenPlan.value || !time.value?.future || playing.value) return null;
+    if (!chosenPlan.value || !time.value?.inPlan || playing.value) return null;
     const firstLine = chosenPlan.value.facts.lines[0];
     return { name: chosenPlan.value.name, color: firstLine ? lineColor(firstLine.color) : 'var(--ui-text-highlighted)' };
   });

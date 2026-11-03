@@ -65,7 +65,7 @@
     lines: LineInfo[];
     /** Each network with the lines that may be shown or hidden: those hidden are listed after the rest. */
     choices: NetworkChoice[];
-    /** The date shown, as a timestamp; `null` for a plan's future, when every line is open. */
+    /** The date shown, as a timestamp; `null` in a plan, when every line is open. */
     date: number | null;
   }>();
   const emit = defineEmits<{ show: [lines: string[], shown: boolean]; open: [line: string] }>();

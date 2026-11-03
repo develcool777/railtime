@@ -52,7 +52,7 @@ export class NetworkFacts {
   public readonly planOnly: boolean;
   /** The raw network through time, which every answer comes from: what the renderer plays and draws. */
   public readonly engine: NetworkEngine;
-  /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's future plays at `end`. */
+  /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's changes play at `end`. */
   public readonly range: { start: number; end: number; today: number };
   /** Where in its history the map can be: on a day, after or before a change, today, at the end. */
   public readonly playheads: NetworkEngine['playheads'];

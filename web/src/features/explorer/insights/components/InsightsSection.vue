@@ -80,7 +80,7 @@
     hasHistory: boolean;
     /** Its records on the date shown. */
     records: NetworkRecords | null;
-    /** The year shown on the map; `null` in a plan's future. */
+    /** The year shown on the map; `null` in a plan. */
     year: number | null;
   }>();
   const emit = defineEmits<{ year: [year: number]; station: [station: string]; line: [line: string] }>();

@@ -24,12 +24,12 @@ describe('Player', () => {
     const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
     expect(player.clock).toBe(player.today);
     expect(player.cursor).toBe(timeline.datedCount);
-    expect(player.inFuture).toBe(false);
+    expect(player.inPlan).toBe(false);
     player.play();
     const started: boolean[] = [];
     for (let frame = 0; frame < 2000 && player.playing; frame++) {
       for (const event of player.tick(1 / 30)) if (event.type === 'stepStart') started.push(event.playback.animation.step.planned);
-      if (player.active) expect(player.inFuture).toBe(true);
+      if (player.active) expect(player.inPlan).toBe(true);
       expect(player.clock).toBe(player.end);
     }
     expect(started).toEqual([true, true]);
@@ -102,9 +102,9 @@ describe('Player', () => {
     const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
     player.seek(facts.playheads.end());
     expect(player.cursor).toBe(timeline.steps.length);
-    expect(player.inFuture).toBe(true);
+    expect(player.inPlan).toBe(true);
     player.seek(facts.playheads.on(toTimestamp('1950-01-01')));
-    expect(player.inFuture).toBe(false);
+    expect(player.inPlan).toBe(false);
   });
 
   test('skips to the next step, then finishes it', () => {
@@ -126,10 +126,10 @@ describe('Player', () => {
     player.play();
     expect(player.tick(1 / 30).map(event => event.type)).toEqual(['stepStart']);
     expect(player.active?.animation.step).toBe(dated);
-    // A planned step stands at the end, in the future.
+    // A planned step stands at the end, in the plan.
     player.seek(facts.playheads.after(timeline.datedCount + 1));
     expect(player.clock).toBe(player.end);
-    expect(player.inFuture).toBe(true);
+    expect(player.inPlan).toBe(true);
   });
 
   test('runs the clock fast through quiet years and slows steadily into the next change, never with a jolt', () => {

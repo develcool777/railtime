@@ -16,7 +16,7 @@ export class NetworkEngine {
   public readonly index: NetworkIndex;
   /** Its history as steps, planned ones last. */
   public readonly timeline: Timeline;
-  /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's future plays at `end`. */
+  /** The timeline's first date, its end (today, or a dated step after it) and today, as timestamps. A plan's changes play at `end`. */
   public readonly range: { start: number; end: number; today: number };
   /** Where in its history the map can be, and the rules of it: what the player seeks and runs its clock to. */
   public readonly playheads: Playheads;

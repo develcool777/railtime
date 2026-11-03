@@ -8,7 +8,7 @@ import { foldName } from '~/features/explorer/stations/station.utils';
 import type { ChangeGroup, ChangeRow, ChangeState } from '~/features/explorer/changes/changes.types';
 
 /**
- * The changes under a heading for each decade, in order; a plan's last, under "Future".
+ * The changes under a heading for each decade, in order; a plan's last, under "Plan".
  *
  * @param changes - The timeline's changes, in order.
  * @returns Each decade with its changes.
@@ -55,7 +55,7 @@ export const currentChangeIndex = (changes: ChangeInfo[], time: TimeState | null
     const index = stepPlaying ? time.cursor : time.cursor - 1;
     return index >= 0 && index < changes.length ? index : null;
   }
-  if (time.future) return null;
+  if (time.inPlan) return null;
   const year = yearOf(time.time);
   const ofYear = changes.filter(change => change.index < time.cursor && change.time !== null && yearOf(change.time) === year);
   return ofYear.at(-1)?.index ?? null;
