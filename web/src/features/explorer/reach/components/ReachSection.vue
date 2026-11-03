@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <!-- A station clicked on the map always starts it: its field ringed, as Route's. -->
-    <StationField :stations :stop="from" end="from" label="the station" placeholder="From" aimed @pick="emit('from', $event)" />
+    <StationField :stations :stop="from" end="from" label="where it starts" placeholder="From" aimed @pick="emit('from', $event)" />
     <MapPickHint end="start" :picked="!!from" class="-mt-2" />
 
     <UEmpty

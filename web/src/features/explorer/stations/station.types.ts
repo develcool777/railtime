@@ -1,4 +1,4 @@
-import type { StationSummary } from '@railtime/network/facts.types';
+import type { LineColor, StationSummary } from '@railtime/network/facts.types';
 
 /** The stations whose names begin with one letter. */
 export type StationGroup = { letter: string; stations: StationSummary[] };
@@ -15,3 +15,6 @@ export type StripStop = {
   /** Beside it: where the line goes on past it, or that it is the end; empty for the station. */
   note: string;
 };
+
+/** A station as a station field's list holds it: its name, its first other name beneath, its lines' colours beside. */
+export type StationChoice = { id: string; label: string; description?: string; colors: LineColor[] };
