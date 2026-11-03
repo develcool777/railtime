@@ -44,7 +44,10 @@ export class OverlayController {
     if (boundary !== this.boundary && request?.kind === 'coverage') this.framed = null;
     this.boundary = boundary;
 
-    const route = request?.kind === 'route' ? then.route(request.from, request.to, request.preference) : null;
+    const routes = request?.kind === 'route' ? then.routes(request.from, request.to) : [];
+    // The option asked for, or the last there is on this date.
+    const shown = request?.kind === 'route' && routes.length > 0 ? Math.min(request.option, routes.length - 1) : null;
+    const route = shown === null ? null : (routes[shown] ?? null);
     const reach = request?.kind === 'reach' ? then.reach(request.from) : null;
     // Coverage is measured within the distance asked for, once the outline is in.
     const coverage = request?.kind === 'coverage' && boundary ? { measure: facts.coverage(boundary), metres: request.metres } : null;
@@ -66,7 +69,7 @@ export class OverlayController {
       if (route || reach || coverage || !request) this.framed = subject;
     }
 
-    if (request?.kind === 'route') this.parts.report({ kind: 'route', route });
+    if (request?.kind === 'route') this.parts.report({ kind: 'route', routes, shown });
     else if (request?.kind === 'reach') this.parts.report({ kind: 'reach', reach });
     else if (request?.kind === 'coverage') this.parts.report({ kind: 'coverage', coverage: coverage?.measure.info(moment.cursor, coverage.metres) ?? null });
     else this.parts.report(null);
@@ -84,15 +87,16 @@ export class OverlayController {
 }
 
 /**
- * What an overlay is of, for the camera: it frames an overlay when this changes (new ends, a new start,
- * coverage opened), and leaves the view be as the date, the theme or coverage's distance changes it.
+ * What an overlay is of, for the camera: it frames an overlay when this changes (new ends, another way
+ * between them, a new start, coverage opened), and leaves the view be as the date, the theme or
+ * coverage's distance changes it.
  *
  * @param request - The overlay asked for, or `null`.
  * @returns Its subject, or `null` for none.
  */
 export const overlaySubjectOf = (request: OverlayRequest | null): string | null => {
   if (!request) return null;
-  if (request.kind === 'route') return `route|${request.from}|${request.to}|${request.preference}`;
+  if (request.kind === 'route') return `route|${request.from}|${request.to}|${request.option}`;
   if (request.kind === 'reach') return `reach|${request.from}`;
   return 'coverage';
 };

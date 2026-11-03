@@ -1,12 +1,16 @@
 <template>
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
+    <!-- Where it starts and ends, joined as on a ticket; swapped beside them. -->
     <div class="flex items-center gap-2">
-      <div class="flex min-w-0 flex-1 flex-col gap-2">
+      <div class="relative flex min-w-0 flex-1 flex-col gap-2">
+        <span class="border-accented pointer-events-none absolute top-[22px] bottom-[22px] left-[16px] border-l-2 border-dotted" aria-hidden="true" />
         <template v-for="end in ENDS" :key="end.key">
           <div v-if="ends[end.key]" class="border-default bg-default flex h-9 min-w-0 items-center gap-2.5 rounded-lg border pr-1 pl-3">
-            <span class="size-2 flex-none rounded-full border-2 border-(--ui-text-highlighted)" :class="{ 'bg-(--ui-text-highlighted)': end.key === 'to' }" />
+            <span
+              class="relative size-2 flex-none rounded-full border-2 border-(--ui-text-highlighted)"
+              :class="end.key === 'to' ? 'bg-(--ui-text-highlighted)' : 'bg-default'" />
             <span class="text-highlighted min-w-0 flex-1 truncate text-sm font-medium">{{ ends[end.key]?.name }}</span>
-            <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" :aria-label="`Clear ${end.label}`" @click="clear(end.key)" />
+            <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" :aria-label="`Clear ${end.label}`" @click="emit('end', end.key, null)" />
           </div>
           <StationSearch v-else :stations :placeholder="end.placeholder" :end="end.key" @select="choose(end.key, $event)" />
         </template>
@@ -15,178 +19,114 @@
         <UButton
           icon="i-lucide-arrow-up-down"
           color="neutral"
-          variant="outline"
+          variant="ghost"
           square
           class="size-8 flex-none"
           aria-label="Swap from and to"
           @click="emit('swap')" />
       </UTooltip>
     </div>
+    <p v-if="!ends.from || !ends.to" class="text-dimmed -mt-2 flex items-center gap-1.5 text-xs">
+      <UIcon name="i-lucide-mouse-pointer-click" class="size-3.5" />
+      Or pick {{ ends.from ? 'where it ends' : 'where it starts' }} on the map.
+    </p>
 
-    <UTabs
-      :modelValue="preference"
-      :items="PREFERENCES"
-      :content="false"
-      class="self-start"
-      aria-label="Route preference"
-      @update:modelValue="emit('preference', $event as RoutePreference)" />
-
-    <UEmpty v-if="!ends.from || !ends.to" icon="i-lucide-route" title="Plan a route" description="Pick where it starts and ends." />
-    <UEmpty v-else-if="!route" icon="i-lucide-route-off" title="No route" description="Nothing runs between them on the date shown." />
+    <UEmpty
+      v-if="!ends.from || !ends.to"
+      icon="i-lucide-route"
+      title="Plan a route"
+      description="Pick two stations, here or on the map, for the ways between them." />
+    <UEmpty v-else-if="!found || found.shown === null" icon="i-lucide-route-off" title="No route" description="Nothing runs between them on the date shown." />
     <template v-else>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-baseline justify-between gap-3">
-          <p class="text-highlighted text-2xl leading-8 font-bold tabular-nums">{{ Math.round(route.minutes) }} min</p>
-          <p class="text-muted text-xs tabular-nums">{{ summary }}</p>
-        </div>
-        <!-- The legs side by side, each as long as it takes: a line's colour for a ride, grey for a walk. -->
-        <div class="flex h-1.5 gap-0.5" aria-hidden="true">
-          <span
-            v-for="(leg, position) in route.legs"
-            :key="position"
-            class="rounded-full"
-            :class="{ 'bg-accented': leg.kind === 'walk' }"
-            :style="{ flexGrow: leg.minutes, background: leg.kind === 'ride' ? lineColor(leg.color) : undefined }" />
-        </div>
-      </div>
+      <!-- The ways between them, fastest first: each its time and how it compares; the one drawn opens to where it changes and its steps. -->
+      <ul class="flex flex-col gap-2" role="list" aria-label="Ways between them">
+        <li
+          v-for="(route, position) in found.routes"
+          :key="position"
+          class="overflow-hidden rounded-lg border transition-colors"
+          :class="position === found.shown ? 'border-primary bg-elevated/40' : 'border-default'">
+          <button
+            type="button"
+            class="hover:bg-elevated/60 flex w-full flex-col gap-2 px-3 py-2.5 text-left transition-colors"
+            :aria-expanded="position === found.shown"
+            @click="emit('option', position)">
+            <span class="flex items-center justify-between gap-2">
+              <span class="text-highlighted text-lg leading-6 font-bold tabular-nums">{{ Math.round(route.minutes) }} min</span>
+              <span v-if="route.best.length > 0" class="flex gap-1">
+                <UBadge
+                  v-for="strength in routeStrengths(route)"
+                  :key="strength.label"
+                  :label="strength.label"
+                  :color="strength.color"
+                  variant="subtle"
+                  size="sm" />
+              </span>
+              <span v-else-if="fastest" class="text-muted text-xs tabular-nums">{{ routeDifference(route, fastest) }}</span>
+            </span>
+            <!-- Its legs side by side, each as long as it takes: a ride in its line's colour, a walk dashed. -->
+            <span class="flex h-1.5 gap-0.5" aria-hidden="true">
+              <span
+                v-for="(leg, legPosition) in route.legs"
+                :key="legPosition"
+                class="rounded-full"
+                :class="{ walk: leg.kind === 'walk' }"
+                :style="{ flexGrow: leg.minutes, background: leg.kind === 'ride' ? lineColor(leg.color) : undefined }" />
+            </span>
+            <span v-if="position === found.shown" class="text-default truncate text-xs">
+              {{ routeVia(route) }} <span class="text-dimmed tabular-nums">· {{ routeSummary(route) }}</span>
+            </span>
+          </button>
+          <!-- The way drawn opens to its steps, in the same card. -->
+          <RouteSteps v-if="position === found.shown" :route class="border-default border-t px-3 pt-3 pb-3" @station="emit('station', $event)" />
+        </li>
+      </ul>
 
-      <!-- The legs as a track: a ring where each ride is boarded, its line down to the next, a dot at the end. -->
-      <ol class="flex flex-col" role="list">
-        <li v-for="(leg, position) in route.legs" :key="position" class="relative pb-4 pl-7">
-          <template v-if="leg.kind === 'ride'">
-            <span class="absolute top-2 -bottom-2 left-[5px] w-1 rounded-full" :style="{ background: lineColor(leg.color) }" />
-            <span class="bg-default absolute top-0.5 left-0 size-3.5 rounded-full border-[3px]" :style="{ borderColor: lineColor(leg.color) }" />
-            <div class="flex items-center justify-between gap-2">
-              <UButton
-                :label="leg.stops[0]?.name"
-                color="neutral"
-                variant="link"
-                class="text-highlighted p-0 text-sm leading-5 font-semibold"
-                @click="emit('station', leg.stops[0]?.id ?? '')" />
-              <span v-if="position > 0" class="eyebrow text-muted flex-none">Change</span>
-            </div>
-            <p class="text-default mt-0.5 text-xs">
-              <span class="font-semibold">{{ leg.lineName }}</span>
-              <span class="text-muted"> to {{ leg.stops.at(-1)?.name }}</span>
-            </p>
-            <!-- The stops it passes, on request, each a dot on its line. -->
-            <UCollapsible v-if="leg.stops.length > 2" :open="unfolded.has(position)" class="mt-1" @update:open="toggle(position)">
-              <UButton
-                :label="rideText(leg)"
-                icon="i-lucide-chevron-right"
-                color="neutral"
-                variant="link"
-                size="xs"
-                class="group text-muted gap-1 p-0 tabular-nums"
-                :ui="{ leadingIcon: 'size-3.5 transition-transform duration-150 group-data-[state=open]:rotate-90' }" />
-              <template #content>
-                <ul class="mt-1" role="list">
-                  <li v-for="stop in leg.stops.slice(1, -1)" :key="stop.id" class="relative flex h-6 items-center">
-                    <span class="bg-default absolute -left-[26px] size-2.5 rounded-full border-2" :style="{ borderColor: lineColor(leg.color) }" />
-                    <UButton :label="stop.name" color="neutral" variant="link" size="xs" class="text-default p-0" @click="emit('station', stop.id)" />
-                  </li>
-                </ul>
-              </template>
-            </UCollapsible>
-            <p v-else class="text-muted mt-1 text-xs tabular-nums">{{ rideText(leg) }}</p>
-          </template>
-          <template v-else>
-            <span class="border-accented absolute top-5 -bottom-1 left-[6px] border-l-2 border-dotted" />
-            <UIcon name="i-lucide-footprints" class="text-muted absolute top-0.5 left-0 size-3.5" />
-            <p class="text-default text-xs leading-5">
-              Walk to <span class="font-semibold">{{ leg.to.name }}</span>
-              <span class="text-muted tabular-nums"> · {{ Math.round(leg.minutes) }} min</span>
-            </p>
-          </template>
-        </li>
-        <li class="relative pl-7">
-          <span class="absolute top-0.5 left-0 size-3.5 rounded-full bg-(--ui-text-highlighted)" />
-          <UButton
-            :label="route.to.name"
-            color="neutral"
-            variant="link"
-            class="text-highlighted p-0 text-sm leading-5 font-semibold"
-            @click="emit('station', route.to.id)" />
-        </li>
-      </ol>
       <p class="text-dimmed text-xs">Times are estimates from an average train speed, a few minutes for each change.</p>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { RouteInfo, RouteLegInfo, RoutePreference, Stop, StationSummary } from '@railtime/network/facts.types';
-  import { computed, ref, watch } from 'vue';
+  import type { RouteInfo, Stop, StationSummary } from '@railtime/network/facts.types';
+  import { computed } from 'vue';
+
   import { lineColor } from '~/features/explorer/format.utils';
-  import { counted } from '~/utils/format.utils';
+  import { routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
+  import type { RouteEnds } from '~/features/explorer/tools.types';
 
   const ENDS = [
     { key: 'from', label: 'from', placeholder: 'From' },
     { key: 'to', label: 'to', placeholder: 'To' },
   ] as const;
-  const PREFERENCES: { label: string; value: RoutePreference }[] = [
-    { label: 'Fastest', value: 'fastest' },
-    { label: 'Fewer changes', value: 'fewer-changes' },
-  ];
 
   const props = defineProps<{
     /** The stations on the map on the date shown, to pick from. */
     stations: StationSummary[];
     /** Where the route starts and ends, once picked. */
-    ends: { from: Stop | null; to: Stop | null };
-    preference: RoutePreference;
-    /** The route between them, if there is one. */
-    route: RouteInfo | null;
+    ends: RouteEnds;
+    /** The ways between them on the date shown, fastest first, and the one drawn; `null` while none is drawn. */
+    found: { routes: RouteInfo[]; shown: number | null } | null;
   }>();
   const emit = defineEmits<{
-    from: [stop: Stop | null];
-    to: [stop: Stop | null];
+    end: [end: keyof RouteEnds, stop: Stop | null];
     swap: [];
-    preference: [preference: RoutePreference];
+    option: [option: number];
     station: [station: string];
   }>();
 
-  /** "8 stops · 1 change · 12 km". */
-  const summary = computed(() => {
-    const route = props.route;
-    if (!route) return '';
-    const stops = route.legs.reduce((total, leg) => total + (leg.kind === 'ride' ? leg.stops.length - 1 : 0), 0);
-    const changes = route.changes === 0 ? 'no change' : counted(route.changes, 'change');
-    return `${counted(stops, 'stop')} · ${changes} · ${Math.round(route.km)} km`;
-  });
-
-  // The rides whose stops are listed; a new route starts with them folded.
-  const unfolded = ref(new Set<number>());
-  watch(
-    () => props.route,
-    () => (unfolded.value = new Set()),
-  );
-  const toggle = (position: number) => {
-    const next = new Set(unfolded.value);
-    if (next.has(position)) next.delete(position);
-    else next.add(position);
-    unfolded.value = next;
-  };
-
-  /**
-   * A ride, in a line.
-   *
-   * @param leg - The ride.
-   * @returns "2 stops · 4 min".
-   */
-  const rideText = (leg: Extract<RouteLegInfo, { kind: 'ride' }>): string => {
-    const stops = leg.stops.length - 1;
-    return `${counted(stops, 'stop')} · ${Math.round(leg.minutes)} min`;
-  };
-
-  /** Clears one end. */
-  const clear = (end: 'from' | 'to') => (end === 'from' ? emit('from', null) : emit('to', null));
+  /** The fastest way, which the others are told against. */
+  const fastest = computed(() => props.found?.routes[0] ?? null);
 
   /** Sets one end from a station picked in the search. */
-  const choose = (end: 'from' | 'to', id: string) => {
+  const choose = (end: keyof RouteEnds, id: string) => {
     const station = props.stations.find(candidate => candidate.id === id);
-    if (!station) return;
-    if (end === 'from') emit('from', { id, name: station.name });
-    else emit('to', { id, name: station.name });
+    if (station) emit('end', end, { id, name: station.name });
   };
 </script>
+
+<style scoped>
+  /* A walk between lines: dashed, as the steps draw it, not a gap. */
+  .walk {
+    background: repeating-linear-gradient(90deg, var(--ui-border-accented) 0 3px, transparent 3px 6px);
+  }
+</style>

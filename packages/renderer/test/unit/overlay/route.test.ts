@@ -70,7 +70,7 @@ describe('RouteLayerUtils', () => {
   const routeAtoD = () => {
     const playback = playbackOf(tinyNetwork());
     playback.player.seek(playback.facts.playheads.on(toTimestamp('1935-01-01')));
-    return { index: playback.index, route: networkNow(playback).route('a', 'd', 'fastest')! };
+    return { index: playback.index, route: networkNow(playback).routes('a', 'd')[0]! };
   };
 
   describe('routeTrack', () => {
@@ -135,6 +135,7 @@ const routeOf = (legs: RouteLegInfo[], to: string): RouteInfo => ({
   km: 0,
   changes: legs.length - 1,
   segments: [],
+  best: [],
 });
 
 describe('RouteStopsUtils', () => {

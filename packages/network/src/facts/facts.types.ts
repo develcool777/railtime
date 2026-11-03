@@ -112,8 +112,8 @@ export type LineDetails = LineInfo & {
   changes: number[];
 };
 
-/** What a route is best at: arriving soonest, or changing least, if it takes a little longer. */
-export type RoutePreference = 'fastest' | 'fewer-changes';
+/** What a route is best at among the ways offered: arriving soonest, or changing least. */
+export type RouteStrength = 'fastest' | 'fewest-changes';
 
 /** One part of a route: a ride on a line from where it is boarded to where it is left, or a walk between two stations. */
 export type RouteLegInfo =
@@ -142,6 +142,8 @@ export type RouteInfo = {
   changes: number;
   /** The track it rides, by segment: what a route overlay draws. */
   segments: number[][];
+  /** What it is best at among the ways offered: none for a way that is neither, but another. */
+  best: RouteStrength[];
 };
 
 /** A band of a reach: the stations reached within its minutes, in its colour. */
@@ -338,8 +340,8 @@ export type FactsAt = {
   line: (id: string) => LineDetails;
   /** The stations open longest, those most lines call at, and the longest lines: so many of each. */
   records: (count: number) => NetworkRecords;
-  /** The best route between two stations; `null` if there is none at this moment. */
-  route: (from: string, to: string, preference: RoutePreference) => RouteInfo | null;
+  /** The ways between two stations, up to three, fastest first; none if there is none at this moment. */
+  routes: (from: string, to: string) => RouteInfo[];
   /** How long it takes from a station to every other; `null` if no line calls there at this moment. */
   reach: (from: string) => ReachInfo | null;
   /** How many stations, km of track and lines are open. */

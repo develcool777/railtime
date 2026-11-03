@@ -31,7 +31,7 @@ import type {
   PlanInfo,
   ReachInfo,
   RouteInfo,
-  RoutePreference,
+  RouteStrength,
   StationInfo,
   StationSummary,
   TransferInfo,
@@ -261,7 +261,7 @@ export class NetworkFacts {
       station: id => this.stationAt(id, moment),
       line: id => this.lineAt(id, moment),
       records: count => this.recordsAt(count, moment),
-      route: (from, to, preference) => this.routeAt(from, to, preference, moment),
+      routes: (from, to) => this.routesAt(from, to, moment),
       reach: from => this.reachAt(from, moment),
       stats: () => statsAt(this.index, this.timeline, moment.cursor),
       directions: station =>
@@ -308,20 +308,20 @@ export class NetworkFacts {
   }
 
   /**
-   * The best route between two stations at a moment: the lines to ride, where to change, and about
-   * how long it takes.
+   * The ways between two stations at a moment, fastest first: for each, the lines to ride, where to
+   * change, about how long it takes, and what it is best at. The way that changes least is said to
+   * where it changes less than the fastest.
    *
    * @param from - The station to start at.
    * @param to - The station to get to.
-   * @param preference - Fastest, or fewer changes.
    * @param moment - The moment.
-   * @returns The route, or `null` if the network then has none.
+   * @returns The routes; none if the network then has none.
    */
-  private routeAt(from: string, to: string, preference: RoutePreference, moment: Playhead): RouteInfo | null {
-    const route = this.routes.find(from, to, moment.cursor, preference);
-    if (!route) return null;
+  private routesAt(from: string, to: string, moment: Playhead): RouteInfo[] {
+    const options = this.routes.options(from, to, moment.cursor);
+    const fewest = Math.min(...options.map(route => route.changes));
     const stop = (station: string) => ({ id: station, name: this.index.stationName(station, moment.time) });
-    return {
+    return options.map((route, position) => ({
       from: stop(from),
       to: stop(to),
       legs: route.legs.map(leg =>
@@ -341,7 +341,11 @@ export class NetworkFacts {
       km: route.km,
       changes: route.changes,
       segments: route.legs.map(leg => (leg.kind === 'ride' ? leg.segments : [])),
-    };
+      best: [
+        ...(position === 0 ? (['fastest'] as const) : []),
+        ...(route.changes === fewest && fewest < (options[0]?.changes ?? 0) ? (['fewest-changes'] as const) : []),
+      ] satisfies RouteStrength[],
+    }));
   }
 
   /**

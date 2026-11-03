@@ -42,8 +42,8 @@ export type ExplorerPanel = {
   panelTop: ComputedRef<PanelTopContent>;
   /** The date shown, for what had opened by then; `null` in a plan. */
   shownDate: ComputedRef<number | null>;
-  /** The route between the two stations picked, on the date shown; `null` until both are picked, while it is not drawn, or with none. */
-  foundRoute: ComputedRef<RouteInfo | null>;
+  /** The ways between the two stations picked on the date shown, fastest first, and the one drawn; `null` until both are picked, or while it is not drawn. */
+  foundRoutes: ComputedRef<{ routes: RouteInfo[]; shown: number | null } | null>;
   /** Every station reached from the one picked, on the date shown; `null` until one is picked, while it is not drawn, or when no line calls there. */
   foundReach: ComputedRef<ReachInfo | null>;
   /** The network year by year, and the stations each decade opened. */

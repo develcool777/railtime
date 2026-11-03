@@ -17,7 +17,7 @@ const map = new TransitMap({
   on: { time: state => …, step: change => …, stationClick: id => …, overlay: result => … },
   minimapContainer,
 });
-map.update({ viewMode: '3d', overlay: { kind: 'route', from: 'bank', to: 'oval', preference: 'fastest' } });
+map.update({ viewMode: '3d', overlay: { kind: 'route', from: 'bank', to: 'oval', option: 0 } });
 map.update({ facts: NetworkFacts.create(network, { plan: 'another' }) }); // drawn on the same map, at its today
 map.seek(facts.playheads.on(Date.UTC(1950, 0, 1))); // any Playhead: .after(cursor, progress), .before(cursor), .today(), .end(), a TimeState
 map.play(); // on from here; at the end, again from history's first date (a plan's: today); or play(playhead)

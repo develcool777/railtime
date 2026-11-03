@@ -55,10 +55,10 @@ describe('ReconcilerUtils', () => {
       expect(stateChanges(PROPS, { ...PROPS })).toEqual({});
       const current = {
         ...PROPS,
-        overlay: { kind: 'route' as const, from: 'a', to: 'b', preference: 'fastest' as const },
+        overlay: { kind: 'route' as const, from: 'a', to: 'b', option: 0 },
         focusedLines: ['a', 'b'],
       };
-      expect(stateChanges(current, { overlay: { preference: 'fastest', to: 'b', from: 'a', kind: 'route' }, focusedLines: ['a', 'b'] })).toEqual({});
+      expect(stateChanges(current, { overlay: { option: 0, to: 'b', from: 'a', kind: 'route' }, focusedLines: ['a', 'b'] })).toEqual({});
     });
 
     test('gives only the parts that differ', () => {

@@ -96,9 +96,11 @@ landing page's pictures in Chrome).
   is in the store. A composable earns a file of its own by holding effects (a fetch, a listener, the
   map); what the panel shows, computed over the store, is `panel/panel.composable.ts`.
   Something one surface uses goes in its feature; it moves to the top when a second needs it.
-  The explorer's state (what is open, how it is set) is one Pinia store, `explorer.store.ts`: every
-  button calls its actions, and its rules are pure functions in `explorer.utils.ts`; its `mapProps` is
-  everything the map shows, and `map/transitMap.composable.ts` is the only code that touches the map.
+  The explorer's state (what is open, how it is set) is a Pinia store, `explorer.store.ts`, and the
+  map's tools (a route, a reach, coverage) one of their own, `tools.store.ts`, which it reads: every
+  button calls their actions, and their rules are pure functions in `explorer.utils.ts` and
+  `tools.utils.ts`; `mapProps` is everything the map shows, and `map/transitMap.composable.ts` is the
+  only code that touches the map.
   What is looked at and how it is set goes in the address; dark or light, the one preference, in the browser (`features/explorer/_README.md`).
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,

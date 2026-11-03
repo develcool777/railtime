@@ -3,6 +3,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, watch } from 'vue';
 
 import { useExplorerStore } from '~/features/explorer/explorer.store';
+import { useToolsStore } from '~/features/explorer/tools.store';
 import type { TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
 
 /**
@@ -15,6 +16,7 @@ import type { TransitMapMount } from '~/features/explorer/map/transitMap.composa
  */
 export const useTransitMap = (mount: TransitMapMount): void => {
   const store = useExplorerStore();
+  const tools = useToolsStore();
   let map: TransitMap | null = null;
 
   onMounted(() => {
@@ -31,9 +33,9 @@ export const useTransitMap = (mount: TransitMapMount): void => {
       on: {
         time: time => store.timeChanged(time),
         step: step => (store.step = step),
-        overlay: result => (store.overlayResult = result),
+        overlay: result => (tools.overlayResult = result),
         view: view => (store.view = view),
-        stationClick: id => (id ? store.pickStation(id) : store.closeStation()),
+        stationClick: id => store.clickStation(id),
         // The station open left the map on another date: its view closes.
         selectionGone: () => store.closeStation(),
         end: () => store.playbackEnded(),

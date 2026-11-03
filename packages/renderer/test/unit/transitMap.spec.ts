@@ -225,13 +225,24 @@ describe('TransitMap', () => {
   });
 
   test('works the overlay out again as the date moves on, and reports it', () => {
-    const { map, frame, ready, named, playheads } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', preference: 'fastest' } });
+    const { map, frame, ready, named, playheads } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', option: 0 } });
     ready();
     map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
-    const results = named('overlay') as { kind: string; route: unknown }[];
-    expect(results.at(0)?.route).not.toBeNull();
-    expect(results.at(-1)).toEqual({ kind: 'route', route: null });
+    const results = named('overlay') as { kind: string; routes: unknown[]; shown: number | null }[];
+    expect(results.at(0)).toMatchObject({ kind: 'route', shown: 0 });
+    expect(results.at(0)?.routes.length).toBeGreaterThan(0);
+    expect(results.at(-1)).toEqual({ kind: 'route', routes: [], shown: null });
+  });
+
+  test('draws the way between two stations asked for, or the last there is on the date, and says which', () => {
+    const { frame, ready, named, fake, facts } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', option: 9 } });
+    ready();
+    frame();
+    const ways = facts.asOf(facts.playheads.today()).routes('a', 'c');
+    expect(ways.length).toBeGreaterThan(0);
+    expect(named('overlay').at(-1)).toEqual({ kind: 'route', routes: ways, shown: ways.length - 1 });
+    expect(fake.featuresIn(SOURCES.route).length).toBeGreaterThan(0);
   });
 
   test('holds a step as its camera arrives until the map there is drawn, but never longer than it may', () => {

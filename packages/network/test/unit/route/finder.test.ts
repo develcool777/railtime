@@ -8,18 +8,26 @@ import { routeNetwork } from '../../support/factories/routeNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
 /**
- * The route between two stations, today.
+ * The ways between two stations, today, fastest first.
  *
  * @param from - Where it starts.
  * @param to - Where it ends.
- * @param preference - Fastest, or fewer changes.
- * @returns The route.
+ * @returns The routes.
  */
-const routeOf = (from: string, to: string, preference: 'fastest' | 'fewer-changes' = 'fastest'): Route | null => {
+const optionsOf = (from: string, to: string): Route[] => {
   const index = new NetworkIndex(routeNetwork());
   const timeline = new Timeline(index);
-  return new RouteFinder(index, timeline).find(from, to, timeline.steps.length, preference);
+  return new RouteFinder(index, timeline).options(from, to, timeline.steps.length);
 };
+
+/**
+ * The fastest route between two stations, today.
+ *
+ * @param from - Where it starts.
+ * @param to - Where it ends.
+ * @returns The route, or `null`.
+ */
+const routeOf = (from: string, to: string): Route | null => optionsOf(from, to)[0] ?? null;
 
 /** Each leg, as its line or `walk`. */
 const legsOf = (route: Route | null) => route?.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk'));
@@ -28,7 +36,7 @@ const legsOf = (route: Route | null) => route?.legs.map(leg => (leg.kind === 'ri
 const ride = (km: number) => (km / RIDE_KMH) * 60;
 
 describe('RouteFinder', () => {
-  describe('find', () => {
+  describe('options', () => {
     test('rides one line from stop to stop, its time from the track', () => {
       const route = routeOf('a', 'd');
       expect(route?.legs).toMatchObject([{ kind: 'ride', line: 'red', stops: ['a', 'b', 'c', 'd'] }]);
@@ -51,8 +59,20 @@ describe('RouteFinder', () => {
       expect(route?.changes).toBe(0);
     });
 
-    test('takes the long way with no change, when changes should be few', () => {
-      expect(legsOf(routeOf('a', 'e', 'fewer-changes'))).toEqual(['yellow']);
+    test('offers the fastest, the way that changes least, and the fastest round a line the others ride: fastest first', () => {
+      const options = optionsOf('a', 'e');
+      expect(options.map(legsOf)).toEqual([['red', 'blue'], ['red', 'walk', 'green'], ['yellow']]);
+      expect(options.map(route => route.minutes)).toEqual([...options.map(route => route.minutes)].sort((first, second) => first - second));
+    });
+
+    test('offers no way off a line and back on it: a detour, not a way', () => {
+      // Grey then pink then grey again is quick enough to be offered, but rides grey twice.
+      expect(optionsOf('p', 's').map(legsOf)).toEqual([['grey']]);
+    });
+
+    test('offers a way once, however many searches find it, and none much slower than the fastest', () => {
+      // Round red there is only yellow, blue and red again: far slower, and red besides.
+      expect(optionsOf('a', 'd').map(legsOf)).toEqual([['red']]);
     });
 
     test('rides past a station its line does not call at, and finds nothing where nothing runs', () => {
@@ -60,10 +80,10 @@ describe('RouteFinder', () => {
       const index = new NetworkIndex(tinyNetwork());
       const timeline = new Timeline(index);
       const finder = new RouteFinder(index, timeline);
-      expect(finder.find('b', 'd', timeline.cursorAt(Date.UTC(1915, 6, 1)))?.legs).toMatchObject([{ stops: ['b', 'd'] }]);
-      expect(finder.find('b', 'c', timeline.cursorAt(Date.UTC(1915, 6, 1)))).toBeNull();
-      expect(finder.find('a', 'c', timeline.cursorAt(Date.UTC(1905, 0, 1)))).toBeNull();
-      expect(routeOf('a', 'a')).toBeNull();
+      expect(finder.options('b', 'd', timeline.cursorAt(Date.UTC(1915, 6, 1)))[0]?.legs).toMatchObject([{ stops: ['b', 'd'] }]);
+      expect(finder.options('b', 'c', timeline.cursorAt(Date.UTC(1915, 6, 1)))).toEqual([]);
+      expect(finder.options('a', 'c', timeline.cursorAt(Date.UTC(1905, 0, 1)))).toEqual([]);
+      expect(optionsOf('a', 'a')).toEqual([]);
     });
   });
 
@@ -76,7 +96,7 @@ describe('RouteFinder', () => {
       expect(reach.get('a')).toBe(0);
       expect(reach.get('d')).toBeCloseTo(ride(3), 0);
       for (const station of ['b', 'c', 'd', 'e', 'g', 'h']) {
-        expect(reach.get(station)).toBeCloseTo(finder.find('a', station, timeline.steps.length)?.minutes ?? Number.NaN, 5);
+        expect(reach.get(station)).toBeCloseTo(finder.options('a', station, timeline.steps.length)[0]?.minutes ?? Number.NaN, 5);
       }
       const times = [...reach.values()];
       expect(times).toEqual([...times].sort((first, second) => first - second));

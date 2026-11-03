@@ -31,13 +31,16 @@ const segment = (stationA: string, stationB: string, line: string, through: [num
  * - `red` runs A–B–C–D east; `blue` runs C–E north; `green` runs G–E east, a km north of B
  * - B and G are linked by a transfer: a walk
  * - `yellow` runs A–H–E, the long way round, with no change
+ * - apart from them, `grey` runs P–Q–R–S east, and `pink` Q–R a little north of it: off grey and back on
  *
  * @returns The network.
  */
 export const routeNetwork = (): Network => ({
   meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
   networks: { metro: { name: 'Metro' } },
-  lines: Object.fromEntries(['red', 'blue', 'green', 'yellow'].map(line => [line, { name: line, network: 'metro', mode: 'metro' as const, color: '#000000' }])),
+  lines: Object.fromEntries(
+    ['red', 'blue', 'green', 'yellow', 'grey', 'pink'].map(line => [line, { name: line, network: 'metro', mode: 'metro' as const, color: '#000000' }]),
+  ),
   stations: {
     a: { name: 'A', coordinate: pointAt(0, 0) },
     b: { name: 'B', coordinate: pointAt(1, 0) },
@@ -46,6 +49,10 @@ export const routeNetwork = (): Network => ({
     e: { name: 'E', coordinate: pointAt(2, 1) },
     g: { name: 'G', coordinate: pointAt(1, 1) },
     h: { name: 'H', coordinate: pointAt(0, 3) },
+    p: { name: 'P', coordinate: pointAt(10, 0) },
+    q: { name: 'Q', coordinate: pointAt(11, 0) },
+    r: { name: 'R', coordinate: pointAt(12, 0) },
+    s: { name: 'S', coordinate: pointAt(13, 0) },
   },
   segments: [
     segment('a', 'b', 'red', [
@@ -75,6 +82,23 @@ export const routeNetwork = (): Network => ({
     segment('h', 'e', 'yellow', [
       [0, 3],
       [2, 1],
+    ]),
+    segment('p', 'q', 'grey', [
+      [10, 0],
+      [11, 0],
+    ]),
+    segment('q', 'r', 'grey', [
+      [11, 0],
+      [12, 0],
+    ]),
+    segment('r', 's', 'grey', [
+      [12, 0],
+      [13, 0],
+    ]),
+    segment('q', 'r', 'pink', [
+      [11, 0],
+      [11.5, 0.3],
+      [12, 0],
     ]),
   ],
   transfers: [{ stationA: 'b', stationB: 'g' }],

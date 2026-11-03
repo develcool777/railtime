@@ -1,4 +1,3 @@
-import type { Stop } from '@railtime/network/facts.types';
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
 
 /** One of the panel's sections, as the rail lists them. */
@@ -15,12 +14,6 @@ export type TimeMode = 'timeline' | 'playing';
 
 /** A view pushed over the panel's section: a line's, or a station's. Back pops the last one. */
 export type PanelView = { kind: 'line'; id: string } | { kind: 'station'; id: string };
-
-/** What the map draws over the network for the panel's section: a route, a reach, or the city's coverage. */
-export type MapOverlay = 'route' | 'reach' | 'coverage';
-
-/** A route's ends, once picked. */
-export type RouteEnds = { from: Stop | null; to: Stop | null };
 
 /** A dialog over the whole page, one at a time: the search, the help, or the city picker. */
 export type Dialog = 'search' | 'help' | 'cities';

@@ -1,8 +1,17 @@
 import type { NetworkIndex } from '../engine/index.service';
-import type { RoutePreference } from '../facts/facts.types';
-import type { Edge, Move, Place, RideLeg, Route, RouteLeg } from './finder.types';
+import type { Edge, Move, Place, RideLeg, Route, RouteLeg, SearchTerms } from './finder.types';
 import type { Timeline } from '../engine/timeline.service';
-import { CHANGE_MINUTES, FEWER_CHANGES_PENALTY, RIDE_KMH, WALK_MINUTES } from './finder.constants.ts';
+import {
+  ALTERNATIVE_EXTRA_MINUTES,
+  ALTERNATIVE_SEARCHES,
+  ALTERNATIVE_SLOWER,
+  CHANGE_MINUTES,
+  FEWER_CHANGES_PENALTY,
+  RIDE_KMH,
+  SEGMENT_PENALTY_FACTOR,
+  ROUTE_OPTIONS,
+  WALK_MINUTES,
+} from './finder.constants.ts';
 
 /**
  * A binary min-heap: items come out cheapest first. What Dijkstra's search takes its next place
@@ -78,21 +87,18 @@ export class PriorityQueue<Item> {
 }
 
 /**
- * Finds the best way from one station to another on the network of a date, with Dijkstra's
- * shortest path. Its graph's nodes are places, each a station on a line: riding a segment costs the
- * minutes the track takes, changing line at a station or walking a transfer a few more and, when
- * changes should be few, more still. A line passes a station it does not call at, but no one gets on
- * or off there. Each search is for one date (`cursor`); the finder keeps nothing between them.
+ * Finds the ways from one station to another on the network of a date, with Dijkstra's shortest
+ * path. Its graph's nodes are places, each a station on a line: riding a segment costs the minutes the
+ * track takes, changing line at a station or walking a transfer a few more. A line passes a station it
+ * does not call at, but no one gets on or off there. The options are the fastest route, the one that
+ * changes least, and others found as a journey planner finds them, by the penalty method: each search
+ * again costs the track the ways found ride a little more, until another way is the cheapest. Each search is told what it is of (`SearchTerms`); the finder keeps nothing between them.
  */
 export class RouteFinder {
   /** The network. */
   private readonly index: NetworkIndex;
   /** When each line opened, closed and called where. */
   private readonly timeline: Timeline;
-  /** The network as it was at this cursor, for the search under way. */
-  private cursor = 0;
-  /** Minutes a change counts for on top, for the search under way. */
-  private penalty = 0;
 
   public constructor(index: NetworkIndex, timeline: Timeline) {
     this.index = index;
@@ -100,21 +106,37 @@ export class RouteFinder {
   }
 
   /**
-   * The best route between two stations.
+   * The ways between two stations, up to `ROUTE_OPTIONS`, fastest first: the fastest route; the one
+   * that changes least, if another; then, up to `ALTERNATIVE_SEARCHES` times, the cheapest with the
+   * track the ways found ride costing `SEGMENT_PENALTY_FACTOR` times more for each, kept while it
+   * rides other lines than every way found, no line twice (off a line and back on it is a detour, not
+   * a way), and is not much slower than the fastest (`ALTERNATIVE_SLOWER`, `ALTERNATIVE_EXTRA_MINUTES`).
    *
    * @param from - The station to start at.
    * @param to - The station to get to.
    * @param cursor - The cursor: the network as it was then.
-   * @param preference - Fastest, or fewer changes.
-   * @returns The route, or `null` if there is none (or the two are the same station).
+   * @returns The routes, fastest first; none if there is no way (or the two are the same station).
    */
-  public find(from: string, to: string, cursor: number, preference: RoutePreference = 'fastest'): Route | null {
-    if (from === to) return null;
-    this.cursor = cursor;
-    this.penalty = preference === 'fewer-changes' ? FEWER_CHANGES_PENALTY : 0;
-    const reached = this.search(from, to);
-    if (!reached) return null;
-    return this.routeOf(reached.place, reached.arrivals);
+  public options(from: string, to: string, cursor: number): Route[] {
+    if (from === to) return [];
+    const fastest = this.best(from, to, { cursor, penalty: 0, weights: new Map() });
+    if (!fastest) return [];
+    const found = [fastest];
+    const keep = (route: Route | null, slowest: number) => {
+      if (!route || route.minutes > slowest || found.some(other => ridesAlike(other, route))) return;
+      const lines = linesRidden(route);
+      if (new Set(lines).size === lines.length) found.push(route);
+    };
+    // The penalty already holds it to a change saved for so many minutes more.
+    keep(this.best(from, to, { cursor, penalty: FEWER_CHANGES_PENALTY, weights: new Map() }), Infinity);
+    const slowest = fastest.minutes * ALTERNATIVE_SLOWER + ALTERNATIVE_EXTRA_MINUTES;
+    const weights = new Map<number, number>();
+    for (let search = 0; search < ALTERNATIVE_SEARCHES && found.length < ROUTE_OPTIONS; search++) {
+      for (const segment of found.flatMap(route => route.legs.flatMap(leg => (leg.kind === 'ride' ? leg.segments : []))))
+        weights.set(segment, (weights.get(segment) ?? 1) * SEGMENT_PENALTY_FACTOR);
+      keep(this.best(from, to, { cursor, penalty: 0, weights }), slowest);
+    }
+    return found.sort((first, second) => first.minutes - second.minutes);
   }
 
   /**
@@ -126,12 +148,11 @@ export class RouteFinder {
    * @returns Minutes to each station reached, by id, the start's 0; none if no line calls at the start.
    */
   public reach(from: string, cursor: number): Map<string, number> {
-    this.cursor = cursor;
-    this.penalty = 0;
+    const terms: SearchTerms = { cursor, penalty: 0, weights: new Map() };
     const minutes = new Map<string, number>();
     const best = new Map<Place, number>();
     const queue = new PriorityQueue<Place>();
-    for (const line of this.linesCallingAt(from)) {
+    for (const line of this.linesCallingAt(from, cursor)) {
       best.set(this.placeOf(from, line), 0);
       queue.push(this.placeOf(from, line), 0);
     }
@@ -140,8 +161,8 @@ export class RouteFinder {
       if (cost > (best.get(place) ?? Infinity)) continue;
       const { station, line } = this.partsOf(place);
       // Places come off the queue soonest first: the first a line calls at is the station's time.
-      if (!minutes.has(station) && this.timeline.servesStation(station, line, this.cursor)) minutes.set(station, cost);
-      for (const edge of this.edgesFrom(place)) {
+      if (!minutes.has(station) && this.timeline.servesStation(station, line, cursor)) minutes.set(station, cost);
+      for (const edge of this.edgesFrom(place, terms)) {
         const total = cost + edge.minutes;
         if (total >= (best.get(edge.to) ?? Infinity)) continue;
         best.set(edge.to, total);
@@ -152,17 +173,31 @@ export class RouteFinder {
   }
 
   /**
+   * The best route between two stations, as a search costs it.
+   *
+   * @param from - The station to start at.
+   * @param to - The station to get to.
+   * @param terms - The date, and what a change and each line cost.
+   * @returns The route, or `null` if there is none.
+   */
+  private best(from: string, to: string, terms: SearchTerms): Route | null {
+    const reached = this.search(from, to, terms);
+    return reached && this.routeOf(reached.place, reached.arrivals, terms.cursor);
+  }
+
+  /**
    * Dijkstra's search, from every line calling at the start until a line calling at the end.
    *
    * @param from - The station to start at.
    * @param to - The station to get to.
+   * @param terms - The date, and what a change and each line cost.
    * @returns The place it ended at, and how each place on the way was reached; `null` if it was not.
    */
-  private search(from: string, to: string): { place: Place; arrivals: Map<Place, { from: Place; move: Move }> } | null {
+  private search(from: string, to: string, terms: SearchTerms): { place: Place; arrivals: Map<Place, { from: Place; move: Move }> } | null {
     const best = new Map<Place, number>();
     const arrivals = new Map<Place, { from: Place; move: Move }>();
     const queue = new PriorityQueue<Place>();
-    for (const line of this.linesCallingAt(from)) {
+    for (const line of this.linesCallingAt(from, terms.cursor)) {
       best.set(this.placeOf(from, line), 0);
       queue.push(this.placeOf(from, line), 0);
     }
@@ -171,8 +206,8 @@ export class RouteFinder {
       // An entry left behind by a cheaper way found later.
       if (cost > (best.get(place) ?? Infinity)) continue;
       const { station, line } = this.partsOf(place);
-      if (station === to && this.timeline.servesStation(station, line, this.cursor)) return { place, arrivals };
-      for (const edge of this.edgesFrom(place)) {
+      if (station === to && this.timeline.servesStation(station, line, terms.cursor)) return { place, arrivals };
+      for (const edge of this.edgesFrom(place, terms)) {
         const total = cost + edge.minutes;
         if (total >= (best.get(edge.to) ?? Infinity)) continue;
         best.set(edge.to, total);
@@ -188,28 +223,30 @@ export class RouteFinder {
    * a station a transfer links. Only a station the line calls at lets one off.
    *
    * @param place - The place.
+   * @param terms - The date, and what a change and each line cost.
    * @returns The edges out of it.
    */
-  private edgesFrom(place: Place): Edge[] {
+  private edgesFrom(place: Place, terms: SearchTerms): Edge[] {
+    const { cursor, penalty, weights } = terms;
     const { station, line } = this.partsOf(place);
     const edges: Edge[] = [];
     for (const lineSegment of this.index.lineSegmentsAt(station)) {
-      if (lineSegment.line !== line || !this.timeline.isOpen(lineSegment, this.cursor)) continue;
+      if (lineSegment.line !== line || !this.timeline.isOpen(lineSegment, cursor)) continue;
       const { segment } = lineSegment;
       const next = segment.stationA === station ? segment.stationB : segment.stationA;
       edges.push({
         to: this.placeOf(next, line),
-        minutes: this.rideMinutes(segment.lengthKm),
+        minutes: this.rideMinutes(segment.lengthKm) * (weights.get(segment.index) ?? 1),
         move: { kind: 'ride', segment: segment.index, km: segment.lengthKm },
       });
     }
-    if (!this.timeline.servesStation(station, line, this.cursor)) return edges;
-    for (const other of this.linesCallingAt(station)) {
-      if (other !== line) edges.push({ to: this.placeOf(station, other), minutes: CHANGE_MINUTES + this.penalty, move: { kind: 'change' } });
+    if (!this.timeline.servesStation(station, line, cursor)) return edges;
+    for (const other of this.linesCallingAt(station, cursor)) {
+      if (other !== line) edges.push({ to: this.placeOf(station, other), minutes: CHANGE_MINUTES + penalty, move: { kind: 'change' } });
     }
     for (const linked of this.index.transfersAt(station)) {
-      for (const other of this.linesCallingAt(linked))
-        edges.push({ to: this.placeOf(linked, other), minutes: WALK_MINUTES + this.penalty, move: { kind: 'walk' } });
+      for (const other of this.linesCallingAt(linked, cursor))
+        edges.push({ to: this.placeOf(linked, other), minutes: WALK_MINUTES + penalty, move: { kind: 'walk' } });
     }
     return edges;
   }
@@ -219,14 +256,15 @@ export class RouteFinder {
    *
    * @param end - The place it ended at.
    * @param arrivals - How each place on the way was reached.
+   * @param cursor - The date searched: which stations its lines call at.
    * @returns The route.
    */
-  private routeOf(end: Place, arrivals: Map<Place, { from: Place; move: Move }>): Route {
+  private routeOf(end: Place, arrivals: Map<Place, { from: Place; move: Move }>, cursor: number): Route {
     const path: { place: Place; move: Move | null }[] = [];
     for (let place: Place | undefined = end; place !== undefined; place = arrivals.get(place)?.from) {
       path.unshift({ place, move: arrivals.get(place)?.move ?? null });
     }
-    const legs = this.legsOf(path);
+    const legs = this.legsOf(path, cursor);
     const rides = legs.filter((leg): leg is RideLeg => leg.kind === 'ride');
     // A change at one station is between two rides; a walk counts its own minutes.
     const changesInPlace = legs.filter((leg, position) => leg.kind === 'ride' && legs[position - 1]?.kind === 'ride').length;
@@ -243,9 +281,10 @@ export class RouteFinder {
    * Puts the places a route goes through into legs.
    *
    * @param path - The places from start to end, each with how it was reached (none for the first).
+   * @param cursor - The date searched: which stations its lines call at.
    * @returns The legs.
    */
-  private legsOf(path: { place: Place; move: Move | null }[]): RouteLeg[] {
+  private legsOf(path: { place: Place; move: Move | null }[], cursor: number): RouteLeg[] {
     const legs: RouteLeg[] = [];
     let ride: RideLeg | null = null;
     for (const { place, move } of path) {
@@ -254,7 +293,7 @@ export class RouteFinder {
         ride.segments.push(move.segment);
         ride.km += move.km;
         ride.minutes += this.rideMinutes(move.km);
-        if (this.timeline.servesStation(station, line, this.cursor)) ride.stops.push(station);
+        if (this.timeline.servesStation(station, line, cursor)) ride.stops.push(station);
         continue;
       }
       if (ride) legs.push(ride);
@@ -270,12 +309,13 @@ export class RouteFinder {
    * The lines that call at a station on the date.
    *
    * @param station - The station.
+   * @param cursor - The date.
    * @returns Their ids.
    */
-  private linesCallingAt(station: string): string[] {
+  private linesCallingAt(station: string, cursor: number): string[] {
     const calling = this.index
       .lineSegmentsAt(station)
-      .filter(lineSegment => this.timeline.isOpen(lineSegment, this.cursor) && this.timeline.servesStation(station, lineSegment.line, this.cursor));
+      .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(station, lineSegment.line, cursor));
     return [...new Set(calling.map(lineSegment => lineSegment.line))];
   }
 
@@ -311,3 +351,21 @@ export class RouteFinder {
     return { station: place.slice(0, split), line: place.slice(split + 1) };
   }
 }
+
+/**
+ * The lines a route rides, in order.
+ *
+ * @param route - The route.
+ * @returns Their ids.
+ */
+const linesRidden = (route: Route): string[] => route.legs.flatMap(leg => (leg.kind === 'ride' ? [leg.line] : []));
+
+/**
+ * Whether two routes ride the same lines in the same order, walks aside: the same way, whatever station
+ * they change at.
+ *
+ * @param first - One route.
+ * @param second - The other.
+ * @returns True if they do.
+ */
+const ridesAlike = (first: Route, second: Route): boolean => linesRidden(first).join('|') === linesRidden(second).join('|');

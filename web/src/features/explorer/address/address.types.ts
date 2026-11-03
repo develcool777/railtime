@@ -24,6 +24,10 @@ export type ExplorerUrlState = {
   section?: Section;
   /** How far from a station coverage counts; the default distance without one. */
   walk?: CoverageDistance;
+  /** A route: the stations it starts and ends at, by id, either until both are picked; and the way between them drawn, fastest first, the fastest without one. */
+  route?: RouteLink;
+  /** The station a reach starts at. */
+  reach?: string;
   /** The line whose view is open, or under the station's; none without one. */
   line?: string;
   /** In 3D; flat without one. */
@@ -43,6 +47,9 @@ export type ExplorerUrlState = {
   /** The minimap hidden while playing; shown without one. */
   minimap?: false;
 };
+
+/** A route as an address holds it, `route=bank,oval,1`: its ends, and the way between them drawn after the fastest. */
+export type RouteLink = { from?: string; to?: string; option?: number };
 
 /** An address's query, as the router gives it and takes it. */
 export type ExplorerQuery = Record<string, string | null | (string | null)[] | undefined>;
