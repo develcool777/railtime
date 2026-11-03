@@ -81,3 +81,13 @@ export const stationPickOf = (input: PickInput, stop: Stop): StationPick => {
   if (other?.id === stop.id) return { kind: 'route', ends: routeEnds };
   return { kind: 'route', ends: { ...routeEnds, [routeAim]: stop } };
 };
+
+/**
+ * What a station clicked on the map does, said under the field it fills.
+ *
+ * @param end - The end it fills: a route's or a reach's start, or a route's end.
+ * @param picked - It is picked already.
+ * @returns The hint.
+ */
+export const mapPickHint = (end: 'start' | 'end', picked: boolean): string =>
+  picked ? `Click the map to change the ${end}.` : `Click the map for the ${end}.`;
