@@ -101,7 +101,7 @@ describe('CoverageGrid', () => {
   test('leaves out a hole, and what lies between two polygons', () => {
     const holed = new CoverageGrid(cityOf([square(2), square(1, 0.5, 0.5)]));
     expect(holed.km2).toBeCloseTo(3, 1);
-    const apart = new CoverageGrid(cityOf([square(1)], [square(1, 2, 0)]));
+    const apart = new CoverageGrid(cityOf([square(1)], [square(1, 2)]));
     expect(apart.km2).toBeCloseTo(2, 1);
     // The middle km between them is no one's.
     const middle = Math.floor(apart.rows / 2) * apart.columns + Math.floor(apart.columns / 2);
@@ -116,7 +116,7 @@ describe('CoverageGrid', () => {
   });
 
   test("measures each cell's distance to the nearest point, up to a reach, inside the city only", () => {
-    const grid = new CoverageGrid(cityOf([square(2), square(0.4, 0, 0)]));
+    const grid = new CoverageGrid(cityOf([square(2), square(0.4)]));
     // A station at the middle, another at the south-west corner, inside the hole.
     const distances = grid.distances([placeAt(1, 1), placeAt(0, 0)], 500);
     const distanceAt = (east: number, north: number) => distances[Math.floor((2 - north) / 0.1) * grid.columns + Math.floor(east / 0.1)];

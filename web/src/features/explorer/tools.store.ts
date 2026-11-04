@@ -8,7 +8,7 @@ import { STORE_IDS } from '~/constants/store.constants';
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import type { BoundaryState, RouteEnds } from '~/features/explorer/tools.types';
-import { foundCoverageOf, foundReachOf, foundRoutesOf, routeAimOf } from '~/features/explorer/tools.utils';
+import { fetchBoundary, foundCoverageOf, foundReachOf, foundRoutesOf, routeAimOf } from '~/features/explorer/tools.utils';
 
 /**
  * The map's tools, and what changes them: a route's ends and the way between them drawn, a reach's
@@ -32,6 +32,8 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
   const boundary = shallowRef<CityBoundary | null>(null);
   /** Where the outline is: not asked for yet, coming, here, or there is none. */
   const boundaryState = ref<BoundaryState>('idle');
+  /** Where the outline coming is served: an answer from anywhere else, asked before the city changed, is dropped. */
+  const boundaryAsked = ref<string | null>(null);
   /** What the map found for the overlay drawn, as it tells it. */
   const overlayResult = shallowRef<OverlayResult | null>(null);
 
@@ -52,7 +54,7 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * @param id - The station's id, if one is given.
    * @returns The station, or `null`.
    */
-  const stop = (id: string | undefined) => (id && network.facts ? network.facts.findStation(id) : null);
+  const stopOf = (id: string | undefined) => (id && network.facts ? network.facts.findStation(id) : null);
   /**
    * A station kept on a network made again: `null` if it has it no more.
    *
@@ -68,13 +70,14 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * @param address - What the address asks for.
    */
   const OPEN = (address: ExplorerUrlState) => {
-    routeEnds.value = { from: stop(address.route?.from), to: stop(address.route?.to) };
+    routeEnds.value = { from: stopOf(address.route?.from), to: stopOf(address.route?.to) };
     routeOption.value = address.route?.option ?? 0;
     routeAim.value = routeAimOf(routeEnds.value);
-    reachFrom.value = stop(address.reach);
+    reachFrom.value = stopOf(address.reach);
     coverageMetres.value = address.walk ?? COVERAGE_DEFAULT_METRES;
     boundary.value = null;
     boundaryState.value = 'idle';
+    boundaryAsked.value = null;
     overlayResult.value = null;
   };
 
@@ -150,21 +153,18 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
 
   /**
    * Fetches the city's outline the first time it is wanted; a city without one is said to have none.
+   * One that comes once another city is open is dropped: that city fetches its own.
    *
    * @param url - Where it is served.
    */
   const LOAD_BOUNDARY = async (url: string) => {
     if (boundaryState.value !== 'idle') return;
     boundaryState.value = 'loading';
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`no outline: ${response.status}`);
-      boundary.value = markRaw((await response.json()) as CityBoundary);
-      boundaryState.value = 'ready';
-    } catch {
-      // Not every city has an outline yet.
-      boundaryState.value = 'missing';
-    }
+    boundaryAsked.value = url;
+    const outline = await fetchBoundary(url);
+    if (boundaryAsked.value !== url) return;
+    boundary.value = outline && markRaw(outline);
+    boundaryState.value = outline ? 'ready' : 'missing';
   };
   /**
    * What the map found for the overlay drawn, as it tells it.
@@ -184,6 +184,7 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
     coverageMetres,
     boundary,
     boundaryState,
+    boundaryAsked,
     overlayResult,
     // Getters
     foundRoutes,

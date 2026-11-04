@@ -96,8 +96,8 @@ export const sketchOf = (network: Network): LineSketch[] => {
   const dashed = isPlanOnly(network);
   const byLine = new Map<LineId, LngLat[][]>();
   for (const segment of sketchedTrack(network)) {
-    const [first] = [...segment.lines].toSorted((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other));
-    if (first !== undefined) pushTo(byLine, first, segment.coordinates);
+    const [lowest] = [...segment.lines].toSorted((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other));
+    if (lowest !== undefined) pushTo(byLine, lowest, segment.coordinates);
   }
   return [...byLine]
     .toSorted(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))

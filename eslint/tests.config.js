@@ -31,6 +31,23 @@ export const testsConfig = [
       'vitest/prefer-equality-matcher': 'error',
       'vitest/prefer-to-have-been-called-times': 'error',
       'vitest/prefer-hooks-on-top': 'error',
+      // A test runs every time, as written: never one only some runs make, nor one left unwritten (as a
+      // `.skip`), nor returning what it checks; its hooks once each, at its top, in the order they run.
+      'vitest/no-conditional-tests': 'error',
+      'vitest/warn-todo': 'error',
+      'vitest/no-test-return-statement': 'error',
+      'vitest/no-test-prefixes': 'error',
+      'vitest/no-duplicate-hooks': 'error',
+      'vitest/prefer-hooks-in-order': 'error',
+      'vitest/hoisted-apis-on-top': 'error',
+      'vitest/max-nested-describe': ['error', { max: 3 }],
+      // A matcher said one way (`toHaveBeenCalled`, never its alias), and a throw checked for what it says:
+      // `toThrow()` alone passes for any error, the wrong one too.
+      'vitest/no-alias-methods': 'error',
+      'vitest/require-to-throw-message': 'error',
+      'vitest/prefer-spy-on': 'error',
+      'vitest/prefer-expect-resolves': 'error',
+      'vitest/prefer-mock-promise-shorthand': 'error',
       // Vitest takes a message beside the value: `expect(existsSync(path), path)`.
       'vitest/valid-expect': ['error', { maxArgs: 2 }],
       // An asymmetric matcher (`expect.closeTo(…)`) is typed `any`, and a test reads JSON files: what it
@@ -44,6 +61,8 @@ export const testsConfig = [
       '@typescript-eslint/require-await': 'off',
       // A test checks what a command prints (`expect(console.log).toHaveBeenCalledWith(…)`).
       'no-console': 'off',
+      // A test's own nesting (`describe`, `describe`, `test`) takes three of the levels source has.
+      'max-nested-callbacks': ['error', 6],
       // A test's helper sits in the `describe` that uses it, beside its tests.
       'unicorn/consistent-function-scoping': 'off',
       // A test's checks may sit in a helper of `test/support/` (`expectPlays`, `checkHistory`).

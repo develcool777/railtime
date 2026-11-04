@@ -19,6 +19,6 @@ describe('NetworkEngine', () => {
     const engine = new NetworkEngine(tinyNetwork(), planId('extension'), TODAY);
     expect(engine.timeline.steps.at(-1)?.planned).toBe(true);
     expect(() => engine.index.coordOf(stationId('e'))).not.toThrow();
-    expect(() => new NetworkEngine(tinyNetwork(), null, TODAY).index.coordOf(stationId('e'))).toThrow();
+    expect(() => new NetworkEngine(tinyNetwork(), null, TODAY).index.coordOf(stationId('e'))).toThrow('Missing station e');
   });
 });

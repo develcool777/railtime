@@ -4,11 +4,11 @@ description: Install pnpm + Node, restore the dependency cache and install depen
 runs:
   using: composite
   steps:
-    # Install pnpm first so setup-node can query the store path.
+    # Install pnpm first so setup-node can query the store path. Its version is the one `packageManager`
+    # names in package.json, as everyone's: the action refuses a second.
     - name: Install pnpm
       uses: pnpm/action-setup@v6
       with:
-        version: 11.9.0
         run_install: false
 
     - name: Set up Node.js

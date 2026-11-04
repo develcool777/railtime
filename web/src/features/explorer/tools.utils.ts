@@ -1,5 +1,6 @@
 import type { CoverageDistance, CoverageInfo, ReachInfo, Stop } from '@railtime/network/facts.types';
 import type { OverlayRequest, OverlayResult } from '@railtime/renderer/transitMap.types';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Section, TimeMode } from '~/features/explorer/explorer.types';
 import type { FoundRoutes, MapOverlay, RouteEnds, StationPick } from '~/features/explorer/tools.types';
 
@@ -115,3 +116,19 @@ export const foundReachOf = (result: OverlayResult | null): ReachInfo | null => 
  * @returns The coverage, or `null` for another overlay, none, or none on the date.
  */
 export const foundCoverageOf = (result: OverlayResult | null): CoverageInfo | null => (result?.kind === 'coverage' ? result.coverage : null);
+
+/**
+ * A city's outline, fetched.
+ *
+ * @param url - Where it is served.
+ * @returns The outline, or `null` where there is none: not every city has one yet.
+ */
+export const fetchBoundary = async (url: string): Promise<CityBoundary | null> => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return (await response.json()) as CityBoundary;
+  } catch {
+    return null;
+  }
+};

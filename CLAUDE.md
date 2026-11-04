@@ -27,7 +27,9 @@ on a clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `
 ## Checks
 
 `pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
-`pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
+`pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request. Node 24.15 or
+later and pnpm 11.9 (`engines`, `packageManager` in `package.json`; CI reads the same), required, not
+warned of (`engineStrict`): on an older Node, pnpm runs nothing.
 ESLint reads every file with its package's types (web's from `.nuxt/`, which `pnpm install` writes),
 so the rules that need them hold too; `pnpm eslint-fix` sorts imports and fixes what a rule can.
 Nothing is a warning: a rule is an error, or off with its reason, and `pnpm eslint-check` fails on a
@@ -58,14 +60,21 @@ landing page's pictures in Chrome).
   the data and video commands, which drive one page or a service asking for a pause between requests).
 - **Imports in one block, in order** (`import-x/order`; `pnpm eslint-fix` sorts them): packages, `node:`
   among them, then the app's own (`#imports`, `~/`, `@test/`), then relative, each group alphabetical,
-  no blank lines. No module imports itself round a circle (`import-x/no-cycle`).
+  no blank lines. No module imports itself round a circle (`import-x/no-cycle`), and a module's exports
+  are constants (`import-x/no-mutable-exports`).
 - **Modern JavaScript** (`unicorn`): an array is never sorted or reversed in place: `toSorted`,
-  `toReversed` (`unicorn/no-array-sort`, `no-array-reverse`), with a comparator always (`byCodeUnits` from
+  `toReversed` (`unicorn/no-array-sort`, `no-array-reverse`), with a comparator always
+  (`require-array-sort-compare`, strings' sorts too: `byCodeUnits` from
   `@railtime/core/text.utils` for ids and ISO dates, `localeCompare` for a name a reader sees);
   `list.at(-1)`, `replaceAll`, `Number.isSafeInteger`, `Set` methods (`difference`); a callback that does
   nothing is `() => {}`. Each thing said one way: `===` (`eqeqeq`), `Boolean(x)` or a comparison for
   `!!x` (`no-implicit-coercion`), a template literal for `'a' + b` (`prefer-template`), `{ bounds }`
-  (`object-shorthand`). Nothing goes to the console but from a command (`no-console`). The rules that argue with the house style are off, each with its reason.
+  (`object-shorthand`), `x += 1`, `Object.hasOwn`, `{ ...a }`. Nothing goes to the console but from a
+  command (`no-console`). A parameter is never written over (`no-param-reassign`), nor a name hidden by
+  an inner one (`no-shadow`); a member nothing writes after the constructor is `readonly`
+  (`prefer-readonly`). The slips the language lets through are each refused: a `map` callback that
+  returns nothing, `x === x`, a loop whose condition nothing in it changes, a `${}` in a plain string,
+  `eval`. The rules that argue with the house style are off, each with its reason.
 - **What the types say holds** (`typescript-eslint`'s strict, type-checked rules): no condition the types
   already answer (`no-unnecessary-condition`), `??` over `||` for a value that may be missing
   (`prefer-nullish-coalescing`), no promise left floating (`no-floating-promises`: awaited, or `void`
@@ -115,7 +124,8 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   A JSDoc mirrors its signature, a component's functions' too: a `@param name - what` for each
   parameter, a `@returns what` for a value (none for `void`, nor beside a getter, whose doc says what it
   is), no `{type}`, `[optional]` or default, which TypeScript says (`jsdoc/require-param`,
-  `require-returns`, `no-types`).
+  `require-returns`, `no-types`); and it parses, naming no type it cannot find (`jsdoc/valid-types`,
+  `no-undefined-types`): a `@throws` says what in words, `@throws Zod's error, if …`.
 - **Names say what they hold**: three letters at least, but for `id`, `x`, `y`, `km`, `on`, `to` (`id-length`).
 - **Strict indexing** (`noUncheckedIndexedAccess`): a lookup by an id the network supplied goes
   through `required()` (or `NetworkIndex.stationOf`/`lineOf`), which fails loudly; `!` only inside a
@@ -130,6 +140,8 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `schema`, `network`, `data/src`) a runtime import names its file, `.ts` included (ESLint).
 - **A package through its door**: another package is imported by its `exports` (`@railtime/<package>/…`),
   never by a path into its folders (ESLint); what its tests share, from `@railtime/<package>/testing/…`.
+  No package takes Vue (its stores, Nuxt), and `core`, `schema` and `network` take no map either: the
+  renderer is the one that draws (ESLint).
 
 ## Architecture
 
@@ -191,7 +203,8 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   reads it.
 - **A composable is an effect, and nothing else**: it ties something outside Vue to the stores (the
   map, the browser, the keys, the address bar), reading stores and calling their actions; it holds no
-  state and works nothing out. `map/transitMap.composable.ts` makes the map and takes it down;
+  state and works nothing out (ESLint refuses a `ref`, `computed` or `reactive` in one).
+  `map/transitMap.composable.ts` makes the map and takes it down;
   `layout.composable.ts` gives the stores the screen and the theme, and drags the panel;
   `shortcuts.composable.ts` the keys; `address/address.composable.ts` writes the explorer's `address`
   to the address bar, its only writer. A component lays out what stores hold and calls their actions.
@@ -240,7 +253,9 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 
 - `network` and the renderer know no city: their tests use made-up networks (`tinyNetwork`). A check of a city's
   history (the Victoria line's three stages, London's size today) goes in
-  `packages/data/test/unit/cities/<country>/<city>.test.ts`.
+  `packages/data/test/unit/cities/<country>/<city>.test.ts`. Nor do `core`, `schema`, `network` or the
+  renderer name one, in their code, comments or tests: `data`'s `city.test.ts` reads every city's
+  name in `cities.json` and fails on any it finds there.
 
 - `pnpm test-unit` at the root runs every project (`vitest.config.ts`); options shared by all are in
   `vitest.shared.ts`: mocks reset between tests, random order, node.
@@ -252,8 +267,10 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 - A test mirrors one source file, or Vitest refuses to start; `*.test.ts` and `*.spec.ts` only in `test/unit/`,
   helpers only in `test/support/` (ESLint).
 - `describe('<Module>')` (`Timeline`, `GrowthUtils`), a nested `describe` per function for a utils
-  module, then `test('does what, when')`; never `it`, nor a test left `.only` or `.skip`
-  (`@vitest/eslint-plugin`). Each check says what it checks, so a failure says what went wrong:
+  module, then `test('does what, when')`; never `it`, nor a test left `.only`, `.skip` or `.todo`, nor
+  one only some runs make (`@vitest/eslint-plugin`, `vitest/no-conditional-tests`). A throw is
+  checked for what it says, `toThrow('Missing step 9')`: `toThrow()` passes for any error
+  (`vitest/require-to-throw-message`). Each check says what it checks, so a failure says what went wrong:
   `toHaveLength(n)`, `toBeNull()`, `toContain`, `toBeGreaterThan` (`vitest/prefer-to-*`). No `expect`
   inside an `if` (`vitest/no-conditional-expect`): gather what a loop finds, then check it once
   (`expect(far).toEqual(far.map(() => Infinity))`).

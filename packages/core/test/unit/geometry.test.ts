@@ -130,7 +130,7 @@ describe('GeometryUtils', () => {
   describe('mercatorY and latitudeOf', () => {
     test('put the equator at 0, stretch latitudes apart towards the poles, and undo each other', () => {
       expect(mercatorY(0)).toBeCloseTo(0, 12);
-      // A degree near London is drawn taller than one at the equator: 1 / cos(51.5°) as tall.
+      // A degree at 51.5° north is drawn taller than one at the equator: 1 / cos(51.5°) as tall.
       expect((mercatorY(52) - mercatorY(51)) / (mercatorY(1) - mercatorY(0))).toBeCloseTo(1 / Math.cos((51.5 * Math.PI) / 180), 2);
       for (const latitude of [-60, 0, 51.5, 85]) expect(latitudeOf(mercatorY(latitude))).toBeCloseTo(latitude, 9);
     });

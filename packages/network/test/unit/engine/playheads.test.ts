@@ -76,7 +76,7 @@ describe('Playheads', () => {
     const { steps, datedCount } = engine.timeline;
     expect(playheads.dateOf(0)).toBe(steps[0]!.time);
     expect(playheads.dateOf(datedCount)).toBe(range.end);
-    expect(() => playheads.dateOf(steps.length)).toThrow();
+    expect(() => playheads.dateOf(steps.length)).toThrow(`Missing step ${steps.length}`);
   });
 
   test('rests today, or for a network with a plan at the end, the plan built; and knows a playhead there, to the day', () => {

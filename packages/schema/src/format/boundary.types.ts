@@ -5,7 +5,7 @@ import type { LngLat } from '@railtime/core/geometry.types';
  * dataset, `<city>.boundary.json`; what the Coverage section measures.
  */
 export type CityBoundary = {
-  /** What the outline is: "Greater London", "Kharkiv". */
+  /** What the outline is: the city limits, or the county a network spans, as its source names them. */
   name: string;
   /** Where it comes from, as credited: "© OpenStreetMap contributors, relation 175342". */
   source: string;

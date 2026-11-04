@@ -4,6 +4,10 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24.15.0"
+  },
   "scripts": {
     "dev": "pnpm --filter @railtime/web dev",
     "build": "pnpm --filter @railtime/web build",

@@ -20,6 +20,18 @@ const NAMED_FILE = {
   message: 'A runtime import names its file, `.ts` included: the data commands run this code under Node.',
 };
 
+/** The packages draw and answer for any page: Vue, its stores and Nuxt are the app's. */
+const NO_VUE = {
+  group: ['vue', 'pinia', '#imports', '@vueuse/*'],
+  message: 'The packages know no Vue: the renderer takes props, commands and listeners, and the app (web) ties them to its stores.',
+};
+
+/** The network and what it is built from take no map: the renderer is the one package that draws. */
+const NO_MAP = {
+  group: ['maplibre-gl', 'maplibre-gl/*'],
+  message: "Pure first: core, schema and network take no map, so they run and are tested anywhere. Drawing is the renderer's.",
+};
+
 /** What a `*.utils.ts` may not take at run time: a store, a composable, Vue, the map. Its types are erased, so they may. */
 const IMPURE = {
   regex: String.raw`^(vue|pinia|#imports|maplibre-gl|@vueuse/.*)$|\.(store|composable)(\.ts)?$`,
@@ -60,6 +72,11 @@ export const importsConfig = [
       'import-x/no-duplicates': 'error',
       // Stores, packages and modules read one another one way: never in a circle.
       'import-x/no-cycle': 'error',
+      'import-x/no-self-import': 'error',
+      // A module's exports are constants: one reassigned would change under whoever imported it.
+      'import-x/no-mutable-exports': 'error',
+      'import-x/no-absolute-path': 'error',
+      'import-x/no-empty-named-blocks': 'error',
       // TypeScript checks every import already, what it finds and what it takes (`#imports` and `~/` too).
       'import-x/no-unresolved': 'off',
       'import-x/named': 'off',
@@ -70,7 +87,8 @@ export const importsConfig = [
     },
   },
 
-  // Another package only through its exports; the network's engine only in the renderer
+  // Another package only through its exports; Vue only in the app, a map only in the renderer and the
+  // commands that drive it; the network's engine only in the renderer
   // (`NetworkEngine` is the raw network it plays and draws, and every fact comes from `NetworkFacts`);
   // and in the code the data commands run, each file by its whole name.
   {
@@ -79,7 +97,11 @@ export const importsConfig = [
   },
   {
     files: ['packages/{core,schema,network}/src/**/*.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NAMED_FILE] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NAMED_FILE, NO_VUE, NO_MAP] }] },
+  },
+  {
+    files: ['packages/renderer/src/**/*.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NO_VUE] }] },
   },
   {
     files: ['web/src/**/*.{ts,vue}'],
@@ -87,7 +109,7 @@ export const importsConfig = [
   },
   {
     files: ['packages/{data,video}/src/**/*.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE, NAMED_FILE] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE, NAMED_FILE, NO_VUE] }] },
   },
   // Pure first: a `*.utils.ts` takes what it needs as arguments, so it runs and is tested anywhere.
   {

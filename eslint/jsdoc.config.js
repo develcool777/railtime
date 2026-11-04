@@ -50,6 +50,21 @@ export const jsdocConfig = [
       'jsdoc/check-tag-names': 'error',
       'jsdoc/no-types': 'error',
       'jsdoc/no-defaults': 'error',
+      // A doc that parses, and says what is there: no tag left empty or blank block, no type it cannot
+      // find, a name on every `@param`, one asterisk a line, an `@` meant as text escaped.
+      'jsdoc/check-syntax': 'error',
+      'jsdoc/valid-types': 'error',
+      'jsdoc/no-undefined-types': 'error',
+      'jsdoc/empty-tags': 'error',
+      'jsdoc/no-blank-blocks': 'error',
+      'jsdoc/no-multi-asterisks': 'error',
+      'jsdoc/multiline-blocks': 'error',
+      'jsdoc/require-param-name': 'error',
+      'jsdoc/check-property-names': 'error',
+      'jsdoc/check-values': 'error',
+      'jsdoc/check-access': 'error',
+      'jsdoc/implements-on-classes': 'error',
+      'jsdoc/escape-inline-tags': 'error',
       'jsdoc/no-restricted-syntax': [
         'error',
         {

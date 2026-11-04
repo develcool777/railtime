@@ -15,6 +15,6 @@ const networkSchema = networkShape.superRefine((network, context) => {
  *
  * @param input - A parsed network JSON.
  * @returns The network, typed.
- * @throws {z.ZodError} With every problem listed.
+ * @throws Zod's error, with every problem listed.
  */
 export const parseNetwork = (input: unknown): Network => networkSchema.parse(input);

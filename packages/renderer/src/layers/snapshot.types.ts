@@ -35,7 +35,7 @@ export type StationsFound = {
   built: Set<StationId>;
 };
 
-/** Minimal GeoJSON, so the renderer needs no @types/geojson. */
+/** Minimal GeoJSON, so the renderer needs no `@types/geojson`. */
 type Feature<Geometry, Properties> = { type: 'Feature'; properties: Properties; geometry: Geometry };
 
 /** A GeoJSON feature collection. */

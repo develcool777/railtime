@@ -54,7 +54,7 @@ export const formatSummaries = (summaries: CityIndex): string =>
  *
  * @param found - The cities: every city kept, unless given.
  * @param path - Where the list is kept: `cities/cities.json`, unless given.
- * @throws {z.ZodError} If the schema refuses a city's network.
+ * @throws Zod's error, if the schema refuses a city's network.
  * @throws {Error} If a city is not in its country's folder.
  */
 export const writeSummaries = (found: City[] = cities(), path = SUMMARIES_PATH): void => {
