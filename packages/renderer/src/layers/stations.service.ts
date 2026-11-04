@@ -322,7 +322,7 @@ export class StationLayer extends MapLayer {
         },
       });
     }
-    for (const station of this.appearedAt.keys()) if (!frame.stations.get(station)?.size) this.appearedAt.delete(station);
+    for (const station of this.appearedAt.keys()) if ((frame.stations.get(station)?.size ?? 0) === 0) this.appearedAt.delete(station);
     return features;
   }
 

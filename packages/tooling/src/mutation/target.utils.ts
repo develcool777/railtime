@@ -96,5 +96,5 @@ export const entryOf = (statuses: string[], fresh: boolean, date: string): Score
   const survived = count('Survived');
   const noCoverage = count('NoCoverage');
   const ran = killed + survived + noCoverage;
-  return { date, score: ran ? Math.round((killed / ran) * 1000) / 10 : null, killed, survived, noCoverage, fresh };
+  return { date, score: ran > 0 ? Math.round((killed / ran) * 1000) / 10 : null, killed, survived, noCoverage, fresh };
 };

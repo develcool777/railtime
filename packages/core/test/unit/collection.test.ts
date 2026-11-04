@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { pushTo } from '../../src/collection.utils';
+import { firstDifference, pushTo } from '../../src/collection.utils';
 
 describe('CollectionUtils', () => {
   describe('pushTo', () => {
@@ -12,6 +12,15 @@ describe('CollectionUtils', () => {
         ['a', [1, 3]],
         ['b', [2]],
       ]);
+    });
+  });
+
+  describe('firstDifference', () => {
+    test('is the first comparison that tells two apart, and zero when none does', () => {
+      expect(firstDifference(0, -2, 5)).toBe(-2);
+      expect(firstDifference(3, -1)).toBe(3);
+      expect(firstDifference(0, 0)).toBe(0);
+      expect(firstDifference()).toBe(0);
     });
   });
 });

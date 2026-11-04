@@ -161,7 +161,7 @@ export const withLinesHidden = (network: Network, hidden: readonly string[]): Sh
   const gone = servedBefore.difference(served);
   const plans = Object.fromEntries(
     Object.entries(network.plans ?? {}).flatMap(([id, plan]): [string, Plan][] => {
-      const sections = plan.sections.filter(section => drawn(section.line) || plan.lines?.[section.line]);
+      const sections = plan.sections.filter(section => drawn(section.line) || plan.lines?.[section.line] !== undefined);
       if (sections.length === 0) return [];
       if (sections.length === plan.sections.length) return [[id, plan]];
       // A station of the plan's own that only the sections left out reach goes with them.

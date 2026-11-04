@@ -177,6 +177,13 @@ export default defineConfig(
       'import-x/no-named-as-default-member': 'off',
 
       // TypeScript's stricter checks, tuned to the house style.
+      // A condition is a boolean, or a value whose truth cannot mislead: an object, a string, or one that
+      // may be missing (an id, a date, a name, a flag: never `''`). A number is compared, never taken
+      // for true: `0` is a count, a timestamp (1 January 1970), an option.
+      '@typescript-eslint/strict-boolean-expressions': [
+        'error',
+        { allowNumber: false, allowNullableNumber: false, allowNullableString: true, allowNullableBoolean: true },
+      ],
       // A `switch` over a union names every member, or says `default`: a new kind of step or overlay
       // cannot slip past one.
       '@typescript-eslint/switch-exhaustiveness-check': ['error', { considerDefaultExhaustiveForUnions: true }],

@@ -65,7 +65,7 @@ const changesTop = (input: SectionTopInput): PanelTopContent => {
     return { title, context: `${currentChange + 1} of ${changes.length} · ${time.inPlan ? 'Plan' : formatDay(time.time)}` };
   const first = changes.find(change => change.time !== null)?.time;
   const count = counted(changes.length, 'change');
-  return { title, context: first ? `${count} since ${yearOf(first)}` : count };
+  return { title, context: first === undefined || first === null ? count : `${count} since ${yearOf(first)}` };
 };
 
 /**

@@ -69,7 +69,7 @@ export class CoverageGrid {
     }
     this.inside = this.fill(boundary);
     let km2 = 0;
-    for (let cell = 0; cell < this.inside.length; cell++) if (this.inside[cell]) km2 += this.cellKm2(cell);
+    for (let cell = 0; cell < this.inside.length; cell++) if (this.inside[cell] === 1) km2 += this.cellKm2(cell);
     this.km2 = km2;
   }
 
@@ -107,7 +107,7 @@ export class CoverageGrid {
         const northKm = (this.rowLatitude[row]! - latitude) * KM_PER_DEGREE_LATITUDE;
         for (let column = firstColumn; column <= lastColumn; column++) {
           const cell = row * this.columns + column;
-          if (!this.inside[cell]) continue;
+          if (this.inside[cell] !== 1) continue;
           const eastKm = (this.west + (column + 0.5) * this.columnDegrees - longitude) * kmPerDegree;
           const distance = Math.hypot(eastKm, northKm) * 1000;
           // Within bounds: the cell is in the grid.

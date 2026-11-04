@@ -22,6 +22,14 @@ describe('DaysUtils', () => {
       expect(days.get(toTimestamp('1925-01-01'))?.renames).toEqual([{ station: 'd', from: 'Old D', to: 'D' }]);
     });
 
+    test('gathers a closing on 1 January 1970, whose timestamp is 0, as any other', () => {
+      const network = tinyNetwork();
+      // Within bounds: the tiny network's B–C segment, where blue runs.
+      network.segments[1]!.lines.blue!.close = '1970-01-01';
+      const days = collectDays(new NetworkIndex(network), new StationStops());
+      expect(days.get(toTimestamp('1970-01-01'))?.closes.map(lineSegment => lineSegment.line)).toContain('blue');
+    });
+
     test('marks a line that passes a station, or reaches it only after it opened there, as never calling', () => {
       const network = tinyNetwork();
       network.stations.a = { ...network.stations.a!, passes: ['pink'] };
