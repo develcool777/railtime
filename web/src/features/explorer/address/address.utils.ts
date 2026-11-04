@@ -3,7 +3,7 @@ import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { Playhead } from '@railtime/network/facts.types';
 import { DAY_MS, toIsoDate } from '@railtime/core/date.utils';
 import { coverageDistanceOf } from '~/features/explorer/coverage/coverage.utils';
-import type { ExplorerQuery, ExplorerUrlState, LinkedPlayhead, RouteLink } from '~/features/explorer/address/address.types';
+import type { AddressInput, ExplorerQuery, ExplorerUrlState, LinkedPlayhead, RouteLink } from '~/features/explorer/address/address.types';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
 import { CAMERA_OPTIONS, DEFAULT_PLAYER, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
 import type { Section } from '~/features/explorer/explorer.types';
@@ -226,5 +226,44 @@ export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, str
     ...(speed === undefined ? {} : { speed: String(speed) }),
     ...(camera ? { camera } : {}),
     ...(minimap === false ? { minimap: 'off' } : {}),
+  };
+};
+
+/**
+ * What the explorer's address says of what it shows: everything a link needs to open it again, each
+ * left out where it is as a page opens without it (the section a page opens on, the walk, playback's
+ * settings, names shown, 2D).
+ *
+ * @param input - What the stores hold.
+ * @returns The address's state, for `formatExplorerQuery`.
+ */
+export const explorerAddressOf = (input: AddressInput): ExplorerUrlState => {
+  const { routeEnds, player } = input;
+  return {
+    ...(input.at ? { at: input.at } : {}),
+    ...(input.view ? { view: input.view } : {}),
+    ...(input.openStation ? { station: input.openStation } : {}),
+    ...(input.plan ? { plan: input.plan } : {}),
+    ...(input.section === input.openingSection ? {} : { section: input.section }),
+    ...(input.coverageMetres === COVERAGE_DEFAULT_METRES ? {} : { walk: input.coverageMetres }),
+    ...(routeEnds.from || routeEnds.to
+      ? {
+          route: {
+            ...(routeEnds.from ? { from: routeEnds.from.id } : {}),
+            ...(routeEnds.to ? { to: routeEnds.to.id } : {}),
+            ...(input.routeOption > 0 ? { option: input.routeOption } : {}),
+          },
+        }
+      : {}),
+    ...(input.reachFrom ? { reach: input.reachFrom.id } : {}),
+    ...(input.openLine ? { line: input.openLine } : {}),
+    ...(input.viewMode === '3d' ? { viewMode: '3d' as const } : {}),
+    ...(input.stationNames ? {} : { stationNames: false as const }),
+    ...(input.streetNames ? {} : { streetNames: false as const }),
+    ...(input.mapOnly ? { mapOnly: true as const } : {}),
+    ...(input.panelOpen ? {} : { panelOpen: false as const }),
+    ...(player.speed === DEFAULT_PLAYER.speed ? {} : { speed: player.speed }),
+    ...(player.camera === DEFAULT_PLAYER.camera ? {} : { camera: player.camera }),
+    ...(player.minimap ? {} : { minimap: false as const }),
   };
 };

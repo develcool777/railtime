@@ -1,7 +1,8 @@
-import type { CoverageDistance, Playhead } from '@railtime/network/facts.types';
+import type { CoverageDistance, Playhead, Stop } from '@railtime/network/facts.types';
 import type { CameraMode, MapView, ViewMode } from '@railtime/renderer/transitMap.types';
 
-import type { Section } from '~/features/explorer/explorer.types';
+import type { PlayerSettings, Section } from '~/features/explorer/explorer.types';
+import type { RouteEnds } from '~/features/explorer/tools.types';
 
 /**
  * A playhead as an address holds it, `at=202.4` or `at=202,1928-06-01`: its time only where its cursor
@@ -53,3 +54,26 @@ export type RouteLink = { from?: string; to?: string; option?: number };
 
 /** An address's query, as the router gives it and takes it. */
 export type ExplorerQuery = Record<string, string | null | (string | null)[] | undefined>;
+
+/** What the explorer shows, as the stores hold it: what its address is worked out from (`explorerAddressOf`). */
+export type AddressInput = {
+  /** Where the history is, as an address names it, if known. */
+  at: LinkedPlayhead | null;
+  view: MapView | null;
+  openStation: string | null;
+  openLine: string | null;
+  plan: string | undefined;
+  section: Section;
+  /** The section a page opens on without a tab in its address: left out of it. */
+  openingSection: Section;
+  coverageMetres: CoverageDistance;
+  routeEnds: RouteEnds;
+  routeOption: number;
+  reachFrom: Stop | null;
+  viewMode: ViewMode;
+  stationNames: boolean;
+  streetNames: boolean;
+  mapOnly: boolean;
+  panelOpen: boolean;
+  player: PlayerSettings;
+};

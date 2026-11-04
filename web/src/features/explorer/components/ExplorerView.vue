@@ -6,20 +6,20 @@
       </template>
       <template #center>
         <!-- Opens the search, as ⌘K and / do. -->
-        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.setDialog('search')" />
+        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.SET_DIALOG('search')" />
       </template>
-      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.setDialog('search')" />
+      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.SET_DIALOG('search')" />
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
-      <ExplorerRail v-if="chrome.rail" :sections :open="panelOpen ? railSection : null" :marks @pick="store.pickSection" />
+      <ExplorerRail v-if="chrome.rail" :sections :open="panelOpen ? railSection : null" :marks @pick="store.PICK_SECTION" />
 
       <!-- The map keeps its size: the panel slides over its left edge, which resizing it every frame would make stutter. -->
       <div class="relative min-w-0 flex-1 overflow-hidden">
         <!-- The panel: over the map's left, a column that folds and resizes; on a phone, a drawer over its foot. -->
         <ExplorerPanel
           v-if="chrome.panel"
-          v-model:snap="sheet"
+          :snap="sheet"
           :phone
           :tabLabels
           :open="panelOpen"
@@ -28,7 +28,8 @@
           :sections
           :section="railSection"
           :marks
-          @pick="store.pickSection"
+          @update:snap="store.SET_SHEET"
+          @pick="store.PICK_SECTION"
           @resize="startResize">
           <PanelTop
             :title="panelTop.title"
@@ -36,57 +37,62 @@
             :dots="panelTop.dots"
             :backLabel="panelTop.backLabel"
             :foldable="!phone"
-            @back="store.goBack"
-            @fold="panelOpen = false" />
+            @back="store.GO_BACK"
+            @fold="store.SET_PANEL_OPEN(false)" />
           <div class="min-h-0 flex-1 overflow-y-auto">
-            <StationView v-if="station" :station :directions="stationDirections" @select="store.walkTo" @line="store.pushLine" />
+            <StationView v-if="station" :station :directions="stationDirections" @select="store.WALK_TO" @line="store.PUSH_LINE" />
             <LineView
               v-else-if="lineDetails"
               :line="lineDetails"
               :changes="lineChanges"
               :stationColors
-              @station="store.pickStation"
-              @change="store.pick({ kind: 'change', index: $event })" />
-            <StationsSection v-else-if="section === 'stations'" :stations @open="store.pickStation" />
-            <LinesSection v-else-if="section === 'lines'" :lines :choices="networkChoices" :date="shownDate" @show="store.showLines" @open="store.pushLine" />
-            <ChangesSection v-else-if="section === 'changes'" :changes :current="currentChange" :playing="timeMode === 'playing'" @select="store.pickChange" />
+              @station="store.PICK_STATION"
+              @change="timeStore.PICK({ kind: 'change', index: $event })" />
+            <StationsSection v-else-if="section === 'stations'" :stations @open="store.PICK_STATION" />
+            <LinesSection v-else-if="section === 'lines'" :lines :choices="networkChoices" :date="shownDate" @show="store.SHOW_LINES" @open="store.PUSH_LINE" />
+            <ChangesSection
+              v-else-if="section === 'changes'"
+              :changes
+              :current="currentChange"
+              :playing="timeStore.playerShown"
+              @select="timeStore.PICK_CHANGE" />
             <RouteSection
               v-else-if="section === 'route'"
               :stations
               :ends="tools.routeEnds"
               :aim="tools.routeAim"
               :found="foundRoutes"
-              @end="tools.setRouteEnd"
-              @aim="tools.aimRoute"
-              @clear="tools.clearRoute"
-              @swap="tools.swapEnds"
-              @option="tools.chooseRoute"
-              @station="store.pickStation" />
+              @end="tools.SET_ROUTE_END"
+              @aim="tools.AIM_ROUTE"
+              @clear="tools.CLEAR_ROUTE"
+              @swap="tools.SWAP_ENDS"
+              @option="tools.CHOOSE_ROUTE"
+              @station="store.PICK_STATION" />
             <ReachSection
               v-else-if="section === 'reach'"
               :stations
               :from="tools.reachFrom"
               :reach="foundReach"
-              @from="tools.setReachFrom"
-              @station="store.pickStation" />
+              @from="tools.SET_REACH_FROM"
+              @station="store.PICK_STATION" />
             <CoverageSection
               v-else-if="section === 'coverage'"
               :state="boundaryState"
               :coverage
               :history="coverageHistory"
               :distance="tools.coverageMetres"
-              @year="store.showYear"
-              @distance="tools.showCoverageWithin" />
+              @year="timeStore.SHOW_YEAR"
+              @distance="tools.SHOW_COVERAGE_WITHIN" />
             <InsightsSection
               v-else-if="section === 'insights'"
               :growth
               :hasHistory
               :records
               :year="shownYear"
-              @year="store.showYear"
-              @station="store.pickStation"
-              @line="store.pushLine" />
-            <PlansSection v-else :plans :planOnly :plan :built="builtFacts" @choose="choosePlan" />
+              @year="timeStore.SHOW_YEAR"
+              @station="store.PICK_STATION"
+              @line="store.PUSH_LINE" />
+            <PlansSection v-else :plans :planOnly :plan="pickedPlan" :built="builtFacts" @choose="store.SHOW_PLAN" />
           </div>
         </ExplorerPanel>
 
@@ -110,14 +116,14 @@
             :stationNames
             :streetNames
             :viewMode
-            @zoomIn="store.map?.zoomIn()"
-            @zoomOut="store.map?.zoomOut()"
-            @fit="store.map?.fitNetwork()"
-            @stationNames="stationNames = $event"
-            @streetNames="streetNames = $event"
-            @viewMode="viewMode = $event"
-            @mapOnly="store.setMapOnly(true)"
-            @help="store.setDialog('help')" />
+            @zoomIn="mapStore.ZOOM_IN"
+            @zoomOut="mapStore.ZOOM_OUT"
+            @fit="mapStore.FIT_NETWORK"
+            @stationNames="store.SET_STATION_NAMES"
+            @streetNames="store.SET_STREET_NAMES"
+            @viewMode="store.SET_VIEW_MODE"
+            @mapOnly="store.SET_MAP_ONLY(true)"
+            @help="store.SET_DIALOG('help')" />
           <UButton
             v-else
             icon="i-lucide-minimize-2"
@@ -125,7 +131,7 @@
             color="neutral"
             variant="outline"
             class="map-card absolute top-4 right-4 h-10 px-3 font-semibold"
-            @click="store.setMapOnly(false)">
+            @click="store.SET_MAP_ONLY(false)">
             <template #trailing>
               <UKbd value="Esc" />
             </template>
@@ -149,6 +155,7 @@
               <div ref="minimapElement" class="h-full w-full" aria-label="Overview of the whole city" />
             </div>
             <TimeControl
+              v-if="range"
               class="pointer-events-auto"
               :mode="timeMode"
               :phone
@@ -159,13 +166,13 @@
               :settings="player"
               :plan="planSummary"
               :planOnly
-              @play="store.play"
-              @pause="store.pause"
-              @previous="store.previousChange"
-              @skip="store.nextChange"
-              @leave="store.leaveTo"
-              @pick="store.pick"
-              @settings="store.setPlayer" />
+              @play="timeStore.PLAY"
+              @pause="timeStore.PAUSE"
+              @previous="timeStore.PREVIOUS_CHANGE"
+              @skip="timeStore.NEXT_CHANGE"
+              @leave="timeStore.LEAVE_TO"
+              @pick="timeStore.PICK"
+              @settings="timeStore.SET_PLAYER" />
           </div>
 
           <!-- The map's credits stay on it: its tiles' licences ask for them; the rest are on the About page. On a phone they fold into a button. -->
@@ -187,81 +194,73 @@
       </div>
     </div>
 
-    <ExplorerSearch v-model:open="searchOpen" :stations :lines :city @station="store.pickStation" @line="store.pushLine" @city="emit('city', $event)" />
+    <ExplorerSearch v-model:open="searchOpen" :stations :lines :city @station="store.PICK_STATION" @line="store.PUSH_LINE" @city="emit('city', $event)" />
     <ExplorerHelp v-model:open="helpOpen" :sections :phone />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { useRoute } from '#imports';
+  import { useRoute, useRuntimeConfig } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { storeToRefs } from 'pinia';
-  import { computed, useTemplateRef, watch } from 'vue';
+  import { useTemplateRef } from 'vue';
 
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { useExplorerStore } from '~/features/explorer/explorer.store';
-  import { useToolsStore } from '~/features/explorer/tools.store';
-  import { openingSectionOf } from '~/features/explorer/explorer.utils';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
+  import { useMapStore } from '~/features/explorer/map/map.store';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
-  import { useExplorerPanel } from '~/features/explorer/panel/panel.composable';
-  import { useCoverage } from '~/features/explorer/coverage/coverage.composable';
+  import { useNetworkStore } from '~/features/explorer/network.store';
+  import { usePanelStore } from '~/features/explorer/panel/panel.store';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
+  import { useTimeStore } from '~/features/explorer/time/time.store';
+  import { useToolsStore } from '~/features/explorer/tools.store';
+  import { boundaryUrlOf } from '~/utils/city.utils';
 
-  const props = defineProps<{ network: Network; city: string; plan?: string }>();
-  const emit = defineEmits<{ city: [city: string]; plan: [plan: string | undefined] }>();
+  const props = defineProps<{ network: Network; city: string }>();
+  const emit = defineEmits<{ city: [city: string] }>();
 
   const explorer = useTemplateRef<HTMLElement>('explorer');
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  // The store makes the network's facts and opens on them and on what the address says; another plan
-  // is shown on the same page and map (`showPlan`).
-  const opening = parseExplorerQuery(useRoute().query);
-  const openingSection = openingSectionOf(props.plan);
+  // The stores open on the city's network and on what the address says; from then on they are the
+  // page's one source of truth, and what follows only lays out what they hold.
   const store = useExplorerStore();
+  const networkStore = useNetworkStore();
+  const mapStore = useMapStore();
+  const timeStore = useTimeStore();
   const tools = useToolsStore();
-  const opened = store.open(props.network, props.plan, opening, openingSection);
-  const range = computed(() => (store.facts ?? opened).range);
-  watch(
-    () => props.plan,
-    next => void store.showPlan(next),
-  );
+  const panel = usePanelStore();
+  store.OPEN({
+    stored: props.network,
+    asked: parseExplorerQuery(useRoute().query),
+    outline: `${useRuntimeConfig().app.baseURL}${boundaryUrlOf(props.city)}`,
+  });
+
   const {
     section,
     railSection,
-    timeMode,
     phone,
     tabLabels,
     sheet,
     sheetHeight,
     panelOpen,
     panelWidth,
+    resizing,
     panelCover,
     viewMode,
     stationNames,
     streetNames,
-    player,
     chrome,
-    time,
-    step,
-    credits,
-    planOnly,
-    plans,
-    networkChoices,
   } = storeToRefs(store);
-  const searchOpen = store.dialogOpen('search');
-  const helpOpen = store.dialogOpen('help');
-  const citiesOpen = store.dialogOpen('cities');
-
-  const { resizing, startResize } = useExplorerLayout(explorer);
-  useTransitMap({ container: mapElement, minimapContainer: minimapElement });
-
+  const { lines, changes, plans, pickedPlan, planOnly, networkChoices, growth, hasHistory, range } = storeToRefs(networkStore);
+  const { credits } = storeToRefs(mapStore);
+  const { timeMode, player, time, step, shownDate, shownYear } = storeToRefs(timeStore);
+  const { foundRoutes, foundReach, coverage, coverageHistory, boundaryState } = storeToRefs(tools);
   const {
     sections,
-    lines,
-    changes,
     lineDetails,
     lineChanges,
     station,
@@ -270,25 +269,19 @@
     stationDirections,
     currentChange,
     panelTop,
-    shownDate,
-    foundRoutes,
-    foundReach,
-    growth,
-    hasHistory,
     records,
-    shownYear,
     planSummary,
     planLegend,
     builtFacts,
     marks,
-  } = useExplorerPanel();
-  const { boundaryState, coverage, history: coverageHistory } = useCoverage(props.city);
+  } = storeToRefs(panel);
+  const searchOpen = store.dialogOpen('search');
+  const helpOpen = store.dialogOpen('help');
+  const citiesOpen = store.dialogOpen('cities');
 
-  /** Shows another plan, or the built network: the page puts it in the address, and the explorer shows it in place. */
-  const choosePlan = (id: string | undefined) => {
-    if (id !== props.plan) emit('plan', id);
-  };
-
-  useExplorerAddress(opening, openingSection);
-  useExplorerShortcuts(sections);
+  // The effects: the browser, the map, the address bar and the keys, each tied to the stores.
+  const { startResize } = useExplorerLayout(explorer);
+  useTransitMap({ container: mapElement, minimapContainer: minimapElement });
+  useExplorerAddress();
+  useExplorerShortcuts();
 </script>

@@ -26,13 +26,13 @@ export const useVideoMap = (container: Ref<HTMLElement | null>, network: Network
 
   /** Each frame: the page's clock to the store. */
   const tick = () => {
-    store.tick(performance.now());
+    store.TICK(performance.now());
     frame = requestAnimationFrame(tick);
   };
 
   onMounted(() => {
     const element = container.value!;
-    store.open(network, { width: element.clientWidth, height: element.clientHeight });
+    store.OPEN({ network, size: { width: element.clientWidth, height: element.clientHeight } });
     const props = store.mapProps;
     if (!props) return;
     map = new TransitMap({
@@ -43,24 +43,24 @@ export const useVideoMap = (container: Ref<HTMLElement | null>, network: Network
       workerUrl,
       on: {
         status: () => {
-          store.mapReady();
+          store.MAP_READY();
           // Recorded, it starts when the recorder says.
-          if (!page.railtimeRecorder) store.start();
+          if (!page.railtimeRecorder) store.START();
         },
-        time: state => store.timeChanged(state),
-        step: step => store.stepped(step),
-        end: () => store.historyEnded(),
+        time: time => store.SET_TIME(time),
+        step: step => store.SET_STEP(step),
+        end: () => store.END_HISTORY(),
       },
     });
-    store.attach(map);
-    page.railtimeVideo = { state: () => store.pageState, start: store.start };
+    store.ATTACH(map);
+    page.railtimeVideo = { state: () => store.pageState, start: () => store.START() };
     frame = requestAnimationFrame(tick);
   });
 
   onBeforeUnmount(() => {
     cancelAnimationFrame(frame);
     delete page.railtimeVideo;
-    store.detach();
+    store.DETACH();
     map?.destroy();
     map = null;
   });
