@@ -67,11 +67,17 @@ export type FrameScheduler = {
 /** A listener for each event, given when the map is made so nothing it says while starting is missed. */
 export type TransitMapListeners = { [Name in keyof TransitMapEvents]?: (payload: TransitMapEvents[Name]) => void };
 
+/**
+ * Props given to `update`, whole or in part: one given as `undefined` is one not given, so an app may
+ * pass on a value it may not have.
+ */
+export type MapPropsUpdate = { [Key in keyof MapProps]?: MapProps[Key] | undefined };
+
 /** What a `TransitMap` is made with. */
 export type TransitMapOptions = {
   container: HTMLElement;
   /** How it is set at first: the network it draws, and the rest as given or the defaults (`DEFAULT_MAP_PROPS`). */
-  props: Pick<MapProps, 'facts'> & Partial<MapProps>;
+  props: Pick<MapProps, 'facts'> & MapPropsUpdate;
   /** Its listeners, from the start. */
   on?: TransitMapListeners;
   /** Where the map opens. Without one it fits the whole network. */

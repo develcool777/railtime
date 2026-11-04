@@ -10,7 +10,7 @@ import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { END_OVERVIEW_MS, MAX_TILE_WAIT_SECONDS } from '../../src/playback/playback.constants';
 import { FIT_NETWORK_MS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
 import { TransitMap } from '../../src/transitMap.service';
-import type { MapProps, TransitMapListeners, TransitMapOptions } from '../../src/transitMap.types';
+import type { MapProps, MapPropsUpdate, TransitMapListeners, TransitMapOptions } from '../../src/transitMap.types';
 import { openingOf } from '../../src/transitMap.utils';
 import { fakeMap } from '../support/factories/fakeMap.utils';
 
@@ -25,7 +25,7 @@ import { fakeMap } from '../support/factories/fakeMap.utils';
  * @returns The map, the stand-ins, a frame stepper, the events delivered, in order, its network, and where its playheads are.
  */
 const mapOf = (
-  props: Partial<MapProps> = {},
+  props: MapPropsUpdate = {},
   on: TransitMapListeners = {},
   style: LayerSpecification[] = [],
   minimapContainer?: HTMLElement,
@@ -50,7 +50,7 @@ const mapOf = (
     props: { ...props, facts },
     on: recordAll,
     ...options,
-    minimapContainer,
+    ...(minimapContainer && { minimapContainer }),
     createMap: options => (minimapContainer && options.container === minimapContainer ? mini.map : fake.map),
     scheduler: {
       // The frame's id: where it waits.
@@ -126,6 +126,13 @@ describe('TransitMap', () => {
     map.update({ theme: 'light' });
     expect(fake.layers.get('street-names')?.layout.visibility).toBe('none');
     map.update({ streetLabels: true });
+    expect(fake.layers.get('street-names')?.layout.visibility).toBe('visible');
+  });
+
+  test('keeps the default of a prop it is made with as undefined, as an update does', () => {
+    const style = [{ id: 'street-names', type: 'symbol', source: 'tiles', 'source-layer': 'transportation_name' }] as LayerSpecification[];
+    const { fake, ready } = mapOf({ streetLabels: undefined }, {}, style);
+    ready();
     expect(fake.layers.get('street-names')?.layout.visibility).toBe('visible');
   });
 

@@ -156,14 +156,16 @@ describe('PlanBuildUtils', () => {
       expect(isPlanOnly(plannedNetwork())).toBe(false);
       expect(isPlanOnly({ ...plannedNetwork(), segments: [] })).toBe(true);
       expect(isPlanOnly({ ...plannedNetwork(), segments: [], plans: {} })).toBe(false);
-      expect(isPlanOnly({ ...plannedNetwork(), segments: [], plans: undefined })).toBe(false);
+      const { plans: _plans, ...withoutPlans } = plannedNetwork();
+      expect(isPlanOnly({ ...withoutPlans, segments: [] })).toBe(false);
     });
   });
 
   describe('firstPlanOf', () => {
     test("is a network's first plan, and none without plans", () => {
       expect(firstPlanOf(plannedNetwork())).toBe(Object.keys(plannedNetwork().plans ?? {})[0]);
-      expect(firstPlanOf({ ...plannedNetwork(), plans: undefined })).toBeUndefined();
+      const { plans: _plans, ...withoutPlans } = plannedNetwork();
+      expect(firstPlanOf(withoutPlans)).toBeUndefined();
     });
   });
 });

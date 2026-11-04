@@ -63,7 +63,19 @@ landing page's pictures in Chrome).
   already answer (`no-unnecessary-condition`), `??` over `||` for a value that may be missing
   (`prefer-nullish-coalescing`), no promise left floating (`no-floating-promises`: awaited, or `void`
   where it is meant to run on its own), no `any` from `JSON.parse` or an untyped `new Map()` (say what
-  it holds: `as CityIndex`, `new Map<string, string>()`), no assertion the types make needless.
+  it holds: `as CityIndex`, `new Map<string, string>()`), no assertion the types make needless. A
+  `switch` over a union names each member or says `default` and why
+  (`switch-exhaustiveness-check`): a new kind of step or overlay cannot slip past one. The compiler
+  refuses what is never read or never returned (`tsconfig.base.json`: `noUnusedLocals`,
+  `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noImplicitOverride`; web's
+  too). A global type a library leans on is loaded where it is used (the renderer's `geojson`): left
+  out, `skipLibCheck` turns it to `any` and says nothing.
+- **A key left out is not a key given `undefined`** (`exactOptionalPropertyTypes`, in the packages):
+  `{ plan?: string }` takes no `plan: undefined`; pass it on as `...(plan && { plan })`, and leave a
+  key out with `const { plans: _plans, ...rest } = network`. Where `undefined` does mean "not given",
+  the type says so (`MapPropsUpdate`, the props `TransitMap.update` takes), and the code drops it,
+  never spreads it over a default. Zod's `.exactOptional()` reads the files so. Web leaves this off: a
+  template passes `undefined` to an optional prop to mean it is not given, as Vue and Nuxt UI read it.
 - **Guard clauses**: an early `return` ends the case, with no `else` after it (`no-else-return`), each
   guard on its own line, never folded into one condition or a ternary.
 - **A function a reader takes in at once** (`sonarjs/cognitive-complexity`, 15, as `dataroom-ui`'s): past

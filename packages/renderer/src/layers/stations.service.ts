@@ -152,7 +152,7 @@ export class StationLayer extends MapLayer {
    *
    * @returns The label's text, as MapLibre formats it.
    */
-  private labelText(): NonNullable<SymbolLayerSpecification['layout']>['text-field'] {
+  private labelText(): NonNullable<NonNullable<SymbolLayerSpecification['layout']>['text-field']> {
     const note = { 'font-scale': 0.8, 'text-color': this.noteColor };
     return [
       'case',

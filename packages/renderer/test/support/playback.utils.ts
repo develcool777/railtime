@@ -21,7 +21,7 @@ import { emptyDrawing } from '../../src/steps/animation.utils';
  * @returns The pieces.
  */
 export const playbackOf = (network: Network, { plan, hidden, view = '2d' }: PlaybackOptions = {}): Playback => {
-  const facts = NetworkFacts.create(network, { plan, ...(hidden && { hidden }), today: Date.UTC(2026, 0, 1) });
+  const facts = NetworkFacts.create(network, { ...(plan && { plan }), ...(hidden && { hidden }), today: Date.UTC(2026, 0, 1) });
   const { index, timeline } = facts.engine;
   const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
   return { facts, index, timeline, player };

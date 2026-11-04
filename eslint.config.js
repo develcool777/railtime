@@ -135,7 +135,10 @@ export default defineConfig(
       ],
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // `const { plans: _plans, ...rest } = network` leaves a key out: `_plans` is never read.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', ignoreRestSiblings: true }],
+      // The same check as typescript-eslint's, without its options.
+      'sonarjs/no-unused-vars': 'off',
       'no-unused-vars': 'off',
       'sonarjs/cognitive-complexity': ['error', 15],
       'sonarjs/pseudo-random': 'off',
@@ -174,6 +177,13 @@ export default defineConfig(
       'import-x/no-named-as-default-member': 'off',
 
       // TypeScript's stricter checks, tuned to the house style.
+      // A `switch` over a union names every member, or says `default`: a new kind of step or overlay
+      // cannot slip past one.
+      '@typescript-eslint/switch-exhaustiveness-check': ['error', { considerDefaultExhaustiveForUnions: true }],
+      // The `as` left are the language's own gaps, each said where it is made: `Object.keys` typed by
+      // its object, a page's own globals (`window as RecordedWindow`), JSON our own commands wrote.
+      // (It found one hole, MapLibre's GeoJSON types unread, `any` unseen: the renderer loads them now.)
+      '@typescript-eslint/no-unsafe-type-assertion': 'off',
       // A number in a message or a URL is how one is written.
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       // `() => map.play()` and `(next) => (time.value = next)` are how actions and handlers are written.
