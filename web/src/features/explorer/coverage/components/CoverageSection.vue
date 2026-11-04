@@ -72,8 +72,9 @@
   import type { CoverageDistance, CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
   import { computed } from 'vue';
   import { COVERAGE_DISTANCE_ITEMS } from '~/features/explorer/coverage/coverage.constants';
-  import { coverageDistanceOf, formatArea, formatShare, formatWalk } from '~/features/explorer/coverage/coverage.utils';
+  import { coverageDistanceOf, formatArea } from '~/features/explorer/coverage/coverage.utils';
   import type { BoundaryState } from '~/features/explorer/tools.types';
+  import { formatShare, formatWalk } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** Where the city's outline is. */

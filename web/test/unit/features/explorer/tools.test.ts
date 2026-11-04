@@ -5,17 +5,7 @@ import { openExplorer } from '@test/support/factories/explorer.utils';
 import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
-import {
-  fetchBoundary,
-  foundCoverageOf,
-  foundReachOf,
-  foundRoutesOf,
-  mapOverlayOf,
-  mapPickHint,
-  overlayRequestOf,
-  routeAimOf,
-  stationPickOf,
-} from '~/features/explorer/tools.utils';
+import { foundReachOf, foundRoutesOf, mapOverlayOf, mapPickHint, overlayRequestOf, routeAimOf, stationPickOf } from '~/features/explorer/tools.utils';
 
 describe('ToolsUtils', () => {
   describe('mapOverlayOf', () => {
@@ -102,22 +92,12 @@ describe('ToolsUtils', () => {
     });
   });
 
-  describe('fetchBoundary', () => {
-    test('gives the outline served, and none for an address that serves something else or nothing', async () => {
-      const outline = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } };
-      await expect(fetchBoundary(`data:application/json,${encodeURIComponent(JSON.stringify(outline))}`)).resolves.toEqual(outline);
-      await expect(fetchBoundary('data:application/json,not%20an%20outline')).resolves.toBeNull();
-      await expect(fetchBoundary('http://127.0.0.1:9/outline.json')).resolves.toBeNull();
-    });
-  });
-
-  describe('foundRoutesOf, foundReachOf, foundCoverageOf', () => {
+  describe('foundRoutesOf, foundReachOf', () => {
     test('take what the map found for their own overlay, and nothing for another or none', () => {
       const route = { kind: 'route' as const, routes: [], shown: null };
       expect(foundRoutesOf(route)).toEqual({ routes: [], shown: null });
       expect(foundReachOf(route)).toBeNull();
       expect(foundReachOf({ kind: 'reach', reach: null })).toBeNull();
-      expect(foundCoverageOf({ kind: 'coverage', coverage: null })).toBeNull();
       expect(foundRoutesOf(null)).toBeNull();
     });
   });

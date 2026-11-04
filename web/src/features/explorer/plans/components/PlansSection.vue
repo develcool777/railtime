@@ -36,9 +36,8 @@
   import type { PlanInfo } from '@railtime/network/facts.types';
   import type { PlanId } from '@railtime/schema/network.types';
   import { computed } from 'vue';
-  import { formatPlanFacts } from '~/features/explorer/format.utils';
-  import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
-  import { lineColor } from '~/utils/format.utils';
+  import { PLAN_STATUSES } from '~/constants/plan.constants';
+  import { formatPlanFacts, lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** The city's plans, each with what it would add. */

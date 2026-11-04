@@ -198,9 +198,23 @@ describe('CameraDirector', () => {
           [0, 0],
           [1, 1],
         ],
-        options: { padding: { top: 0, right: 110, bottom: 0, left: 0 }, maxZoom: 13, duration: 800 },
+        options: { padding: { top: 0, right: 110, bottom: 0, left: 0 }, maxZoom: 13, pitch: 0, bearing: 0, duration: 800 },
       },
     ]);
+  });
+
+  test('fits a box at the tilt the view is changing to: laid flat from 3D, a fit cut short ends flat, not where the tilt had got', () => {
+    const { fake, camera, view } = stepAfter('1905-01-01');
+    const box: [[number, number], [number, number]] = [
+      [0, 0],
+      [1, 1],
+    ];
+    view('3d');
+    camera.fit(box, 13, 800);
+    expect(fake.moves.at(-1)?.options).toMatchObject({ pitch: VIEW_3D_PITCH });
+    view('2d');
+    camera.fit(box, 13, 800);
+    expect(fake.moves.at(-1)?.options).toMatchObject({ pitch: 0, bearing: 0 });
   });
 
   test("fits a box with the room asked for added to the app's own on every side", () => {

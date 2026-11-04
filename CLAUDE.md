@@ -174,9 +174,13 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   ```text
   pages/  css/            routes, styles
   components/ui/          components every surface uses (SiteHeader, StatusChip, MapCredits…)
-  constants/  utils/      the city catalogue (CITIES, city.utils): what any page needs
+  constants/  utils/      what more than one surface needs: the city catalogue (CITIES, city.utils,
+                          its outline fetched), plans' statuses, how a number, a share or a walk is
+                          written, the coverage the map found
   features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
-                          seo, video (a city's history as a video, to record: `pnpm dev` only, the
+                          seo, video (a city's history as a video, to record: its title, the history
+                          to today, each plan going ahead played from today, then the whole network
+                          flat, its coverage drawn, and the end card; `pnpm dev` only, the
                           built site leaves it out; its state a store, `video.store.ts`, its rules in
                           `video.utils.ts`, its map an effect, `video.composable.ts`, as the explorer's;
                           all that moves on it is worked out from the page's clock each frame, never

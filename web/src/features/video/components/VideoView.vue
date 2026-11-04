@@ -4,9 +4,10 @@
     <!-- MapLibre makes the map's own element relative: it fills a frame of its own. -->
     <div class="absolute inset-0"><div ref="container" class="h-full w-full" /></div>
     <VideoTitle :name="cityName" :networks="summary.networks" :span="store.span" :shown="store.layers.title" />
+    <VideoPlan v-if="store.plan" :plan="store.plan" :shown="store.layers.plan" />
     <VideoYear v-if="store.time" :time="store.time" :shown="store.layers.year" />
     <VideoCaption v-if="store.caption" :step="store.caption" :shown="store.layers.caption" />
-    <VideoEnd :name="cityName" :stats="store.time?.stats ?? null" :address :shown="store.layers.end" />
+    <VideoEnd :name="cityName" :stats="store.time?.stats ?? null" :coverage="store.coverage" :address :shown="store.layers.end" />
     <MapCredits :credits="store.credits" class="absolute right-[2vmin] bottom-[1.2vmin] opacity-70" />
   </div>
 </template>
@@ -18,7 +19,7 @@
   import { useVideoMap } from '~/features/video/video.composable';
   import { useVideoStore } from '~/features/video/video.store';
   import { spokenAddress, videoViewOf } from '~/features/video/video.utils';
-  import { cityNameOf, citySummaryOf } from '~/utils/city.utils';
+  import { boundaryUrlOf, cityNameOf, citySummaryOf } from '~/utils/city.utils';
 
   const props = defineProps<{
     /** The city's network. */
@@ -31,7 +32,12 @@
   const container = useTemplateRef<HTMLElement>('container');
   // The video opens on the city's network, seen as its address asks: in 3D, or flat (`?view=2d`).
   const route = useRoute();
-  useVideoMap(container, () => ({ network: props.network, viewMode: videoViewOf(route.query.view) }));
+  const baseURL = useRuntimeConfig().app.baseURL;
+  useVideoMap(container, () => ({
+    network: props.network,
+    viewMode: videoViewOf(route.query.view),
+    outline: `${baseURL}${boundaryUrlOf(props.city)}`,
+  }));
 
   const cityName = computed(() => cityNameOf(props.city));
   const summary = computed(() => citySummaryOf(props.city));

@@ -8,7 +8,9 @@ import { STORE_IDS } from '~/constants/store.constants';
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import type { BoundaryState, RouteEnds } from '~/features/explorer/tools.types';
-import { fetchBoundary, foundCoverageOf, foundReachOf, foundRoutesOf, routeAimOf } from '~/features/explorer/tools.utils';
+import { foundReachOf, foundRoutesOf, routeAimOf } from '~/features/explorer/tools.utils';
+import { fetchBoundary } from '~/utils/city.utils';
+import { foundCoverageOf } from '~/utils/overlay.utils';
 
 /**
  * The map's tools, and what changes them: a route's ends and the way between them drawn, a reach's

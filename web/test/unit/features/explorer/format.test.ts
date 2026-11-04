@@ -1,16 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { decadeHeading, formatPlanFacts, formatStats } from '~/features/explorer/format.utils';
+import { decadeHeading, formatStats } from '~/features/explorer/format.utils';
 
 describe('FormatUtils', () => {
-  describe('formatPlanFacts', () => {
-    test('says what a plan adds, leaving out what it adds none of', () => {
-      expect(formatPlanFacts(4, 6.2)).toBe('adds 4 stations · 6 km');
-      expect(formatPlanFacts(1, 0.2)).toBe('adds 1 station');
-      expect(formatPlanFacts(0, 3)).toBe('adds 3 km');
-      expect(formatPlanFacts(0, 0.2)).toBe('');
-    });
-  });
-
   describe('formatStats', () => {
     test('says what is on the map, shorter for a phone', () => {
       expect(formatStats({ stations: 384, km: 744.6, lines: 20 })).toBe('384 stations · 745 km · 20 lines');
