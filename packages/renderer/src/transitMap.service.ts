@@ -82,7 +82,7 @@ export class TransitMap {
   /** The pending frame. */
   private frameRequest = 0;
   /** When the last frame ran. */
-  private lastFrameAt = 0;
+  private lastFrameAt: number | null = null;
 
   public constructor(options: TransitMapOptions) {
     // Before the first map: MapLibre starts its workers with it.
@@ -485,7 +485,7 @@ export class TransitMap {
    */
   private readonly renderFrame = (now: number): void => {
     if (this.life === 'destroyed') return;
-    const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt || now)) / 1000);
+    const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt ?? now)) / 1000);
     this.lastFrameAt = now;
     this.playback.frame(now, seconds, this.life === 'ready');
     this.flush();

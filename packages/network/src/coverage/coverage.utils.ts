@@ -50,7 +50,7 @@ export const bandAt = (metres: number, bands: CoverageBand[]): number => bands.f
  */
 export const cellBands = (grid: CoverageGrid, distances: Float32Array, bands: CoverageBand[]): Int8Array =>
   Int8Array.from(distances, (metres, cell) => {
-    if (!grid.inside[cell]) return -1;
+    if (grid.inside[cell] !== 1) return -1;
     const band = bandAt(metres, bands);
     return band === -1 ? bands.length : band;
   });
@@ -73,7 +73,7 @@ export const coverageOf = (
   const km2 = bands.map(() => 0);
   let beyond = 0;
   for (const [cell, distance] of distances.entries()) {
-    if (!grid.inside[cell]) continue;
+    if (grid.inside[cell] !== 1) continue;
     // Within bounds: the loop's.
     const band = bandAt(distance, bands);
     if (band === -1) beyond += grid.cellKm2(cell);
@@ -118,7 +118,7 @@ export const coverageHistory = (
     if (cursor !== lastCursor) {
       const distances = grid.distances(servedStations(index, timeline, cursor), metres);
       let within = 0;
-      for (let cell = 0; cell < distances.length; cell++) if (grid.inside[cell] && distances[cell]! <= metres) within += grid.cellKm2(cell);
+      for (let cell = 0; cell < distances.length; cell++) if (grid.inside[cell] === 1 && distances[cell]! <= metres) within += grid.cellKm2(cell);
       share = grid.km2 > 0 ? within / grid.km2 : 0;
       lastCursor = cursor;
     }

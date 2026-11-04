@@ -151,7 +151,7 @@ describe('CoverageGrid', () => {
       const nearest = Math.min(...stations.map(station => distanceKm(station, middle) * 1000));
       // Within bounds: a cell of the grid.
       const distance = distances[cell]!;
-      if (!grid.inside[cell] || nearest > reach + 2) far.push(distance);
+      if (grid.inside[cell] !== 1 || nearest > reach + 2) far.push(distance);
       else if (nearest < reach - 2) near.push({ distance, nearest });
     }
     expect(far).toEqual(far.map(() => Infinity));

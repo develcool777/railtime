@@ -1,3 +1,4 @@
+import { firstDifference } from '@railtime/core/collection.utils';
 import type { LineDirection, StationSummary, StopToward } from '@railtime/network/facts.types';
 import type { StationGroup, StationRow, StripStop } from '~/features/explorer/stations/station.types';
 
@@ -38,7 +39,7 @@ export const findStations = (stations: StationSummary[], query: string, limit: n
     })
     .filter((entry): entry is { station: StationSummary; rank: number } => entry.rank !== null);
   return ranked
-    .toSorted((first, second) => first.rank - second.rank || first.station.name.localeCompare(second.station.name))
+    .toSorted((first, second) => firstDifference(first.rank - second.rank, first.station.name.localeCompare(second.station.name)))
     .slice(0, limit)
     .map(entry => entry.station);
 };

@@ -70,6 +70,11 @@ landing page's pictures in Chrome).
   `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noImplicitOverride`; web's
   too). A global type a library leans on is loaded where it is used (the renderer's `geojson`): left
   out, `skipLibCheck` turns it to `any` and says nothing.
+- **A condition is a boolean** (`strict-boolean-expressions`), or a value whose truth cannot mislead:
+  an object, a string, or one that may be missing (an id, a date, a name, a flag; never `''`). A
+  number is compared, never taken for true: `0` is a count, an option, and the timestamp of
+  1 January 1970 (`closes !== null`, `option > 0`). A sort's tie-breaks are `firstDifference(a - b,
+nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
 - **A key left out is not a key given `undefined`** (`exactOptionalPropertyTypes`, in the packages):
   `{ plan?: string }` takes no `plan: undefined`; pass it on as `...(plan && { plan })`, and leave a
   key out with `const { plans: _plans, ...rest } = network`. Where `undefined` does mean "not given",

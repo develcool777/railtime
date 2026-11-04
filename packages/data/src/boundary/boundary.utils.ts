@@ -135,8 +135,8 @@ export const boundaryArgsOf = (args: string[]): BoundaryArgs => {
  */
 export const fetchBoundary = async (city: City, relationGiven: number | null): Promise<void> => {
   const kept: CityBoundary | null = existsSync(city.boundaryPath) ? parseBoundary(JSON.parse(readFileSync(city.boundaryPath, 'utf8'))) : null;
-  const relation = relationGiven ?? (kept && relationOf(kept));
-  if (!relation) throw new Error(`no outline yet: give its relation, pnpm data:boundary ${city.id} <relation>`);
+  const relation = relationGiven ?? (kept ? relationOf(kept) : null);
+  if (relation === null) throw new Error(`no outline yet: give its relation, pnpm data:boundary ${city.id} <relation>`);
   const response = await fetch(lookupUrlOf(relation), { headers: { 'User-Agent': USER_AGENT } });
   if (!response.ok) throw new Error(`relation ${relation} not fetched: Nominatim answered ${response.status}`);
   const [place] = (await response.json()) as NominatimPlace[];

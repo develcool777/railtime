@@ -94,7 +94,7 @@
    */
   const pick = (value: string | number) => {
     const metres = coverageDistanceOf(value);
-    if (metres) emit('distance', metres);
+    if (metres !== undefined) emit('distance', metres);
   };
 
   const points = computed(() => props.history.map(entry => ({ year: entry.year, percent: entry.share * 100 })));

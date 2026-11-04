@@ -129,7 +129,8 @@ const parseRoute = (text: string): RouteLink | undefined => {
  * @param link - The route.
  * @returns `<from>,<to>`, and `,<option>` after the fastest.
  */
-const formatRoute = (link: RouteLink): string => [link.from ?? '', link.to ?? '', ...(link.option ? [String(link.option)] : [])].join(',');
+const formatRoute = (link: RouteLink): string =>
+  [link.from ?? '', link.to ?? '', ...(link.option !== undefined && link.option > 0 ? [String(link.option)] : [])].join(',');
 
 /**
  * Where an address puts the map: its playhead and its view.
@@ -161,7 +162,7 @@ const parseOpened = (query: ExplorerQuery): ExplorerUrlState => {
     ...(station && SLUG.test(station) && { station }),
     ...(plan && SLUG.test(plan) && { plan }),
     ...(section && { section }),
-    ...(walk && walk !== COVERAGE_DEFAULT_METRES && { walk }),
+    ...(walk !== undefined && walk !== COVERAGE_DEFAULT_METRES && { walk }),
     ...(route && { route }),
     ...(reach && SLUG.test(reach) && { reach }),
     ...(line && SLUG.test(line) && { line }),
@@ -246,7 +247,7 @@ const formatOpened = (state: ExplorerUrlState): Record<string, string> => {
     ...(station && { station }),
     ...(plan && { plan }),
     ...(section && { tab: section }),
-    ...(walk && { walk: String(walk) }),
+    ...(walk !== undefined && { walk: String(walk) }),
     ...(route && { route: formatRoute(route) }),
     ...(reach && { reach }),
     ...(line && { line }),

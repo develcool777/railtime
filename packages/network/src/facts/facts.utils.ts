@@ -1,4 +1,4 @@
-import { pushTo } from '@railtime/core/collection.utils';
+import { pushTo, firstDifference } from '@railtime/core/collection.utils';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances } from '@railtime/core/geometry.utils';
@@ -153,7 +153,7 @@ export const recordsOf = (source: RecordsSource, count: number, moment: Playhead
       const year = firstYears.get(station);
       return year === undefined ? [] : [{ id: station, name: name(station), year }];
     })
-    .toSorted((first, second) => first.year - second.year || first.name.localeCompare(second.name))
+    .toSorted((first, second) => firstDifference(first.year - second.year, first.name.localeCompare(second.name)))
     .slice(0, count);
   const busiest = [...stations]
     .map(([station, lines]) => ({
@@ -161,7 +161,7 @@ export const recordsOf = (source: RecordsSource, count: number, moment: Playhead
       name: name(station),
       lines: [...lines].toSorted(index.compareLines).map(line => ({ id: line, name: index.lineName(line), color: colorOf(line) })),
     }))
-    .toSorted((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
+    .toSorted((first, second) => firstDifference(second.lines.length - first.lines.length, first.name.localeCompare(second.name)))
     .slice(0, count);
   const longest = index.lineIds
     .map(line => ({ id: line, name: index.lineName(line), color: colorOf(line), km: lineLengthKm(index, timeline, line, moment.cursor) }))
@@ -207,4 +207,4 @@ export const trackDatesAt = (
  * @returns Negative if the first comes first.
  */
 export const byOpening = (first: StationLineInfo, second: StationLineInfo): number =>
-  (first.opened === null ? 1 : 0) - (second.opened === null ? 1 : 0) || (first.opened ?? '').localeCompare(second.opened ?? '');
+  firstDifference((first.opened === null ? 1 : 0) - (second.opened === null ? 1 : 0), (first.opened ?? '').localeCompare(second.opened ?? ''));

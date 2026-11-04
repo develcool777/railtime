@@ -55,7 +55,7 @@ export const collectDays = (index: NetworkIndex, stops: StationStops): Map<numbe
     // A plan's are undated: `addPlannedSteps` takes them, section by section.
     if (lineSegment.section !== null) continue;
     day(lineSegment.opens).opens.push(lineSegment);
-    if (lineSegment.closes) day(lineSegment.closes).closes.push(lineSegment);
+    if (lineSegment.closes !== null) day(lineSegment.closes).closes.push(lineSegment);
   }
   for (const [station, info] of Object.entries(index.network.stations)) collectStationDays(index, stops, station, info, day);
   for (const [line, info] of Object.entries(index.network.lines))
