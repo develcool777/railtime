@@ -1,4 +1,5 @@
 import { expression, latest } from '@maplibre/maplibre-gl-style-spec';
+import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, POP_IN_MS, PULSE_MS, SOURCES } from '../../../src/layers/ids.constants';
 import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from '../../../src/layers/snapshot.types';
@@ -57,22 +58,22 @@ describe('StationLayer', () => {
   test('draws each station with a line: named, coloured by its first line, an interchange if it has more or a transfer', () => {
     const { fake, layer } = installed();
     const stations = new Map([
-      ['a', new Map([['red', '#f00']])],
+      [stationId('a'), new Map([[lineId('red'), '#f00']])],
       [
-        'bb',
+        stationId('bb'),
         new Map([
-          ['red', '#f00'],
-          ['blue', '#00f'],
+          [lineId('red'), '#f00'],
+          [lineId('blue'), '#00f'],
         ]),
       ],
-      ['ccc', new Map([['red', '#f00']])],
-      ['gone', new Map()],
+      [stationId('ccc'), new Map([[lineId('red'), '#f00']])],
+      [stationId('gone'), new Map()],
     ]);
-    layer.update(frameOf({ stations, linked: new Set(['ccc']), planned: new Set(['a']), instant: true }));
+    layer.update(frameOf({ stations, linked: new Set([stationId('ccc')]), planned: new Set([stationId('a')]), instant: true }));
     expect(dots(fake).map(dot => [dot.properties.id, dot.properties.name, dot.properties.color, dot.properties.interchange, dot.properties.planned])).toEqual([
-      ['a', 'A', '#f00', false, true],
-      ['bb', 'BB', '#00f', true, false],
-      ['ccc', 'CCC', '#f00', true, false],
+      [stationId('a'), 'A', '#f00', false, true],
+      [stationId('bb'), 'BB', '#00f', true, false],
+      [stationId('ccc'), 'CCC', '#f00', true, false],
     ]);
     expect(dots(fake)[1]?.geometry.coordinates).toEqual([2, 0]);
     // Shown at once: settled, nothing more to draw.
@@ -82,7 +83,7 @@ describe('StationLayer', () => {
 
   test('pops a new station in, animating until it has settled', () => {
     const { fake, layer } = installed();
-    const stations = new Map([['a', new Map([['red', '#f00']])]]);
+    const stations = new Map([[stationId('a'), new Map([[lineId('red'), '#f00']])]]);
     layer.update(frameOf({ stations, now: 1000 }));
     expect(dots(fake)[0]?.properties.scale).toBeCloseTo(0);
     expect(dots(fake)[0]?.properties.opacity).toBe(0);
@@ -96,8 +97,8 @@ describe('StationLayer', () => {
 
   test("pulses a step's new station once, fades its label with the step, and forgets the pulse once the step is over", () => {
     const { fake, layer } = installed();
-    const stations = new Map([['a', new Map([['red', '#f00']])]]);
-    const highlighted = new Set(['a']);
+    const stations = new Map([[stationId('a'), new Map([[lineId('red'), '#f00']])]]);
+    const highlighted = new Set([stationId('a')]);
     layer.update(frameOf({ stations, highlighted, stepPlaying: true, now: 0, newLabelOpacity: 0.5 }));
     expect(dots(fake)[0]?.properties).toMatchObject({ highlighted: true, labelOpacity: 0 });
     expect(pulses(fake)).toHaveLength(1);
@@ -114,9 +115,9 @@ describe('StationLayer', () => {
 
   test('fades a closing station, and pops a station back in that left and returned', () => {
     const { fake, layer } = installed();
-    const stations = new Map([['a', new Map([['red', '#f00']])]]);
+    const stations = new Map([[stationId('a'), new Map([[lineId('red'), '#f00']])]]);
     layer.update(frameOf({ stations, instant: true }));
-    layer.update(frameOf({ stations, fading: new Map([['a', 0.25]]), now: 10 }));
+    layer.update(frameOf({ stations, fading: new Map([[stationId('a'), 0.25]]), now: 10 }));
     expect(dots(fake)[0]?.properties.opacity).toBe(0.25);
     layer.update(frameOf({ now: 20 }));
     expect(dots(fake)).toEqual([]);
@@ -127,11 +128,17 @@ describe('StationLayer', () => {
   test('labels a renamed station with the name it had, and a closing one closed, its name up while its dot goes and a ring closing in', () => {
     const { fake, layer } = installed();
     const stations = new Map([
-      ['a', new Map([['red', '#f00']])],
-      ['bb', new Map([['red', '#f00']])],
+      [stationId('a'), new Map([[lineId('red'), '#f00']])],
+      [stationId('bb'), new Map([[lineId('red'), '#f00']])],
     ]);
     layer.update(frameOf({ stations, instant: true }));
-    const step = { stations, highlighted: new Set(['a']), renamed: new Map([['a', 'Old A']]), fading: new Map([['bb', 0]]), stepPlaying: true };
+    const step = {
+      stations,
+      highlighted: new Set([stationId('a')]),
+      renamed: new Map([[stationId('a'), 'Old A']]),
+      fading: new Map([[stationId('bb'), 0]]),
+      stepPlaying: true,
+    };
     layer.update(frameOf({ ...step, now: 0 }));
     layer.update(frameOf({ ...step, now: PULSE_MS / 4 }));
     const [renamed, closing] = dots(fake);
@@ -188,21 +195,21 @@ describe('StationLayer', () => {
 
   test('sends MapLibre nothing for a frame whose stations look as the last: a growing line changes none most frames', () => {
     const { fake, layer } = installed();
-    const stations = new Map([['a', new Map([['red', '#f00']])]]);
+    const stations = new Map([[stationId('a'), new Map([[lineId('red'), '#f00']])]]);
     layer.update(frameOf({ stations, instant: true, stepPlaying: true, now: 0 }));
     const sends = fake.sends.get(SOURCES.stations);
     layer.update(frameOf({ stations, stepPlaying: true, now: 16 }));
     layer.update(frameOf({ stations, stepPlaying: true, now: 32 }));
     expect(fake.sends.get(SOURCES.stations)).toBe(sends);
     // A station reached: sent.
-    layer.update(frameOf({ stations: new Map([...stations, ['bb', new Map([['red', '#f00']])]]), stepPlaying: true, now: 48 }));
+    layer.update(frameOf({ stations: new Map([...stations, [stationId('bb'), new Map([[lineId('red'), '#f00']])]]), stepPlaying: true, now: 48 }));
     expect(fake.sends.get(SOURCES.stations)).toBe(sends! + 1);
   });
 
   test('a jump in time forgets running pulses', () => {
     const { fake, layer } = installed();
-    const stations = new Map([['a', new Map([['red', '#f00']])]]);
-    layer.update(frameOf({ stations, highlighted: new Set(['a']), stepPlaying: true }));
+    const stations = new Map([[stationId('a'), new Map([[lineId('red'), '#f00']])]]);
+    layer.update(frameOf({ stations, highlighted: new Set([stationId('a')]), stepPlaying: true }));
     layer.resetPulses();
     layer.update(frameOf({ stations, instant: true }));
     expect(pulses(fake)).toEqual([]);
@@ -210,7 +217,7 @@ describe('StationLayer', () => {
 
   test('rings the selected station, names stations or not, and fades them behind a route', () => {
     const { fake, layer } = installed();
-    layer.select('bb');
+    layer.select(stationId('bb'));
     expect(fake.data.get(SOURCES.selection)).toMatchObject({ features: [{ geometry: { coordinates: [2, 0] } }] });
     layer.select(null);
     expect(fake.data.get(SOURCES.selection)).toEqual({ type: 'FeatureCollection', features: [] });

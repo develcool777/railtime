@@ -52,14 +52,14 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * @param id - The station's id, if one is given.
    * @returns The station, or `null`.
    */
-  const stop = (id: string | undefined) => (id && network.facts ? network.facts.find('station', id) : null);
+  const stop = (id: string | undefined) => (id && network.facts ? network.facts.findStation(id) : null);
   /**
    * A station kept on a network made again: `null` if it has it no more.
    *
    * @param kept - The station, or `null`.
    * @returns It, or `null`.
    */
-  const keep = (kept: Stop | null) => (kept && network.facts?.find('station', kept.id) ? kept : null);
+  const keep = (kept: Stop | null) => (kept && network.facts?.findStation(kept.id) ? kept : null);
 
   /**
    * Sets the tools as a page opens, from its address: a station the network does not have is a stale

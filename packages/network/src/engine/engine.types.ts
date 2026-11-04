@@ -1,4 +1,5 @@
 import type { LngLat } from '@railtime/core/geometry.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 
 // The raw network as the renderer sees it (`NetworkEngine`): its track, the lines over it, the steps
 // its history plays, and how an opening grows.
@@ -10,8 +11,8 @@ export type Travel = 1 | -1;
 export type TrackSegment = {
   /** Position in the network's segment list: a stable id. */
   index: number;
-  stationA: string;
-  stationB: string;
+  stationA: StationId;
+  stationB: StationId;
   /** From station A to station B. */
   coordinates: LngLat[];
   /** From station B to station A. */
@@ -28,7 +29,7 @@ export type TrackSegment = {
 /** One line running over one segment for one period, with its dates as timestamps. */
 export type LineSegment = {
   segment: TrackSegment;
-  line: string;
+  line: LineId;
   /** When it opens; `Infinity` for a plan's, which has no date. */
   opens: number;
   closes: number | null;
@@ -51,22 +52,22 @@ type StepBase = {
 };
 
 /** A connected stretch of one (effective) line opens. */
-export type OpenStep = StepBase & { kind: 'open'; line: string; lineSegments: LineSegment[]; segments: TrackSegment[] };
+export type OpenStep = StepBase & { kind: 'open'; line: LineId; lineSegments: LineSegment[]; segments: TrackSegment[] };
 
 /** One line's sections close. */
-export type CloseStep = StepBase & { kind: 'close'; line: string; lineSegments: LineSegment[] };
+export type CloseStep = StepBase & { kind: 'close'; line: LineId; lineSegments: LineSegment[] };
 
 /** A station opens on track its lines already run over: for the first time, or again after a spell closed (`reopening`). */
-export type InfillStep = StepBase & { kind: 'infill'; station: string; lines: string[]; reopening?: true };
+export type InfillStep = StepBase & { kind: 'infill'; station: StationId; lines: LineId[]; reopening?: true };
 
 /** Lines stop calling at a station while still running through it: for good, or for a while (`temporary`). */
-export type StationCloseStep = StepBase & { kind: 'stationClose'; station: string; lines: string[]; temporary?: true };
+export type StationCloseStep = StepBase & { kind: 'stationClose'; station: StationId; lines: LineId[]; temporary?: true };
 
 /** A station takes a new name. */
-export type RenameStep = StepBase & { kind: 'rename'; station: string; from: string; to: string };
+export type RenameStep = StepBase & { kind: 'rename'; station: StationId; from: string; to: string };
 
 /** Lines stop being drawn as another line (a branch becoming its own line, one line splitting into several). */
-export type IdentityStep = StepBase & { kind: 'identity'; lines: string[]; text: string };
+export type IdentityStep = StepBase & { kind: 'identity'; lines: LineId[]; text: string };
 
 /**
  * One thing that happens, played on its own. Several steps can share a date: they play one after
@@ -93,7 +94,7 @@ export type Growth = {
    * on the map before, and a line of the stretch calls there once it plays (track only passing a
    * station that opens later is no new station).
    */
-  reach: { station: string; km: number; isNew: boolean }[];
+  reach: { station: StationId; km: number; isNew: boolean }[];
 };
 
 /**

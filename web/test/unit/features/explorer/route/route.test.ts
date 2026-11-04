@@ -1,4 +1,5 @@
 import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
+import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { ROUTE_STRENGTHS } from '~/features/explorer/route/route.constants';
 import { rideSummary, routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
@@ -12,10 +13,10 @@ import { rideSummary, routeDifference, routeStrengths, routeSummary, routeVia } 
  */
 const ride = (lineName: string, stops: number): Extract<RouteLegInfo, { kind: 'ride' }> => ({
   kind: 'ride',
-  line: lineName.toLowerCase(),
+  line: lineId(lineName.toLowerCase()),
   lineName,
   color: { light: '#000000', dark: '#ffffff' },
-  stops: Array.from({ length: stops + 1 }, (_, position) => ({ id: `s${position}`, name: `S${position}` })),
+  stops: Array.from({ length: stops + 1 }, (_, position) => ({ id: stationId(`s${position}`), name: `S${position}` })),
   minutes: stops * 2.4,
   km: stops,
 });
@@ -30,8 +31,8 @@ const ride = (lineName: string, stops: number): Extract<RouteLegInfo, { kind: 'r
  * @returns The route.
  */
 const routeOf = (legs: RouteLegInfo[], changes: number, best: RouteInfo['best'] = [], minutes = 20): RouteInfo => ({
-  from: { id: 'a', name: 'A' },
-  to: { id: 'z', name: 'Z' },
+  from: { id: stationId('a'), name: 'A' },
+  to: { id: stationId('z'), name: 'Z' },
   legs,
   minutes,
   km: 11.6,
@@ -50,19 +51,19 @@ describe('RouteUtils', () => {
 
   describe('routeVia', () => {
     test('names where each ride after the first is boarded, a walk between them aside; a way with none is direct', () => {
-      const walk: RouteLegInfo = { kind: 'walk', from: { id: 'b', name: 'B' }, to: { id: 'g', name: 'G' }, minutes: 6 };
+      const walk: RouteLegInfo = { kind: 'walk', from: { id: stationId('b'), name: 'B' }, to: { id: stationId('g'), name: 'G' }, minutes: 6 };
       const green = {
         ...ride('Green line', 1),
         stops: [
-          { id: 'g', name: 'G' },
-          { id: 'e', name: 'E' },
+          { id: stationId('g'), name: 'G' },
+          { id: stationId('e'), name: 'E' },
         ],
       };
       const blue = {
         ...ride('Blue line', 1),
         stops: [
-          { id: 'e', name: 'E' },
-          { id: 'f', name: 'F' },
+          { id: stationId('e'), name: 'E' },
+          { id: stationId('f'), name: 'F' },
         ],
       };
       expect(routeVia(routeOf([ride('Red line', 1), walk, green, blue], 2))).toBe('via G, E');

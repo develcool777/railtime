@@ -1,11 +1,12 @@
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { explorerAddressOf, formatExplorerQuery, linkedPlayheadOf, parseExplorerQuery, playheadOf, sameQuery } from '~/features/explorer/address/address.utils';
 
 /** The tiny network's playheads, today 1 January 2026, and with its plan built. */
 const { playheads } = NetworkFacts.create(tinyNetwork(), { today: Date.UTC(2026, 0, 1) });
-const planned = NetworkFacts.create(tinyNetwork(), { today: Date.UTC(2026, 0, 1), plan: 'extension' }).playheads;
+const planned = NetworkFacts.create(tinyNetwork(), { today: Date.UTC(2026, 0, 1), plan: planId('extension') }).playheads;
 
 describe('ExplorerUrlUtils', () => {
   describe('sameQuery', () => {
@@ -217,7 +218,7 @@ describe('ExplorerUrlUtils', () => {
         explorerAddressOf({
           ...asOpened,
           section: 'route',
-          routeEnds: { from: { id: 'a', name: 'A' }, to: null },
+          routeEnds: { from: { id: stationId('a'), name: 'A' }, to: null },
           routeOption: 2,
           stationNames: false,
           viewMode: '3d',

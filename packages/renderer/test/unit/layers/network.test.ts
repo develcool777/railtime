@@ -1,5 +1,6 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { lineId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES, UNFOCUSED_OPACITY } from '../../../src/layers/ids.constants';
 import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
@@ -33,7 +34,7 @@ describe('NetworkLayer', () => {
     expect(fake.layers.get(LAYERS.glow)?.paint['line-opacity']).toBe(PALETTES.dark.glowOpacity);
     expect(fake.layers.get(LAYERS.transferCasing)?.paint['line-color']).toBe(PALETTES.dark.interchangeRing);
 
-    layer.focus(['red']);
+    layer.focus([lineId('red')]);
     expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toEqual(['case', ['in', ['get', 'line'], ['literal', ['red']]], 1, UNFOCUSED_OPACITY]);
     expect(fake.layers.get(LAYERS.glow)?.paint['line-opacity']).toEqual([
       'case',
@@ -76,7 +77,7 @@ describe('ActiveStepLayer', () => {
         '#ff0000',
         0,
         1,
-        'red',
+        lineId('red'),
       ),
     );
     layer.update(drawing);

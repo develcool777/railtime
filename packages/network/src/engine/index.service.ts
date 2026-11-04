@@ -1,9 +1,9 @@
-import { pushTo } from '@railtime/core/collection.utils';
+import { entriesOf, keysOf, pushTo } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import { boundsOf, cumulativeDistances } from '@railtime/core/geometry.utils';
 import { required } from '@railtime/core/required.utils';
-import type { Line, Network, Segment, SegmentLine, Station } from '@railtime/schema/network.types';
+import type { Line, LineId, Network, Segment, SegmentLine, Station, StationId } from '@railtime/schema/network.types';
 import type { BuiltSection } from '@railtime/schema/plan.types';
 import type { LineGap, LineSegment, TrackSegment } from './engine.types';
 import { outsideGaps } from './gaps.utils.ts';
@@ -24,7 +24,7 @@ export class NetworkIndex {
   /** Every line on every segment, one entry per period. */
   public readonly lineSegments: LineSegment[] = [];
   /** Lines a user can see and toggle: every line but pseudo lines (alias targets). */
-  public readonly lineIds: string[];
+  public readonly lineIds: LineId[];
   /** The bounding box of every station. */
   public readonly bounds: Bounds;
   /** The middle of `bounds`: where a network with nothing on the map yet grows from. */
@@ -32,25 +32,25 @@ export class NetworkIndex {
   /** The plan built on the network, section by section; none without one. */
   public readonly sections: BuiltSection[];
   /** Each line's position in the network: also the order lines sit side by side on shared track. */
-  private readonly lineOrder: Map<string, number>;
+  private readonly lineOrder: Map<LineId, number>;
   /** The stations each station has a transfer to. */
-  private readonly transfersByStation = new Map<string, string[]>();
+  private readonly transfersByStation = new Map<StationId, StationId[]>();
   /** Line segments touching each station. */
-  private readonly lineSegmentsByStation = new Map<string, LineSegment[]>();
+  private readonly lineSegmentsByStation = new Map<StationId, LineSegment[]>();
   /** The stretches of time each line is left out, if any. */
-  public readonly gaps: ReadonlyMap<string, readonly LineGap[]>;
+  public readonly gaps: ReadonlyMap<LineId, readonly LineGap[]>;
 
   /**
    * @param network - The network: with a plan's track, if one is built on it (`buildPlan`).
    * @param sections - That plan's sections, in order.
    * @param gaps - The stretches of time each line is left out: the years it was drawn as a line hidden.
    */
-  public constructor(network: Network, sections: BuiltSection[] = [], gaps: ReadonlyMap<string, readonly LineGap[]> = new Map()) {
+  public constructor(network: Network, sections: BuiltSection[] = [], gaps: ReadonlyMap<LineId, readonly LineGap[]> = new Map()) {
     this.network = network;
     this.sections = sections;
     this.gaps = gaps;
-    this.lineOrder = new Map(Object.keys(network.lines).map((line, position) => [line, position]));
-    this.lineIds = Object.entries(network.lines)
+    this.lineOrder = new Map(keysOf(network.lines).map((line, position) => [line, position]));
+    this.lineIds = entriesOf(network.lines)
       .filter(([, line]) => !line.pseudo)
       .map(([id]) => id);
     this.segments = network.segments.map((segment, index) => this.indexSegment(segment, index));
@@ -79,7 +79,7 @@ export class NetworkIndex {
    * @returns Its other names.
    */
   public otherNames(named: Pick<Station, 'name' | 'names'>): string[] {
-    return Object.entries(named.names ?? {})
+    return entriesOf(named.names ?? {})
       .toSorted(([first], [second]) => first.localeCompare(second))
       .map(([, name]) => name)
       .filter(name => name !== named.name);
@@ -92,7 +92,7 @@ export class NetworkIndex {
    * @param second - Another line id.
    * @returns Negative if `first` sits left of `second`.
    */
-  public readonly compareLines = (first: string, second: string): number => (this.lineOrder.get(first) ?? 0) - (this.lineOrder.get(second) ?? 0);
+  public readonly compareLines = (first: LineId, second: LineId): number => (this.lineOrder.get(first) ?? 0) - (this.lineOrder.get(second) ?? 0);
 
   /**
    * Where a station is.
@@ -100,7 +100,7 @@ export class NetworkIndex {
    * @param station - A station id.
    * @returns Its coordinate.
    */
-  public coordOf(station: string): LngLat {
+  public coordOf(station: StationId): LngLat {
     return this.stationOf(station).coordinate;
   }
 
@@ -110,7 +110,7 @@ export class NetworkIndex {
    * @param station - A station id.
    * @returns The station.
    */
-  public stationOf(station: string): Station {
+  public stationOf(station: StationId): Station {
     return required(this.network.stations[station], `station ${station}`);
   }
 
@@ -120,7 +120,7 @@ export class NetworkIndex {
    * @param line - A line id.
    * @returns The line.
    */
-  public lineOf(line: string): Line {
+  public lineOf(line: LineId): Line {
     return required(this.network.lines[line], `line ${line}`);
   }
 
@@ -131,7 +131,7 @@ export class NetworkIndex {
    * @param time - The date's timestamp; today's name without one.
    * @returns Its display name then.
    */
-  public stationName(station: string, time = Infinity): string {
+  public stationName(station: StationId, time = Infinity): string {
     return this.namedAt(station, time).name;
   }
 
@@ -142,7 +142,7 @@ export class NetworkIndex {
    * @param time - The date's timestamp; today's name without one.
    * @returns One name per line.
    */
-  public stationLabel(station: string, time = Infinity): string {
+  public stationLabel(station: StationId, time = Infinity): string {
     const named = this.namedAt(station, time);
     return [named.name, ...this.otherNames(named)].join('\n');
   }
@@ -153,7 +153,7 @@ export class NetworkIndex {
    * @param line - A line id.
    * @returns Its full name where it has one; else "<name> line", or a pseudo line's own name as it is.
    */
-  public lineName(line: string): string {
+  public lineName(line: LineId): string {
     const info = this.lineOf(line);
     if (info.fullName) return info.fullName;
     return info.pseudo ? info.name : `${info.name} line`;
@@ -166,7 +166,7 @@ export class NetworkIndex {
    * @param line - A line id.
    * @returns A timestamp; `Infinity` for a line only a plan builds.
    */
-  public lineOpens(line: string): number {
+  public lineOpens(line: LineId): number {
     const ownFrom = Math.max(...(this.lineOf(line).aliases ?? []).map(alias => toTimestamp(alias.until)));
     const runsAsItself = this.lineSegments.filter(lineSegment => lineSegment.line === line && (lineSegment.closes === null || lineSegment.closes > ownFrom));
     return Math.min(...runsAsItself.map(lineSegment => Math.max(lineSegment.opens, ownFrom)));
@@ -179,7 +179,7 @@ export class NetworkIndex {
    * @param time - A timestamp.
    * @returns True if one of its gaps starts then.
    */
-  public goesOutAt(line: string, time: number): boolean {
+  public goesOutAt(line: LineId, time: number): boolean {
     return (this.gaps.get(line) ?? []).some(gap => gap.from === time);
   }
 
@@ -189,7 +189,7 @@ export class NetworkIndex {
    * @param station - A station id.
    * @returns Their ids.
    */
-  public transfersAt(station: string): string[] {
+  public transfersAt(station: StationId): StationId[] {
     return this.transfersByStation.get(station) ?? [];
   }
 
@@ -199,7 +199,7 @@ export class NetworkIndex {
    * @param station - A station id.
    * @returns Every line on every segment ending there.
    */
-  public lineSegmentsAt(station: string): LineSegment[] {
+  public lineSegmentsAt(station: StationId): LineSegment[] {
     return this.lineSegmentsByStation.get(station) ?? [];
   }
 
@@ -224,7 +224,7 @@ export class NetworkIndex {
       lengthKm: distances.at(-1) ?? 0,
       travel: 1,
     };
-    for (const [line, dates] of Object.entries(segment.lines)) this.indexLineOnSegment(trackSegment, line, dates);
+    for (const [line, dates] of entriesOf(segment.lines)) this.indexLineOnSegment(trackSegment, line, dates);
     return trackSegment;
   }
 
@@ -235,7 +235,7 @@ export class NetworkIndex {
    * @param line - The line's id.
    * @param dates - Its dates on the segment, as the network has them.
    */
-  private indexLineOnSegment(trackSegment: TrackSegment, line: string, dates: SegmentLine): void {
+  private indexLineOnSegment(trackSegment: TrackSegment, line: LineId, dates: SegmentLine): void {
     // Each spell without trains ends one period and starts the next.
     const starts = [dates.open, ...(dates.suspended ?? []).map(spell => spell.until)];
     const ends = [...(dates.suspended ?? []).map(spell => spell.from), dates.close];
@@ -285,7 +285,7 @@ export class NetworkIndex {
    * @param time - The date's timestamp.
    * @returns What it was called then, with that name's other languages.
    */
-  public namedAt(station: string, time: number): Pick<Station, 'name' | 'names'> {
+  public namedAt(station: StationId, time: number): Pick<Station, 'name' | 'names'> {
     const info = this.stationOf(station);
     return info.formerNames?.find(former => time < toTimestamp(former.until)) ?? info;
   }

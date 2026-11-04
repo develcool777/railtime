@@ -1,4 +1,5 @@
 import { toTimestamp } from '@railtime/core/date.utils';
+import { planId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
@@ -34,7 +35,7 @@ describe('Playheads', () => {
   });
 
   test("plays a plan's changes at the end of the range, the network ending with them all done", () => {
-    const { playheads, range, engine } = factsOf(tinyNetwork(), 'extension');
+    const { playheads, range, engine } = factsOf(tinyNetwork(), planId('extension'));
     const dated = engine.timeline.datedCount;
     expect(playheads.after(dated, 0.5)).toEqual({ cursor: dated, time: range.end, progress: 0.5 });
     expect(playheads.after(dated + 1).time).toBe(range.end);
@@ -43,7 +44,7 @@ describe('Playheads', () => {
   });
 
   test('stands just before a change on its date, so playing plays it at once', () => {
-    const { playheads, engine } = factsOf(tinyNetwork(), 'extension');
+    const { playheads, engine } = factsOf(tinyNetwork(), planId('extension'));
     const { steps, datedCount } = engine.timeline;
     expect(playheads.before(1)).toEqual({ cursor: 1, time: steps[1]!.time, progress: 0 });
     expect(playheads.before(datedCount).time).toBe(playheads.end().time);
@@ -66,12 +67,12 @@ describe('Playheads', () => {
   test("starts playing from history's first date, or for a network with a plan from today, where its plan starts", () => {
     const history = factsOf(tinyNetwork());
     expect(history.playheads.start()).toEqual({ cursor: 0, time: history.range.start, progress: 0 });
-    const planned = factsOf(tinyNetwork(), 'extension');
+    const planned = factsOf(tinyNetwork(), planId('extension'));
     expect(planned.playheads.start()).toEqual(planned.playheads.today());
   });
 
   test("plays a change on its own date, and a plan's at the end of the range", () => {
-    const { playheads, range, engine } = factsOf(tinyNetwork(), 'extension');
+    const { playheads, range, engine } = factsOf(tinyNetwork(), planId('extension'));
     const { steps, datedCount } = engine.timeline;
     expect(playheads.dateOf(0)).toBe(steps[0]!.time);
     expect(playheads.dateOf(datedCount)).toBe(range.end);
@@ -80,7 +81,7 @@ describe('Playheads', () => {
 
   test('rests today, or for a network with a plan at the end, the plan built; and knows a playhead there, to the day', () => {
     const history = factsOf(tinyNetwork()).playheads;
-    const planned = factsOf(tinyNetwork(), 'extension').playheads;
+    const planned = factsOf(tinyNetwork(), planId('extension')).playheads;
     expect(history.rest()).toEqual(history.today());
     expect(planned.rest()).toEqual(planned.end());
     expect(history.isRest({ ...history.today(), time: TODAY + 3_600_000 })).toBe(true);
@@ -90,7 +91,7 @@ describe('Playheads', () => {
   });
 
   test('is in a plan once a planned change is done, or being drawn, and never in a network without one', () => {
-    const { playheads, engine } = factsOf(tinyNetwork(), 'extension');
+    const { playheads, engine } = factsOf(tinyNetwork(), planId('extension'));
     const dated = engine.timeline.datedCount;
     expect(playheads.inPlan(playheads.today())).toBe(false);
     expect(playheads.inPlan(playheads.after(dated, 0.1))).toBe(true);

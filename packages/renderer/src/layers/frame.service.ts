@@ -1,5 +1,6 @@
 import { DAY_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { ChaseTarget, StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
@@ -76,7 +77,7 @@ export class FrameRenderer {
    * @param selected - The station ringed on the map, if any.
    * @returns What the app is told.
    */
-  public draw(now: number, selected: string | null): FrameOutcome {
+  public draw(now: number, selected: StationId | null): FrameOutcome {
     const { player, activeStep, stations: stationLayer } = this.parts;
     const state = this.renderState();
     const active = player.active;
@@ -89,9 +90,9 @@ export class FrameRenderer {
     this.updateMinimapActive(drawing);
 
     if (refreshed || drawingStep || this.instant || stationLayer.animating) {
-      const stations = new Map<string, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
+      const stations = new Map<StationId, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
       for (const [station, lines] of drawing.reached)
-        for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map<string, string>()).set(lineId, color));
+        for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map<LineId, string>()).set(lineId, color));
       stationLayer.update({
         now,
         stations,

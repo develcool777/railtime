@@ -1,7 +1,8 @@
+import { entriesOf, keysOf } from '@railtime/core/collection.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import type { TrackOut } from './checks.types';
 import { checkNetwork, datedTracksOut, pushTrack, segmentTurnProblem, throughStationProblems, tracksOut } from './checks.utils.ts';
-import type { Network, Plan } from '../format/network.types';
+import type { Network, Plan, StationId } from '../format/network.types';
 import type { BuiltPlan } from '../plan/build.types';
 import { buildPlan } from '../plan/build.utils.ts';
 
@@ -13,10 +14,10 @@ import { buildPlan } from '../plan/build.utils.ts';
  * @returns A problem for each.
  */
 const planReferenceProblems = (network: Network, plan: Plan): string[] => [
-  ...Object.keys(plan.lines ?? {})
+  ...keysOf(plan.lines ?? {})
     .filter(line => network.lines[line])
     .map(line => `line ${line} is already in the network`),
-  ...Object.keys(plan.stations ?? {})
+  ...keysOf(plan.stations ?? {})
     .filter(station => network.stations[station])
     .map(station => `station ${station} is already in the network`),
   ...plan.sections.flatMap((section, position) => [
@@ -34,7 +35,7 @@ const planReferenceProblems = (network: Network, plan: Plan): string[] => [
  * @param stationB - The other.
  * @returns The pair, as `a – b`.
  */
-const pairOf = (stationA: string, stationB: string): string => [stationA, stationB].toSorted(byCodeUnits).join(' – ');
+const pairOf = (stationA: StationId, stationB: StationId): string => [stationA, stationB].toSorted(byCodeUnits).join(' – ');
 
 /**
  * A plan's track that would never be laid: between a station no one has, two stations no section
@@ -138,7 +139,7 @@ const planCurveProblems = (built: BuiltPlan): string[] => {
 export const checkPlans = (network: Network, problem: (message: string) => void): void => {
   const known = new Set<string>();
   checkNetwork(network, message => known.add(message));
-  for (const [planId, plan] of Object.entries(network.plans ?? {})) {
+  for (const [planId, plan] of entriesOf(network.plans ?? {})) {
     const references = [...planReferenceProblems(network, plan), ...planTrackProblems(network, plan)];
     for (const message of [...references, ...planOrderProblems(plan)]) problem(`plan ${planId}: ${message}`);
     // Built only once its ids are sound: building needs every station's place.

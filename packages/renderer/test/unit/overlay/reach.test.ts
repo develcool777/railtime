@@ -1,5 +1,6 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import type { ReachTrackFeature } from '../../../src/layers/snapshot.types';
@@ -14,7 +15,7 @@ import { networkNow, playbackOf } from '../../support/playback.utils';
 const reachFromA = () => {
   const playback = playbackOf(tinyNetwork());
   playback.player.seek(playback.facts.playheads.on(toTimestamp('1955-01-01')));
-  return { playback, reach: networkNow(playback).reach('a')! };
+  return { playback, reach: networkNow(playback).reach(stationId('a'))! };
 };
 
 describe('ReachLayer', () => {

@@ -1,5 +1,7 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { Network, Segment, Station } from '@railtime/schema/network.types';
+import type { Network } from '@railtime/schema/network.types';
+import { asNetwork } from '@railtime/schema/testing/ids';
+import type { WrittenSegment, WrittenStation } from '@railtime/schema/testing/ids';
 
 /** About 1 km of longitude at 51.5° north, the test line's latitude. */
 const ONE_KM = 0.0144;
@@ -19,7 +21,7 @@ const pointAt = (position: number): LngLat => [position * ONE_KM, 51.5];
  * @param position - Km east of A.
  * @returns The station.
  */
-const stationAt = (name: string, position: number): Station => ({ name, coordinate: pointAt(position) });
+const stationAt = (name: string, position: number): WrittenStation => ({ name, coordinate: pointAt(position) });
 
 /**
  * A 1 km segment on the test line.
@@ -30,7 +32,7 @@ const stationAt = (name: string, position: number): Station => ({ name, coordina
  * @param lines - Its lines and dates.
  * @returns The segment.
  */
-const segmentAt = (stationA: string, stationB: string, position: number, lines: Segment['lines']): Segment => ({
+const segmentAt = (stationA: string, stationB: string, position: number, lines: WrittenSegment['lines']): WrittenSegment => ({
   stationA,
   stationB,
   coordinates: [pointAt(position), pointAt(position + 1)],
@@ -51,44 +53,51 @@ const segmentAt = (stationA: string, stationB: string, position: number, lines: 
  *
  * @returns The network.
  */
-export const tinyNetwork = (): Network => ({
-  meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
-  networks: { metro: { name: 'Metro', names: { uk: 'Метро' } } },
-  lines: {
-    red: { name: 'Red', names: { uk: 'Червона лінія' }, network: 'metro', mode: 'metro', color: '#ff0000' },
-    blue: { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' },
-    pink: { name: 'Pink', network: 'metro', mode: 'metro', color: '#ff88cc', aliases: [{ until: '1990-01-01', as: 'red', text: 'Pink becomes its own line' }] },
-    green: { name: 'Green', network: 'metro', mode: 'metro', color: '#00aa00' },
-  },
-  stations: {
-    a: { ...stationAt('A', 0), formerNames: [{ name: 'Pre A', until: '1899-06-01' }] },
-    b: stationAt('B', 1),
-    c: { ...stationAt('C', 2), infill: { red: '1920-06-01', blue: '1960-06-01' } },
-    d: {
-      ...stationAt('D', 3),
-      names: { uk: 'Д' },
-      closed: { red: '1960-01-01' },
-      formerNames: [{ name: 'Old D', names: { uk: 'Старий Д' }, until: '1925-01-01' }],
+export const tinyNetwork = (): Network =>
+  asNetwork({
+    meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
+    networks: { metro: { name: 'Metro', names: { uk: 'Метро' } } },
+    lines: {
+      red: { name: 'Red', names: { uk: 'Червона лінія' }, network: 'metro', mode: 'metro', color: '#ff0000' },
+      blue: { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' },
+      pink: {
+        name: 'Pink',
+        network: 'metro',
+        mode: 'metro',
+        color: '#ff88cc',
+        aliases: [{ until: '1990-01-01', as: 'red', text: 'Pink becomes its own line' }],
+      },
+      green: { name: 'Green', network: 'metro', mode: 'metro', color: '#00aa00' },
     },
-  },
-  segments: [
-    segmentAt('a', 'b', 0, { red: { open: '1900-01-01' }, pink: { open: '1900-01-01' } }),
-    segmentAt('b', 'c', 1, {
-      red: { open: '1910-01-01' },
-      blue: { open: '1930-01-01', close: '1950-01-01', suspended: [{ from: '1940-01-01', until: '1945-01-01' }] },
-    }),
-    segmentAt('c', 'd', 2, { red: { open: '1910-01-01' }, green: { open: '1970-01-01' } }),
-  ],
-  transfers: [{ stationA: 'a', stationB: 'd' }],
-  plans: {
-    extension: {
-      name: 'Extension',
-      status: 'planned',
-      stations: { e: stationAt('E', 4), f: stationAt('F', 1.5) },
-      sections: [
-        { line: 'red', stations: ['d', 'e'] },
-        { line: 'red', stations: ['b', 'f', 'c'] },
-      ],
+    stations: {
+      a: { ...stationAt('A', 0), formerNames: [{ name: 'Pre A', until: '1899-06-01' }] },
+      b: stationAt('B', 1),
+      c: { ...stationAt('C', 2), infill: { red: '1920-06-01', blue: '1960-06-01' } },
+      d: {
+        ...stationAt('D', 3),
+        names: { uk: 'Д' },
+        closed: { red: '1960-01-01' },
+        formerNames: [{ name: 'Old D', names: { uk: 'Старий Д' }, until: '1925-01-01' }],
+      },
     },
-  },
-});
+    segments: [
+      segmentAt('a', 'b', 0, { red: { open: '1900-01-01' }, pink: { open: '1900-01-01' } }),
+      segmentAt('b', 'c', 1, {
+        red: { open: '1910-01-01' },
+        blue: { open: '1930-01-01', close: '1950-01-01', suspended: [{ from: '1940-01-01', until: '1945-01-01' }] },
+      }),
+      segmentAt('c', 'd', 2, { red: { open: '1910-01-01' }, green: { open: '1970-01-01' } }),
+    ],
+    transfers: [{ stationA: 'a', stationB: 'd' }],
+    plans: {
+      extension: {
+        name: 'Extension',
+        status: 'planned',
+        stations: { e: stationAt('E', 4), f: stationAt('F', 1.5) },
+        sections: [
+          { line: 'red', stations: ['d', 'e'] },
+          { line: 'red', stations: ['b', 'f', 'c'] },
+        ],
+      },
+    },
+  });

@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
   import type { StationSummary } from '@railtime/network/facts.types';
+  import type { StationId } from '@railtime/schema/network.types';
   import { computed, ref } from 'vue';
   import { PANEL_SEARCH_HEIGHT } from '~/features/explorer/panel/panel.constants';
   import { LETTER_HEADING_ESTIMATE, STATION_ROW_ESTIMATE } from '~/features/explorer/stations/station.constants';
@@ -40,7 +41,7 @@
     /** The stations on the map on the date shown. */
     stations: StationSummary[];
   }>();
-  const emit = defineEmits<{ open: [station: string] }>();
+  const emit = defineEmits<{ open: [station: StationId] }>();
 
   const query = ref('');
   /** A to Z under their letters; searched, the best matches first, under no letter. */

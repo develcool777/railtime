@@ -1,5 +1,6 @@
 import { pushTo } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
+import type { StationId } from '@railtime/schema/network.types';
 import type { TrackSegment, Travel } from './engine.types';
 import type { Chain, ChainLink } from './orientation.types';
 
@@ -10,8 +11,8 @@ import type { Chain, ChainLink } from './orientation.types';
  * @param stationsOf - The stations a thing touches.
  * @returns Station id to the things touching it.
  */
-const groupByStation = <Thing>(things: Thing[], stationsOf: (thing: Thing) => string[]): Map<string, Thing[]> => {
-  const byStation = new Map<string, Thing[]>();
+const groupByStation = <Thing>(things: Thing[], stationsOf: (thing: Thing) => StationId[]): Map<StationId, Thing[]> => {
+  const byStation = new Map<StationId, Thing[]>();
   for (const thing of things) for (const station of stationsOf(thing)) pushTo(byStation, station, thing);
   return byStation;
 };
@@ -25,8 +26,8 @@ const groupByStation = <Thing>(things: Thing[], stationsOf: (thing: Thing) => st
  * @param used - Segments already in a chain; extended with every segment walked.
  * @returns Each segment walked with the station it was entered from, and the station the walk stopped at.
  */
-const walkPlainStations = (first: TrackSegment, station: string, segmentsAt: Map<string, TrackSegment[]>, used: Set<TrackSegment>) => {
-  const steps: { segment: TrackSegment; enteredAt: string }[] = [];
+const walkPlainStations = (first: TrackSegment, station: StationId, segmentsAt: Map<StationId, TrackSegment[]>, used: Set<TrackSegment>) => {
+  const steps: { segment: TrackSegment; enteredAt: StationId }[] = [];
   let previous = first;
   let current = station;
   while (segmentsAt.get(current)!.length === 2) {
@@ -47,7 +48,7 @@ const walkPlainStations = (first: TrackSegment, station: string, segmentsAt: Map
  * @param segmentsAt - Segments by station.
  * @returns The chains, each with its segments in order of travel from `start` to `end`.
  */
-const buildChains = (segments: TrackSegment[], segmentsAt: Map<string, TrackSegment[]>): Chain[] => {
+const buildChains = (segments: TrackSegment[], segmentsAt: Map<StationId, TrackSegment[]>): Chain[] => {
   const used = new Set<TrackSegment>();
   const chains: Chain[] = [];
   for (const seed of segments) {
@@ -92,7 +93,7 @@ const headsEast = (chain: Chain): boolean => {
  * @param chainsAt - Chains by the stations they start or end at.
  * @returns Each neighbour with its direction, those at its end first.
  */
-const continuations = (chain: Chain, travel: Travel, chainsAt: Map<string, Chain[]>): [Chain, Travel][] => {
+const continuations = (chain: Chain, travel: Travel, chainsAt: Map<StationId, Chain[]>): [Chain, Travel][] => {
   const [start, end] = travel === 1 ? [chain.start, chain.end] : [chain.end, chain.start];
   return [
     ...chainsAt.get(end)!.map((next): [Chain, Travel] => [next, next.start === end ? 1 : -1]),

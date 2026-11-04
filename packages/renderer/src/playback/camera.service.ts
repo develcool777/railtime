@@ -1,6 +1,7 @@
 import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import { boundsOf, distanceKm } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
+import type { StationId } from '@railtime/schema/network.types';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { StepAnimation } from '../steps/animation.service';
 import type { ChaseTarget } from '../steps/animation.types';
@@ -103,7 +104,7 @@ export class CameraDirector {
    * @param durationMs - How long the move should take; it takes at least `MIN_MOVE_MS`.
    * @returns How long the move takes, ms; 0 when the camera stays.
    */
-  public focusStep(animation: StepAnimation, stationsOnMap: Set<string>, coordOf: (station: string) => LngLat, durationMs: number): number {
+  public focusStep(animation: StepAnimation, stationsOnMap: Set<StationId>, coordOf: (station: StationId) => LngLat, durationMs: number): number {
     if (this.mode === 'free') return 0;
     const points = animation.cameraPoints();
     if (this.mode === 'overview') for (const station of stationsOnMap) points.push(coordOf(station));

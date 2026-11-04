@@ -2,6 +2,7 @@ import { required } from '@railtime/core/required.utils';
 import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { CoverageCells, ReachInfo, RouteInfo, Theme } from '@railtime/network/facts.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { StationId } from '@railtime/schema/network.types';
 import { COVERAGE_ALPHA, UNCOVERED_ALPHA, UNCOVERED_COLOR } from './overlay.constants';
 import type { CoverageDrawing, RouteStopKind, RouteStopMark } from './overlay.types';
 import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties } from '../layers/snapshot.types';
@@ -58,8 +59,8 @@ const RANK: Record<RouteStopKind, number> = { pass: 0, board: 1, end: 2 };
  * @returns Each stop with its mark, in the order the route reaches them.
  */
 export const routeStopMarks = (route: RouteInfo, theme: Theme): RouteStopMark[] => {
-  const marks = new Map<string, RouteStopMark>();
-  const mark = (station: string, name: string, kind: RouteStopKind, color: string) => {
+  const marks = new Map<StationId, RouteStopMark>();
+  const mark = (station: StationId, name: string, kind: RouteStopKind, color: string) => {
     const known = marks.get(station);
     if (!known || RANK[kind] >= RANK[known.kind]) marks.set(station, { station, name, kind, color });
   };

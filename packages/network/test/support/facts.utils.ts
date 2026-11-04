@@ -1,4 +1,4 @@
-import type { Network } from '@railtime/schema/network.types';
+import type { Network, PlanId } from '@railtime/schema/network.types';
 import { NetworkFacts } from '../../src/facts/facts.service';
 import type { FactsAt } from '../../src/facts/facts.types';
 
@@ -12,7 +12,7 @@ const TEST_TODAY = Date.UTC(2026, 0, 1);
  * @param plan - One of its plans to build on it.
  * @returns Its facts.
  */
-export const factsOf = (network: Network, plan?: string): NetworkFacts => NetworkFacts.create(network, { ...(plan && { plan }), today: TEST_TODAY });
+export const factsOf = (network: Network, plan?: PlanId): NetworkFacts => NetworkFacts.create(network, { ...(plan && { plan }), today: TEST_TODAY });
 
 /**
  * The network's questions answered at the end of a day, or at its end (every change played, a plan's too).

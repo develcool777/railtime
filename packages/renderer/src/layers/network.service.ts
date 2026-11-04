@@ -1,3 +1,4 @@
+import type { LineId } from '@railtime/schema/network.types';
 import type { DataDrivenPropertyValueSpecification, FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
 import { GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, PLANNED_DASHES, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
 import { MapLayer } from './layer.service';
@@ -15,7 +16,7 @@ const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned
  */
 export class NetworkLayer extends MapLayer {
   /** The lines in focus, the rest faded; `null` when every line is. */
-  private focused: string[] | null = null;
+  private focused: LineId[] | null = null;
   /** The glow's opacity in the current theme. */
   private glowOpacity = 0;
 
@@ -91,7 +92,7 @@ export class NetworkLayer extends MapLayer {
    *
    * @param lineIds - The lines in focus; `null` for every line.
    */
-  public focus(lineIds: string[] | null): void {
+  public focus(lineIds: LineId[] | null): void {
     this.focused = lineIds;
     this.applyFocus();
   }

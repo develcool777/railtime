@@ -1,5 +1,7 @@
+import { entriesOf, fromEntriesOf } from '@railtime/core/collection.utils';
+import type { IsoDate } from '@railtime/core/date.types';
 import { toIsoDate, toTimestamp } from '@railtime/core/date.utils';
-import type { Line, SegmentLine, Station, Suspension } from '@railtime/schema/network.types';
+import type { Line, LineId, SegmentLine, Station, Suspension } from '@railtime/schema/network.types';
 import type { LineGap } from '../engine/engine.types';
 import { outsideGaps } from '../engine/gaps.utils.ts';
 
@@ -11,9 +13,9 @@ import { outsideGaps } from '../engine/gaps.utils.ts';
  * @param hidden - The lines hidden.
  * @returns Each line shown with any, its gaps in order.
  */
-export const gapsOf = (lines: Record<string, Line>, hidden: Set<string>): Map<string, LineGap[]> =>
+export const gapsOf = (lines: Record<LineId, Line>, hidden: Set<LineId>): Map<LineId, LineGap[]> =>
   new Map(
-    Object.entries(lines).flatMap(([id, line]) => {
+    entriesOf(lines).flatMap(([id, line]) => {
       if (hidden.has(id)) return [];
       const aliases = [...(line.aliases ?? [])].toSorted((first, second) => first.until.localeCompare(second.until));
       const gaps = aliases.flatMap((alias, position) => {
@@ -32,7 +34,7 @@ export const gapsOf = (lines: Record<string, Line>, hidden: Set<string>): Map<st
  * @param hidden - The lines hidden.
  * @returns The line, its aliases trimmed.
  */
-export const lineWithout = (line: Line, hidden: Set<string>): Line => {
+export const lineWithout = (line: Line, hidden: Set<LineId>): Line => {
   const { aliases, ...own } = line;
   const left = (aliases ?? []).filter(alias => !hidden.has(alias.as));
   if (left.length === (aliases ?? []).length) return line;
@@ -72,7 +74,7 @@ const spellsOutside = (spells: Suspension[], gaps: readonly LineGap[]): Suspensi
  * @param gaps - A line's gaps.
  * @returns The gap.
  */
-const gapAt = (day: string, gaps: readonly LineGap[]): LineGap | undefined => {
+const gapAt = (day: IsoDate, gaps: readonly LineGap[]): LineGap | undefined => {
   const time = toTimestamp(day);
   return gaps.find(gap => gap.from <= time && time < gap.until);
 };
@@ -86,21 +88,21 @@ const gapAt = (day: string, gaps: readonly LineGap[]): LineGap | undefined => {
  * @param gaps - Each line's gaps.
  * @returns The station.
  */
-export const stationOutside = (station: Station, gaps: ReadonlyMap<string, readonly LineGap[]>): Station => {
+export const stationOutside = (station: Station, gaps: ReadonlyMap<LineId, readonly LineGap[]>): Station => {
   const lines = [...gaps.keys()].filter(line => (station.infill?.[line] ?? station.closed?.[line] ?? station.suspended?.[line]) !== undefined);
   if (lines.length === 0) return station;
-  const gapsOfLine = (line: string) => gaps.get(line) ?? [];
-  const infill = Object.entries(station.infill ?? {}).map(([line, day]): [string, string] => {
+  const gapsOfLine = (line: LineId) => gaps.get(line) ?? [];
+  const infill = entriesOf(station.infill ?? {}).map(([line, day]): [LineId, IsoDate] => {
     const gap = gapAt(day, gapsOfLine(line));
     return [line, gap ? toIsoDate(gap.until) : day];
   });
-  const closings = Object.entries(station.closed ?? {}).map(([line, day]) => [line, day, gapAt(day, gapsOfLine(line))] as const);
-  const closed = closings.flatMap(([line, day, gap]): [string, string][] => {
+  const closings = entriesOf(station.closed ?? {}).map(([line, day]) => [line, day, gapAt(day, gapsOfLine(line))] as const);
+  const closed = closings.flatMap(([line, day, gap]): [LineId, IsoDate][] => {
     if (!gap) return [[line, day]];
     return Number.isFinite(gap.from) ? [[line, toIsoDate(gap.from)]] : [];
   });
   const passing = closings.flatMap(([line, , gap]) => (gap && !Number.isFinite(gap.from) ? [line] : []));
-  const suspended = Object.entries(station.suspended ?? {}).flatMap(([line, spells]) => {
+  const suspended = entriesOf(station.suspended ?? {}).flatMap(([line, spells]) => {
     const left = spellsOutside(spells, gapsOfLine(line));
     return left.length > 0 ? [[line, left] as const] : [];
   });
@@ -112,9 +114,9 @@ export const stationOutside = (station: Station, gaps: ReadonlyMap<string, reado
   delete out.passes;
   return {
     ...out,
-    ...(infill.length > 0 && { infill: Object.fromEntries(infill) }),
-    ...(closed.length > 0 && { closed: Object.fromEntries(closed) }),
-    ...(suspended.length > 0 && { suspended: Object.fromEntries(suspended) }),
+    ...(infill.length > 0 && { infill: fromEntriesOf(infill) }),
+    ...(closed.length > 0 && { closed: fromEntriesOf(closed) }),
+    ...(suspended.length > 0 && { suspended: fromEntriesOf(suspended) }),
     ...(passes.length > 0 && { passes }),
   };
 };

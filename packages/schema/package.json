@@ -12,10 +12,12 @@
     "./boundary.schema": "./src/validation/boundary.schema.ts",
     "./boundary.types": "./src/format/boundary.types.ts",
     "./cityIndex.types": "./src/format/cities.types.ts",
+    "./ids.utils": "./src/validation/ids.utils.ts",
     "./network.schema": "./src/validation/network.schema.ts",
     "./network.types": "./src/format/network.types.ts",
     "./plan.types": "./src/plan/build.types.ts",
-    "./plan.utils": "./src/plan/build.utils.ts"
+    "./plan.utils": "./src/plan/build.utils.ts",
+    "./testing/ids": "./test/support/ids.utils.ts"
   },
   "dependencies": {
     "@railtime/core": "workspace:*",

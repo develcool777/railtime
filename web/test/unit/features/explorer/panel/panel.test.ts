@@ -1,4 +1,5 @@
 import type { ChangeInfo, LineDetails, LineInfo, PlanInfo, StationInfo } from '@railtime/network/facts.types';
+import { lineId, networkId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
@@ -15,9 +16,9 @@ import { useTimeStore } from '~/features/explorer/time/time.store';
  * @returns The line.
  */
 const line = (id: string, year: number | null): LineInfo => ({
-  id,
+  id: lineId(id),
   name: id,
-  network: 'metro',
+  network: networkId('metro'),
   networkName: 'Metro',
   color: { light: '#ff0000', dark: '#ff0000' },
   opened: year === null ? null : Date.UTC(year, 0, 1),
@@ -61,12 +62,12 @@ const sectionInput = (overrides: Partial<SectionTopInput>): SectionTopInput => (
 });
 
 const STATION: StationInfo = {
-  id: 'centre',
+  id: stationId('centre'),
   name: 'Centre',
   otherNames: [],
   lines: [
-    { id: 'blue', name: 'Blue', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1950-03-01', calls: true },
-    { id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-06-01', calls: true },
+    { id: lineId('blue'), name: 'Blue', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1950-03-01', calls: true },
+    { id: lineId('red'), name: 'Red', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-06-01', calls: true },
   ],
   formerNames: [],
   transfers: [],
@@ -88,13 +89,13 @@ describe('PanelUtils', () => {
     });
 
     test('is planned when no line has called there yet', () => {
-      const planned = { ...STATION, lines: [{ id: 'green', name: 'Green', color: { light: '#00ff00', dark: '#00ff00' }, opened: null, calls: false }] };
+      const planned = { ...STATION, lines: [{ id: lineId('green'), name: 'Green', color: { light: '#00ff00', dark: '#00ff00' }, opened: null, calls: false }] };
       expect(stationTop(planned, 'Plans').context).toBe('planned');
     });
   });
 
   describe('lineTop', () => {
-    const details: LineDetails = { ...line('red', 1900), stations: 12, km: 9.6, branches: [[{ id: 'a', name: 'A' }]], changes: [] };
+    const details: LineDetails = { ...line('red', 1900), stations: 12, km: 9.6, branches: [[{ id: stationId('a'), name: 'A' }]], changes: [] };
 
     test('gives its size while it is open', () => {
       expect(lineTop(details, 'Lines')).toEqual({
@@ -180,8 +181,8 @@ describe('PanelUtils', () => {
   });
 
   describe('marksOf', () => {
-    const bank = { id: 'bank', name: 'Bank' };
-    const oval = { id: 'oval', name: 'Oval' };
+    const bank = { id: stationId('bank'), name: 'Bank' };
+    const oval = { id: stationId('oval'), name: 'Oval' };
 
     test('marks a plan shown, a route with both ends, and a reach with its start', () => {
       expect(marksOf({ planShown: true, routeEnds: { from: bank, to: oval }, reachFrom: oval })).toEqual({
@@ -198,10 +199,10 @@ describe('PanelUtils', () => {
 
   describe('planSummaryOf, planLegendOf', () => {
     const plan: PlanInfo = {
-      id: 'extension',
+      id: planId('extension'),
       name: 'Extension',
       status: 'planned',
-      facts: { stations: 2, km: 1.6, lines: [{ id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff6666' } }] },
+      facts: { stations: 2, km: 1.6, lines: [{ id: lineId('red'), name: 'Red', color: { light: '#ff0000', dark: '#ff6666' } }] },
     };
 
     test('sums the plan shown up for the time control: its name, its status, what it adds', () => {

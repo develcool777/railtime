@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { clamp } from '@railtime/core/number.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { ExpressionSpecification, Map as MapLibreMap, PointLike, SymbolLayerSpecification } from 'maplibre-gl';
 import { BACKDROP_STATION_OPACITY, LABEL_MIN_ZOOM, LAYERS, POP_IN_MS, PULSE_GROWTH, PULSE_MS, SOURCES } from './ids.constants';
 import { MapLayer } from './layer.service';
@@ -39,17 +40,17 @@ const lookOf = (name: string): ExpressionSpecification => ['coalesce', ['feature
  */
 export class StationLayer extends MapLayer {
   /** Where each station is. */
-  private readonly coordOf: (station: string) => LngLat;
+  private readonly coordOf: (station: StationId) => LngLat;
   /** A station's display name. */
-  private readonly nameOf: (station: string) => string;
+  private readonly nameOf: (station: StationId) => string;
   /** Sorts line ids into side-by-side order: a dot takes its first line's colour. */
-  private readonly compareLines: (first: string, second: string) => number;
+  private readonly compareLines: (first: LineId, second: LineId) => number;
   /** When each station on the map appeared, for its pop-in. */
-  private readonly appearedAt = new Map<string, number>();
+  private readonly appearedAt = new Map<StationId, number>();
   /** When each new station's pulse started. */
-  private readonly pulsedAt = new Map<string, number>();
+  private readonly pulsedAt = new Map<StationId, number>();
   /** When each closing station's ring started closing in on it. */
-  private readonly closedAt = new Map<string, number>();
+  private readonly closedAt = new Map<StationId, number>();
   /** The colour a note under a label is in ("closed", a former name): the basemap's own labels'. */
   private noteColor = '#888888';
   /** Whether stations are named on the map: kept, so a layer installed later starts the same. */
@@ -67,9 +68,9 @@ export class StationLayer extends MapLayer {
 
   public constructor(
     map: MapLibreMap,
-    coordOf: (station: string) => LngLat,
-    nameOf: (station: string) => string,
-    compareLines: (first: string, second: string) => number,
+    coordOf: (station: StationId) => LngLat,
+    nameOf: (station: StationId) => string,
+    compareLines: (first: LineId, second: LineId) => number,
   ) {
     super(map);
     this.coordOf = coordOf;
@@ -266,7 +267,7 @@ export class StationLayer extends MapLayer {
    *
    * @param station - The station id, or `null`.
    */
-  public select(station: string | null): void {
+  public select(station: StationId | null): void {
     this.setData(SOURCES.selection, station ? { type: 'FeatureCollection', features: [pointFeature(this.coordOf(station), {})] } : emptyCollection());
   }
 
@@ -276,9 +277,10 @@ export class StationLayer extends MapLayer {
    * @param point - Pixel coordinates on the map.
    * @returns The station id, or `null`.
    */
-  public stationAt(point: PointLike): string | null {
+  public stationAt(point: PointLike): StationId | null {
     const [hit] = this.map.queryRenderedFeatures(point, { layers: [LAYERS.stations] });
-    return (hit?.properties.id as string | undefined) ?? null;
+    // The id this layer gave the dot (`StationProperties`): MapLibre hands its properties back untyped.
+    return (hit?.properties.id as StationId | undefined) ?? null;
   }
 
   /** Forgets running pulses: after a jump in time they would belong to nothing. */
@@ -308,7 +310,7 @@ export class StationLayer extends MapLayer {
           id: station,
           name: this.nameOf(station),
           interchange: lines.size > 1 || frame.linked.has(station),
-          color: lines.get(this.firstLineOf(lines)) ?? '#ffffff',
+          color: this.colorOf(lines),
           highlighted,
           former: frame.renamed.get(station) ?? '',
           closing,
@@ -327,15 +329,15 @@ export class StationLayer extends MapLayer {
   }
 
   /**
-   * A station's first line in side-by-side order, whose colour its dot takes.
+   * The colour a station's dot takes: its first line's in side-by-side order.
    *
    * @param lines - The lines serving it, and their colours.
-   * @returns The line id; `''` for none.
+   * @returns The colour; white for none.
    */
-  private firstLineOf(lines: StationLines): string {
-    let firstLine = '';
-    for (const line of lines.keys()) if (!firstLine || this.compareLines(line, firstLine) < 0) firstLine = line;
-    return firstLine;
+  private colorOf(lines: StationLines): string {
+    let first: LineId | null = null;
+    for (const line of lines.keys()) if (first === null || this.compareLines(line, first) < 0) first = line;
+    return (first === null ? undefined : lines.get(first)) ?? '#ffffff';
   }
 
   /**
@@ -346,7 +348,7 @@ export class StationLayer extends MapLayer {
    * @param highlighted - It is new, or renamed, in the step playing.
    * @param closing - It closes in the step playing.
    */
-  private startRing(frame: StationFrame, station: string, highlighted: boolean, closing: boolean): void {
+  private startRing(frame: StationFrame, station: StationId, highlighted: boolean, closing: boolean): void {
     if (frame.instant) return;
     if (highlighted && !this.pulsedAt.has(station)) this.pulsedAt.set(station, frame.now);
     if (closing && !this.closedAt.has(station)) this.closedAt.set(station, frame.now);
@@ -394,7 +396,7 @@ export class StationLayer extends MapLayer {
   private ringsOf(
     frame: StationFrame,
     kind: string,
-    startedAt: Map<string, number>,
+    startedAt: Map<StationId, number>,
     radiusAt: (age: number) => number,
   ): { feature: PointFeature<PulseProperties>; look: PulseLook }[] {
     const features: { feature: PointFeature<PulseProperties>; look: PulseLook }[] = [];

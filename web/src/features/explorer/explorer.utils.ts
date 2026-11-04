@@ -2,6 +2,7 @@ import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { Theme } from '@railtime/network/facts.types';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { LineId, PlanId, StationId } from '@railtime/schema/network.types';
 import type { Chrome, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**
@@ -11,7 +12,7 @@ import type { Chrome, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } 
  * @param id - The station.
  * @returns The views pushed after.
  */
-export const withStation = (views: PanelView[], id: string): PanelView[] => [...views.filter(view => view.kind === 'line'), { kind: 'station', id }];
+export const withStation = (views: PanelView[], id: StationId): PanelView[] => [...views.filter(view => view.kind === 'line'), { kind: 'station', id }];
 
 /**
  * Walks from the station whose view is open to another along its line: Back returns to the one left.
@@ -20,7 +21,7 @@ export const withStation = (views: PanelView[], id: string): PanelView[] => [...
  * @param id - The station walked to.
  * @returns The views pushed after; the same if it is the station open.
  */
-export const walkedTo = (views: PanelView[], id: string): PanelView[] => {
+export const walkedTo = (views: PanelView[], id: StationId): PanelView[] => {
   const top = views.at(-1);
   return top?.kind === 'station' && top.id !== id ? [...views, { kind: 'station', id }] : views;
 };
@@ -34,13 +35,31 @@ export const walkedTo = (views: PanelView[], id: string): PanelView[] => {
 export const withoutStations = (views: PanelView[]): PanelView[] => views.filter(view => view.kind === 'line');
 
 /**
- * The id of the last view of a kind pushed, if it is on top: the station open, or the line under it.
+ * The station of the last station's view pushed: the station open.
  *
  * @param views - The views pushed.
- * @param kind - A station's or a line's.
  * @returns Its id, or `null`.
  */
-export const openOf = (views: PanelView[], kind: PanelView['kind']): string | null => views.findLast(view => view.kind === kind)?.id ?? null;
+export const openStationOf = (views: PanelView[]): StationId | null => views.flatMap(view => (view.kind === 'station' ? [view.id] : [])).at(-1) ?? null;
+
+/**
+ * The line of the last line's view pushed: the line open, or under the station's.
+ *
+ * @param views - The views pushed.
+ * @returns Its id, or `null`.
+ */
+export const openLineOf = (views: PanelView[]): LineId | null => views.flatMap(view => (view.kind === 'line' ? [view.id] : [])).at(-1) ?? null;
+
+/**
+ * A view's line or station on a network, if it has it: one made again (a plan shown, lines hidden)
+ * may not.
+ *
+ * @param facts - The network.
+ * @param view - The view.
+ * @returns Its id and name, or `null`.
+ */
+export const viewIn = (facts: NetworkFacts, view: PanelView): { id: PanelView['id']; name: string } | null =>
+  view.kind === 'line' ? facts.findLine(view.id) : facts.findStation(view.id);
 
 /**
  * The section the rail marks: the one a pushed view belongs to (a station's view Stations', a line's
@@ -98,8 +117,8 @@ type MapPropsInput = {
   stationNames: boolean;
   streetNames: boolean;
   timeMode: TimeMode;
-  openStation: string | null;
-  openLine: string | null;
+  openStation: StationId | null;
+  openLine: LineId | null;
   overlay: OverlayRequest | null;
   boundary: CityBoundary | null;
   player: PlayerSettings;
@@ -136,4 +155,4 @@ export const mapPropsOf = (input: MapPropsInput): MapProps => ({
  * @param plan - The plan shown, if any.
  * @returns The section.
  */
-export const openingSectionOf = (plan: string | undefined): Section => (plan ? 'plans' : 'lines');
+export const openingSectionOf = (plan: PlanId | undefined): Section => (plan ? 'plans' : 'lines');

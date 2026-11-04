@@ -3,6 +3,7 @@ import type { LngLat } from '@railtime/core/geometry.types';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
 import type { Growth, LineSegment, SegmentPlan } from '@railtime/network/engine.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import { CHASE_AHEAD_KM, CHASE_BEHIND_KM, CHASE_SMOOTHING_KM } from './animation.constants';
 import type { ChaseTarget, GrowthMove, GrowthPace, StepDrawing, Stretch } from './animation.types';
 import { emptyCollection } from '../layers/snapshot.utils';
@@ -225,8 +226,8 @@ export const chaseAlong = (path: SegmentPlan[], frontKm: number, backwards = fal
  * @returns The stretch.
  */
 export const stretchOf = (growth: Growth, lineSegments: LineSegment[], retracts: boolean): Stretch => {
-  const linesBySegment = new Map<number, string[]>();
-  const linesByStation = new Map<string, string[]>();
+  const linesBySegment = new Map<number, LineId[]>();
+  const linesByStation = new Map<StationId, LineId[]>();
   for (const { segment, line } of lineSegments) {
     pushTo(linesBySegment, segment.index, line);
     for (const station of [segment.stationA, segment.stationB]) pushTo(linesByStation, station, line);

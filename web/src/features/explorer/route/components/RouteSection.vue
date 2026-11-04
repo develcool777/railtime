@@ -99,6 +99,7 @@
 
 <script setup lang="ts">
   import type { RouteInfo, Stop, StationSummary } from '@railtime/network/facts.types';
+  import type { StationId } from '@railtime/schema/network.types';
   import { computed } from 'vue';
   import { ROUTE_ENDS } from '~/features/explorer/route/route.constants';
   import { routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
@@ -121,7 +122,7 @@
     clear: [];
     swap: [];
     option: [option: number];
-    station: [station: string];
+    station: [station: StationId];
   }>();
 
   /** The fastest way, which the others are told against. */

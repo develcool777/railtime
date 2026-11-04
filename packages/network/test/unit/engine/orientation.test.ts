@@ -1,4 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
+import type { StationId } from '@railtime/schema/network.types';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import type { TrackSegment, Travel } from '../../../src/engine/engine.types';
 import { NetworkIndex } from '../../../src/engine/index.service';
@@ -24,7 +26,7 @@ const PLACES: Record<string, LngLat> = {
  * @param stationB - Where they end.
  * @returns The segment.
  */
-const track = (index: number, stationA: string, stationB: string): TrackSegment => {
+const track = (index: number, stationA: StationId, stationB: StationId): TrackSegment => {
   const coordinates = [PLACES[stationA]!, PLACES[stationB]!];
   return {
     index,
@@ -60,7 +62,7 @@ describe('OrientationUtils', () => {
   });
 
   test('runs a line stored in mixed directions end to end, heading east', () => {
-    const segments = [track(0, 'b', 'c'), track(1, 'b', 'a'), track(2, 'd', 'c')];
+    const segments = [track(0, stationId('b'), stationId('c')), track(1, stationId('b'), stationId('a')), track(2, stationId('d'), stationId('c'))];
     const travel = orientSegments(segments);
     expect(segments.map(segment => ends(segment, travel.get(segment)))).toEqual([
       ['b', 'c'],
@@ -70,7 +72,7 @@ describe('OrientationUtils', () => {
   });
 
   test('carries a branch on from the junction where the line arrives', () => {
-    const segments = [track(0, 'b', 'a'), track(1, 'c', 'b'), track(2, 'x', 'b')];
+    const segments = [track(0, stationId('b'), stationId('a')), track(1, stationId('c'), stationId('b')), track(2, stationId('x'), stationId('b'))];
     const travel = orientSegments(segments);
     expect(segments.map(segment => ends(segment, travel.get(segment)))).toEqual([
       ['a', 'b'],
@@ -80,8 +82,13 @@ describe('OrientationUtils', () => {
   });
 
   test('runs a ring with no junction all the way round, and heads each separate piece east', () => {
-    const ring = [track(0, 'a', 'b'), track(1, 'c', 'b'), track(2, 'c', 'x'), track(3, 'a', 'x')];
-    const apart = track(4, 'p', 'q');
+    const ring = [
+      track(0, stationId('a'), stationId('b')),
+      track(1, stationId('c'), stationId('b')),
+      track(2, stationId('c'), stationId('x')),
+      track(3, stationId('a'), stationId('x')),
+    ];
+    const apart = track(4, stationId('p'), stationId('q'));
     const travel = orientSegments([...ring, apart]);
     const legs = ring.map(segment => ends(segment, travel.get(segment)));
     for (const [position, [, end]] of legs.entries()) expect(legs[(position + 1) % legs.length]?.[0]).toBe(end);

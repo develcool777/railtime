@@ -1,6 +1,7 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
 import { networkNow, playbackOf, renderStateOf } from '../../support/playback.utils';
@@ -24,7 +25,7 @@ describe('NetworkSnapshotUtils', () => {
     });
 
     test("draws a plan's track as planned, and a station only it reaches", () => {
-      const playback = playbackOf(tinyNetwork(), { plan: 'extension' });
+      const playback = playbackOf(tinyNetwork(), { plan: planId('extension') });
       playback.player.seek(playback.facts.playheads.end());
       const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
       const extension = playback.index.segments.at(-1)!.coordinates;
@@ -32,7 +33,7 @@ describe('NetworkSnapshotUtils', () => {
       expect(snapshot.lines.features.map(feature => feature.geometry.coordinates)).not.toContainEqual(extension);
       // D is long closed on red, and F stands on built track: only E is a plan's alone.
       expect([...snapshot.plannedStations]).toEqual(['e']);
-      expect(snapshot.stations.has('f')).toBe(true);
+      expect(snapshot.stations.has(stationId('f'))).toBe(true);
     });
 
     test('links a transfer once both its stations are on the map, and draws both as interchanges', () => {

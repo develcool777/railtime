@@ -2,6 +2,7 @@ import type { LngLat } from '@railtime/core/geometry.types';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CoverageDistance, CoverageInfo, NetworkStats, Playhead, ReachInfo, RouteInfo, StepInfo, Theme } from '@railtime/network/facts.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
 import type { FrameRenderer } from './layers/frame.service';
 import type { OverlayController } from './overlay/controller.service';
@@ -38,9 +39,9 @@ export type MapProps = {
   /** Whether the basemap names its streets and places, or shows the city unnamed but for the stations. */
   streetLabels: boolean;
   /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
-  focusedLines: string[] | null;
+  focusedLines: LineId[] | null;
   /** The station ringed, flown to when it changes; `null` for none. */
-  selectedStation: string | null;
+  selectedStation: StationId | null;
   /** What is drawn over the network, worked out again on each date and theme; `null` for nothing. */
   overlay: OverlayRequest | null;
   /** The playback speed: 1 is normal. */
@@ -131,7 +132,7 @@ export type TimeState = Playhead & {
  * of the city is within a distance of one.
  */
 export type OverlayRequest =
-  { kind: 'route'; from: string; to: string; option: number } | { kind: 'reach'; from: string } | { kind: 'coverage'; metres: CoverageDistance };
+  { kind: 'route'; from: StationId; to: StationId; option: number } | { kind: 'reach'; from: StationId } | { kind: 'coverage'; metres: CoverageDistance };
 
 /**
  * What the overlay drawn came to on the date shown, for the app to list: a route's every way and the
@@ -154,9 +155,9 @@ export type TransitMapEvents = {
   /** How many of the current step's stations have appeared. */
   stepProgress: number;
   /** A station was clicked (its id), or the map away from any (`null`). */
-  stationClick: string | null;
+  stationClick: StationId | null;
   /** The selected station is not on the map at the moment shown: its ring is hidden while it is away. Its id: advice; the prop stays the app's. */
-  selectionGone: string;
+  selectionGone: StationId;
   /** The overlay drawn was worked out again, for a new request, date or theme; `null` once it is cleared. */
   overlay: OverlayResult | null;
   /** Playback reached today. */

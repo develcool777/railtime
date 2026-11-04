@@ -1,4 +1,5 @@
 import type { Step } from '@railtime/network/engine.types';
+import type { StationId } from '@railtime/schema/network.types';
 import type { NetworkParts } from '../transitMap.types';
 import { END_OVERVIEW_MS, MAX_TILE_WAIT_SECONDS } from './playback.constants';
 import type { PlaybackOptions } from './playback.types';
@@ -65,7 +66,7 @@ export class Playback {
    *
    * @param station - The station, or `null`.
    */
-  public select(station: string | null): void {
+  public select(station: StationId | null): void {
     this.selectionAway = false;
     this.options.stations.select(station);
   }

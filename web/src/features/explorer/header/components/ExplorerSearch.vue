@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
   import type { LineInfo, StationSummary } from '@railtime/network/facts.types';
+  import type { LineId, StationId } from '@railtime/schema/network.types';
   import { computed, ref } from 'vue';
   import { CITIES } from '~/constants/city.constants';
   import { lineColor } from '~/utils/format.utils';
@@ -33,7 +34,7 @@
     /** The city shown, left out of the cities. */
     city: string;
   }>();
-  const emit = defineEmits<{ station: [station: string]; line: [line: string]; city: [city: string] }>();
+  const emit = defineEmits<{ station: [station: StationId]; line: [line: LineId]; city: [city: string] }>();
   /** Whether it is open: from the header's button, ⌘K or /. */
   const open = defineModel<boolean>('open', { default: false });
 

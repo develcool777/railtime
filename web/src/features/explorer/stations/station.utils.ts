@@ -1,5 +1,5 @@
 import { firstDifference } from '@railtime/core/collection.utils';
-import type { LineDirection, StationSummary, StopToward } from '@railtime/network/facts.types';
+import type { LineDirection, StationSummary, Stop, StopToward } from '@railtime/network/facts.types';
 import type { StationGroup, StationRow, StripStop } from '~/features/explorer/stations/station.types';
 
 /**
@@ -93,11 +93,9 @@ export const stationRows = (groups: StationGroup[]): StationRow[] =>
  *
  * @param direction - The stops either side on one run of the line.
  * @param here - The station.
- * @param here.id - Its id.
- * @param here.name - Its name.
  * @returns The rows, top to bottom.
  */
-export const stripAround = (direction: LineDirection, here: { id: string; name: string }): StripStop[] => {
+export const stripAround = (direction: LineDirection, here: Stop): StripStop[] => {
   const beside = (stop: StopToward): StripStop => ({
     id: stop.id,
     name: stop.name,

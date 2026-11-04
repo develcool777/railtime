@@ -1,3 +1,4 @@
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
@@ -30,8 +31,8 @@ describe('ToolsUtils', () => {
   });
 
   describe('overlayRequestOf', () => {
-    const bank = { id: 'bank', name: 'Bank' };
-    const oval = { id: 'oval', name: 'Oval' };
+    const bank = { id: stationId('bank'), name: 'Bank' };
+    const oval = { id: stationId('oval'), name: 'Oval' };
     const none = { overlay: null, routeEnds: { from: bank, to: oval }, routeOption: 0, reachFrom: bank, coverageMetres: 400 as const };
 
     test("asks for the section's overlay once it has what it needs", () => {
@@ -48,8 +49,8 @@ describe('ToolsUtils', () => {
   });
 
   describe('routeAimOf', () => {
-    const bank = { id: 'bank', name: 'Bank' };
-    const oval = { id: 'oval', name: 'Oval' };
+    const bank = { id: stationId('bank'), name: 'Bank' };
+    const oval = { id: stationId('oval'), name: 'Oval' };
 
     test('aims at where the route starts until it has one, then at where it ends', () => {
       expect(routeAimOf({ from: null, to: null })).toBe('from');
@@ -60,9 +61,9 @@ describe('ToolsUtils', () => {
   });
 
   describe('stationPickOf', () => {
-    const bank = { id: 'bank', name: 'Bank' };
-    const oval = { id: 'oval', name: 'Oval' };
-    const kennington = { id: 'kennington', name: 'Kennington' };
+    const bank = { id: stationId('bank'), name: 'Bank' };
+    const oval = { id: stationId('oval'), name: 'Oval' };
+    const kennington = { id: stationId('kennington'), name: 'Kennington' };
     const empty = { from: null, to: null };
     const pick = (routeEnds: { from: typeof bank | null; to: typeof bank | null }, routeAim: 'from' | 'to', stop: typeof bank) =>
       stationPickOf({ section: 'route', picking: true, routeEnds, routeAim }, stop);
@@ -122,9 +123,9 @@ describe('ToolsStore', () => {
   test('opens on the route and reach the address names, leaving out a station the network has not', () => {
     openExplorer({ route: 'a,nowhere,1', reach: 'b', walk: '800' });
     const tools = useToolsStore();
-    expect(tools.routeEnds).toEqual({ from: { id: 'a', name: 'A' }, to: null });
+    expect(tools.routeEnds).toEqual({ from: { id: stationId('a'), name: 'A' }, to: null });
     expect(tools.routeOption).toBe(1);
-    expect(tools.reachFrom).toEqual({ id: 'b', name: 'B' });
+    expect(tools.reachFrom).toEqual({ id: stationId('b'), name: 'B' });
     expect(tools.coverageMetres).toBe(800);
   });
 
@@ -134,7 +135,7 @@ describe('ToolsStore', () => {
     expect(tools.routeEnds.to?.id).toBe('e');
     useNetworkStore().SHOW_PLAN(undefined);
     tools.KEEP_ON();
-    expect(tools.routeEnds).toEqual({ from: { id: 'a', name: 'A' }, to: null });
+    expect(tools.routeEnds).toEqual({ from: { id: stationId('a'), name: 'A' }, to: null });
     expect(tools.routeAim).toBe('to');
   });
 

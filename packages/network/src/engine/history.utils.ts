@@ -1,4 +1,5 @@
 import { decadeOf, endOfYear, yearOf } from '@railtime/core/date.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { NetworkHistory, OpenNetwork } from './history.types';
 import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';
@@ -14,9 +15,9 @@ import type { DecadeOpenings, YearStats, NetworkStats } from '../facts/facts.typ
  * @returns The stations with the lines calling at each, the segments and the lines open.
  */
 export const networkAt = (index: NetworkIndex, timeline: Timeline, cursor: number): OpenNetwork => {
-  const stations = new Map<string, Set<string>>();
+  const stations = new Map<StationId, Set<LineId>>();
   const segments = new Set<number>();
-  const lines = new Set<string>();
+  const lines = new Set<LineId>();
   for (const lineSegment of index.lineSegments) {
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     segments.add(lineSegment.segment.index);
@@ -55,7 +56,7 @@ export const statsAt = (index: NetworkIndex, timeline: Timeline, cursor: number)
  */
 export const networkHistory = (index: NetworkIndex, timeline: Timeline, untilYear: number): NetworkHistory => {
   const years: YearStats[] = [];
-  const firstYears = new Map<string, number>();
+  const firstYears = new Map<StationId, number>();
   const startYear = yearOf(timeline.start);
   for (let year = startYear; year <= untilYear; year++) {
     const cursor = timeline.cursorAt(endOfYear(year));
@@ -74,7 +75,7 @@ export const networkHistory = (index: NetworkIndex, timeline: Timeline, untilYea
  * @param firstYears - The year each station was first on the map.
  * @returns The decades, earliest first.
  */
-export const openingsByDecade = (firstYears: ReadonlyMap<string, number>): DecadeOpenings[] => {
+export const openingsByDecade = (firstYears: ReadonlyMap<StationId, number>): DecadeOpenings[] => {
   const counts = new Map<number, number>();
   for (const year of firstYears.values()) {
     const decade = decadeOf(year);

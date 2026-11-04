@@ -1,8 +1,9 @@
+import { entriesOf, keysOf, pushTo } from '@railtime/core/collection.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
 import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
 import type { TrackOut } from './checks.types';
-import type { Mode, Network, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
+import type { LineId, Mode, Network, Segment, SegmentLine, Station, StationId, Suspension } from '../format/network.types';
 
 /**
  * The sharpest a line of a mode may turn over `CURVE_SPAN_METRES` either side of a point: as much as
@@ -52,7 +53,7 @@ const sharpestTurn = (track: LngLat[]): { degrees: number; position: number } | 
  * @param line - The line id.
  * @returns The dates; none if the line never runs there.
  */
-const linePeriodsAt = (network: Network, station: string, line: string): SegmentLine[] =>
+const linePeriodsAt = (network: Network, station: StationId, line: LineId): SegmentLine[] =>
   network.segments.flatMap(segment => {
     const dates = segment.lines[line];
     return dates && (segment.stationA === station || segment.stationB === station) ? [dates] : [];
@@ -82,7 +83,7 @@ const infillProblem = (periods: SegmentLine[], date: string): string | null => {
  * @param spells - Its spells, oldest first.
  * @returns Each problem, in words.
  */
-const suspensionProblems = (network: Network, stationId: string, station: Station, lineId: string, spells: Suspension[]): string[] => {
+const suspensionProblems = (network: Network, stationId: StationId, station: Station, lineId: LineId, spells: Suspension[]): string[] => {
   if (!network.lines[lineId]) return ['an unknown line'];
   const periods = linePeriodsAt(network, stationId, lineId);
   const opened = station.infill?.[lineId];
@@ -109,16 +110,16 @@ const suspensionProblems = (network: Network, stationId: string, station: Statio
  * @param station - The station.
  * @param problem - Reports one problem.
  */
-const checkStationLines = (network: Network, stationId: string, station: Station, problem: (message: string) => void): void => {
-  for (const [lineId, date] of Object.entries(station.infill ?? {})) {
+const checkStationLines = (network: Network, stationId: StationId, station: Station, problem: (message: string) => void): void => {
+  for (const [lineId, date] of entriesOf(station.infill ?? {})) {
     const wrong = infillProblem(linePeriodsAt(network, stationId, lineId), date);
     if (wrong) problem(`station ${stationId}: opens on ${lineId} on ${date}, ${wrong}`);
   }
-  for (const [lineId, date] of Object.entries(station.closed ?? {})) {
+  for (const [lineId, date] of entriesOf(station.closed ?? {})) {
     const running = linePeriodsAt(network, stationId, lineId).some(dates => dates.open < date && !(dates.close && dates.close <= date));
     if (network.lines[lineId] && !running) problem(`station ${stationId}: closes on ${lineId} on ${date}, when it doesn't run there`);
   }
-  for (const [lineId, spells] of Object.entries(station.suspended ?? {}))
+  for (const [lineId, spells] of entriesOf(station.suspended ?? {}))
     for (const wrong of suspensionProblems(network, stationId, station, lineId, spells))
       problem(`station ${stationId}: closed for a while on ${lineId}, ${wrong}`);
   for (const lineId of station.passes ?? []) checkPass(network, stationId, station, lineId, problem);
@@ -134,7 +135,7 @@ const checkStationLines = (network: Network, stationId: string, station: Station
  * @param lineId - The line passing it.
  * @param problem - Reports one problem.
  */
-const checkPass = (network: Network, stationId: string, station: Station, lineId: string, problem: (message: string) => void): void => {
+const checkPass = (network: Network, stationId: StationId, station: Station, lineId: LineId, problem: (message: string) => void): void => {
   if (!network.lines[lineId]) problem(`station ${stationId}: passed by unknown line ${lineId}`);
   else if (linePeriodsAt(network, stationId, lineId).length === 0) problem(`station ${stationId}: passed by ${lineId}, which doesn't run there`);
   if (station.infill?.[lineId] || station.closed?.[lineId] || station.suspended?.[lineId])
@@ -148,7 +149,7 @@ const checkPass = (network: Network, stationId: string, station: Station, lineId
  * @param problem - Reports one problem.
  */
 const checkStations = (network: Network, problem: (message: string) => void): void => {
-  for (const [stationId, station] of Object.entries(network.stations)) checkStation(network, stationId, station, problem);
+  for (const [stationId, station] of entriesOf(network.stations)) checkStation(network, stationId, station, problem);
   for (const { stationA, stationB } of network.transfers ?? []) {
     for (const station of [stationA, stationB]) if (!network.stations[station]) problem(`transfer ${stationA} – ${stationB}: unknown station ${station}`);
     if (stationA === stationB) problem(`transfer ${stationA}: to itself`);
@@ -164,8 +165,8 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
  * @param station - The station.
  * @param problem - Reports one problem.
  */
-const checkStation = (network: Network, stationId: string, station: Station, problem: (message: string) => void): void => {
-  for (const [lineId, date] of Object.entries(station.closed ?? {})) {
+const checkStation = (network: Network, stationId: StationId, station: Station, problem: (message: string) => void): void => {
+  for (const [lineId, date] of entriesOf(station.closed ?? {})) {
     if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
     const opened = station.infill?.[lineId];
     if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
@@ -183,8 +184,9 @@ const checkStation = (network: Network, stationId: string, station: Station, pro
  * @param lineId - One of its lines.
  * @returns The date.
  */
-const startOf = (network: Network, lineId: string): string => {
-  const info = network.networks[network.lines[lineId]?.network ?? ''];
+const startOf = (network: Network, lineId: LineId): string => {
+  const own = network.lines[lineId]?.network;
+  const info = own === undefined ? undefined : network.networks[own];
   if (info?.hidden && info.start) return info.start;
   return network.meta.start;
 };
@@ -217,10 +219,10 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
   checkSegmentEnds(network, segment, name, problem);
   const turn = segmentTurnProblem(
     segment,
-    Object.keys(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []),
+    keysOf(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []),
   );
   if (turn) problem(turn);
-  for (const [lineId, dates] of Object.entries(segment.lines)) checkSegmentLine(network, name, lineId, dates, problem);
+  for (const [lineId, dates] of entriesOf(segment.lines)) checkSegmentLine(network, name, lineId, dates, problem);
 };
 
 /**
@@ -253,7 +255,7 @@ const checkSegmentEnds = (network: Network, segment: Segment, name: string, prob
  * @param dates - Its dates on the segment.
  * @param problem - Reports one problem.
  */
-const checkSegmentLine = (network: Network, name: string, lineId: string, dates: SegmentLine, problem: (message: string) => void): void => {
+const checkSegmentLine = (network: Network, name: string, lineId: LineId, dates: SegmentLine, problem: (message: string) => void): void => {
   if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);
   // Before its timeline starts, a line's opening would never play.
   const start = startOf(network, lineId);
@@ -289,16 +291,19 @@ const turnThrough = (into: LngLat[], out: LngLat[]): number => {
   return turnDegrees(pointAt(into, intoKm, spanKm), out[0]!, pointAt(out, outKm, spanKm));
 };
 
+/** Each line's tracks leaving each station: by station, then by line. */
+export type TracksLeaving = Map<StationId, Map<LineId, TrackOut[]>>;
+
 /**
- * Each line's dated track leaving each station, keyed `station|line`.
+ * Each line's dated track leaving each station.
  *
  * @param network - The network.
  * @returns The tracks, a list for each station and line.
  */
-export const datedTracksOut = (network: Network): Map<string, TrackOut[]> => {
-  const leaving = new Map<string, TrackOut[]>();
+export const datedTracksOut = (network: Network): TracksLeaving => {
+  const leaving: TracksLeaving = new Map();
   for (const segment of network.segments)
-    for (const [lineId, dates] of Object.entries(segment.lines)) for (const out of tracksOut(segment, dates)) pushTrack(leaving, out.station, lineId, out);
+    for (const [lineId, dates] of entriesOf(segment.lines)) for (const out of tracksOut(segment, dates)) pushTrack(leaving, out.station, lineId, out);
   return leaving;
 };
 
@@ -309,22 +314,23 @@ export const datedTracksOut = (network: Network): Map<string, TrackOut[]> => {
  * @param dates - When the line on it runs there, or `null` for a plan's.
  * @returns Its two ends' tracks, each with its station.
  */
-export const tracksOut = (segment: Segment, dates: SegmentLine | null): (TrackOut & { station: string })[] => [
+export const tracksOut = (segment: Segment, dates: SegmentLine | null): (TrackOut & { station: StationId })[] => [
   { station: segment.stationA, track: segment.coordinates, dates },
   { station: segment.stationB, track: segment.coordinates.toReversed(), dates },
 ];
 
 /**
- * Adds a line's track leaving a station to those keyed `station|line`.
+ * Adds a line's track leaving a station to those already found.
  *
  * @param leaving - The tracks so far.
  * @param station - The station.
  * @param lineId - The line.
  * @param out - The track.
  */
-export const pushTrack = (leaving: Map<string, TrackOut[]>, station: string, lineId: string, out: TrackOut): void => {
-  const key = `${station}|${lineId}`;
-  leaving.set(key, [...(leaving.get(key) ?? []), out]);
+export const pushTrack = (leaving: TracksLeaving, station: StationId, lineId: LineId, out: TrackOut): void => {
+  const byLine = leaving.get(station) ?? new Map<LineId, TrackOut[]>();
+  pushTo(byLine, lineId, out);
+  leaving.set(station, byLine);
 };
 
 /**
@@ -336,21 +342,34 @@ export const pushTrack = (leaving: Map<string, TrackOut[]>, station: string, lin
  * @param checks - Which tracks leaving are checked; every one, unless said.
  * @returns A problem for each station and line.
  */
-export const throughStationProblems = (network: Network, leaving: Map<string, TrackOut[]>, checks: (out: TrackOut) => boolean = () => true): string[] => {
+export const throughStationProblems = (network: Network, leaving: TracksLeaving, checks: (out: TrackOut) => boolean = () => true): string[] => {
   const problems: string[] = [];
-  for (const [key, tracks] of leaving) {
-    const [station = '', lineId = ''] = key.split('|', 2);
-    const mode = network.lines[lineId]?.mode;
-    if (!mode || network.stations[station]?.reverses?.includes(lineId)) continue;
-    let sharpest = 0;
-    for (const out of tracks) {
-      if (!checks(out)) continue;
-      const turns = tracks.filter(into => into !== out && overlap(into.dates, out.dates)).map(into => turnThrough(into.track, out.track));
-      if (turns.length > 0) sharpest = Math.max(sharpest, Math.min(...turns));
+  for (const [station, byLine] of leaving)
+    for (const [lineId, tracks] of byLine) {
+      const mode = network.lines[lineId]?.mode;
+      if (!mode || network.stations[station]?.reverses?.includes(lineId)) continue;
+      const sharpest = sharpestThrough(tracks, checks);
+      if (sharpest > maxTurnOf(mode)) problems.push(`station ${station}: ${lineId} turns ${Math.round(sharpest)}° through it, sharper than its trains can`);
     }
-    if (sharpest > maxTurnOf(mode)) problems.push(`station ${station}: ${lineId} turns ${Math.round(sharpest)}° through it, sharper than its trains can`);
-  }
   return problems;
+};
+
+/**
+ * The sharpest a line turns through a station, into each track it leaves on that is checked, from
+ * the smoothest of the others it runs on then.
+ *
+ * @param tracks - The line's tracks leaving the station.
+ * @param checks - Which tracks leaving are checked.
+ * @returns The turn, degrees; 0 where it carries on from none.
+ */
+const sharpestThrough = (tracks: TrackOut[], checks: (out: TrackOut) => boolean): number => {
+  let sharpest = 0;
+  for (const out of tracks) {
+    if (!checks(out)) continue;
+    const turns = tracks.filter(into => into !== out && overlap(into.dates, out.dates)).map(into => turnThrough(into.track, out.track));
+    if (turns.length > 0) sharpest = Math.max(sharpest, Math.min(...turns));
+  }
+  return sharpest;
 };
 
 /**
@@ -360,12 +379,12 @@ export const throughStationProblems = (network: Network, leaving: Map<string, Tr
  * @param problem - Reports one problem.
  */
 export const checkNetwork = (network: Network, problem: (message: string) => void): void => {
-  for (const [networkId, info] of Object.entries(network.networks)) {
+  for (const [networkId, info] of entriesOf(network.networks)) {
     // Only a network hidden at first may start apart, and only before the city: the city's own history starts with it.
     if (info.start && (!info.hidden || info.start >= network.meta.start))
       problem(`network ${networkId}: a start of its own, ${info.start}, but it is not a network hidden at first, older than the city`);
   }
-  for (const [lineId, line] of Object.entries(network.lines)) {
+  for (const [lineId, line] of entriesOf(network.lines)) {
     if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
     for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
   }

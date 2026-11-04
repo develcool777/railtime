@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
   import type { PlanInfo } from '@railtime/network/facts.types';
+  import type { PlanId } from '@railtime/schema/network.types';
   import { computed } from 'vue';
   import { formatPlanFacts } from '~/features/explorer/format.utils';
   import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
@@ -45,11 +46,11 @@
     /** The network was never built: there is no built card. */
     planOnly: boolean;
     /** The plan shown, if any. */
-    plan?: string;
+    plan?: PlanId;
     /** What is built today, in a line: the first card's facts. */
     built: string;
   }>();
-  const emit = defineEmits<{ choose: [plan: string | undefined] }>();
+  const emit = defineEmits<{ choose: [plan: PlanId | undefined] }>();
 
   /** The key of the card for the network as it is. */
   const BUILT = 'built';
@@ -60,7 +61,8 @@
    * @param value - The choice: a plan's id, or the network as built.
    */
   const choose = (value: unknown) => {
-    emit('choose', value === BUILT ? undefined : String(value));
+    // A plan's own id, as the card holds it; none for the network as built.
+    emit('choose', props.plans.find(plan => plan.id === value)?.id);
   };
 
   const cards = computed(() => {

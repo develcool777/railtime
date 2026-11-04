@@ -1,6 +1,7 @@
+import { keysOf } from '@railtime/core/collection.utils';
 import type { BuiltPlan } from './build.types';
 import { PlanBuilder } from './builder.service.ts';
-import type { Network } from '../format/network.types';
+import type { Network, PlanId } from '../format/network.types';
 
 /**
  * Builds one of a network's plans on it, section by section.
@@ -9,7 +10,7 @@ import type { Network } from '../format/network.types';
  * @param planId - One of its plans; an unknown one builds nothing.
  * @returns The network as the plan needs it, and what each section opens.
  */
-export const buildPlan = (network: Network, planId: string): BuiltPlan => {
+export const buildPlan = (network: Network, planId: PlanId): BuiltPlan => {
   const { plans, ...today } = network;
   const plan = plans?.[planId];
   if (!plan) return { network: today, sections: [] };
@@ -51,4 +52,4 @@ export const isPlanOnly = (network: Network): boolean => network.segments.length
  * @param network - The network.
  * @returns Its first plan's id, or none if it has no plans.
  */
-export const firstPlanOf = (network: Network): string | undefined => Object.keys(network.plans ?? {})[0];
+export const firstPlanOf = (network: Network): PlanId | undefined => keysOf(network.plans ?? {})[0];

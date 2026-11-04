@@ -1,3 +1,4 @@
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { networkHistory, openingsByDecade, statsAt } from '../../../src/engine/history.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -17,17 +18,17 @@ describe('HistoryUtils', () => {
     test('keeps the year each station was first on the map, a closed one too', () => {
       const { index, timeline } = factsOf(tinyNetwork()).engine;
       const { firstYears } = networkHistory(index, timeline, 2026);
-      expect(firstYears.get('a')).toBe(1900);
-      expect(firstYears.get('d')).toBe(1910);
+      expect(firstYears.get(stationId('a'))).toBe(1900);
+      expect(firstYears.get(stationId('d'))).toBe(1910);
     });
   });
 
   describe('openingsByDecade', () => {
     test('counts each decade, one with none between too', () => {
       const firstYears = new Map([
-        ['a', 1900],
-        ['b', 1905],
-        ['c', 1931],
+        [stationId('a'), 1900],
+        [stationId('b'), 1905],
+        [stationId('c'), 1931],
       ]);
       expect(openingsByDecade(firstYears)).toEqual([
         { decade: 1900, stations: 2 },

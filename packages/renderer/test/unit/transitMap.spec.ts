@@ -1,6 +1,7 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { planId, stationId } from '@railtime/schema/testing/ids';
 import type { LayerSpecification } from 'maplibre-gl';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
@@ -108,7 +109,7 @@ describe('TransitMap', () => {
 
   test('keeps props given before it is ready, and draws them all once its style loads', () => {
     const { map, fake, ready } = mapOf({ stationLabels: false });
-    map.update({ selectedStation: 'b', viewMode: '3d' });
+    map.update({ selectedStation: stationId('b'), viewMode: '3d' });
     expect(map.status).toBe('loading');
     expect(fake.moves.filter(move => move.kind === 'ease')).toEqual([]);
     ready();
@@ -137,13 +138,13 @@ describe('TransitMap', () => {
   });
 
   test('flies to a station selected from the start, and no later prop moves the camera off it', () => {
-    const { fake, ready } = mapOf({ selectedStation: 'c', cover: { top: 0, right: 0, bottom: 0, left: 340 } });
+    const { fake, ready } = mapOf({ selectedStation: stationId('c'), cover: { top: 0, right: 0, bottom: 0, left: 340 } });
     ready();
     expect(fake.moves.at(-1)).toMatchObject({ kind: 'ease', target: [2 * 0.0144, 51.5] });
   });
 
   test('says nothing inside a call: what happens is delivered at the end of the frame, to listeners given at the start', () => {
-    const { map, fake, frame, events, playheads } = mapOf({ overlay: { kind: 'reach', from: 'b' } });
+    const { map, fake, frame, events, playheads } = mapOf({ overlay: { kind: 'reach', from: stationId('b') } });
     fake.fire('style.load');
     map.seek(playheads.on(toTimestamp('1935-01-01')));
     expect(events).toEqual([]);
@@ -191,7 +192,7 @@ describe('TransitMap', () => {
     map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
     const moves = fake.moves.length;
-    const planned = NetworkFacts.create(tinyNetwork(), { plan: 'extension', today: toTimestamp('2026-01-01') });
+    const planned = NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') });
     map.update({ facts: planned });
     frame();
     expect(fake.moves).toHaveLength(moves);
@@ -203,7 +204,7 @@ describe('TransitMap', () => {
   });
 
   test("hides the ring of a station the moment took off the map, says so, and rings it again when it is back: the prop is the app's", () => {
-    const { map, fake, frame, ready, named, playheads } = mapOf({ selectedStation: 'c' });
+    const { map, fake, frame, ready, named, playheads } = mapOf({ selectedStation: stationId('c') });
     ready();
     expect(fake.featuresIn(SOURCES.selection)).toHaveLength(1);
     map.seek(playheads.on(toTimestamp('1905-01-01')));
@@ -246,7 +247,7 @@ describe('TransitMap', () => {
   });
 
   test('works the overlay out again as the date moves on, and reports it', () => {
-    const { map, frame, ready, named, playheads } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', option: 0 } });
+    const { map, frame, ready, named, playheads } = mapOf({ overlay: { kind: 'route', from: stationId('a'), to: stationId('c'), option: 0 } });
     ready();
     map.seek(playheads.on(toTimestamp('1905-01-01')));
     frame();
@@ -257,10 +258,10 @@ describe('TransitMap', () => {
   });
 
   test('draws the way between two stations asked for, or the last there is on the date, and says which', () => {
-    const { frame, ready, named, fake, facts } = mapOf({ overlay: { kind: 'route', from: 'a', to: 'c', option: 9 } });
+    const { frame, ready, named, fake, facts } = mapOf({ overlay: { kind: 'route', from: stationId('a'), to: stationId('c'), option: 9 } });
     ready();
     frame();
-    const ways = facts.asOf(facts.playheads.today()).routes('a', 'c');
+    const ways = facts.asOf(facts.playheads.today()).routes(stationId('a'), stationId('c'));
     expect(ways.length).toBeGreaterThan(0);
     expect(named('overlay').at(-1)).toEqual({ kind: 'route', routes: ways, shown: ways.length - 1 });
     expect(fake.featuresIn(SOURCES.route).length).toBeGreaterThan(0);
@@ -413,7 +414,7 @@ describe('TransitMap', () => {
     mini.fire('style.load');
     expect(mini.featuresIn(MINIMAP_SOURCES.lines).length).toBeGreaterThan(0);
     const fits = mini.moves.length;
-    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: 'extension', today: toTimestamp('2026-01-01') }) });
+    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') }) });
     expect(mini.moves.slice(fits)).toEqual([expect.objectContaining({ kind: 'fit' })]);
     map.update({ theme: 'light' });
     const box = container.querySelector<HTMLElement>(`.${MINIMAP_VIEWPORT_CLASS}`);

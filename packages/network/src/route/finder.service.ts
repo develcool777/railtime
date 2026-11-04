@@ -1,3 +1,4 @@
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import {
   ALTERNATIVE_EXTRA_MINUTES,
   ALTERNATIVE_SEARCHES,
@@ -101,6 +102,8 @@ export class RouteFinder {
   private readonly index: NetworkIndex;
   /** When each line opened, closed and called where. */
   private readonly timeline: Timeline;
+  /** Every place made so far, by station, then line: one object each, as a map keys by it. */
+  private readonly places = new Map<StationId, Map<LineId, Place>>();
 
   public constructor(index: NetworkIndex, timeline: Timeline) {
     this.index = index;
@@ -119,7 +122,7 @@ export class RouteFinder {
    * @param cursor - The cursor: the network as it was then.
    * @returns The routes, fastest first; none if there is no way (or the two are the same station).
    */
-  public options(from: string, to: string, cursor: number): Route[] {
+  public options(from: StationId, to: StationId, cursor: number): Route[] {
     if (from === to) return [];
     const fastest = this.best(from, to, { cursor, penalty: 0, weights: new Map() });
     if (!fastest) return [];
@@ -149,9 +152,9 @@ export class RouteFinder {
    * @param cursor - The cursor: the network as it was then.
    * @returns Minutes to each station reached, by id, the start's 0; none if no line calls at the start.
    */
-  public reach(from: string, cursor: number): Map<string, number> {
+  public reach(from: StationId, cursor: number): Map<StationId, number> {
     const terms: SearchTerms = { cursor, penalty: 0, weights: new Map() };
-    const minutes = new Map<string, number>();
+    const minutes = new Map<StationId, number>();
     const best = new Map<Place, number>();
     const queue = new PriorityQueue<Place>();
     for (const line of this.linesCallingAt(from, cursor)) {
@@ -161,7 +164,7 @@ export class RouteFinder {
     for (let next = queue.pop(); next; next = queue.pop()) {
       const { item: place, cost } = next;
       if (cost > (best.get(place) ?? Infinity)) continue;
-      const { station, line } = this.partsOf(place);
+      const { station, line } = place;
       // Places come off the queue soonest first: the first a line calls at is the station's time.
       if (!minutes.has(station) && this.timeline.servesStation(station, line, cursor)) minutes.set(station, cost);
       for (const edge of this.edgesFrom(place, terms)) {
@@ -182,7 +185,7 @@ export class RouteFinder {
    * @param terms - The date, and what a change and each line cost.
    * @returns The route, or `null` if there is none.
    */
-  private best(from: string, to: string, terms: SearchTerms): Route | null {
+  private best(from: StationId, to: StationId, terms: SearchTerms): Route | null {
     const reached = this.search(from, to, terms);
     return reached && this.routeOf(reached.place, reached.arrivals, terms.cursor);
   }
@@ -195,7 +198,7 @@ export class RouteFinder {
    * @param terms - The date, and what a change and each line cost.
    * @returns The place it ended at, and how each place on the way was reached; `null` if it was not.
    */
-  private search(from: string, to: string, terms: SearchTerms): { place: Place; arrivals: Map<Place, { from: Place; move: Move }> } | null {
+  private search(from: StationId, to: StationId, terms: SearchTerms): { place: Place; arrivals: Map<Place, { from: Place; move: Move }> } | null {
     const best = new Map<Place, number>();
     const arrivals = new Map<Place, { from: Place; move: Move }>();
     const queue = new PriorityQueue<Place>();
@@ -207,7 +210,7 @@ export class RouteFinder {
       const { item: place, cost } = next;
       // An entry left behind by a cheaper way found later.
       if (cost > (best.get(place) ?? Infinity)) continue;
-      const { station, line } = this.partsOf(place);
+      const { station, line } = place;
       if (station === to && this.timeline.servesStation(station, line, terms.cursor)) return { place, arrivals };
       for (const edge of this.edgesFrom(place, terms)) {
         const total = cost + edge.minutes;
@@ -230,7 +233,7 @@ export class RouteFinder {
    */
   private edgesFrom(place: Place, terms: SearchTerms): Edge[] {
     const { cursor, penalty, weights } = terms;
-    const { station, line } = this.partsOf(place);
+    const { station, line } = place;
     const edges: Edge[] = [];
     for (const lineSegment of this.index.lineSegmentsAt(station)) {
       if (lineSegment.line !== line || !this.timeline.isOpen(lineSegment, cursor)) continue;
@@ -291,7 +294,7 @@ export class RouteFinder {
     const legs: RouteLeg[] = [];
     let ride: RideLeg | null = null;
     for (const { place, move } of path) {
-      const { station, line } = this.partsOf(place);
+      const { station, line } = place;
       if (move?.kind === 'ride' && ride) {
         ride.segments.push(move.segment);
         ride.km += move.km;
@@ -315,7 +318,7 @@ export class RouteFinder {
    * @param cursor - The date.
    * @returns Their ids.
    */
-  private linesCallingAt(station: string, cursor: number): string[] {
+  private linesCallingAt(station: StationId, cursor: number): LineId[] {
     const calling = this.index
       .lineSegmentsAt(station)
       .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(station, lineSegment.line, cursor));
@@ -333,25 +336,20 @@ export class RouteFinder {
   }
 
   /**
-   * A place: a station on a line.
+   * A place: a station on a line, the same object each time it is asked for.
    *
    * @param station - The station.
    * @param line - The line.
    * @returns The place.
    */
-  private placeOf(station: string, line: string): Place {
-    return `${station}|${line}`;
-  }
-
-  /**
-   * A place's station and line.
-   *
-   * @param place - The place.
-   * @returns Its station and line.
-   */
-  private partsOf(place: Place): { station: string; line: string } {
-    const split = place.indexOf('|');
-    return { station: place.slice(0, split), line: place.slice(split + 1) };
+  private placeOf(station: StationId, line: LineId): Place {
+    const byLine = this.places.get(station) ?? new Map<LineId, Place>();
+    this.places.set(station, byLine);
+    const known = byLine.get(line);
+    if (known) return known;
+    const place = { station, line };
+    byLine.set(line, place);
+    return place;
   }
 }
 

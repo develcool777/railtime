@@ -1,6 +1,7 @@
-import { pushTo } from '@railtime/core/collection.utils';
+import { entriesOf, pushTo } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { required } from '@railtime/core/required.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import { collectDays } from './days.utils.ts';
 import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
 import type { NetworkIndex } from './index.service';
@@ -37,7 +38,7 @@ export class Timeline {
   /** When each line calls at each station, where it does not simply call while it runs there. */
   private readonly stops = new StationStops();
   /** Per line, the steps at which it stops being drawn as each of its aliases, in order. */
-  private readonly aliasEnds = new Map<string, AliasEnd[]>();
+  private readonly aliasEnds = new Map<LineId, AliasEnd[]>();
   /** Each opening's growth and each closure's retreat, worked out the first time it is asked for. */
   private readonly growths = new WeakMap<OpenStep | CloseStep, Growth>();
 
@@ -142,7 +143,7 @@ export class Timeline {
    * @param cursor - The cursor.
    * @returns True if the station is a stop on the line.
    */
-  public servesStation(station: string, line: string, cursor: number): boolean {
+  public servesStation(station: StationId, line: LineId, cursor: number): boolean {
     return this.stops.serves(station, line, cursor);
   }
 
@@ -154,7 +155,7 @@ export class Timeline {
    * @param line - The line id.
    * @returns True if the station was a stop on the line at some point.
    */
-  public everServes(station: string, line: string): boolean {
+  public everServes(station: StationId, line: LineId): boolean {
     return this.stops.ever(station, line);
   }
 
@@ -167,7 +168,7 @@ export class Timeline {
    * @param transitioning - The identity step at the cursor is playing.
    * @returns The line's identity.
    */
-  public identityOf(line: string, cursor: number, transitioning = false): LineIdentity {
+  public identityOf(line: LineId, cursor: number, transitioning = false): LineIdentity {
     const ends = this.aliasEnds.get(line) ?? [];
     for (const [position, end] of ends.entries()) {
       if (end.step > cursor || (end.step === cursor && !transitioning)) return { id: end.as };
@@ -183,7 +184,7 @@ export class Timeline {
    * @param leaving - Line segments to leave out: a closure's own, for the network that stays.
    * @returns Their ids.
    */
-  public stationsOnMap(cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+  public stationsOnMap(cursor: number, leaving = new Set<LineSegment>()): Set<StationId> {
     return this.stationsOf(cursor, lineSegment => !leaving.has(lineSegment));
   }
 
@@ -196,7 +197,7 @@ export class Timeline {
    * @param leaving - Line segments to leave out: a closure's own.
    * @returns Their ids.
    */
-  private stationsOnLine(line: string, time: number, cursor: number, leaving = new Set<LineSegment>()): Set<string> {
+  private stationsOnLine(line: LineId, time: number, cursor: number, leaving = new Set<LineSegment>()): Set<StationId> {
     return this.stationsOf(cursor, lineSegment => !leaving.has(lineSegment) && this.identityOn(lineSegment.line, time) === line);
   }
 
@@ -207,8 +208,8 @@ export class Timeline {
    * @param keeps - Whether a line segment counts.
    * @returns The stations' ids.
    */
-  private stationsOf(cursor: number, keeps: (lineSegment: LineSegment) => boolean): Set<string> {
-    const stations = new Set<string>();
+  private stationsOf(cursor: number, keeps: (lineSegment: LineSegment) => boolean): Set<StationId> {
+    const stations = new Set<StationId>();
     for (const lineSegment of this.index.lineSegments) {
       if (!keeps(lineSegment) || !this.isOpen(lineSegment, cursor)) continue;
       stations.add(lineSegment.segment.stationA);
@@ -274,7 +275,7 @@ export class Timeline {
    * @returns The growth.
    */
   private calledAtOnly(planned: Growth, lineSegments: LineSegment[], cursor: number): Growth {
-    const calledAt = (station: string) =>
+    const calledAt = (station: StationId) =>
       lineSegments.some(({ segment, line }) => (segment.stationA === station || segment.stationB === station) && this.servesStation(station, line, cursor));
     return { ...planned, reach: planned.reach.map(reached => ({ ...reached, isNew: reached.isNew && calledAt(reached.station) })) };
   }
@@ -287,7 +288,7 @@ export class Timeline {
    * @param time - The date's timestamp.
    * @returns The id of the line it is drawn as.
    */
-  private identityOn(line: string, time: number): string {
+  private identityOn(line: LineId, time: number): LineId {
     for (const alias of this.index.lineOf(line).aliases ?? []) {
       const until = toTimestamp(alias.until);
       if (time < until || (time === until && this.index.goesOutAt(line, time))) return alias.as;
@@ -314,7 +315,7 @@ export class Timeline {
   private addPlannedSteps(): void {
     const bySection = new Map<number, LineSegment[]>();
     for (const lineSegment of this.index.lineSegments) if (lineSegment.section !== null) pushTo(bySection, lineSegment.section, lineSegment);
-    const lines: { line: string; positions: number[] }[] = [];
+    const lines: { line: LineId; positions: number[] }[] = [];
     for (const [position, section] of this.index.sections.entries()) {
       const last = lines.at(-1);
       if (last?.line === section.line) last.positions.push(position);
@@ -340,7 +341,7 @@ export class Timeline {
    * @param identities - That day's identity changes.
    */
   private addIdentitySteps(time: number, identities: DayChanges['identities']): void {
-    const byText = new Map<string, string[]>();
+    const byText = new Map<string, LineId[]>();
     for (const { line, text } of identities) pushTo(byText, text, line);
     for (const [text, lines] of byText) this.addStep({ kind: 'identity', time, lines, text });
   }
@@ -353,8 +354,8 @@ export class Timeline {
    * @param opens - That day's openings.
    */
   private addOpenSteps(time: number, opens: LineSegment[]): void {
-    const coordOf = (station: string) => this.index.coordOf(station);
-    const byLine = new Map<string, LineSegment[]>();
+    const coordOf = (station: StationId) => this.index.coordOf(station);
+    const byLine = new Map<LineId, LineSegment[]>();
     for (const lineSegment of opens) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const line of [...byLine.keys()].toSorted(this.index.compareLines)) {
       for (const stretch of connectedStretches(byLine.get(line)!, coordOf, this.index.centre)) {
@@ -375,8 +376,8 @@ export class Timeline {
    * @param closes - That day's closures.
    */
   private addCloseSteps(time: number, closes: LineSegment[]): void {
-    const coordOf = (station: string) => this.index.coordOf(station);
-    const byLine = new Map<string, LineSegment[]>();
+    const coordOf = (station: StationId) => this.index.coordOf(station);
+    const byLine = new Map<LineId, LineSegment[]>();
     for (const lineSegment of closes) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
     for (const [line, lineSegments] of byLine) {
       for (const stretch of connectedStretches(lineSegments, coordOf, this.index.centre)) {
@@ -435,7 +436,7 @@ export class Timeline {
 
   /** Marks the lines that first reached a station after it had closed on every line it served: they pass it by. */
   private markLinesAfterClosure(): void {
-    for (const [station, info] of Object.entries(this.index.network.stations)) {
+    for (const [station, info] of entriesOf(this.index.network.stations)) {
       const closed = info.closed ?? {};
       const closes = Object.values(closed).map(toTimestamp);
       if (closes.length === 0) continue;
@@ -453,7 +454,7 @@ export class Timeline {
    * line goes out (a gap), the first step after that day's, the line drawn as its alias until it is out.
    */
   private indexAliasEnds(): void {
-    for (const [line, info] of Object.entries(this.index.network.lines)) {
+    for (const [line, info] of entriesOf(this.index.network.lines)) {
       const ends = (info.aliases ?? []).map(alias => {
         const time = toTimestamp(alias.until);
         if (!this.index.goesOutAt(line, time))

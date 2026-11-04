@@ -75,6 +75,14 @@ landing page's pictures in Chrome).
   number is compared, never taken for true: `0` is a count, an option, and the timestamp of
   1 January 1970 (`closes !== null`, `option > 0`). A sort's tie-breaks are `firstDifference(a - b,
 nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
+- **An id is its kind's** (`StationId`, `LineId`, `NetworkId`, `PlanId`: `Brand<string, …>`, in
+  `schema`'s format): a line's id where a station's goes does not compile, and a map or set of them
+  says which (`Map<StationId, number>`). A string becomes an id only where it is checked: `parseNetwork`
+  for a city's file, `isStationIn`/`isLineIn`/`isPlanIn` (`facts.findStation`, `findLine`, `planToOpen`)
+  for an address; never by `as` elsewhere. A record keyed by ids is walked with `keysOf`/`entriesOf`
+  and made with `fromEntriesOf` (`@railtime/core/collection.utils`), which keep the key's kind, where
+  `Object.keys` makes it `string`. A test names its ids with `stationId('a')`, `lineId('red')`, and
+  writes a network as its file is, `asNetwork({…})` (`@railtime/schema/testing/ids`).
 - **A key left out is not a key given `undefined`** (`exactOptionalPropertyTypes`, in the packages):
   `{ plan?: string }` takes no `plan: undefined`; pass it on as `...(plan && { plan })`, and leave a
   key out with `const { plans: _plans, ...rest } = network`. Where `undefined` does mean "not given",

@@ -1,3 +1,5 @@
+import type { StationId } from '@railtime/schema/network.types';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
@@ -14,7 +16,7 @@ import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
  * @param to - Where it ends.
  * @returns The routes.
  */
-const optionsOf = (from: string, to: string): Route[] => {
+const optionsOf = (from: StationId, to: StationId): Route[] => {
   const index = new NetworkIndex(routeNetwork());
   const timeline = new Timeline(index);
   return new RouteFinder(index, timeline).options(from, to, timeline.steps.length);
@@ -27,7 +29,7 @@ const optionsOf = (from: string, to: string): Route[] => {
  * @param to - Where it ends.
  * @returns The route, or `null`.
  */
-const routeOf = (from: string, to: string): Route | null => optionsOf(from, to)[0] ?? null;
+const routeOf = (from: StationId, to: StationId): Route | null => optionsOf(from, to)[0] ?? null;
 
 /** Each leg, as its line or `walk`. */
 const legsOf = (route: Route | null) => route?.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk'));
@@ -38,7 +40,7 @@ const THREE_KM_MINUTES = (3 / RIDE_KMH) * 60;
 describe('RouteFinder', () => {
   describe('options', () => {
     test('rides one line from stop to stop, its time from the track', () => {
-      const route = routeOf('a', 'd');
+      const route = routeOf(stationId('a'), stationId('d'));
       expect(route?.legs).toMatchObject([{ kind: 'ride', line: 'red', stops: ['a', 'b', 'c', 'd'] }]);
       expect(route).toMatchObject({ changes: 0 });
       expect(route?.km).toBeCloseTo(3, 1);
@@ -46,7 +48,7 @@ describe('RouteFinder', () => {
     });
 
     test('changes line, and counts the change and its minutes', () => {
-      const route = routeOf('a', 'e');
+      const route = routeOf(stationId('a'), stationId('e'));
       expect(legsOf(route)).toEqual(['red', 'blue']);
       expect(route?.legs[1]).toMatchObject({ stops: ['c', 'e'] });
       expect(route?.changes).toBe(1);
@@ -54,25 +56,25 @@ describe('RouteFinder', () => {
     });
 
     test('walks a transfer when that is quicker than riding round', () => {
-      const route = routeOf('b', 'g');
+      const route = routeOf(stationId('b'), stationId('g'));
       expect(route?.legs).toEqual([{ kind: 'walk', from: 'b', to: 'g', minutes: WALK_MINUTES }]);
       expect(route?.changes).toBe(0);
     });
 
     test('offers the fastest, the way that changes least, and the fastest round a line the others ride: fastest first', () => {
-      const options = optionsOf('a', 'e');
+      const options = optionsOf(stationId('a'), stationId('e'));
       expect(options.map(legsOf)).toEqual([['red', 'blue'], ['red', 'walk', 'green'], ['yellow']]);
       expect(options.map(route => route.minutes)).toEqual(options.map(route => route.minutes).toSorted((first, second) => first - second));
     });
 
     test('offers no way off a line and back on it: a detour, not a way', () => {
       // Grey then pink then grey again is quick enough to be offered, but rides grey twice.
-      expect(optionsOf('p', 's').map(legsOf)).toEqual([['grey']]);
+      expect(optionsOf(stationId('p'), stationId('s')).map(legsOf)).toEqual([['grey']]);
     });
 
     test('offers a way once, however many searches find it, and none much slower than the fastest', () => {
       // Round red there is only yellow, blue and red again: far slower, and red besides.
-      expect(optionsOf('a', 'd').map(legsOf)).toEqual([['red']]);
+      expect(optionsOf(stationId('a'), stationId('d')).map(legsOf)).toEqual([['red']]);
     });
 
     test('rides past a station its line does not call at, and finds nothing where nothing runs', () => {
@@ -80,10 +82,10 @@ describe('RouteFinder', () => {
       const index = new NetworkIndex(tinyNetwork());
       const timeline = new Timeline(index);
       const finder = new RouteFinder(index, timeline);
-      expect(finder.options('b', 'd', timeline.cursorAt(Date.UTC(1915, 6, 1)))[0]?.legs).toMatchObject([{ stops: ['b', 'd'] }]);
-      expect(finder.options('b', 'c', timeline.cursorAt(Date.UTC(1915, 6, 1)))).toEqual([]);
-      expect(finder.options('a', 'c', timeline.cursorAt(Date.UTC(1905, 0, 1)))).toEqual([]);
-      expect(optionsOf('a', 'a')).toEqual([]);
+      expect(finder.options(stationId('b'), stationId('d'), timeline.cursorAt(Date.UTC(1915, 6, 1)))[0]?.legs).toMatchObject([{ stops: ['b', 'd'] }]);
+      expect(finder.options(stationId('b'), stationId('c'), timeline.cursorAt(Date.UTC(1915, 6, 1)))).toEqual([]);
+      expect(finder.options(stationId('a'), stationId('c'), timeline.cursorAt(Date.UTC(1905, 0, 1)))).toEqual([]);
+      expect(optionsOf(stationId('a'), stationId('a'))).toEqual([]);
     });
   });
 
@@ -92,11 +94,11 @@ describe('RouteFinder', () => {
       const index = new NetworkIndex(routeNetwork());
       const timeline = new Timeline(index);
       const finder = new RouteFinder(index, timeline);
-      const reach = finder.reach('a', timeline.steps.length);
-      expect(reach.get('a')).toBe(0);
-      expect(reach.get('d')).toBeCloseTo(THREE_KM_MINUTES, 0);
+      const reach = finder.reach(stationId('a'), timeline.steps.length);
+      expect(reach.get(stationId('a'))).toBe(0);
+      expect(reach.get(stationId('d'))).toBeCloseTo(THREE_KM_MINUTES, 0);
       for (const station of ['b', 'c', 'd', 'e', 'g', 'h']) {
-        expect(reach.get(station)).toBeCloseTo(finder.options('a', station, timeline.steps.length)[0]?.minutes ?? NaN, 5);
+        expect(reach.get(stationId(station))).toBeCloseTo(finder.options(stationId('a'), stationId(station), timeline.steps.length)[0]?.minutes ?? NaN, 5);
       }
       const times = [...reach.values()];
       expect(times).toEqual([...times].toSorted((first, second) => first - second));
@@ -106,7 +108,7 @@ describe('RouteFinder', () => {
       // On the small network, C is on red's track from 1910 but a stop only from 1920.
       const index = new NetworkIndex(tinyNetwork());
       const timeline = new Timeline(index);
-      expect(new RouteFinder(index, timeline).reach('c', timeline.cursorAt(Date.UTC(1915, 6, 1))).size).toBe(0);
+      expect(new RouteFinder(index, timeline).reach(stationId('c'), timeline.cursorAt(Date.UTC(1915, 6, 1))).size).toBe(0);
     });
   });
 });

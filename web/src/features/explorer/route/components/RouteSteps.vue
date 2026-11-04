@@ -11,7 +11,7 @@
             color="neutral"
             variant="link"
             class="text-highlighted p-0 text-sm leading-5 font-semibold"
-            @click="emit('station', leg.stops[0]?.id ?? '')" />
+            @click="leg.stops[0] && emit('station', leg.stops[0].id)" />
           <span v-if="position > 0" class="eyebrow text-muted flex-none">Change</span>
         </div>
         <p class="text-default mt-0.5 text-xs">
@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
   import type { RouteInfo } from '@railtime/network/facts.types';
+  import type { StationId } from '@railtime/schema/network.types';
   import { ref, watch } from 'vue';
   import { rideSummary } from '~/features/explorer/route/route.utils';
   import { lineColor } from '~/utils/format.utils';
@@ -70,7 +71,7 @@
     /** The way. */
     route: RouteInfo;
   }>();
-  const emit = defineEmits<{ station: [station: string] }>();
+  const emit = defineEmits<{ station: [station: StationId] }>();
 
   // The rides whose stops are listed; another way starts with them folded.
   const unfolded = ref(new Set<number>());

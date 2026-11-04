@@ -3,6 +3,8 @@ import { byCodeUnits } from '@railtime/core/text.utils';
 import type { TrackSegment } from '@railtime/network/engine.types';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
+import type { StationId } from '@railtime/schema/network.types';
+import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
@@ -47,7 +49,10 @@ describe('London', () => {
     const ends = stepsOn('1907-06-22').flatMap(step =>
       step.kind === 'open' ? [new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB]))] : [],
     );
-    expect(ends.map(stations => ['golders-green', 'archway'].filter(station => stations.has(station)))).toEqual([['golders-green'], ['archway']]);
+    expect(ends.map(stations => ['golders-green', 'archway'].map(stationId).filter(station => stations.has(station)))).toEqual([
+      ['golders-green'],
+      ['archway'],
+    ]);
   });
 
   test('closes the East London line in 2007 a branch at a time: New Cross Gate back to Surrey Quays, then the rest', () => {
@@ -72,9 +77,9 @@ describe('London', () => {
     if (!closing || !suspended) throw new Error('City Road closes as the Northern line is suspended on 8 August 1922');
     expect(closing.index).toBeLessThan(suspended.index);
     // As it closes, its line still runs through it: there is a station to fade.
-    const track = index.lineSegmentsAt('city-road').filter(lineSegment => lineSegment.line === 'northern');
+    const track = index.lineSegmentsAt(stationId('city-road')).filter(lineSegment => lineSegment.line === 'northern');
     expect(track.some(lineSegment => timeline.isOpen(lineSegment, closing.index))).toBe(true);
-    expect(timeline.servesStation('city-road', 'northern', closing.index)).toBe(true);
+    expect(timeline.servesStation(stationId('city-road'), lineId('northern'), closing.index)).toBe(true);
   });
 
   test('runs fast lines beside the stopping ones they pass, on the same track, never on track of their own over it', () => {
@@ -84,8 +89,8 @@ describe('London', () => {
     ] as const;
     for (const [line, stations] of passing)
       for (const station of stations) {
-        expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line)).toBe(true);
-        expect(timeline.everServes(station, line)).toBe(false);
+        expect(index.lineSegmentsAt(stationId(station)).some(lineSegment => lineSegment.line === line)).toBe(true);
+        expect(timeline.everServes(stationId(station), lineId(line))).toBe(false);
       }
   });
 
@@ -117,24 +122,25 @@ describe('London', () => {
     for (const date of ['1987-08-31', '1991-07-29', '1994-03-28', '1995-07-31', '1999-11-20', '2005-12-02', '2009-01-10', '2011-08-31'])
       expect(stepsOn(date).some(step => step.kind === 'open' && step.line === 'dlr')).toBe(true);
     // Canary Wharf, Pudding Mill Lane, Canning Town, Cutty Sark and Langdon Park opened on track the DLR already ran.
-    expect(timeline.everServes('canary-wharf-3', 'dlr')).toBe(true);
+    expect(timeline.everServes(stationId('canary-wharf-3'), lineId('dlr'))).toBe(true);
     expect(stepsOn('2007-12-09').some(step => step.kind === 'infill' && step.station === 'langdon-park')).toBe(true);
     // Its stations shared with the Underground, the Overground and the Elizabeth line are one station each.
     for (const station of ['bank', 'shadwell', 'stratford', 'west-ham', 'canning-town', 'custom-house'])
-      expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === 'dlr')).toBe(true);
+      expect(index.lineSegmentsAt(stationId(station)).some(lineSegment => lineSegment.line === 'dlr')).toBe(true);
   });
 
   test('opens the trams in May 2000 a route at a time, Centrale added in 2005', () => {
     for (const date of ['2000-05-10', '2000-05-23', '2000-05-30']) expect(stepsOn(date).some(step => step.kind === 'open' && step.line === 'tram')).toBe(true);
     expect(stepsOn('2005-12-10').some(step => step.kind === 'infill' && step.station === 'centrale')).toBe(true);
     // Wimbledon and West Croydon are one station with the District and the Overground.
-    for (const station of ['wimbledon', 'west-croydon']) expect(index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === 'tram')).toBe(true);
+    for (const station of ['wimbledon', 'west-croydon'])
+      expect(index.lineSegmentsAt(stationId(station)).some(lineSegment => lineSegment.line === 'tram')).toBe(true);
   });
 
   test('opens the cable car across the Thames in 2012, a change from North Greenwich and Royal Victoria', () => {
     expect(stepsOn('2012-06-28').some(step => step.kind === 'open' && step.line === 'cable-car')).toBe(true);
-    expect(index.transfersAt('greenwich-peninsula')).toEqual(['north-greenwich']);
-    expect(index.transfersAt('royal-docks')).toEqual(['royal-victoria']);
+    expect(index.transfersAt(stationId('greenwich-peninsula'))).toEqual(['north-greenwich']);
+    expect(index.transfersAt(stationId('royal-docks'))).toEqual(['royal-victoria']);
   });
 
   test('turns the Stanmore branch from Bakerloo to Jubilee before the 1979 tunnel opens', () => {
@@ -180,8 +186,8 @@ describe('London', () => {
   });
 
   test('never stops the District at Canada Water, opened long after it left the East London line', () => {
-    expect(timeline.everServes('canada-water', 'district')).toBe(false);
-    expect(timeline.everServes('canada-water', 'east-london')).toBe(true);
+    expect(timeline.everServes(stationId('canada-water'), lineId('district'))).toBe(false);
+    expect(timeline.everServes(stationId('canada-water'), lineId('east-london'))).toBe(true);
   });
 
   test('runs through every plain station: one segment ends where the next starts', () => {
@@ -199,12 +205,14 @@ describe('London', () => {
   });
 
   test('keeps the Circle and District on the same sides from Gloucester Road through South Kensington', () => {
-    const between = (from: string, to: string) => {
+    const between = (from: StationId, to: StationId) => {
       const found = index.segments.find(segment => [segment.stationA, segment.stationB].includes(from) && [segment.stationA, segment.stationB].includes(to));
       if (!found) throw new Error(`no segment ${from} – ${to}`);
       return found;
     };
-    expect(endOf(between('gloucester-road', 'south-kensington'))).toBe(startOf(between('south-kensington', 'sloane-square')));
+    expect(endOf(between(stationId('gloucester-road'), stationId('south-kensington')))).toBe(
+      startOf(between(stationId('south-kensington'), stationId('sloane-square'))),
+    );
   });
 
   test('is at its known size today', () => {
@@ -226,7 +234,7 @@ describe('London', () => {
   test.each(['under-construction', 'surrey-canal', 'bakerloo-extension', 'crossrail-2', 'dlr-thamesmead', 'west-london-orbital', 'croxley-rail-link'])(
     'plays on through its %s plan, section by section',
     plan => {
-      const played = playPlan(london, plan);
+      const played = playPlan(london, planId(plan));
       expect(played.steps).toBeGreaterThan(0);
       expect(played.started).toBe(played.steps);
       expect(played.cursor).toBe(played.steps);
@@ -272,7 +280,7 @@ describe('London', () => {
       expect(stationsOf(croydon)).toContain('west-croydon');
       const { index: railIndex } = playbackOf(london, { hidden: shown });
       const linesOn = new Map<unknown, string[]>();
-      for (const { segment, line } of railIndex.lineSegmentsAt('forest-hill')) linesOn.set(segment, [...(linesOn.get(segment) ?? []), line]);
+      for (const { segment, line } of railIndex.lineSegmentsAt(stationId('forest-hill'))) linesOn.set(segment, [...(linesOn.get(segment) ?? []), line]);
       expect([...linesOn.values()].map(lines => lines.toSorted(byCodeUnits))).toEqual([
         ['southern', 'windrush'],
         ['southern', 'windrush'],
@@ -299,7 +307,7 @@ describe('London', () => {
     }, 30_000);
 
     test.each(['crossrail-2', 'west-london-orbital'])('plays on through its %s plan over National Rail track, section by section', plan => {
-      const played = playPlan(london, plan, shown);
+      const played = playPlan(london, planId(plan), shown);
       expect(played.steps).toBeGreaterThan(0);
       expect(played.started).toBe(played.steps);
       expect(played.cursor).toBe(played.steps);
@@ -331,7 +339,7 @@ describe('London', () => {
       ]),
     );
     expect(jubilee.some(step => new Date(step.time).getUTCFullYear() > 1939 && new Date(step.time).getUTCFullYear() < 1979)).toBe(false);
-    expect(hidden.timeline.steps.some(step => step.kind === 'identity' && step.lines.includes('jubilee'))).toBe(false);
+    expect(hidden.timeline.steps.some(step => step.kind === 'identity' && step.lines.includes(lineId('jubilee')))).toBe(false);
     const played = playWholeHistory(london, { hidden: ['national-rail', 'bakerloo'] });
     expect(played.started).toBe(played.steps);
     expect(played.cursor).toBe(played.steps);

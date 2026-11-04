@@ -1,3 +1,4 @@
+import { planId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
@@ -15,7 +16,7 @@ describe('Glasgow', () => {
   test.each(['long-term-strategy-2010', 'stds-1988', 'extensions-1954', 'eastern-circle-1944', 'extensions-1937'])(
     'plays on through its %s plan, section by section',
     plan => {
-      const played = playPlan(cityNetwork('glasgow'), plan);
+      const played = playPlan(cityNetwork('glasgow'), planId(plan));
       expect(played.steps).toBeGreaterThan(0);
       expect(played.started).toBe(played.steps);
       expect(played.cursor).toBe(played.steps);

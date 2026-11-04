@@ -2,6 +2,7 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { distanceKm, latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { COVERAGE_BANDS, COVERAGE_DEFAULT_METRES } from '../../../src/coverage/coverage.constants';
 import { CoverageGrid, CoverageMeasure } from '../../../src/coverage/coverage.service';
@@ -302,7 +303,9 @@ describe('CoverageUtils', () => {
     test('places the stations a line calls at, not one it only passes', () => {
       const { index, timeline } = factsOf(tinyNetwork()).engine;
       // In 1915 red runs through C, which opens on it only in 1920.
-      expect(servedStations(index, timeline, timeline.cursorAt(toTimestamp('1915-01-01')))).toEqual(['a', 'b', 'd'].map(station => index.coordOf(station)));
+      expect(servedStations(index, timeline, timeline.cursorAt(toTimestamp('1915-01-01')))).toEqual(
+        ['a', 'b', 'd'].map(station => index.coordOf(stationId(station))),
+      );
     });
   });
 

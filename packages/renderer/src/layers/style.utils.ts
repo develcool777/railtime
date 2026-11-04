@@ -1,4 +1,5 @@
 import type { TrackSegment } from '@railtime/network/engine.types';
+import type { LineId } from '@railtime/schema/network.types';
 import type { ExpressionSpecification } from 'maplibre-gl';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
 import { channelsOf } from '../support/drawing.utils';
@@ -78,7 +79,7 @@ const mixColors = (from: string, to: string, fraction: number): string => {
  * @param line - The line id.
  * @returns The line as drawn.
  */
-export const resolveLine = (state: RenderState, line: string): ResolvedLine => {
+export const resolveLine = (state: RenderState, line: LineId): ResolvedLine => {
   const identity = state.timeline.identityOf(line, state.cursor, state.identityProgress !== null);
   const color = identity.previousId
     ? mixColors(state.baseColor(identity.previousId), state.baseColor(identity.id), state.identityProgress ?? 1)
@@ -96,7 +97,7 @@ export const resolveLine = (state: RenderState, line: string): ResolvedLine => {
  * @param lineId - The (effective) line.
  * @returns The offset slot.
  */
-export const offsetFor = (sideBySide: SideBySide, segment: TrackSegment, lineId: string): number => {
+export const offsetFor = (sideBySide: SideBySide, segment: TrackSegment, lineId: LineId): number => {
   const lines = sideBySide.get(segment.index);
   return lines ? (lines.indexOf(lineId) - (lines.length - 1) / 2) * segment.travel : 0;
 };

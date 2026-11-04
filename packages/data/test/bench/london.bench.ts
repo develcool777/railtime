@@ -1,5 +1,6 @@
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { benchAgainstLastRun, benchCity } from '../support/bench.utils';
 
@@ -18,17 +19,17 @@ describe('London', () => {
 
   test('finds the ways between two stations far apart', async ({ bench }) => {
     const today = NetworkFacts.create(LONDON.network).today();
-    expect(today.routes('heathrow-terminal-5', 'epping').length).toBeGreaterThan(0);
+    expect(today.routes(stationId('heathrow-terminal-5'), stationId('epping')).length).toBeGreaterThan(0);
     await benchAgainstLastRun(bench, 'London route', () => {
-      today.routes('heathrow-terminal-5', 'epping');
+      today.routes(stationId('heathrow-terminal-5'), stationId('epping'));
     });
   });
 
   test('finds where a station reaches', async ({ bench }) => {
     const today = NetworkFacts.create(LONDON.network).today();
-    expect(today.reach('bank')?.stations.length).toBeGreaterThan(100);
+    expect(today.reach(stationId('bank'))?.stations.length).toBeGreaterThan(100);
     await benchAgainstLastRun(bench, 'London reach', () => {
-      today.reach('bank');
+      today.reach(stationId('bank'));
     });
   });
 

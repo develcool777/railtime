@@ -1,5 +1,7 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import type { PlanId } from '@railtime/schema/network.types';
+import { planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { FrameRenderer } from '../../../src/layers/frame.service';
 import { SOURCES } from '../../../src/layers/ids.constants';
@@ -16,7 +18,7 @@ import { playbackOf } from '../../support/playback.utils';
  * @param plan - One of its plans to build on it.
  * @returns The frames, the map, the playback and what the minimap was sent.
  */
-const framesOn = (date: string, plan?: string) => {
+const framesOn = (date: string, plan?: PlanId) => {
   const playback = playbackOf(tinyNetwork(), { ...(plan && { plan }) });
   if (plan) playback.player.seek(playback.facts.playheads.end());
   else playback.player.seek(playback.facts.playheads.on(toTimestamp(date)));
@@ -67,7 +69,7 @@ describe('FrameRenderer', () => {
   });
 
   test("shows the minimap a plan's track as the map does, dashed apart from the built lines", () => {
-    const { frames, fake, minimap } = framesOn('', 'extension');
+    const { frames, fake, minimap } = framesOn('', planId('extension'));
     frames.draw(0, null);
     const planned = fake.data.get(SOURCES.planned) as FeatureCollection<LineFeature>;
     expect(planned.features).not.toEqual([]);
@@ -104,8 +106,8 @@ describe('FrameRenderer', () => {
 
   test('says when the selected station is not on the map on the date', () => {
     const { frames } = framesOn('1905-01-01');
-    expect(frames.draw(0, 'a').selectionGone).toBe(false);
-    expect(frames.draw(16, 'd').selectionGone).toBe(true);
+    expect(frames.draw(0, stationId('a')).selectionGone).toBe(false);
+    expect(frames.draw(16, stationId('d')).selectionGone).toBe(true);
     expect(frames.draw(32, null).selectionGone).toBe(false);
   });
 

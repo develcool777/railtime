@@ -1,5 +1,6 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { Network } from '@railtime/schema/network.types';
+import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { captionOf } from '../../../src/engine/caption.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -33,12 +34,12 @@ describe('CaptionUtils', () => {
     test('names an extension leaving its line where it does not call from the station before', () => {
       // Blue runs B – C from 1930 but never calls at C: its 1935 extension on to E is named from B.
       const network = tinyNetwork();
-      network.stations.e = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
+      network.stations[stationId('e')] = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
       network.segments.push({
-        stationA: 'c',
-        stationB: 'e',
-        lines: { blue: { open: '1935-01-01' } },
-        coordinates: [network.stations.c!.coordinate, network.stations.e.coordinate],
+        stationA: stationId('c'),
+        stationB: stationId('e'),
+        lines: { [lineId('blue')]: { open: '1935-01-01' } },
+        coordinates: [network.stations[stationId('c')]!.coordinate, network.stations[stationId('e')]!.coordinate],
       });
       expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
     });
@@ -46,11 +47,21 @@ describe('CaptionUtils', () => {
     test('names an extension ending where its line does not call yet by its last stop', () => {
       // Blue on from C, where it never calls, by E to F, a station only from 1960: named B – E.
       const network = tinyNetwork();
-      network.stations.e = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
-      network.stations.f = { name: 'F', coordinate: [2 * 0.0144, 51.518], infill: { blue: '1960-01-01' } };
+      network.stations[stationId('e')] = { name: 'E', coordinate: [2 * 0.0144, 51.509] };
+      network.stations[stationId('f')] = { name: 'F', coordinate: [2 * 0.0144, 51.518], infill: { [lineId('blue')]: '1960-01-01' } };
       network.segments.push(
-        { stationA: 'c', stationB: 'e', lines: { blue: { open: '1935-01-01' } }, coordinates: [network.stations.c!.coordinate, network.stations.e.coordinate] },
-        { stationA: 'e', stationB: 'f', lines: { blue: { open: '1935-01-01' } }, coordinates: [network.stations.e.coordinate, network.stations.f.coordinate] },
+        {
+          stationA: stationId('c'),
+          stationB: stationId('e'),
+          lines: { [lineId('blue')]: { open: '1935-01-01' } },
+          coordinates: [network.stations[stationId('c')]!.coordinate, network.stations[stationId('e')]!.coordinate],
+        },
+        {
+          stationA: stationId('e'),
+          stationB: stationId('f'),
+          lines: { [lineId('blue')]: { open: '1935-01-01' } },
+          coordinates: [network.stations[stationId('e')]!.coordinate, network.stations[stationId('f')]!.coordinate],
+        },
       );
       expect(captionAfter(network, '1934-01-01')).toMatchObject({ title: 'Blue line extended', subtitle: 'B – E' });
     });
@@ -83,7 +94,7 @@ describe('CaptionUtils', () => {
         stations: ['C'],
       });
       const network = tinyNetwork();
-      network.stations.c!.infill = { red: '1935-01-01', blue: '1935-01-01' };
+      network.stations[stationId('c')]!.infill = { [lineId('red')]: '1935-01-01', [lineId('blue')]: '1935-01-01' };
       expect(captionAfter(network, '1934-01-01')).toMatchObject({ subtitle: 'on the Red line and Blue line' });
     });
 
@@ -99,7 +110,10 @@ describe('CaptionUtils', () => {
 
     test('says a station closes for a spell, and reopens', () => {
       const network = tinyNetwork();
-      network.stations.b = { ...network.stations.b!, suspended: { red: [{ from: '1915-03-15', until: '1926-07-19' }] } };
+      network.stations[stationId('b')] = {
+        ...network.stations[stationId('b')]!,
+        suspended: { [lineId('red')]: [{ from: '1915-03-15', until: '1926-07-19' }] },
+      };
       expect(captionAfter(network, '1915-01-01')).toMatchObject({ kind: 'stationClose', title: 'B closes temporarily', stations: [] });
       expect(captionAfter(network, '1926-01-01')).toMatchObject({ kind: 'infill', title: 'B reopens', stations: ['B'] });
     });

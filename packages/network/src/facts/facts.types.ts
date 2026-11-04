@@ -1,7 +1,7 @@
 import type { IsoDate } from '@railtime/core/date.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
-import type { Network, PlanStatus } from '@railtime/schema/network.types';
+import type { LineId, Network, NetworkId, PlanId, PlanStatus, StationId } from '@railtime/schema/network.types';
 import type { LineGap, Step } from '../engine/engine.types';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
@@ -16,7 +16,7 @@ export type LineColor = Record<Theme, string>;
  * One line's track in a sketch of the network: what is open today, or for a network never built, its
  * first plan's, drawn dashed.
  */
-export type LineSketch = { line: string; color: LineColor; paths: LngLat[][]; dashed: boolean };
+export type LineSketch = { line: LineId; color: LineColor; paths: LngLat[][]; dashed: boolean };
 
 /** What is on the map. */
 export type NetworkStats = { stations: number; km: number; lines: number };
@@ -30,7 +30,7 @@ export type StepInfo = {
   /** The first and last station it reaches: "<station> – <station>". */
   subtitle?: string;
   color: LineColor;
-  /** Stations this step opens, in the order they appear. */
+  /** The names of the stations this step opens, in the order they appear. */
   stations: string[];
 };
 
@@ -42,7 +42,7 @@ export type ChangeInfo = StepInfo & {
 
 /** One line at a station, for a station panel. */
 export type StationLineInfo = {
-  id: string;
+  id: LineId;
   name: string;
   color: LineColor;
   /** When it opened here; `null` for a plan's line, which has no date. */
@@ -54,7 +54,7 @@ export type StationLineInfo = {
 
 /** A station, for a station panel. */
 export type StationInfo = {
-  id: string;
+  id: StationId;
   /** Its name on the date shown. */
   name: string;
   /** That name in the network's other languages. */
@@ -70,13 +70,13 @@ export type StationInfo = {
 export type FormerNameInfo = { name: string; otherNames: string[]; until: IsoDate };
 
 /** A station to change to, and the lines it has on the date shown. */
-export type TransferInfo = { id: string; name: string; lines: { id: string; name: string; color: LineColor }[] };
+export type TransferInfo = { id: StationId; name: string; lines: { id: LineId; name: string; color: LineColor }[] };
 
 /** A line, for a legend or toggles. */
 export type LineInfo = {
-  id: string;
+  id: LineId;
   name: string;
-  network: string;
+  network: NetworkId;
   networkName: string;
   color: LineColor;
   /** When it first opened, as a timestamp; `null` for a line only a plan builds. */
@@ -85,7 +85,7 @@ export type LineInfo = {
 
 /** A station as a search lists it: on the map on the date shown. */
 export type StationSummary = {
-  id: string;
+  id: StationId;
   /** Its name on the date shown. */
   name: string;
   /** That name in the network's other languages. */
@@ -95,7 +95,7 @@ export type StationSummary = {
 };
 
 /** A station on a line or a route, by its id and its name on the date shown. */
-export type Stop = { id: string; name: string };
+export type Stop = { id: StationId; name: string };
 
 /** A line on the date shown, for a line's panel. */
 export type LineDetails = LineInfo & {
@@ -119,7 +119,7 @@ export type RouteStrength = 'fastest' | 'fewest-changes';
 export type RouteLegInfo =
   | {
       kind: 'ride';
-      line: string;
+      line: LineId;
       lineName: string;
       color: LineColor;
       /** Its stops, from the one boarded at to the one left at. */
@@ -156,7 +156,7 @@ export type ReachBand = {
 };
 
 /** A station a reach gets to. */
-export type ReachStation = { id: string; name: string; minutes: number; band: number };
+export type ReachStation = { id: StationId; name: string; minutes: number; band: number };
 
 /** How far one can get from a station on the date shown, and how long it takes. */
 export type ReachInfo = {
@@ -242,16 +242,16 @@ export type NetworkGrowth = { years: YearStats[]; decades: DecadeOpenings[] };
 /** The network's records on the date shown, each list longest or oldest first. */
 export type NetworkRecords = {
   /** The stations open longest, with the year each first opened. */
-  oldest: { id: string; name: string; year: number }[];
+  oldest: { id: StationId; name: string; year: number }[];
   /** The stations most lines call at. */
-  busiest: { id: string; name: string; lines: { id: string; name: string; color: LineColor }[] }[];
+  busiest: { id: StationId; name: string; lines: { id: LineId; name: string; color: LineColor }[] }[];
   /** The longest lines. */
-  longest: { id: string; name: string; color: LineColor; km: number }[];
+  longest: { id: LineId; name: string; color: LineColor; km: number }[];
 };
 
 /** A stop one along a line, and the end of the line that way. */
 export type StopToward = {
-  id: string;
+  id: StationId;
   name: string;
   /** The last stop that way; `null` when it is that stop. */
   towards: string | null;
@@ -270,12 +270,12 @@ export type PlanFacts = {
   /** Its new track, km. */
   km: number;
   /** The lines its sections build on, in the order they first come. */
-  lines: { id: string; name: string; color: LineColor }[];
+  lines: { id: LineId; name: string; color: LineColor }[];
 };
 
 /** One of a city's plans, for its card. */
 export type PlanInfo = {
-  id: string;
+  id: PlanId;
   name: string;
   status: PlanStatus;
   description?: string;
@@ -306,10 +306,11 @@ export type Playhead = {
 /** What `NetworkFacts` is made with besides the network. */
 export type NetworkFactsOptions = {
   /** One of the network's plans, built on it: its sections play after every dated change. */
-  plan?: string;
+  plan?: PlanId;
   /**
-   * Its lines hidden, as if they were not there: by a line's id, or a network's for all its lines.
-   * Without them, those of its networks hidden at first.
+   * Its lines hidden, as if they were not there: by a line's id, or a network's for all its lines,
+   * as an address gives them (those it does not have name nothing). Without them, those of its
+   * networks hidden at first.
    */
   hidden?: readonly string[];
   /** Today, as a UTC timestamp at midnight: where the map opens, and where history ends. Defaults to the real today. */
@@ -320,14 +321,14 @@ export type NetworkFactsOptions = {
 export type ShownNetwork = {
   network: Network;
   /** The years each line was drawn as a line hidden (an alias), by line. */
-  gaps: Map<string, LineGap[]>;
+  gaps: Map<LineId, LineGap[]>;
 };
 
 /** A network with the lines a person may show or hide, for a list to do it. */
 export type NetworkChoice = {
-  id: string;
+  id: NetworkId;
   name: string;
-  lines: { id: string; name: string; color: LineColor; shown: boolean }[];
+  lines: { id: LineId; name: string; color: LineColor; shown: boolean }[];
 };
 
 /** The network at one moment: every question about it then. */
@@ -335,19 +336,19 @@ export type FactsAt = {
   /** The stations on the map, for a search: each with its names and its lines' colours. */
   stations: () => StationSummary[];
   /** A station's lines, with when each opened there and, if it has, closed. */
-  station: (id: string) => StationInfo;
+  station: (id: StationId) => StationInfo;
   /** A line's stops in order, by branch, its length, and the changes that made it. */
-  line: (id: string) => LineDetails;
+  line: (id: LineId) => LineDetails;
   /** The stations open longest, those most lines call at, and the longest lines: so many of each. */
   records: (count: number) => NetworkRecords;
   /** The ways between two stations, up to three, fastest first; none if there is none at this moment. */
-  routes: (from: string, to: string) => RouteInfo[];
+  routes: (from: StationId, to: StationId) => RouteInfo[];
   /** How long it takes from a station to every other; `null` if no line calls there at this moment. */
-  reach: (from: string) => ReachInfo | null;
+  reach: (from: StationId) => ReachInfo | null;
   /** How many stations, km of track and lines are open. */
   stats: () => NetworkStats;
   /** The stops either side of a station, on each of its lines that calls there, by line. */
-  directions: (station: string) => Map<string, LineDirection[]>;
+  directions: (station: StationId) => Map<LineId, LineDirection[]>;
 };
 
 /** A segment of track a reach colours, timed by its ends. */
@@ -358,6 +359,6 @@ export type RecordsSource = {
   index: NetworkIndex;
   timeline: Timeline;
   /** The year each station was first on the map, by id. */
-  firstYears: Map<string, number>;
-  colorOf: (line: string) => LineColor;
+  firstYears: Map<StationId, number>;
+  colorOf: (line: LineId) => LineColor;
 };

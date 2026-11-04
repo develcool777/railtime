@@ -1,4 +1,5 @@
 import type { NetworkEngine } from '@railtime/network/engine.service';
+import type { LineId } from '@railtime/schema/network.types';
 import type { ActiveStepLayer, NetworkLayer } from './network.service';
 import type { StationLayer } from './stations.service';
 import type { Minimap } from '../minimap/minimap.service';
@@ -18,7 +19,7 @@ export type FrameParts = {
   /** The overview inset, if there is one: it shows the network and the change playing. */
   minimap: Pick<Minimap, 'setNetwork' | 'setActive'> | null;
   /** A line's own colour in the current theme. */
-  baseColor: (line: string) => string;
+  baseColor: (line: LineId) => string;
 };
 
 /** What a frame drew that the map tells the app. */
