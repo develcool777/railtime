@@ -1,4 +1,4 @@
-import type { MapProps } from '../transitMap.types';
+import type { MapProps, MapPropsUpdate } from '../transitMap.types';
 
 /**
  * Keeps the map's props and acts on them: one effect per prop, run when it changes. Before the map is
@@ -29,7 +29,7 @@ export class PropsReconciler {
    *
    * @param next - The props.
    */
-  public update(next: Partial<MapProps>): void {
+  public update(next: MapPropsUpdate): void {
     const changes = stateChanges(this.props, next);
     this.props = { ...this.props, ...changes };
     if (!this.live) return;
@@ -70,6 +70,6 @@ const sameValue = (first: unknown, second: unknown): boolean => {
  * @param next - The state it is given, whole or in part.
  * @returns The parts that change.
  */
-export const stateChanges = (current: MapProps, next: Partial<MapProps>): Partial<MapProps> =>
+export const stateChanges = (current: MapProps, next: MapPropsUpdate): Partial<MapProps> =>
   // A prop given as `undefined` is one not given.
   Object.fromEntries((Object.entries(next) as [keyof MapProps, unknown][]).filter(([key, value]) => value !== undefined && !sameValue(current[key], value)));

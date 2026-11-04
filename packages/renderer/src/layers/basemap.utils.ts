@@ -105,6 +105,8 @@ const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Pale
       paintIfPresent(map, layer.id, 'icon-opacity', 0);
       break;
     }
+    default:
+    // Another kind (a raster, hillshade or circles) keeps its own colours: no theme recolours it.
   }
 };
 

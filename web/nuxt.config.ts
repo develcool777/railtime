@@ -44,7 +44,18 @@ export default defineNuxtConfig({
   // Tests are type-checked with the app, and reach their shared factories as @test/.
   typescript: {
     strict: true,
-    tsConfig: { compilerOptions: { paths: { '@test/*': ['../test/*'] } }, include: ['../test/**/*'] },
+    tsConfig: {
+      // The packages' strictness (`tsconfig.base.json`), but `exactOptionalPropertyTypes`: a template
+      // passes `undefined` to an optional prop to mean it is not given, as Vue and Nuxt UI read it.
+      compilerOptions: {
+        paths: { '@test/*': ['../test/*'] },
+        noImplicitReturns: true,
+        noFallthroughCasesInSwitch: true,
+        noUnusedLocals: true,
+        noUnusedParameters: true,
+      },
+      include: ['../test/**/*'],
+    },
   },
   app: {
     head: {

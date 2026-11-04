@@ -24,7 +24,7 @@ import { StepAnimation } from './steps/animation.service';
 import { EventEmitter } from './support/eventEmitter.service';
 import { PropsReconciler } from './support/reconciler.service';
 import { DEFAULT_MAP_PROPS, FIT_NETWORK_MS, MAX_FRAME_SECONDS, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from './transitMap.constants';
-import type { Credit, FrameScheduler, MapProps, MapView, NetworkParts, Padding, TransitMapEvents, TransitMapOptions } from './transitMap.types';
+import type { Credit, FrameScheduler, MapProps, MapPropsUpdate, MapView, NetworkParts, Padding, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
 
 /** Frames from the browser, unless a test steps them by hand. */
@@ -91,8 +91,10 @@ export class TransitMap {
     this.scheduler = options.scheduler ?? BROWSER_FRAMES;
     // The network first: a prop's effect runs in the props' order, and every other draws on it.
     const { facts, ...given } = options.props;
-    const props: MapProps = { facts, ...DEFAULT_MAP_PROPS, ...given };
-    this.props = new PropsReconciler(props, this.effects);
+    // The defaults, then what is given as `update` takes it: a prop given as `undefined` keeps its default.
+    this.props = new PropsReconciler({ facts, ...DEFAULT_MAP_PROPS }, this.effects);
+    this.props.update(given);
+    const props = this.props.current;
 
     const basemap = options.basemap ?? DEFAULT_BASEMAP;
     this.basemap = basemap;
@@ -166,7 +168,7 @@ export class TransitMap {
    *
    * @param props - The props.
    */
-  public update(props: Partial<MapProps>): void {
+  public update(props: MapPropsUpdate): void {
     if (this.life !== 'destroyed') this.props.update(props);
   }
 

@@ -92,7 +92,8 @@ describe('BoundaryUtils', () => {
     });
 
     test('counts none for a network with no plans, or a plan with no stations of its own', () => {
-      expect(stationsHeld(CITY, { ...networkOf({}), plans: undefined })).toBe(0);
+      const { plans: _plans, ...withoutPlans } = networkOf({});
+      expect(stationsHeld(CITY, withoutPlans)).toBe(0);
       expect(stationsHeld(CITY, { ...networkOf({}), plans: { plan: { name: 'Plan', status: 'proposed', sections: [] } } })).toBe(0);
     });
   });
@@ -116,7 +117,7 @@ describe('BoundaryUtils', () => {
     const place = (geojson: NominatimPlace['geojson'], namedetails?: Record<string, string>): NominatimPlace => ({
       osm_id: 7,
       name: 'Київ',
-      namedetails,
+      ...(namedetails && { namedetails }),
       geojson,
     });
 
