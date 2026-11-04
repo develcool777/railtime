@@ -1,6 +1,12 @@
 import globals from 'globals';
 import { NO_CLASS_OUTSIDE_SERVICE, SHARED_SYNTAX, TOOL_CONFIGS } from './shared.js';
 
+/** What a composable may not make: a value of its own, which belongs in a store. */
+const NO_STATE_IN_COMPOSABLE = {
+  selector: 'CallExpression[callee.name=/^(ref|shallowRef|reactive|shallowReactive|computed)$/]',
+  message: 'A composable holds no state and works nothing out: the value goes in a store (its state or a getter), and the composable reads it.',
+};
+
 /** Short names allowed because everyone reads them the same way. */
 const SHORT_NAMES = ['id', 'x', 'y', 'km', 'on', 'to', '_'];
 
@@ -32,6 +38,65 @@ export const javascriptConfig = [
       'object-shorthand': 'error',
       // What the site and the packages say goes on the page or in a thrown error, never to the console.
       'no-console': 'error',
+      // Slips the language lets through, each a bug when it happens: a `map` callback that returns
+      // nothing, `x === x`, a loop whose condition nothing in it changes or that never loops twice, a
+      // `${}` in a plain string, a parameter written over, an assignment inside a `return`, a comma
+      // operator, a `new` for its side effects alone, `parseInt` without its radix.
+      'array-callback-return': 'error',
+      'no-self-compare': 'error',
+      'no-unmodified-loop-condition': 'error',
+      'no-unreachable-loop': 'error',
+      'no-template-curly-in-string': 'error',
+      'no-param-reassign': 'error',
+      'no-return-assign': 'error',
+      'no-sequences': 'error',
+      'no-new': 'error',
+      'no-constructor-return': 'error',
+      'no-multi-assign': 'error',
+      radix: 'error',
+      'symbol-description': 'error',
+      'guard-for-in': 'error',
+      'default-case-last': 'error',
+      'default-param-last': 'error',
+      'grouped-accessor-pairs': 'error',
+      'accessor-pairs': 'error',
+      // What no code here needs, and a page that ran it would regret: `eval` and its kin, `alert`, a
+      // `javascript:` address, a built-in's prototype changed, `__proto__`, `arguments.callee`.
+      'no-eval': 'error',
+      'no-new-func': 'error',
+      'no-alert': 'error',
+      'no-script-url': 'error',
+      'no-extend-native': 'error',
+      'no-proto': 'error',
+      'no-iterator': 'error',
+      'no-caller': 'error',
+      'no-new-wrappers': 'error',
+      'no-object-constructor': 'error',
+      'no-octal-escape': 'error',
+      'no-labels': 'error',
+      // Each thing said one way, the shorter: `x += 1`, `2 ** n`, `Object.hasOwn`, `{ ...a }`, `/re/`,
+      // `x < 1` (never `1 > x`), no `else { if }`, no `cond ? true : false`, no call or rename that does
+      // nothing, no block or `= undefined` that says nothing.
+      'operator-assignment': 'error',
+      'prefer-exponentiation-operator': 'error',
+      'prefer-numeric-literals': 'error',
+      'prefer-object-has-own': 'error',
+      'prefer-object-spread': 'error',
+      'prefer-regex-literals': 'error',
+      yoda: 'error',
+      'no-lonely-if': 'error',
+      'no-unneeded-ternary': 'error',
+      'no-useless-call': 'error',
+      'no-useless-computed-key': 'error',
+      'no-useless-rename': 'error',
+      'no-extra-bind': 'error',
+      'no-lone-blocks': 'error',
+      'no-undef-init': 'error',
+      'no-multi-str': 'error',
+      'unicorn/no-unnecessary-default-arguments': 'error',
+      // A function a reader takes in at once has few levels (`sonarjs/cognitive-complexity` weighs the rest).
+      'max-depth': ['error', 4],
+      'max-nested-callbacks': ['error', 4],
 
       // Unicorn's modern JavaScript, but where it argues with the house style:
       // `null` is how "nothing here" is said, by us and by Vue and MapLibre alike.
@@ -93,5 +158,10 @@ export const javascriptConfig = [
     files: ['**/*.ts'],
     ignores: ['**/*.service.ts', ...TOOL_CONFIGS],
     rules: { 'no-restricted-syntax': ['error', ...SHARED_SYNTAX, NO_CLASS_OUTSIDE_SERVICE] },
+  },
+  // A composable is an effect: it ties something outside Vue to the stores, which hold every value.
+  {
+    files: ['web/src/**/*.composable.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...SHARED_SYNTAX, NO_CLASS_OUTSIDE_SERVICE, NO_STATE_IN_COMPOSABLE] },
   },
 ];

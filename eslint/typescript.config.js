@@ -43,6 +43,22 @@ export const typescriptConfig = [
       '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions'] }],
       // Every shape is a `type`, so one reads like the next.
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      // A sort says its order, strings' too (`byCodeUnits`, `localeCompare`): the default compares UTF-16
+      // code units of what each item turns into as a string, numbers included.
+      '@typescript-eslint/require-array-sort-compare': ['error', { ignoreStringArrays: false }],
+      // A member nothing writes after the constructor says so; one nothing reads goes.
+      '@typescript-eslint/prefer-readonly': 'error',
+      '@typescript-eslint/no-unused-private-class-members': 'error',
+      // A name means one thing where it is read: an inner one never hides an outer.
+      'no-shadow': 'off',
+      '@typescript-eslint/no-shadow': 'error',
+      // A type moves as a type (`export type`), and an import of types only says so once.
+      '@typescript-eslint/consistent-type-exports': 'error',
+      '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/no-useless-empty-export': 'error',
+      '@typescript-eslint/no-unnecessary-qualifier': 'error',
+      // A function in a type is a property, as every function here is an arrow.
+      '@typescript-eslint/method-signature-style': 'error',
       // `!` is allowed where a loop's bounds guarantee the element, with a comment saying so (CLAUDE.md,
       // strict indexing); an id the network supplied goes through `required()`.
       '@typescript-eslint/no-non-null-assertion': 'off',

@@ -193,7 +193,7 @@ export type CoverageShare = CoverageBand & {
 
 /** How much of a city lies within walking distance of a station open on the date shown. */
 export type CoverageInfo = {
-  /** What the city's outline is: "Greater London". */
+  /** What the city's outline is: the county or the city limits its source names. */
   name: string;
   /** Where the outline comes from, as credited. */
   source: string;

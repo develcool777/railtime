@@ -1,9 +1,12 @@
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
+import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
 import {
+  fetchBoundary,
   foundCoverageOf,
   foundReachOf,
   foundRoutesOf,
@@ -99,6 +102,15 @@ describe('ToolsUtils', () => {
     });
   });
 
+  describe('fetchBoundary', () => {
+    test('gives the outline served, and none for an address that serves something else or nothing', async () => {
+      const outline = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } };
+      await expect(fetchBoundary(`data:application/json,${encodeURIComponent(JSON.stringify(outline))}`)).resolves.toEqual(outline);
+      await expect(fetchBoundary('data:application/json,not%20an%20outline')).resolves.toBeNull();
+      await expect(fetchBoundary('http://127.0.0.1:9/outline.json')).resolves.toBeNull();
+    });
+  });
+
   describe('foundRoutesOf, foundReachOf, foundCoverageOf', () => {
     test('take what the map found for their own overlay, and nothing for another or none', () => {
       const route = { kind: 'route' as const, routes: [], shown: null };
@@ -151,5 +163,19 @@ describe('ToolsStore', () => {
     openExplorer();
     await useToolsStore().LOAD_BOUNDARY(servedAt('not an outline'));
     expect(useToolsStore().boundaryState).toBe('missing');
+  });
+
+  test('drops an outline that comes once another city is open, which then fetches its own', async () => {
+    const explorer = openExplorer();
+    const tools = useToolsStore();
+    const outline = (name: string) => ({ type: 'Feature', properties: { name }, geometry: { type: 'Polygon', coordinates: [] } });
+    const first = tools.LOAD_BOUNDARY(servedAt(JSON.stringify(outline('first'))));
+    // Another city opens on the same stores, as the page does, before the first outline comes.
+    explorer.OPEN({ stored: tinyNetwork(), asked: parseExplorerQuery({}), outline: servedAt('') });
+    await first;
+    expect(tools.boundaryState).toBe('idle');
+    expect(tools.boundary).toBeNull();
+    await tools.LOAD_BOUNDARY(servedAt(JSON.stringify(outline('second'))));
+    expect(tools.boundary).toEqual(outline('second'));
   });
 });

@@ -53,7 +53,7 @@ export type LineAlias = {
 
 /** A line, as people know it. */
 export type Line = {
-  /** Its English name, short: "Victoria", shown as "Victoria line". */
+  /** Its English name, short: the line's own, which the app shows followed by "line". */
   name: string;
   /** Its name as people say it, where "<name> line" is not: "DLR". */
   fullName?: string;

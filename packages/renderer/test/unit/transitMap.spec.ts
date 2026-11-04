@@ -52,7 +52,7 @@ const mapOf = (
     on: recordAll,
     ...options,
     ...(minimapContainer && { minimapContainer }),
-    createMap: options => (minimapContainer && options.container === minimapContainer ? mini.map : fake.map),
+    createMap: mapOptions => (minimapContainer && mapOptions.container === minimapContainer ? mini.map : fake.map),
     scheduler: {
       // The frame's id: where it waits.
       request: frame => {

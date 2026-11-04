@@ -38,6 +38,6 @@ export const citiesNamed = (id: string | undefined): City[] => cities().filter(c
  *
  * @param city - The city.
  * @returns Its network.
- * @throws {z.ZodError} If the file breaks the schema.
+ * @throws Zod's error, if the file breaks the schema.
  */
 export const readNetwork = (city: City): Network => parseNetwork(JSON.parse(readFileSync(city.networkPath, 'utf8')));
