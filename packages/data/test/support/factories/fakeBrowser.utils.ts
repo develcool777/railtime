@@ -22,10 +22,13 @@ export const fakeBrowser = (picture: (theme: Theme, request: StillRequest) => st
     setDefaultTimeout: () => {},
     on: (event: string, listener: (payload: unknown) => void) => listeners.set(event, listener),
     goto: async (url: string) => {
-      for (const path of PAGE_PATHS) {
-        const response = await fetch(new URL(path, url));
-        served.set(path, { status: response.status, body: await response.text() });
-      }
+      const answers = await Promise.all(
+        PAGE_PATHS.map(async path => {
+          const response = await fetch(new URL(path, url));
+          return [path, { status: response.status, body: await response.text() }] as const;
+        }),
+      );
+      for (const [path, answer] of answers) served.set(path, answer);
     },
     waitForFunction: async () => {},
     evaluate: async (_draw: unknown, [theme, request]: [Theme, StillRequest]) => {

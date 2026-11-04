@@ -9,6 +9,7 @@
     "summaries": "node src/summary/cli.ts",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run",
+    "test-bench": "vitest bench --run --reporter=verbose",
     "previews": "node src/preview/cli.ts"
   },
   "exports": {

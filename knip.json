@@ -6,7 +6,7 @@
       "project": ["vitest.*.ts"]
     },
     "packages/data": {
-      "entry": ["src/*/cli.ts", "test/**/*.@(test|spec).ts"],
+      "entry": ["src/*/cli.ts", "test/**/*.@(test|spec|bench).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/core": {

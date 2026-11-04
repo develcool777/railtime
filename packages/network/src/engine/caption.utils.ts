@@ -44,9 +44,13 @@ const stopNear = (context: CaptionContext, station: string, line: string, cursor
   const onLine = (stop: string) =>
     index.lineSegmentsAt(stop).filter(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.identityOf(lineSegment.line, cursor).id === line);
   const seen = new Set([station]);
+  // Read from its head, never shifted: a shift copies what is left each time.
   const queue = [station];
-  for (let current = queue.shift(); current !== undefined; current = queue.shift()) {
-    const here = current;
+  let head = 0;
+  while (head < queue.length) {
+    // Within bounds: the loop's.
+    const here = queue[head]!;
+    head++;
     const lineSegments = onLine(here);
     if (lineSegments.some(lineSegment => timeline.servesStation(here, lineSegment.line, cursor))) return here;
     for (const { segment } of lineSegments) {
