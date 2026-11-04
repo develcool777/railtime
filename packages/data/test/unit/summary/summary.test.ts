@@ -1,3 +1,4 @@
+import { keysOf } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
 import type { CityIndex } from '@railtime/schema/cityIndex.types';
@@ -30,7 +31,7 @@ describe('SummaryUtils', () => {
       const entry = summaryOf(network);
       expect(entry).toMatchObject({ name: 'London', country: 'United Kingdom', openedYear: 1863, planOnly: false });
       expect(entry.lines).toBeGreaterThan(10);
-      expect(entry.plans).toBe(Object.keys(network.plans ?? {}).length);
+      expect(entry.plans).toBe(keysOf(network.plans ?? {}).length);
     });
 
     test('sums up a network never built by its first plan', () => {
@@ -54,7 +55,7 @@ describe('SummaryUtils', () => {
         third: inCountry('One'),
         first: inCountry('One'),
       };
-      expect(Object.keys(inListOrder(summaries, previous))).toEqual(['first', 'second', 'added', 'third', 'new']);
+      expect(keysOf(inListOrder(summaries, previous))).toEqual(['first', 'second', 'added', 'third', 'new']);
     });
   });
 
@@ -96,7 +97,7 @@ describe('SummaryUtils', () => {
       const path = listApart();
       writeFileSync(path, formatSummaries({ london: summaryOf(cityOf('london').network), kyiv: summaryOf(cityOf('kyiv').network) }));
       writeSummaries(FOUND, path);
-      expect(Object.keys(JSON.parse(readFileSync(path, 'utf8')))).toEqual(['london', 'kyiv']);
+      expect(keysOf(JSON.parse(readFileSync(path, 'utf8')))).toEqual(['london', 'kyiv']);
     });
 
     test("refuses a city outside its country's folder, and writes nothing", () => {

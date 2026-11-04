@@ -1,3 +1,4 @@
+import { keysOf } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import type { PlanId } from '@railtime/schema/network.types';
@@ -150,13 +151,13 @@ describe('NetworkFacts', () => {
   test('lists every plan with what it would add, whichever plan is built', () => {
     const plans = factsOf(planId('extension')).plans();
     expect(plans).toEqual(factsOf().plans());
-    expect(plans.map(plan => plan.id)).toEqual(Object.keys(tinyNetwork().plans ?? {}));
+    expect(plans.map(plan => plan.id)).toEqual(keysOf(tinyNetwork().plans ?? {}));
     expect(plans[0]?.facts.stations).toBeGreaterThan(0);
   });
 
   test('sums the network up as stored, whichever plan is built', () => {
     expect(factsOf(planId('extension')).summary()).toEqual(factsOf().summary());
-    expect(factsOf().summary()).toMatchObject({ plans: Object.keys(tinyNetwork().plans ?? {}).length, planOnly: false });
+    expect(factsOf().summary()).toMatchObject({ plans: keysOf(tinyNetwork().plans ?? {}).length, planOnly: false });
   });
 
   test('gives the stops either side of a station on each of its lines, as at the moment', () => {

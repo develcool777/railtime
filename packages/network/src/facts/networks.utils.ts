@@ -203,7 +203,7 @@ export const withLinesHidden = (network: Network, hidden: readonly LineId[]): Sh
     network: {
       ...network,
       meta,
-      networks: Object.fromEntries(entriesOf(network.networks).filter(([id]) => networksUsed.has(id))),
+      networks: fromEntriesOf(entriesOf(network.networks).filter(([id]) => networksUsed.has(id))),
       lines,
       stations,
       segments,

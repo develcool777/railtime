@@ -11,7 +11,8 @@ import vuePlugin from 'eslint-plugin-vue';
 import vueAccessibility from 'eslint-plugin-vuejs-accessibility';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import vueParser from 'vue-eslint-parser';
+import { vueConfig } from './eslint.vue.config.js';
+import { ID_RULES } from './packages/tooling/src/lint/idRules.utils.ts';
 
 /**
  * The code conventions (CLAUDE.md), as rules, so they hold without anyone remembering them; each
@@ -54,12 +55,22 @@ const IMPURE = {
 };
 
 /**
- * House conventions that reuse a generic rule, each under a name of its own. A flat config keeps one
- * setting per rule per file, the last block's, so a second `no-restricted-imports` would silently
- * replace the package fences; named apart, each holds alone, and its name says which convention a
- * report is about (as in dataroom-ui).
+ * The house's own rules. Conventions that reuse a generic rule, each under a name of its own: a flat
+ * config keeps one setting per rule per file, the last block's, so a second `no-restricted-imports`
+ * would silently replace the package fences; named apart, each holds alone, and its name says which
+ * convention a report is about (as in dataroom-ui). And the rules about ids, which read types
+ * (`packages/tooling/src/lint/`, tested there).
  */
-const house = { rules: { 'pure-utils': tseslint.plugin.rules['no-restricted-imports'] } };
+const house = {
+  rules: { 'pure-utils': tseslint.plugin.rules['no-restricted-imports'], 'test-helpers': tseslint.plugin.rules['no-restricted-imports'], ...ID_RULES },
+};
+
+/** A test's helpers trust what they are given (`stationId('a')`, `asNetwork`), as a test may: source checks instead. */
+const TEST_HELPERS = {
+  group: ['@railtime/*/testing/*'],
+  message:
+    "Source never takes a test's helpers, which trust what they are given: a string becomes an id by `isStationIn`/`isLineIn`/`isPlanIn` (`@railtime/schema/ids.utils`), a file a network by `parseNetwork`.",
+};
 
 /** Outside a `*.service.ts`, a class is in the wrong file. */
 const NO_CLASS_OUTSIDE_SERVICE = { selector: 'ClassDeclaration', message: 'Classes live in a `*.service.ts` file.' };
@@ -332,6 +343,8 @@ export default defineConfig(
       'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'expect*', 'check*'] }],
     },
   },
+  // A lint rule's tests are its tester's cases: `tester.run` makes each a test.
+  { files: ['packages/tooling/test/unit/lint/**/*.test.ts'], rules: { 'sonarjs/no-empty-test-file': 'off' } },
 
   // ---- JSDoc on every class, member, module-level constant and type --------------------
   {
@@ -421,6 +434,21 @@ export default defineConfig(
     rules: { 'house/pure-utils': ['error', { patterns: [IMPURE] }] },
   },
 
+  // ---- Ids: a string becomes one only where it is checked (CLAUDE.md) -------------------
+  {
+    files: ['**/*.{ts,vue}'],
+    ignores: TOOL_CONFIGS,
+    plugins: { house },
+    rules: { 'house/checked-ids': 'error', 'house/branded-spread-key': 'error', 'house/branded-record-keys': 'error' },
+  },
+  // The doors: Zod reading a city's file, and the ids a test names.
+  { files: ['packages/schema/src/validation/shape.schema.ts', 'packages/schema/test/support/ids.utils.ts'], rules: { 'house/checked-ids': 'off' } },
+  {
+    files: ['packages/*/src/**/*.ts', 'web/src/**/*.{ts,vue}'],
+    plugins: { house },
+    rules: { 'house/test-helpers': ['error', { patterns: [TEST_HELPERS] }] },
+  },
+
   // ---- File names ------------------------------------------------------------
   {
     files: ['packages/*/src/**/*.ts', 'web/src/**/*.ts'],
@@ -459,67 +487,7 @@ export default defineConfig(
   },
 
   // ---- Vue ---------------------------------------------------------------------
-  {
-    files: ['**/*.vue'],
-    languageOptions: {
-      parser: vueParser,
-      parserOptions: { parser: tseslint.parser, projectService: true, tsconfigRootDir: import.meta.dirname, extraFileExtensions: ['.vue'] },
-    },
-    rules: {
-      'vue/multi-word-component-names': 'off',
-      'vue/block-lang': ['error', { script: { lang: 'ts' } }],
-      'vue/block-order': ['error', { order: ['template', 'script[setup]', 'style'] }],
-      'vue/padding-line-between-blocks': ['error', 'always'],
-      'vue/component-api-style': ['error', ['script-setup', 'composition']],
-      'vue/define-macros-order': ['error', { order: ['defineProps', 'defineEmits'] }],
-      'vue/require-macro-variable-name': ['error', { defineProps: 'props', defineEmits: 'emit', defineSlots: 'slots', useSlots: 'slots', useAttrs: 'attrs' }],
-      'vue/attribute-hyphenation': ['error', 'never'],
-      'vue/v-on-event-hyphenation': ['error', 'never', { autofix: true }],
-      'vue/prop-name-casing': ['error', 'camelCase'],
-      'vue/v-bind-style': ['error', 'shorthand', { sameNameShorthand: 'always' }],
-      'vue/v-on-style': ['error', 'shorthand'],
-      'vue/no-v-html': 'error',
-      // A component's `<script setup>` runs once for each: its top level is the component's own.
-      'unicorn/no-top-level-assignment-in-function': 'off',
-      // A template says each thing one way: `class` apart from `:class`, `disabled` for `:disabled="true"`.
-      'vue/no-useless-v-bind': 'error',
-      'vue/prefer-separate-static-class': 'error',
-      'vue/prefer-true-attribute-shorthand': ['error', 'always'],
-      // An element's ref is `useTemplateRef`, typed by what it holds.
-      'vue/prefer-use-template-ref': 'error',
-      // Nothing declared and never used: a prop, an event, a ref.
-      'vue/no-unused-properties': 'error',
-      'vue/no-unused-emit-declarations': 'error',
-      'vue/no-unused-refs': 'error',
-      // The recommended set's other rules, which it only warns of: what a template means, never how it is laid out.
-      'vue/attributes-order': 'error',
-      'vue/component-definition-name-casing': 'error',
-      'vue/html-end-tags': 'error',
-      'vue/no-lone-template': 'error',
-      'vue/no-multiple-slot-args': 'error',
-      'vue/no-required-prop-with-default': 'error',
-      'vue/no-template-shadow': 'error',
-      'vue/one-component-per-file': 'error',
-      'vue/order-in-components': 'error',
-      'vue/require-default-prop': 'error',
-      'vue/require-explicit-emits': 'error',
-      'vue/require-prop-types': 'error',
-      'vue/this-in-template': 'error',
-      // Prettier lays templates out (`pnpm format-check`): the recommended set's layout rules would argue with it.
-      'vue/first-attribute-linebreak': 'off',
-      'vue/html-closing-bracket-newline': 'off',
-      'vue/html-closing-bracket-spacing': 'off',
-      'vue/html-indent': 'off',
-      'vue/html-quotes': 'off',
-      'vue/html-self-closing': 'off',
-      'vue/max-attributes-per-line': 'off',
-      'vue/multiline-html-element-content-newline': 'off',
-      'vue/mustache-interpolation-spacing': 'off',
-      'vue/no-multi-spaces': 'off',
-      'vue/no-spaces-around-equal-signs-in-attribute': 'off',
-      'vue/singleline-html-element-content-newline': 'off',
-    },
-  },
+  vueConfig,
 
   // Tool configs export what their tool expects.
   {

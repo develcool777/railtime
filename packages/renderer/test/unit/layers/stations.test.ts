@@ -234,7 +234,7 @@ describe('StationLayer', () => {
     expect(fake.layers.get(LAYERS.labels)?.paint['text-color']).toBe(PALETTES.light.label);
   });
 
-  test('keeps the labels hidden and the fade for layers installed later, and finds the station under a point', () => {
+  test('keeps the labels hidden and the fade for layers installed later, and finds the station drawn under a point', () => {
     const fake = fakeMap();
     const layer = new StationLayer(
       fake.map,
@@ -249,6 +249,9 @@ describe('StationLayer', () => {
     expect(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-opacity']).toEqual(['*', 0.25, ['coalesce', ['feature-state', 'opacity'], 1]]);
     expect(layer.stationAt([0, 0])).toBeNull();
     fake.rendered.push({ properties: { id: 'a' } });
+    // Only a dot it drew is a station: an id it never gave is none.
+    expect(layer.stationAt([0, 0])).toBeNull();
+    layer.update(frameOf({ stations: new Map([[stationId('a'), new Map([[lineId('red'), '#f00']])]]), instant: true }));
     expect(layer.stationAt([0, 0])).toBe('a');
   });
 });
