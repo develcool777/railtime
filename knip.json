@@ -3,7 +3,7 @@
   "workspaces": {
     ".": {
       "entry": ["vitest.shared.ts"],
-      "project": ["vitest.*.ts"]
+      "project": ["vitest.*.ts", "eslint/*.js"]
     },
     "packages/data": {
       "entry": ["src/*/cli.ts", "test/**/*.@(test|spec|bench).ts"],
