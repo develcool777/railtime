@@ -113,5 +113,5 @@ export const brandedRecordKeys = createRule({
   },
 });
 
-/** The rules about ids, by name: what `eslint.config.js` adds to the house plugin. */
+/** The rules about ids, by name: what the house plugin (`eslint/shared.js`) adds to its own. */
 export const ID_RULES = { 'checked-ids': checkedIds, 'branded-spread-key': brandedSpreadKey, 'branded-record-keys': brandedRecordKeys };

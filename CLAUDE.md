@@ -2,7 +2,9 @@
 
 Guidance for Claude Code in this repository. The conventions follow `dataroom-ui`'s, and ESLint
 enforces them: `pnpm eslint-check` must pass. Each convention below names the rule that checks it, so
-a report points back here; `eslint.config.js` says, beside every rule it turns off, why.
+a report points back here. The rules are in `eslint/`, a file a subject (`imports.config.js`,
+`tests.config.js`, `vue.config.js`…), each saying, beside every rule it turns off, why;
+`eslint.config.js` puts them in order, the later winning where two set one rule.
 
 ## What this is
 
