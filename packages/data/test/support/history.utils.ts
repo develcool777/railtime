@@ -1,7 +1,7 @@
 import { toIsoDate } from '@railtime/core/date.utils';
 import type { LineSegment } from '@railtime/network/engine.types';
 import { drawnStep, playbackOf } from '@railtime/renderer/testing/playback';
-import type { Network } from '@railtime/schema/network.types';
+import type { Network, PlanId } from '@railtime/schema/network.types';
 import { globSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -65,7 +65,7 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
  * @param shown.hidden - Its lines hidden, by line or network; without them, as the app opens it.
  * @returns How it went.
  */
-export const playWholeHistory = (network: Network, shown: { plan?: string; hidden?: readonly string[] } = {}): PlayedHistory => {
+export const playWholeHistory = (network: Network, shown: { plan?: PlanId; hidden?: readonly string[] } = {}): PlayedHistory => {
   const playback = playbackOf(network, shown);
   playback.player.seek(playback.facts.playheads.on(playback.timeline.start));
   return playOut(playback, 0);
@@ -79,7 +79,7 @@ export const playWholeHistory = (network: Network, shown: { plan?: string; hidde
  * @param hidden - Its lines hidden, by line or network; without them, as the app opens it.
  * @returns How it went, counting the steps from today alone.
  */
-export const playPlan = (network: Network, plan: string, hidden?: readonly string[]): PlayedHistory => {
+export const playPlan = (network: Network, plan: PlanId, hidden?: readonly string[]): PlayedHistory => {
   const playback = playbackOf(network, { plan, ...(hidden && { hidden }) });
   // The player opens at today: whatever is dated after it plays first, as in the app.
   return playOut(playback, playback.player.cursor);

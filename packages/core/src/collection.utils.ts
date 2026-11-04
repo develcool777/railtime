@@ -19,3 +19,28 @@ export const pushTo = <Key, Value>(map: Map<Key, Value[]>, key: Key, value: Valu
  * @returns The first that is not zero; zero when none tells them apart.
  */
 export const firstDifference = (...comparisons: number[]): number => comparisons.find(comparison => comparison !== 0) ?? 0;
+
+/**
+ * A record's keys, typed as its keys: `Object.keys` types every key `string`, losing a brand.
+ *
+ * @param record - The record.
+ * @returns Its own keys.
+ */
+export const keysOf = <Key extends string, Value>(record: Partial<Record<Key, Value>>): Key[] => Object.keys(record) as Key[];
+
+/**
+ * A record's entries, each key typed as its keys: `Object.entries` types every key `string`, losing a brand.
+ *
+ * @param record - The record.
+ * @returns Its own keys, each with its value.
+ */
+export const entriesOf = <Key extends string, Value>(record: Partial<Record<Key, Value>>): [Key, Value][] => Object.entries(record) as [Key, Value][];
+
+/**
+ * A record from its entries, keyed as they are: `Object.fromEntries` keys every one `string`, losing a brand.
+ *
+ * @param entries - Each key with its value.
+ * @returns The record.
+ */
+export const fromEntriesOf = <Key extends string, Value>(entries: Iterable<readonly [Key, Value]>): Record<Key, Value> =>
+  Object.fromEntries(entries) as Record<Key, Value>;

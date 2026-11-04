@@ -1,5 +1,6 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { buildPlan } from '@railtime/schema/plan.utils';
+import { lineId, networkId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -7,14 +8,14 @@ import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 describe('NetworkIndex', () => {
   test('names a station by its former name until the day it changed', () => {
     const index = new NetworkIndex(tinyNetwork());
-    expect(index.stationName('d', toTimestamp('1924-12-31'))).toBe('Old D');
-    expect(index.stationName('d', toTimestamp('1925-01-01'))).toBe('D');
-    expect(index.stationName('d')).toBe('D');
+    expect(index.stationName(stationId('d'), toTimestamp('1924-12-31'))).toBe('Old D');
+    expect(index.stationName(stationId('d'), toTimestamp('1925-01-01'))).toBe('D');
+    expect(index.stationName(stationId('d'))).toBe('D');
   });
 
   test('cuts a line out of its gaps, the pieces either side apart, a suspension still linking its periods', () => {
     const day = (date: string) => toTimestamp(date);
-    const index = new NetworkIndex(tinyNetwork(), [], new Map([['blue', [{ from: day('1932-01-01'), until: day('1935-01-01') }]]]));
+    const index = new NetworkIndex(tinyNetwork(), [], new Map([[lineId('blue'), [{ from: day('1932-01-01'), until: day('1935-01-01') }]]]));
     const [first, second, third, ...rest] = index.lineSegments.filter(lineSegment => lineSegment.line === 'blue');
     expect(rest).toEqual([]);
     expect(first).toMatchObject({ opens: day('1930-01-01'), closes: day('1932-01-01'), previous: null, next: null });
@@ -24,7 +25,7 @@ describe('NetworkIndex', () => {
 
   test('leaves a suspension unlinked where a gap cuts the period before it short', () => {
     const day = (date: string) => toTimestamp(date);
-    const index = new NetworkIndex(tinyNetwork(), [], new Map([['blue', [{ from: day('1938-01-01'), until: day('1942-01-01') }]]]));
+    const index = new NetworkIndex(tinyNetwork(), [], new Map([[lineId('blue'), [{ from: day('1938-01-01'), until: day('1942-01-01') }]]]));
     const periods = index.lineSegments.filter(lineSegment => lineSegment.line === 'blue');
     expect(periods.map(period => [period.opens, period.closes, period.previous !== null])).toEqual([
       [day('1930-01-01'), day('1938-01-01'), false],
@@ -42,24 +43,24 @@ describe('NetworkIndex', () => {
 
   test("knows each station's transfers, both ways", () => {
     const index = new NetworkIndex(tinyNetwork());
-    expect(index.transfersAt('a')).toEqual(['d']);
-    expect(index.transfersAt('d')).toEqual(['a']);
-    expect(index.transfersAt('b')).toEqual([]);
+    expect(index.transfersAt(stationId('a'))).toEqual(['d']);
+    expect(index.transfersAt(stationId('d'))).toEqual(['a']);
+    expect(index.transfersAt(stationId('b'))).toEqual([]);
   });
 
   test('labels a station with its name, then its names in other languages, as of a date', () => {
     const index = new NetworkIndex(tinyNetwork());
-    expect(index.stationLabel('d')).toBe('D\nД');
-    expect(index.stationLabel('d', toTimestamp('1924-12-31'))).toBe('Old D\nСтарий Д');
-    expect(index.stationLabel('c')).toBe('C');
-    expect(index.stationName('d')).toBe('D');
-    expect(index.lineName('red')).toBe('Red line');
+    expect(index.stationLabel(stationId('d'))).toBe('D\nД');
+    expect(index.stationLabel(stationId('d'), toTimestamp('1924-12-31'))).toBe('Old D\nСтарий Д');
+    expect(index.stationLabel(stationId('c'))).toBe('C');
+    expect(index.stationName(stationId('d'))).toBe('D');
+    expect(index.lineName(lineId('red'))).toBe('Red line');
   });
 
   test('names a line by its full name where "<name> line" is not what people say', () => {
     const network = tinyNetwork();
-    network.lines.red = { ...network.lines.red!, fullName: 'Red Light Railway' };
-    expect(new NetworkIndex(network).lineName('red')).toBe('Red Light Railway');
+    network.lines[lineId('red')] = { ...network.lines[lineId('red')]!, fullName: 'Red Light Railway' };
+    expect(new NetworkIndex(network).lineName(lineId('red'))).toBe('Red Light Railway');
   });
 
   test('leaves out another name that is the same as the English one', () => {
@@ -69,22 +70,19 @@ describe('NetworkIndex', () => {
 
   test('knows when each line first ran as itself, and that a line only a plan builds has not', () => {
     const network = tinyNetwork();
-    network.plans = {
-      ...network.plans,
-      newLine: {
-        name: 'New line',
-        status: 'planned',
-        lines: { purple: { name: 'Purple', network: 'metro', mode: 'metro', color: '#800080' } },
-        sections: [{ line: 'purple', stations: ['a', 'b'] }],
-      },
+    network.plans![planId('newLine')] = {
+      name: 'New line',
+      status: 'planned',
+      lines: { [lineId('purple')]: { name: 'Purple', network: networkId('metro'), mode: 'metro', color: '#800080' } },
+      sections: [{ line: lineId('purple'), stations: [stationId('a'), stationId('b')] }],
     };
-    const plan = buildPlan(network, 'newLine');
+    const plan = buildPlan(network, planId('newLine'));
     const index = new NetworkIndex(plan.network, plan.sections);
-    expect(index.lineOpens('red')).toBe(toTimestamp('1900-01-01'));
-    expect(index.lineOpens('green')).toBe(toTimestamp('1970-01-01'));
+    expect(index.lineOpens(lineId('red'))).toBe(toTimestamp('1900-01-01'));
+    expect(index.lineOpens(lineId('green'))).toBe(toTimestamp('1970-01-01'));
     // Drawn as red until 1990.
-    expect(index.lineOpens('pink')).toBe(toTimestamp('1990-01-01'));
-    expect(index.lineOpens('purple')).toBe(Infinity);
+    expect(index.lineOpens(lineId('pink'))).toBe(toTimestamp('1990-01-01'));
+    expect(index.lineOpens(lineId('purple'))).toBe(Infinity);
   });
 
   test("centres on the middle of its stations' box", () => {
@@ -115,9 +113,9 @@ describe('NetworkIndex', () => {
 
   test("lists the lines a user can toggle in the network's order, leaving out one only an alias draws as", () => {
     const network = tinyNetwork();
-    network.lines.ghost = { name: 'Ghost', network: 'metro', mode: 'metro', color: '#999999', pseudo: true };
+    network.lines[lineId('ghost')] = { name: 'Ghost', network: networkId('metro'), mode: 'metro', color: '#999999', pseudo: true };
     const index = new NetworkIndex(network);
     expect(index.lineIds).toEqual(['red', 'blue', 'pink', 'green']);
-    expect(['green', 'pink', 'red', 'blue'].toSorted(index.compareLines)).toEqual(['red', 'blue', 'pink', 'green']);
+    expect(['green', 'pink', 'red', 'blue'].map(lineId).toSorted(index.compareLines)).toEqual(['red', 'blue', 'pink', 'green']);
   });
 });

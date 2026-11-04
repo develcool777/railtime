@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { NetworkStats } from '@railtime/network/facts.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { SideBySide } from './style.types';
 import type { RouteStopKind } from '../overlay/overlay.types';
 
@@ -12,26 +13,26 @@ export type NetworkSnapshot = {
   /** Closed track, drawn dashed. */
   ghosts: FeatureCollection<LineFeature>;
   /** Stations on the map and the lines serving them. */
-  stations: Map<string, StationLines>;
+  stations: Map<StationId, StationLines>;
   /** Transfers with both stations on the map: a link between their dots. */
   transfers: FeatureCollection<LineFeature>;
   /** Stations on the map with a transfer to another on the map: drawn as interchanges. */
-  linked: Set<string>;
+  linked: Set<StationId>;
   /** Stations on the map that only a plan's track reaches: drawn as rings. */
-  plannedStations: Set<string>;
+  plannedStations: Set<StationId>;
   /** Stations all of whose lines are closing in the step playing now: they fade out with it. */
-  closingOnly: Set<string>;
+  closingOnly: Set<StationId>;
   stats: NetworkStats;
 };
 
 /** The stations on the map as a snapshot gathers them: each with its lines, and those staying and built. */
 export type StationsFound = {
   /** Each station on the map and the lines serving it. */
-  stations: Map<string, StationLines>;
+  stations: Map<StationId, StationLines>;
   /** Stations a line serves that the step playing does not close. */
-  staying: Set<string>;
+  staying: Set<StationId>;
   /** Stations built track reaches, not only a plan's. */
-  built: Set<string>;
+  built: Set<StationId>;
 };
 
 /** Minimal GeoJSON, so the renderer needs no @types/geojson. */
@@ -48,7 +49,7 @@ type LineProperties = {
   /** 1 for new track while its step plays, fading to 0. Draws it wider. */
   highlight: number;
   /** The line it is drawn for, so the app can bring some lines forward (`focusLines`); empty for a transfer's link. */
-  line: string;
+  line: LineId | '';
   /** A plan's track, not built: drawn dashed, growing as it stands. */
   planned: boolean;
 };
@@ -79,7 +80,7 @@ export type PointFeature<Properties> = Feature<{ type: 'Point'; coordinates: Lng
  * this frame, as it pops in or fades, is its `StationLook`, set as feature state.
  */
 export type StationProperties = {
-  id: string;
+  id: StationId;
   name: string;
   /** Served by more than one (effective) line. */
   interchange: boolean;
@@ -115,4 +116,4 @@ export type PulseLook = { radius: number; opacity: number };
 export type HeadProperties = { color: string };
 
 /** The lines serving a station: effective line id to colour. */
-export type StationLines = Map<string, string>;
+export type StationLines = Map<LineId, string>;

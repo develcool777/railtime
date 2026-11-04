@@ -1,14 +1,15 @@
 import type { ReachInfo } from '@railtime/network/facts.types';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { formatMinutes, reachGroups } from '~/features/explorer/reach/reach.utils';
 
 /** A reach from A: B and C in the first band, D in the third, the second empty. */
 const reach: ReachInfo = {
-  from: { id: 'a', name: 'A' },
+  from: { id: stationId('a'), name: 'A' },
   stations: [
-    { id: 'b', name: 'B', minutes: 4, band: 0 },
-    { id: 'c', name: 'C', minutes: 12, band: 0 },
-    { id: 'd', name: 'D', minutes: 40, band: 2 },
+    { id: stationId('b'), name: 'B', minutes: 4, band: 0 },
+    { id: stationId('c'), name: 'C', minutes: 12, band: 0 },
+    { id: stationId('d'), name: 'D', minutes: 40, band: 2 },
   ],
   bands: [
     { upTo: 15, label: 'Under 15 min', color: '#000001' },

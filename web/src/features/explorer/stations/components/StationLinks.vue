@@ -13,11 +13,12 @@
 
 <script setup lang="ts">
   import type { LineColor } from '@railtime/network/facts.types';
+  import type { LineId, StationId } from '@railtime/schema/network.types';
   import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
     /** Each station with the lines' colours to show beside it. */
-    stations: { id: string; name: string; lines: { id: string; name: string; color: LineColor }[] }[];
+    stations: { id: StationId; name: string; lines: { id: LineId; name: string; color: LineColor }[] }[];
   }>();
-  const emit = defineEmits<{ select: [station: string] }>();
+  const emit = defineEmits<{ select: [station: StationId] }>();
 </script>

@@ -1,34 +1,44 @@
+import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
 import { standInMap } from '@test/support/factories/transitMap.utils';
 import type { PanelView } from '~/features/explorer/explorer.types';
-import { chromeOf, openingSectionOf, openOf, railSectionOf, walkedTo, withoutStations, withStation } from '~/features/explorer/explorer.utils';
+import {
+  chromeOf,
+  openingSectionOf,
+  openLineOf,
+  openStationOf,
+  railSectionOf,
+  walkedTo,
+  withoutStations,
+  withStation,
+} from '~/features/explorer/explorer.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useTimeStore } from '~/features/explorer/time/time.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
 
-const line = (id: string): PanelView => ({ kind: 'line', id });
-const station = (id: string): PanelView => ({ kind: 'station', id });
+const line = (id: string): PanelView => ({ kind: 'line', id: lineId(id) });
+const station = (id: string): PanelView => ({ kind: 'station', id: stationId(id) });
 
 describe('ExplorerUtils', () => {
   describe('withStation', () => {
     test('opens a station over the line open, in place of any walk', () => {
-      expect(withStation([], 'bank')).toEqual([station('bank')]);
-      expect(withStation([line('central')], 'bank')).toEqual([line('central'), station('bank')]);
-      expect(withStation([line('central'), station('bank'), station('oval')], 'angel')).toEqual([line('central'), station('angel')]);
+      expect(withStation([], stationId('bank'))).toEqual([station('bank')]);
+      expect(withStation([line('central')], stationId('bank'))).toEqual([line('central'), station('bank')]);
+      expect(withStation([line('central'), station('bank'), station('oval')], stationId('angel'))).toEqual([line('central'), station('angel')]);
     });
   });
 
   describe('walkedTo', () => {
     test('walks on from the station open, so Back returns to it', () => {
-      expect(walkedTo([line('central'), station('bank')], 'oval')).toEqual([line('central'), station('bank'), station('oval')]);
+      expect(walkedTo([line('central'), station('bank')], stationId('oval'))).toEqual([line('central'), station('bank'), station('oval')]);
     });
 
     test('stays put for the station open, or with no station open', () => {
       const views = [station('bank')];
-      expect(walkedTo(views, 'bank')).toBe(views);
-      expect(walkedTo([line('central')], 'bank')).toEqual([line('central')]);
+      expect(walkedTo(views, stationId('bank'))).toBe(views);
+      expect(walkedTo([line('central')], stationId('bank'))).toEqual([line('central')]);
     });
   });
 
@@ -39,12 +49,18 @@ describe('ExplorerUtils', () => {
     });
   });
 
-  describe('openOf', () => {
-    test('finds the station open and the line under it', () => {
-      const views = [line('central'), station('bank'), station('oval')];
-      expect(openOf(views, 'station')).toBe('oval');
-      expect(openOf(views, 'line')).toBe('central');
-      expect(openOf([], 'line')).toBeNull();
+  describe('openStationOf', () => {
+    test('finds the station open', () => {
+      expect(openStationOf([line('central'), station('bank'), station('oval')])).toBe('oval');
+      expect(openStationOf([line('central')])).toBeNull();
+    });
+  });
+
+  describe('openLineOf', () => {
+    test('finds the line open, or under the station open', () => {
+      expect(openLineOf([line('central'), station('bank'), station('oval')])).toBe('central');
+      expect(openLineOf([station('bank')])).toBeNull();
+      expect(openLineOf([])).toBeNull();
     });
   });
 
@@ -87,7 +103,7 @@ describe('ExplorerUtils', () => {
 
   describe('openingSectionOf', () => {
     test('opens on Plans with a plan shown, else on Lines', () => {
-      expect(openingSectionOf('extension')).toBe('plans');
+      expect(openingSectionOf(planId('extension'))).toBe('plans');
       expect(openingSectionOf(undefined)).toBe('lines');
     });
   });
@@ -113,7 +129,7 @@ describe('ExplorerStore', () => {
 
   test('writes in the address what a link needs, from every store, and nothing that is as a page opens', () => {
     const explorer = openExplorer({ route: 'a,c', walk: '400', speed: '4' });
-    explorer.PICK_STATION('b');
+    explorer.PICK_STATION(stationId('b'));
     expect(explorer.address).toEqual({ station: 'b', route: 'a,c', walk: '400', speed: '4' });
     expect(openExplorer().address).toEqual({});
   });
@@ -121,11 +137,11 @@ describe('ExplorerStore', () => {
   test("picks a station clicked on the map as the route's end with Route in sight, else opens it", () => {
     const explorer = openExplorer({ tab: 'route' });
     useTimeStore().SET_TIME(timeAt({}));
-    explorer.CLICK_STATION('a');
+    explorer.CLICK_STATION(stationId('a'));
     expect(useToolsStore().routeEnds.from?.id).toBe('a');
     expect(explorer.views).toEqual([]);
     explorer.OPEN_SECTION('lines');
-    explorer.CLICK_STATION('a');
+    explorer.CLICK_STATION(stationId('a'));
     expect(explorer.views).toEqual([station('a')]);
     explorer.CLICK_STATION(null);
     expect(explorer.views).toEqual([]);
@@ -137,7 +153,7 @@ describe('ExplorerStore', () => {
     explorer.ATTACH(map);
     const day = Date.UTC(1935, 0, 1);
     useTimeStore().SET_TIME(timeAt({ time: day, atToday: false, atRest: false }));
-    await explorer.SHOW_LINES(['blue'], false);
+    await explorer.SHOW_LINES([lineId('blue')], false);
     expect(useNetworkStore().hidden).toEqual(['blue']);
     // The line hidden is gone from what is open.
     expect(explorer.views).toEqual([]);
@@ -149,7 +165,7 @@ describe('ExplorerStore', () => {
     const { map, commands } = standInMap();
     explorer.ATTACH(map);
     useTimeStore().PLAY();
-    await explorer.SHOW_PLAN('extension');
+    await explorer.SHOW_PLAN(planId('extension'));
     expect(useTimeStore().playerShown).toBe(false);
     expect(commands.at(-1)).toEqual({ name: 'seek', args: [useNetworkStore().facts?.playheads.end()] });
   });

@@ -1,5 +1,6 @@
 import { DAY_MS } from '@railtime/core/date.utils';
 import { required } from '@railtime/core/required.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { CaptionContext } from './caption.types';
 import type { CloseStep, IdentityStep, InfillStep, OpenStep, RenameStep, Step, StationCloseStep } from './engine.types';
 import type { LineColor, StepInfo } from '../facts/facts.types';
@@ -12,7 +13,7 @@ import type { LineColor, StepInfo } from '../facts/facts.types';
  * @param time - When.
  * @returns Its display name then.
  */
-const nameOn = (context: CaptionContext, station: string, time: number): string => context.index.stationName(station, time);
+const nameOn = (context: CaptionContext, station: StationId, time: number): string => context.index.stationName(station, time);
 
 /**
  * The colour a line is drawn in once a step has happened: its own, or the line it is drawn as then.
@@ -22,7 +23,7 @@ const nameOn = (context: CaptionContext, station: string, time: number): string 
  * @param line - The line id.
  * @returns The line it is drawn as, and its colour.
  */
-const drawnAs = (context: CaptionContext, step: Step, line: string): { id: string; color: LineColor } => {
+const drawnAs = (context: CaptionContext, step: Step, line: LineId): { id: LineId; color: LineColor } => {
   const id = context.timeline.identityOf(line, step.index).id;
   return { id, color: context.colorOf(id) };
 };
@@ -39,9 +40,9 @@ const drawnAs = (context: CaptionContext, step: Step, line: string): { id: strin
  * @param cursor - The cursor the line is asked at.
  * @returns The station id.
  */
-const stopNear = (context: CaptionContext, station: string, line: string, cursor: number): string => {
+const stopNear = (context: CaptionContext, station: StationId, line: LineId, cursor: number): StationId => {
   const { index, timeline } = context;
-  const onLine = (stop: string) =>
+  const onLine = (stop: StationId) =>
     index.lineSegmentsAt(stop).filter(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.identityOf(lineSegment.line, cursor).id === line);
   const seen = new Set([station]);
   // Read from its head, never shifted: a shift copies what is left each time.
@@ -78,7 +79,7 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
   );
   let verb = existed ? 'extended' : 'opens';
   if (step.lineSegments.every(lineSegment => lineSegment.previous !== null)) verb = 'reopens';
-  const name = (station: string) => nameOn(context, station, step.time);
+  const name = (station: StationId) => nameOn(context, station, step.time);
   return {
     kind: 'open',
     title: `${index.lineName(step.line)} ${verb}`,
@@ -99,7 +100,7 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
  */
 const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 'time'> => {
   const { reach } = context.timeline.retreatOf(step);
-  const name = (station: string) => nameOn(context, station, step.time);
+  const name = (station: StationId) => nameOn(context, station, step.time);
   const returns = step.lineSegments.every(lineSegment => lineSegment.next !== null);
   return {
     kind: 'close',

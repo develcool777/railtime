@@ -1,5 +1,6 @@
 import type { CoverageDistance, Playhead, Stop } from '@railtime/network/facts.types';
 import type { CameraMode, MapView, ViewMode } from '@railtime/renderer/transitMap.types';
+import type { LineId, PlanId, StationId } from '@railtime/schema/network.types';
 import type { PlayerSettings, Section } from '~/features/explorer/explorer.types';
 import type { RouteEnds } from '~/features/explorer/tools.types';
 
@@ -10,7 +11,7 @@ import type { RouteEnds } from '~/features/explorer/tools.types';
  */
 export type LinkedPlayhead = Omit<Playhead, 'time'> & { time?: number };
 
-/** What an explorer address holds: each part only when it is not the default. */
+/** What an explorer address holds, each part only when it is not the default: as it says it, its ids not yet checked against the network. */
 export type ExplorerUrlState = {
   /** Where in the network's history the map is; today, or with a plan the plan built, without one. */
   at?: LinkedPlayhead;
@@ -59,9 +60,9 @@ export type AddressInput = {
   /** Where the history is, as an address names it, if known. */
   at: LinkedPlayhead | null;
   view: MapView | null;
-  openStation: string | null;
-  openLine: string | null;
-  plan: string | undefined;
+  openStation: StationId | null;
+  openLine: LineId | null;
+  plan: PlanId | undefined;
   section: Section;
   /** The section a page opens on without a tab in its address: left out of it. */
   openingSection: Section;

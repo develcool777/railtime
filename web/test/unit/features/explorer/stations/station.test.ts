@@ -1,3 +1,4 @@
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { findStations, foldName, stationChoices, stationRows, stationsByLetter, stripAround } from '~/features/explorer/stations/station.utils';
 
@@ -9,7 +10,7 @@ import { findStations, foldName, stationChoices, stationRows, stationsByLetter, 
  * @returns The station.
  */
 const station = (name: string, otherNames: string[] = []) => ({
-  id: foldName(name).replaceAll(' ', '-'),
+  id: stationId(foldName(name).replaceAll(' ', '-')),
   name,
   otherNames,
   colors: [{ light: '#ff0000', dark: '#ff0000' }],
@@ -101,19 +102,19 @@ describe('StationUtils', () => {
   });
 
   describe('stripAround', () => {
-    const HERE = { id: 'c', name: 'C' };
+    const HERE = { id: stationId('c'), name: 'C' };
 
     test('puts the station between the stops either side, each saying where the line goes on', () => {
-      const rows = stripAround({ previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: null } }, HERE);
+      const rows = stripAround({ previous: { id: stationId('b'), name: 'B', towards: 'A' }, next: { id: stationId('d'), name: 'D', towards: null } }, HERE);
       expect(rows).toEqual([
-        { id: 'b', name: 'B', here: false, note: 'towards A' },
-        { id: 'c', name: 'C', here: true, note: '' },
-        { id: 'd', name: 'D', here: false, note: 'end of the line' },
+        { id: stationId('b'), name: 'B', here: false, note: 'towards A' },
+        { id: stationId('c'), name: 'C', here: true, note: '' },
+        { id: stationId('d'), name: 'D', here: false, note: 'end of the line' },
       ]);
     });
 
     test('at an end, the station says so, with no stop that way', () => {
-      const rows = stripAround({ previous: null, next: { id: 'd', name: 'D', towards: 'E' } }, HERE);
+      const rows = stripAround({ previous: null, next: { id: stationId('d'), name: 'D', towards: 'E' } }, HERE);
       expect(rows.map(row => [row.name, row.note])).toEqual([
         ['C', 'end of the line'],
         ['D', 'towards E'],

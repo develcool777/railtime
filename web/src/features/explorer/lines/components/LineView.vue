@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
   import type { ChangeInfo, LineColor, LineDetails } from '@railtime/network/facts.types';
+  import type { StationId } from '@railtime/schema/network.types';
   import { ref } from 'vue';
   import { titleInLine } from '~/features/explorer/lines/line.utils';
   import { lineColor } from '~/utils/format.utils';
@@ -43,9 +44,9 @@
     /** The changes that made the line. */
     changes: ChangeInfo[];
     /** Each station on the map's lines' colours, to mark the interchanges. */
-    stationColors: Map<string, LineColor[]>;
+    stationColors: Map<StationId, LineColor[]>;
   }>();
-  const emit = defineEmits<{ station: [station: string]; change: [index: number] }>();
+  const emit = defineEmits<{ station: [station: StationId]; change: [index: number] }>();
 
   const shown = ref<'stops' | 'history'>('stops');
   /** The line's two lists. */
@@ -60,6 +61,6 @@
    * @param station - The stop.
    * @returns Their colours, as CSS.
    */
-  const otherLines = (station: string): string[] =>
+  const otherLines = (station: StationId): string[] =>
     (props.stationColors.get(station) ?? []).filter(color => color.light !== props.line.color.light || color.dark !== props.line.color.dark).map(lineColor);
 </script>

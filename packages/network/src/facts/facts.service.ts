@@ -1,7 +1,9 @@
+import { entriesOf } from '@railtime/core/collection.utils';
 import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { required } from '@railtime/core/required.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { Network } from '@railtime/schema/network.types';
+import { isLineIn, isPlanIn, isStationIn } from '@railtime/schema/ids.utils';
+import type { LineId, Network, PlanId, StationId } from '@railtime/schema/network.types';
 import { firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { REACH_BANDS } from './facts.constants.ts';
 import type {
@@ -23,6 +25,7 @@ import type {
   RouteStrength,
   StationInfo,
   StationSummary,
+  Stop,
   TransferInfo,
 } from './facts.types';
 import { bandOf, byOpening, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
@@ -45,9 +48,9 @@ import { RouteFinder } from '../route/finder.service.ts';
  */
 export class NetworkFacts {
   /** The plan built on the network, if one was asked for. */
-  public readonly plan: string | null;
+  public readonly plan: PlanId | null;
   /** The lines hidden, in the network's order: as if they were not there. */
-  public readonly hidden: string[];
+  public readonly hidden: LineId[];
   /** Whether the network was never built: it has only its plans. */
   public readonly planOnly: boolean;
   /** The raw network through time, which every answer comes from: what the renderer plays and draws. */
@@ -73,7 +76,7 @@ export class NetworkFacts {
   /** The network as stored, every line in it. */
   private readonly stored: Network;
 
-  private constructor(stored: Network, hidden: string[], plan: string | null, today: number) {
+  private constructor(stored: Network, hidden: LineId[], plan: PlanId | null, today: number) {
     this.stored = stored;
     this.hidden = hidden;
     const { network: source, gaps } = withLinesHidden(stored, hidden);
@@ -119,8 +122,8 @@ export class NetworkFacts {
    * @param asked - The plan an address names, if any.
    * @returns The plan's id, or none.
    */
-  public static planToOpen(network: Network, asked: unknown): string | undefined {
-    if (typeof asked === 'string' && network.plans?.[asked]) return asked;
+  public static planToOpen(network: Network, asked: unknown): PlanId | undefined {
+    if (typeof asked === 'string' && isPlanIn(network, asked)) return asked;
     return isPlanOnly(network) ? firstPlanOf(network) : undefined;
   }
 
@@ -149,7 +152,7 @@ export class NetworkFacts {
    * @returns The plans, in the network's order.
    */
   public plans(): PlanInfo[] {
-    return Object.entries(this.source.plans ?? {}).map(([id, plan]) => ({
+    return entriesOf(this.source.plans ?? {}).map(([id, plan]) => ({
       id,
       name: plan.name,
       status: plan.status,
@@ -159,15 +162,25 @@ export class NetworkFacts {
   }
 
   /**
-   * A line or station by its id, if the network has it (its plan built on it).
+   * A line by a string that may be its id, if the network has it (its plan built on it): where an
+   * address's line becomes one.
    *
-   * @param kind - A line or a station.
-   * @param id - Its id.
-   * @returns Its id and name, or `null`.
+   * @param id - The string.
+   * @returns The line's id and name, or `null`.
    */
-  public find(kind: 'line' | 'station', id: string): { id: string; name: string } | null {
-    const known = kind === 'line' ? this.index.network.lines[id] : this.index.network.stations[id];
-    return known ? { id, name: known.name } : null;
+  public findLine(id: string): { id: LineId; name: string } | null {
+    return isLineIn(this.index.network, id) ? { id, name: this.index.lineOf(id).name } : null;
+  }
+
+  /**
+   * A station by a string that may be its id, if the network has it (its plan built on it): where an
+   * address's station becomes one.
+   *
+   * @param id - The string.
+   * @returns The station's id and name, or `null`.
+   */
+  public findStation(id: string): Stop | null {
+    return isStationIn(this.index.network, id) ? { id, name: this.index.stationOf(id).name } : null;
   }
 
   /**
@@ -176,7 +189,7 @@ export class NetworkFacts {
    * @param line - The line id.
    * @returns Its colours.
    */
-  public colorOf(line: string): LineColor {
+  public colorOf(line: LineId): LineColor {
     const info = this.index.lineOf(line);
     return { light: info.color, dark: info.darkColor ?? info.color };
   }
@@ -290,7 +303,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The line's details.
    */
-  private lineAt(line: string, moment: Playhead): LineDetails {
+  private lineAt(line: LineId, moment: Playhead): LineDetails {
     const info = required(
       this.lines().find(candidate => candidate.id === line),
       `line ${line}`,
@@ -317,10 +330,10 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The routes; none if the network then has none.
    */
-  private routesAt(from: string, to: string, moment: Playhead): RouteInfo[] {
+  private routesAt(from: StationId, to: StationId, moment: Playhead): RouteInfo[] {
     const options = this.routes.options(from, to, moment.cursor);
     const fewest = Math.min(...options.map(route => route.changes));
-    const stop = (station: string) => ({ id: station, name: this.index.stationName(station, moment.time) });
+    const stop = (station: StationId) => ({ id: station, name: this.index.stationName(station, moment.time) });
     return options.map((route, position) => ({
       from: stop(from),
       to: stop(to),
@@ -355,10 +368,10 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The stations it gets to, soonest first, the bands they are coloured in, and the track it colours; `null` if no line calls there then.
    */
-  private reachAt(from: string, moment: Playhead): ReachInfo | null {
+  private reachAt(from: StationId, moment: Playhead): ReachInfo | null {
     const minutes = this.routes.reach(from, moment.cursor);
     if (minutes.size === 0) return null;
-    const name = (station: string) => this.index.stationName(station, moment.time);
+    const name = (station: StationId) => this.index.stationName(station, moment.time);
     // The search reaches stations soonest first, so they come in that order.
     const stations = [...minutes].filter(([station]) => station !== from).map(([id, time]) => ({ id, name: name(id), minutes: time, band: bandOf(time) }));
     // Each open segment once, though several lines run on it.
@@ -420,7 +433,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns The station's details.
    */
-  private stationAt(station: string, moment: Playhead): StationInfo {
+  private stationAt(station: StationId, moment: Playhead): StationInfo {
     const info = this.index.stationOf(station);
     const calling = new Set(this.callingAt(station, moment.cursor));
     const lines = [...trackDatesAt(this.index, this.timeline, station)].map(([line, dates]) => {
@@ -456,7 +469,7 @@ export class NetworkFacts {
    * @param cursor - The cursor.
    * @returns The lines, in side-by-side order.
    */
-  private callingAt(station: string, cursor: number): string[] {
+  private callingAt(station: StationId, cursor: number): LineId[] {
     const lines = this.index
       .lineSegmentsAt(station)
       .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(station, lineSegment.line, cursor))
@@ -471,7 +484,7 @@ export class NetworkFacts {
    * @param moment - The moment.
    * @returns Each one on the map then.
    */
-  private transfersFrom(station: string, moment: Playhead): TransferInfo[] {
+  private transfersFrom(station: StationId, moment: Playhead): TransferInfo[] {
     return this.index.transfersAt(station).flatMap(other => {
       // The lines calling there now, each as it is drawn then (a branch still shown as its parent).
       const calling = this.callingAt(other, moment.cursor).map(line => this.timeline.identityOf(line, moment.cursor).id);

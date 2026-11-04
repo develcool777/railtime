@@ -1,6 +1,7 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { Growth, SegmentPlan } from '@railtime/network/engine.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { FeatureCollection, HeadProperties, LineFeature, NetworkSnapshot, PointFeature, StationLines } from '../layers/snapshot.types';
 import type { RenderState } from '../layers/style.types';
 import type { ViewMode } from '../transitMap.types';
@@ -31,8 +32,8 @@ export type Stretch = {
   stops: number[];
   /** The one way through the stretch a camera follows. */
   path: SegmentPlan[];
-  linesBySegment: Map<number, string[]>;
-  linesByStation: Map<string, string[]>;
+  linesBySegment: Map<number, LineId[]>;
+  linesByStation: Map<StationId, LineId[]>;
   /** It retracts: its front runs from the stretch's far end back to the network that stays. */
   retracts: boolean;
 };
@@ -78,19 +79,19 @@ export type StepDrawing = {
   highlight: number;
   heads: FeatureCollection<PointFeature<HeadProperties>>;
   /** Stations the step has reached so far, with the lines it adds to them. */
-  reached: Map<string, StationLines>;
+  reached: Map<StationId, StationLines>;
   /** Stations new in this step: pulse and label them. */
-  highlighted: Set<string>;
+  highlighted: Set<StationId>;
   /** Station → opacity while it closes: labelled at any zoom, marked closed. */
-  fading: Map<string, number>;
+  fading: Map<StationId, number>;
   /** Station → the name it had, while it takes a new one: labelled with both. */
-  renamed: Map<string, string>;
+  renamed: Map<StationId, string>;
   /** Stations closing for a spell, or reopening after one: labelled for now, not for good. */
-  spells: Set<string>;
+  spells: Set<StationId>;
   /** Transfers the step has linked so far, a station it reached to one on the map: drawn as the network's are. */
   links: FeatureCollection<LineFeature>;
   /** The stations at either end of those links: drawn as interchanges from then on. */
-  linked: Set<string>;
+  linked: Set<StationId>;
   /** Where a camera following the front looks from this frame, and which way; `null` when no front runs. */
   chase: ChaseTarget | null;
 };

@@ -1,7 +1,7 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { Heading, SectionWorks } from './build.types';
 import { curveBetween, headingOf, splitTrack } from './track.utils.ts';
-import type { Network, PlanSection, PlanTrack, Segment } from '../format/network.types';
+import type { LineId, Network, PlanSection, PlanTrack, Segment, StationId } from '../format/network.types';
 
 /**
  * Builds plan sections on a network, keeping track of segments as objects, so splitting one never
@@ -54,7 +54,7 @@ export class PlanBuilder {
    * @param stationB - The other.
    * @returns It, if there is one.
    */
-  private between(stationA: string, stationB: string): Segment | undefined {
+  private between(stationA: StationId, stationB: StationId): Segment | undefined {
     return this.network.segments.find(
       segment => (segment.stationA === stationA && segment.stationB === stationB) || (segment.stationA === stationB && segment.stationB === stationA),
     );
@@ -67,7 +67,7 @@ export class PlanBuilder {
    * @param line - The line id.
    * @returns True if it does.
    */
-  private runsOver(segment: Segment, line: string): boolean {
+  private runsOver(segment: Segment, line: LineId): boolean {
     return line in segment.lines || this.sections.some(section => section.line === line && section.segments.includes(segment));
   }
 
@@ -78,7 +78,7 @@ export class PlanBuilder {
    * @param stationB - The other.
    * @returns The new segment, with no lines yet.
    */
-  private lay(stationA: string, stationB: string): Segment {
+  private lay(stationA: StationId, stationB: StationId): Segment {
     const given = this.track.find(
       track => (track.stationA === stationA && track.stationB === stationB) || (track.stationA === stationB && track.stationB === stationA),
     );
@@ -98,7 +98,7 @@ export class PlanBuilder {
    * @param segment - The segment.
    * @param station - The station to stand on it.
    */
-  private split(segment: Segment, station: string): void {
+  private split(segment: Segment, station: StationId): void {
     // Within bounds: the schema checks every station of a plan exists.
     const place = this.network.stations[station]!.coordinate;
     const [first, second] = splitTrack(segment.coordinates, place);
@@ -143,7 +143,7 @@ export class PlanBuilder {
    * @param line - Its line.
    * @returns The heading.
    */
-  private headingThrough(station: string, segment: Segment, line: string): Heading {
+  private headingThrough(station: StationId, segment: Segment, line: LineId): Heading {
     const leaving = (track: Segment) => headingOf(track.stationA === station ? track.coordinates : track.coordinates.toReversed());
     // Within bounds: a laid segment's ends are two stations apart.
     const own = leaving(segment)!;

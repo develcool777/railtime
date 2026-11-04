@@ -1,10 +1,12 @@
 import type { LineDirection } from '@railtime/network/facts.types';
+import type { LineId } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
 import { currentChangeIndex } from '~/features/explorer/changes/changes.utils';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { PanelView } from '~/features/explorer/explorer.types';
+import { viewIn } from '~/features/explorer/explorer.utils';
 import { formatStats } from '~/features/explorer/format.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { lineTop, marksOf, planLegendOf, planSummaryOf, sectionLabelOf, sectionTop, sectionsOf, stationTop } from '~/features/explorer/panel/panel.utils';
@@ -39,7 +41,7 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
   const station = computed(() => (explorer.openStation && now.value ? now.value.station(explorer.openStation) : null));
   /** The stops either side of the station whose view is open, on each of its lines, by line. */
   const stationDirections = computed(() =>
-    explorer.openStation && now.value ? now.value.directions(explorer.openStation) : new Map<string, LineDirection[]>(),
+    explorer.openStation && now.value ? now.value.directions(explorer.openStation) : new Map<LineId, LineDirection[]>(),
   );
   /** The stations on the map at the moment shown; none while the map moves, when the panel follows the changes. */
   const stations = computed(() => (now.value && !timeStore.time?.playing ? now.value.stations() : []));
@@ -53,7 +55,7 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
    * @param view - The view.
    * @returns Its line's or station's name.
    */
-  const nameOf = (view: PanelView) => network.facts?.find(view.kind, view.id)?.name ?? view.id;
+  const nameOf = (view: PanelView) => (network.facts && viewIn(network.facts, view)?.name) ?? view.id;
   /** Where the back link over a pushed view returns to: the view under it, else the section. */
   const backLabel = computed(() => {
     const under = explorer.views.at(-2);

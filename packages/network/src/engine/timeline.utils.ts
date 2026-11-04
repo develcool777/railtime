@@ -1,6 +1,7 @@
 import { pushTo } from '@railtime/core/collection.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { distanceKm } from '@railtime/core/geometry.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { Growth, LineSegment, TrackSegment } from './engine.types';
 
 /**
@@ -12,10 +13,10 @@ import type { Growth, LineSegment, TrackSegment } from './engine.types';
  * @param centre - The network's centre.
  * @returns The stretches.
  */
-export const connectedStretches = (lineSegments: LineSegment[], coordOf: (station: string) => LngLat, centre: LngLat): LineSegment[][] => {
+export const connectedStretches = (lineSegments: LineSegment[], coordOf: (station: StationId) => LngLat, centre: LngLat): LineSegment[][] => {
   const bySegment = new Map<TrackSegment, LineSegment[]>();
   for (const lineSegment of lineSegments) pushTo(bySegment, lineSegment.segment, lineSegment);
-  const segmentsAt = new Map<string, TrackSegment[]>();
+  const segmentsAt = new Map<StationId, TrackSegment[]>();
   for (const segment of bySegment.keys()) for (const station of [segment.stationA, segment.stationB]) pushTo(segmentsAt, station, segment);
 
   const seen = new Set<TrackSegment>();
@@ -44,9 +45,9 @@ type Stretch = { lineSegments: LineSegment[]; distanceToCentre: number };
 const collectStretch = (
   start: TrackSegment,
   bySegment: Map<TrackSegment, LineSegment[]>,
-  segmentsAt: Map<string, TrackSegment[]>,
+  segmentsAt: Map<StationId, TrackSegment[]>,
   seen: Set<TrackSegment>,
-  distanceToCentreOf: (station: string) => number,
+  distanceToCentreOf: (station: StationId) => number,
 ): Stretch => {
   const queue = [start];
   const lineSegments: LineSegment[] = [];
@@ -72,8 +73,8 @@ const collectStretch = (
  * @param changes - The changes, each a line at a station.
  * @returns Station id to its lines.
  */
-export const linesByStation = (changes: { station: string; line: string }[]): Map<string, string[]> => {
-  const byStation = new Map<string, string[]>();
+export const linesByStation = (changes: { station: StationId; line: LineId }[]): Map<StationId, LineId[]> => {
+  const byStation = new Map<StationId, LineId[]>();
   for (const change of changes) pushTo(byStation, change.station, change.line);
   return byStation;
 };
@@ -93,10 +94,10 @@ export const linesByStation = (changes: { station: string; line: string }[]): Ma
  */
 export const forkedParts = (
   stretch: LineSegment[],
-  stationsOnMap: Set<string>,
-  coordOf: (station: string) => LngLat,
+  stationsOnMap: Set<StationId>,
+  coordOf: (station: StationId) => LngLat,
   centre: LngLat,
-  stationsOnLine: Set<string> = new Set(),
+  stationsOnLine: Set<StationId> = new Set(),
 ): LineSegment[][] => {
   const growth = planGrowth([...new Set(stretch.map(lineSegment => lineSegment.segment))], stationsOnMap, coordOf, centre, stationsOnLine);
   const kmAt = new Map(growth.reach.map(reached => [reached.station, reached.km]));
@@ -136,8 +137,8 @@ export const forkedParts = (
  * @param settled - Stations whose distance is final.
  * @returns The station, or `null` when every reached station is settled.
  */
-const nearestUnsettled = (distances: Map<string, number>, settled: Set<string>): string | null => {
-  let nearest: string | null = null;
+const nearestUnsettled = (distances: Map<StationId, number>, settled: Set<StationId>): StationId | null => {
+  let nearest: StationId | null = null;
   let nearestKm = Infinity;
   for (const [station, km] of distances)
     if (!settled.has(station) && km < nearestKm) {
@@ -165,17 +166,17 @@ const nearestUnsettled = (distances: Map<string, number>, settled: Set<string>):
  */
 export const planGrowth = (
   segments: TrackSegment[],
-  stationsOnMap: Set<string>,
-  coordOf: (station: string) => LngLat,
+  stationsOnMap: Set<StationId>,
+  coordOf: (station: StationId) => LngLat,
   centre: LngLat,
-  stationsOnLine: Set<string> = new Set(),
+  stationsOnLine: Set<StationId> = new Set(),
 ): Growth => {
-  const segmentsAt = new Map<string, TrackSegment[]>();
+  const segmentsAt = new Map<StationId, TrackSegment[]>();
   for (const segment of segments) for (const station of [segment.stationA, segment.stationB]) pushTo(segmentsAt, station, segment);
   const stations = [...segmentsAt.keys()];
-  const nearCentre = (first: string, second: string) => distanceKm(coordOf(first), centre) - distanceKm(coordOf(second), centre);
+  const nearCentre = (first: StationId, second: StationId) => distanceKm(coordOf(first), centre) - distanceKm(coordOf(second), centre);
   const ends = stations.filter(station => segmentsAt.get(station)?.length === 1);
-  const onMap = (candidates: string[]) => candidates.filter(station => stationsOnMap.has(station));
+  const onMap = (candidates: StationId[]) => candidates.filter(station => stationsOnMap.has(station));
   const [source] =
     [ends.filter(station => stationsOnLine.has(station)), onMap(ends), ends, onMap(stations), stations]
       .map(candidates => candidates.toSorted(nearCentre))
@@ -184,7 +185,7 @@ export const planGrowth = (
 
   // Dijkstra over the stretch: the graphs are small, so a linear scan for the next station is fine.
   const distances = new Map(sources.map(station => [station, 0]));
-  const settled = new Set<string>();
+  const settled = new Set<StationId>();
   for (let current = nearestUnsettled(distances, settled); current !== null; current = nearestUnsettled(distances, settled)) {
     settled.add(current);
     const currentKm = distances.get(current)!;

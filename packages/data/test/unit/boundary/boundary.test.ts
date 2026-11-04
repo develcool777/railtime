@@ -3,6 +3,7 @@ import { required } from '@railtime/core/required.utils';
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network, Station } from '@railtime/schema/network.types';
+import { planId } from '@railtime/schema/testing/ids';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, test, vi } from 'vitest';
 import { MIN_STATIONS_HELD, USER_AGENT } from '../../../src/boundary/boundary.constants.ts';
@@ -66,7 +67,7 @@ const networkOf = (built: Record<string, Station>, planned: Record<string, Stati
   lines: {},
   stations: built,
   segments: [],
-  plans: { plan: { name: 'Plan', status: 'proposed', stations: planned, sections: [] } },
+  plans: { [planId('plan')]: { name: 'Plan', status: 'proposed', stations: planned, sections: [] } },
 });
 
 describe('BoundaryUtils', () => {
@@ -94,7 +95,7 @@ describe('BoundaryUtils', () => {
     test('counts none for a network with no plans, or a plan with no stations of its own', () => {
       const { plans: _plans, ...withoutPlans } = networkOf({});
       expect(stationsHeld(CITY, withoutPlans)).toBe(0);
-      expect(stationsHeld(CITY, { ...networkOf({}), plans: { plan: { name: 'Plan', status: 'proposed', sections: [] } } })).toBe(0);
+      expect(stationsHeld(CITY, { ...networkOf({}), plans: { [planId('plan')]: { name: 'Plan', status: 'proposed', sections: [] } } })).toBe(0);
     });
   });
 

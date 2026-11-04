@@ -1,5 +1,7 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
+import type { PlanId } from '@railtime/schema/network.types';
+import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { REACH_BANDS } from '../../../src/facts/facts.constants';
 import { NetworkFacts } from '../../../src/facts/facts.service';
@@ -19,9 +21,9 @@ const TODAY = toTimestamp('2026-01-01');
  * @param plan - A plan to build on it.
  * @returns Its facts.
  */
-const factsOf = (plan?: string) => {
+const factsOf = (plan?: PlanId) => {
   const network = tinyNetwork();
-  network.lines.red = { ...network.lines.red!, darkColor: '#ff6666' };
+  network.lines[lineId('red')] = { ...network.lines[lineId('red')]!, darkColor: '#ff6666' };
   return NetworkFacts.create(network, { ...(plan && { plan }), today: TODAY });
 };
 
@@ -31,23 +33,23 @@ describe('NetworkFacts', () => {
     const plain = NetworkFacts.create(network, { today: TODAY });
     expect(plain.hidden).toEqual(['grey']);
     expect(plain.lines().map(line => line.id)).not.toContain('grey');
-    expect(plain.find('station', 'x')).toBeNull();
+    expect(plain.findStation('x')).toBeNull();
     expect(plain.networkChoices().map(entry => entry.id)).toEqual(['metro', 'rail']);
     const withRail = NetworkFacts.create(network, { today: TODAY, hidden: ['blue', 'nowhere'] });
     expect(withRail.hidden).toEqual(['blue']);
     expect(withRail.lines().map(line => line.id)).toEqual(expect.arrayContaining(['grey']));
     expect(withRail.lines().map(line => line.id)).not.toContain('blue');
-    expect(withRail.find('station', 'x')).toEqual({ id: 'x', name: 'X' });
+    expect(withRail.findStation('x')).toEqual({ id: 'x', name: 'X' });
   });
 
   test('takes a line out for the years it was drawn as a line hidden, going as what it was, back as itself', () => {
     const network = tinyNetwork();
     // Green, on C – D from 1970, drawn as red until 1975, then as blue until 1990.
-    network.lines.green = {
-      ...network.lines.green!,
+    network.lines[lineId('green')] = {
+      ...network.lines[lineId('green')]!,
       aliases: [
-        { until: '1975-01-01', as: 'red', text: 'Green runs as Blue' },
-        { until: '1990-01-01', as: 'blue', text: 'Green becomes its own line' },
+        { until: '1975-01-01', as: lineId('red'), text: 'Green runs as Blue' },
+        { until: '1990-01-01', as: lineId('blue'), text: 'Green becomes its own line' },
       ],
     };
     const facts = NetworkFacts.create(network, { today: TODAY, hidden: ['blue'] });
@@ -62,9 +64,9 @@ describe('NetworkFacts', () => {
   });
 
   test('shows the network as built when its plan builds only on lines hidden', () => {
-    const facts = NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: 'grey-on' });
+    const facts = NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: planId('grey-on') });
     expect(facts.plan).toBeNull();
-    expect(NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: 'grey-on', hidden: [] }).plan).toBe('grey-on');
+    expect(NetworkFacts.create(hiddenNetwork(), { today: TODAY, plan: planId('grey-on'), hidden: [] }).plan).toBe('grey-on');
   });
 
   test('runs from its first date to today, or to its last dated change after it', () => {
@@ -73,8 +75,8 @@ describe('NetworkFacts', () => {
 
   test('colours a line in both themes: its dark colour, if it has one, else its own', () => {
     const facts = factsOf();
-    expect(facts.colorOf('red')).toEqual({ light: '#ff0000', dark: '#ff6666' });
-    expect(facts.colorOf('blue')).toEqual({ light: '#0000ff', dark: '#0000ff' });
+    expect(facts.colorOf(lineId('red'))).toEqual({ light: '#ff0000', dark: '#ff6666' });
+    expect(facts.colorOf(lineId('blue'))).toEqual({ light: '#0000ff', dark: '#0000ff' });
     expect(facts.lines().find(line => line.id === 'red')?.color).toEqual({ light: '#ff0000', dark: '#ff6666' });
     expect(facts.change(0).color).toEqual({ light: '#ff0000', dark: '#ff6666' });
   });
@@ -110,9 +112,9 @@ describe('NetworkFacts', () => {
         .toSorted(byCodeUnits),
     ).toEqual(['a', 'b']);
     expect(later.stations().map(station => station.id)).toContain('d');
-    expect(early.station('b').lines.find(line => line.id === 'blue')?.opened).toBe('1930-01-01');
-    expect(early.routes('a', 'd')).toEqual([]);
-    expect(later.routes('a', 'd')).not.toEqual([]);
+    expect(early.station(stationId('b')).lines.find(line => line.id === 'blue')?.opened).toBe('1930-01-01');
+    expect(early.routes(stationId('a'), stationId('d'))).toEqual([]);
+    expect(later.routes(stationId('a'), stationId('d'))).not.toEqual([]);
   });
 
   test('answers for today: every dated change on it or before played', () => {
@@ -122,35 +124,38 @@ describe('NetworkFacts', () => {
 
   test("names a station as it was called at the moment's date", () => {
     const facts = factsOf();
-    expect(facts.asOf(facts.playheads.on(toTimestamp('1915-01-01'))).station('d').name).toBe('Old D');
-    expect(facts.asOf(facts.playheads.on(toTimestamp('1935-01-01'))).station('d').name).toBe('D');
+    expect(facts.asOf(facts.playheads.on(toTimestamp('1915-01-01'))).station(stationId('d')).name).toBe('Old D');
+    expect(facts.asOf(facts.playheads.on(toTimestamp('1935-01-01'))).station(stationId('d')).name).toBe('D');
   });
 
-  test('finds a line or station by its id, with its name; none it does not have', () => {
+  test('finds a line or station by a string that may be its id, with its name; none it does not have', () => {
     const facts = factsOf();
-    expect(facts.find('line', 'red')).toEqual({ id: 'red', name: 'Red' });
-    expect(facts.find('station', 'a')).toEqual({ id: 'a', name: 'A' });
-    expect(facts.find('station', 'red')).toBeNull();
-    expect(facts.find('line', 'nowhere')).toBeNull();
+    expect(facts.findLine('red')).toEqual({ id: 'red', name: 'Red' });
+    expect(facts.findStation('a')).toEqual({ id: 'a', name: 'A' });
+    expect(facts.findStation('red')).toBeNull();
+    expect(facts.findLine('a')).toBeNull();
+    expect(facts.findLine('nowhere')).toBeNull();
+    // A key every object has is no line's.
+    expect(facts.findLine('constructor')).toBeNull();
   });
 
   test('has a history when some year has a station, and none for a network never built', () => {
     expect(factsOf().hasHistory()).toBe(true);
     expect(factsOf().planOnly).toBe(false);
-    const planOnly = NetworkFacts.create(planOnlyNetwork(), { plan: 'first', today: TODAY });
+    const planOnly = NetworkFacts.create(planOnlyNetwork(), { plan: planId('first'), today: TODAY });
     expect(planOnly.hasHistory()).toBe(false);
     expect(planOnly.planOnly).toBe(true);
   });
 
   test('lists every plan with what it would add, whichever plan is built', () => {
-    const plans = factsOf('extension').plans();
+    const plans = factsOf(planId('extension')).plans();
     expect(plans).toEqual(factsOf().plans());
     expect(plans.map(plan => plan.id)).toEqual(Object.keys(tinyNetwork().plans ?? {}));
     expect(plans[0]?.facts.stations).toBeGreaterThan(0);
   });
 
   test('sums the network up as stored, whichever plan is built', () => {
-    expect(factsOf('extension').summary()).toEqual(factsOf().summary());
+    expect(factsOf(planId('extension')).summary()).toEqual(factsOf().summary());
     expect(factsOf().summary()).toMatchObject({ plans: Object.keys(tinyNetwork().plans ?? {}).length, planOnly: false });
   });
 
@@ -159,14 +164,14 @@ describe('NetworkFacts', () => {
     expect(
       facts
         .asOf(facts.playheads.on(toTimestamp('1935-01-01')))
-        .directions('c')
-        .get('red'),
+        .directions(stationId('c'))
+        .get(lineId('red')),
     ).toEqual([{ previous: { id: 'b', name: 'B', towards: 'A' }, next: { id: 'd', name: 'D', towards: null } }]);
   });
 
   test('builds a plan on the network: its changes play last', () => {
     const plain = factsOf();
-    const planned = factsOf('extension');
+    const planned = factsOf(planId('extension'));
     expect(planned.plan).toBe('extension');
     expect(planned.changes().length).toBeGreaterThan(plain.changes().length);
     const changes = planned.changes();
@@ -202,7 +207,7 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test("gives a line's stops in order under the names of the date, its length and the changes that made it", () => {
     const { queries, facts } = queriesOn('1915-01-01');
-    const red = queries.line('red');
+    const red = queries.line(lineId('red'));
     expect(red.branches).toEqual([
       [
         { id: 'a', name: 'A' },
@@ -213,13 +218,13 @@ describe('NetworkFacts questions, at a moment', () => {
     expect(red).toMatchObject({ stations: 3, color: { light: '#ff0000', dark: '#ff0000' } });
     expect(red.km).toBeCloseTo(3, 1);
     expect(red.changes.map(change => facts.engine.timeline.steps[change]?.kind)).toContain('open');
-    expect(() => queries.line('purple')).toThrow('Missing line purple');
+    expect(() => queries.line(lineId('purple'))).toThrow('Missing line purple');
   });
 
   test("tells a station's lines with their dates, its names then, and where it changes to", () => {
     const { queries } = queriesOn('1935-01-01');
     // Green reaches D only after D closed: it passes D by, and is not one of its lines.
-    expect(queries.station('d')).toEqual({
+    expect(queries.station(stationId('d'))).toEqual({
       id: 'd',
       name: 'D',
       otherNames: ['Д'],
@@ -230,10 +235,10 @@ describe('NetworkFacts questions, at a moment', () => {
     });
     // Before it was renamed: its old name, no former ones.
     const early = queriesOn('1915-01-01');
-    expect(early.queries.station('d')).toMatchObject({ name: 'Old D', formerNames: [] });
+    expect(early.queries.station(stationId('d'))).toMatchObject({ name: 'Old D', formerNames: [] });
     // A line whose track there closed has closed there; an infill station opened on a line on its own date.
     const later = queriesOn('1955-01-01');
-    expect(later.queries.station('c').lines).toEqual([
+    expect(later.queries.station(stationId('c')).lines).toEqual([
       { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1920-06-01', calls: true },
       { id: 'green', name: 'Green line', color: { light: '#00aa00', dark: '#00aa00' }, opened: '1970-01-01', calls: false },
     ]);
@@ -241,7 +246,7 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test('makes no transfer to a station no line calls at yet', () => {
     const { queries } = queriesOn('1905-01-01');
-    expect(queries.station('a').transfers).toEqual([]);
+    expect(queries.station(stationId('a')).transfers).toEqual([]);
   });
 
   test('lists the stations a line calls at for a search, by name, with their colours', () => {
@@ -276,18 +281,18 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test("finds a route with the stops' names of the date, and none where nothing runs", () => {
     const { queries } = queriesOn('1935-01-01');
-    const [route] = queries.routes('a', 'd');
+    const [route] = queries.routes(stationId('a'), stationId('d'));
     expect(route).toMatchObject({ from: { id: 'a', name: 'A' }, to: { id: 'd', name: 'D' }, changes: 0 });
     expect(route?.legs).toEqual([expect.objectContaining({ kind: 'ride', line: 'red', lineName: 'Red line', color: { light: '#ff0000', dark: '#ff0000' } })]);
     expect(route?.segments).toEqual([[0, 1, 2]]);
     expect(route?.best).toEqual(['fastest']);
     const before = queriesOn('1899-06-01');
-    expect(before.queries.routes('a', 'd')).toEqual([]);
+    expect(before.queries.routes(stationId('a'), stationId('d'))).toEqual([]);
   });
 
   test('offers the ways between two stations fastest first, each with what it is best at', () => {
     const facts = NetworkFacts.create(routeNetwork(), { today: toTimestamp('2026-01-01') });
-    const routes = facts.asOf(facts.playheads.today()).routes('a', 'e');
+    const routes = facts.asOf(facts.playheads.today()).routes(stationId('a'), stationId('e'));
     expect(routes.map(route => route.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk')))).toEqual([
       ['red', 'blue'],
       ['red', 'walk', 'green'],
@@ -298,18 +303,18 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test('times every station from one, soonest first, each in its band; nothing from a station no line calls at', () => {
     const { queries } = queriesOn('1935-01-01');
-    const reach = queries.reach('a');
+    const reach = queries.reach(stationId('a'));
     expect(reach?.from).toEqual({ id: 'a', name: 'A' });
     expect(reach?.stations.map(station => station.id)).toEqual(['b', 'c', 'd']);
     expect(reach?.stations.every(station => station.band === 0)).toBe(true);
     const before = queriesOn('1899-06-01');
-    expect(before.queries.reach('a')).toBeNull();
+    expect(before.queries.reach(stationId('a'))).toBeNull();
   });
 
   test('colours the track a reach gets along, each segment once in its band, only track open at the moment', () => {
-    expect(queriesOn('1935-01-01').queries.reach('a')?.track).toEqual([0, 1, 2].map(segment => ({ segment, band: 0 })));
+    expect(queriesOn('1935-01-01').queries.reach(stationId('a'))?.track).toEqual([0, 1, 2].map(segment => ({ segment, band: 0 })));
     // Only A–B is open in 1905.
-    expect(queriesOn('1905-01-01').queries.reach('a')?.track).toEqual([{ segment: 0, band: 0 }]);
+    expect(queriesOn('1905-01-01').queries.reach(stationId('a'))?.track).toEqual([{ segment: 0, band: 0 }]);
   });
 
   test('tells how the network grew, worked out once, and its records on the date', () => {
@@ -333,10 +338,10 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test('says a line does not call at a station through a spell closed, and does again after', () => {
     const network = tinyNetwork();
-    network.stations.b = { ...network.stations.b!, suspended: { red: [{ from: '1915-03-15', until: '1926-07-19' }] } };
+    network.stations[stationId('b')] = { ...network.stations[stationId('b')]!, suspended: { [lineId('red')]: [{ from: '1915-03-15', until: '1926-07-19' }] } };
     const callsAt = (date: string) =>
       questionsOn(plainFactsOf(network), toTimestamp(date))
-        .station('b')
+        .station(stationId('b'))
         .lines.find(line => line.id === 'red')?.calls;
     expect(['1915-01-01', '1920-01-01', '1930-01-01'].map(callsAt)).toEqual([true, false, true]);
   });
@@ -344,7 +349,7 @@ describe('NetworkFacts questions, at a moment', () => {
   test('dates a line closed at a station when all its track there has, before 1970 too', () => {
     // Blue left B – C in 1950, after a spell away in the 1940s.
     const { queries } = queriesOn('1955-01-01');
-    expect(queries.station('b').lines).toEqual([
+    expect(queries.station(stationId('b')).lines).toEqual([
       { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: '1900-01-01', calls: true },
       { id: 'pink', name: 'Pink line', color: { light: '#ff88cc', dark: '#ff88cc' }, opened: '1900-01-01', calls: true },
       { id: 'blue', name: 'Blue line', color: { light: '#0000ff', dark: '#0000ff' }, opened: '1930-01-01', closed: '1950-01-01', calls: false },
@@ -352,17 +357,19 @@ describe('NetworkFacts questions, at a moment', () => {
   });
 
   test("lists a plan's undated line at a station of its own, and a former name from the day it was dropped", () => {
-    const queries = questionsOn(plainFactsOf(tinyNetwork(), 'extension'), 'end');
-    expect(queries.station('e').lines).toEqual([{ id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: null, calls: true }]);
+    const queries = questionsOn(plainFactsOf(tinyNetwork(), planId('extension')), 'end');
+    expect(queries.station(stationId('e')).lines).toEqual([
+      { id: 'red', name: 'Red line', color: { light: '#ff0000', dark: '#ff0000' }, opened: null, calls: true },
+    ]);
     const renamed = queriesOn('1925-01-01');
-    expect(renamed.queries.station('d').formerNames.map(former => former.name)).toEqual(['Old D']);
+    expect(renamed.queries.station(stationId('d')).formerNames.map(former => former.name)).toEqual(['Old D']);
   });
 
   test("keeps a line's changes to its own", () => {
     const { queries, facts } = queriesOn('1935-01-01');
     const blueOpens = facts.engine.timeline.steps.find(step => step.kind === 'open' && step.line === 'blue')!.index;
-    expect(queries.line('red').changes).not.toContain(blueOpens);
-    expect(queries.line('blue').changes).toContain(blueOpens);
+    expect(queries.line(lineId('red')).changes).not.toContain(blueOpens);
+    expect(queries.line(lineId('blue')).changes).toContain(blueOpens);
   });
 
   test('ranks the records: oldest by year then name, busiest by lines, longest by km, lines with no track left out', () => {
@@ -381,7 +388,7 @@ describe('NetworkFacts questions, at a moment', () => {
 
   test('lists stations for a search by their names, not their ids', () => {
     const network = tinyNetwork();
-    network.stations.a!.name = 'Zed';
+    network.stations[stationId('a')]!.name = 'Zed';
     const queries = questionsOn(plainFactsOf(network), toTimestamp('1935-01-01'));
     expect(queries.stations().map(station => station.name)).toEqual(['B', 'C', 'D', 'Zed']);
   });
@@ -390,7 +397,7 @@ describe('NetworkFacts questions, at a moment', () => {
 describe('FactsUtils', () => {
   describe('planFacts', () => {
     test('counts the stations and track a plan adds, and the lines it builds', () => {
-      const facts = planFacts(planOnlyNetwork(), 'first');
+      const facts = planFacts(planOnlyNetwork(), planId('first'));
       expect(facts.stations).toBe(3);
       // A–B is 0.01° of longitude at 50° N, B–C a little more: about 2 km in all.
       expect(facts.km).toBeGreaterThan(1.8);
@@ -424,15 +431,15 @@ describe('FactsUtils', () => {
 
   describe('reachedSegments', () => {
     const segments = [
-      { index: 0, stationA: 'a', stationB: 'b' },
-      { index: 1, stationA: 'b', stationB: 'c' },
-      { index: 2, stationA: 'x', stationB: 'y' },
+      { index: 0, stationA: stationId('a'), stationB: stationId('b') },
+      { index: 1, stationA: stationId('b'), stationB: stationId('c') },
+      { index: 2, stationA: stationId('x'), stationB: stationId('y') },
     ];
 
     test('times a segment by the mean of its ends, or its one end reached', () => {
       const minutes = new Map([
-        ['a', 0],
-        ['b', 10],
+        [stationId('a'), 0],
+        [stationId('b'), 10],
       ]);
       expect(reachedSegments(minutes, segments)).toEqual([
         { segment: 0, minutes: 5 },

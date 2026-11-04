@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'vitest';
-import type { Network } from '../../../src/format/network.types';
 import { parseNetwork } from '../../../src/validation/network.schema';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
+import type { WrittenNetwork } from '../../support/ids.utils';
 
 /**
  * The problems the validator reports.
  *
- * @param network - A network.
+ * @param network - A network, as its file is written.
  * @returns Each problem's message; none for a valid network.
  */
-const problemsOf = (network: Network): string[] => {
+const problemsOf = (network: WrittenNetwork): string[] => {
   try {
     parseNetwork(network);
     return [];

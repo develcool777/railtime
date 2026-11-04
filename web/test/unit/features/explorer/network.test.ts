@@ -1,5 +1,6 @@
 import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { lineId, planId } from '@railtime/schema/testing/ids';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { useNetworkStore } from '~/features/explorer/network.store';
@@ -29,9 +30,9 @@ describe('NetworkStore', () => {
   test('hides lines and shows them again, keeping the plan picked', () => {
     const network = useNetworkStore();
     network.OPEN(tinyNetwork(), 'extension');
-    network.SHOW_LINES(['blue', 'green'], false);
+    network.SHOW_LINES([lineId('blue'), lineId('green')], false);
     expect(network.hidden).toEqual(['blue', 'green']);
-    network.SHOW_LINES(['blue'], true);
+    network.SHOW_LINES([lineId('blue')], true);
     expect(network.hidden).toEqual(['green']);
     expect(network.pickedPlan).toBe('extension');
   });
@@ -39,8 +40,8 @@ describe('NetworkStore', () => {
   test('shows another plan with the same lines hidden, or the network as built', () => {
     const network = useNetworkStore();
     network.OPEN(tinyNetwork(), undefined);
-    network.SHOW_LINES(['green'], false);
-    network.SHOW_PLAN('extension');
+    network.SHOW_LINES([lineId('green')], false);
+    network.SHOW_PLAN(planId('extension'));
     expect(network.plan).toBe('extension');
     expect(network.hidden).toEqual(['green']);
     network.SHOW_PLAN(undefined);

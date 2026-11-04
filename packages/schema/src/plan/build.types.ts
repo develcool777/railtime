@@ -1,12 +1,12 @@
-import type { Network, Segment } from '../format/network.types';
+import type { LineId, Network, Segment, StationId } from '../format/network.types';
 
 /** What one section of a plan builds. */
 export type BuiltSection = {
-  line: string;
+  line: LineId;
   /** The segments the line runs over from this section on, by position in the built network's `segments`. */
   segments: number[];
   /** New stations it stands on track the line already ran over: they open on the line with it. */
-  infills: string[];
+  infills: StationId[];
 };
 
 /** A plan built on its network: the track it needs, and what each section opens, in order. Undated. */
@@ -21,7 +21,7 @@ export type BuiltPlan = {
 };
 
 /** A section being built: its line, the segments it puts the line on, and its infill stations. */
-export type SectionWorks = { line: string; segments: Segment[]; infills: string[] };
+export type SectionWorks = { line: LineId; segments: Segment[]; infills: StationId[] };
 
 /** A way a track runs, as a step of 1 km: east, then north. */
 export type Heading = [number, number];

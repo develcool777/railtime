@@ -2,6 +2,7 @@ import type { LngLat } from '@railtime/core/geometry.types';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
 import type { SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import { CLOSE_HOLD_SECONDS, GROWTH_PACE, MIN_DRAW_SECONDS, OPEN_HOLD_SECONDS, STEP_TIMES } from './animation.constants';
 import type { StepContext, StepDrawing, StepFrame, Stretch } from './animation.types';
 import { arrivalSeconds, chaseAlong, frontKmAt, growthSeconds, stretchOf } from './animation.utils';
@@ -196,7 +197,7 @@ export class StepAnimation {
    */
   private linkTransfers(frame: StepFrame, drawing: StepDrawing): void {
     const { index } = this.context;
-    const onMap = (station: string) => frame.snapshot.stations.has(station) || drawing.reached.has(station);
+    const onMap = (station: StationId) => frame.snapshot.stations.has(station) || drawing.reached.has(station);
     for (const station of drawing.reached.keys()) {
       for (const other of index.transfersAt(station)) {
         const known = frame.snapshot.linked.has(station) && frame.snapshot.linked.has(other);
@@ -267,11 +268,11 @@ export class StepAnimation {
    * @param station - The station id.
    * @param line - The line reaching it.
    */
-  private reach(frame: StepFrame, drawing: StepDrawing, station: string, line: string): void {
+  private reach(frame: StepFrame, drawing: StepDrawing, station: StationId, line: LineId): void {
     const { state } = frame;
     if (!state.timeline.servesStation(station, line, state.cursor)) return;
     const resolved = resolveLine(state, line);
-    const served = drawing.reached.get(station) ?? new Map<string, string>();
+    const served = drawing.reached.get(station) ?? new Map<LineId, string>();
     served.set(resolved.id, resolved.color);
     drawing.reached.set(station, served);
   }

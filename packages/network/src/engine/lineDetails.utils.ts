@@ -1,12 +1,13 @@
 import { pushTo } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { LineSegment, Step } from './engine.types';
 import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';
-import type { LineDetails, LineDirection, StopToward } from '../facts/facts.types';
+import type { LineDetails, LineDirection, Stop, StopToward } from '../facts/facts.types';
 
 /** A line's track at a cursor, as a graph: each station's neighbours on it, with the km between. */
-type LineGraph = Map<string, { to: string; km: number; edge: number }[]>;
+type LineGraph = Map<StationId, { to: StationId; km: number; edge: number }[]>;
 
 /**
  * A line's open track at a cursor, as a graph of stations.
@@ -17,11 +18,11 @@ type LineGraph = Map<string, { to: string; km: number; edge: number }[]>;
  * @param cursor - The cursor.
  * @returns The graph, and the line segments in it.
  */
-const lineGraph = (index: NetworkIndex, timeline: Timeline, line: string, cursor: number): { graph: LineGraph; open: LineSegment[] } => {
+const lineGraph = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): { graph: LineGraph; open: LineSegment[] } => {
   const open = index.lineSegments.filter(lineSegment => lineSegment.line === line && timeline.isOpen(lineSegment, cursor));
   const graph: LineGraph = new Map();
   for (const [edge, { segment }] of open.entries()) {
-    const link = (from: string, to: string) => pushTo(graph, from, { to, km: segment.lengthKm, edge });
+    const link = (from: StationId, to: StationId) => pushTo(graph, from, { to, km: segment.lengthKm, edge });
     link(segment.stationA, segment.stationB);
     link(segment.stationB, segment.stationA);
   }
@@ -36,9 +37,9 @@ const lineGraph = (index: NetworkIndex, timeline: Timeline, line: string, cursor
  * @param used - Edges already listed.
  * @returns The run's stations and edges, and its length.
  */
-const longestRun = (graph: LineGraph, start: string, used: Set<number>): { stations: string[]; edges: number[]; km: number } => {
+const longestRun = (graph: LineGraph, start: StationId, used: Set<number>): { stations: StationId[]; edges: number[]; km: number } => {
   let best = { stations: [start], edges: [] as number[], km: 0 };
-  const walk = (stations: string[], edges: number[], km: number) => {
+  const walk = (stations: StationId[], edges: number[], km: number) => {
     if (km > best.km) best = { stations, edges, km };
     // Within bounds: a run is never empty.
     const here = stations.at(-1)!;
@@ -61,12 +62,12 @@ const longestRun = (graph: LineGraph, start: string, used: Set<number>): { stati
  * @param cursor - The cursor: the track open then.
  * @returns Each run's stations, the line's stops only; a branch's first is the station it leaves from.
  */
-export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: string, cursor: number): string[][] => {
+export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): StationId[][] => {
   const { graph, open } = lineGraph(index, timeline, line, cursor);
-  const serves = (station: string) => timeline.servesStation(station, line, cursor);
+  const serves = (station: StationId) => timeline.servesStation(station, line, cursor);
   const used = new Set<number>();
-  const listed = new Set<string>();
-  const runs: string[][] = [];
+  const listed = new Set<StationId>();
+  const runs: StationId[][] = [];
   while (used.size < open.length) {
     const unlisted = [...graph.keys()].filter(station => graph.get(station)?.some(next => !used.has(next.edge)));
     const ends = unlisted.filter(station => graph.get(station)?.length === 1);
@@ -82,7 +83,8 @@ export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: stri
     );
     for (const edge of run.edges) used.add(edge);
     // A loop closes where it began, or on itself (a line out to a loop and round it): the run says so.
-    const last = run.stations.at(-1) ?? '';
+    // Within bounds: a run is never empty.
+    const last = run.stations.at(-1)!;
     const closing = graph.get(last)?.find(next => !used.has(next.edge) && run.stations.includes(next.to));
     if (closing) {
       used.add(closing.edge);
@@ -107,7 +109,7 @@ export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: stri
  * @param cursor - The cursor.
  * @returns Its length, km.
  */
-export const lineLengthKm = (index: NetworkIndex, timeline: Timeline, line: string, cursor: number): number =>
+export const lineLengthKm = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): number =>
   lineGraph(index, timeline, line, cursor).open.reduce((total, { segment }) => total + segment.lengthKm, 0);
 
 /**
@@ -118,7 +120,7 @@ export const lineLengthKm = (index: NetworkIndex, timeline: Timeline, line: stri
  * @param line - The line id.
  * @returns True if the step is part of the line's story.
  */
-export const stepChangesLine = (step: Step, line: string): boolean => {
+export const stepChangesLine = (step: Step, line: LineId): boolean => {
   if (step.kind === 'open' || step.kind === 'close') return step.line === line || step.lineSegments.some(lineSegment => lineSegment.line === line);
   if (step.kind === 'rename') return false;
   return step.lines.includes(line);
@@ -131,7 +133,7 @@ export const stepChangesLine = (step: Step, line: string): boolean => {
  * @param end - The end of the line that way.
  * @returns The stop toward its end, or `null` for none.
  */
-const toward = (stop: { id: string; name: string } | undefined, end: { name: string } | undefined): StopToward | null =>
+const toward = (stop: Stop | undefined, end: { name: string } | undefined): StopToward | null =>
   stop ? { id: stop.id, name: stop.name, towards: end && end.name !== stop.name ? end.name : null } : null;
 
 /**
@@ -143,7 +145,7 @@ const toward = (stop: { id: string; name: string } | undefined, end: { name: str
  * @param line - The line on the date shown, with its stops.
  * @returns Each pair, in the line's order; none where the line does not call.
  */
-export const directionsAt = (station: string, line: LineDetails): LineDirection[] => {
+export const directionsAt = (station: StationId, line: LineDetails): LineDirection[] => {
   const found: LineDirection[] = [];
   for (const run of line.branches) {
     for (const [place, stop] of run.entries()) {

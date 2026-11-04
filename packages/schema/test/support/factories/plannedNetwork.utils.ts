@@ -1,12 +1,12 @@
-import type { Network } from '../../../src/format/network.types';
+import type { WrittenNetwork } from '../ids.utils';
 
 /**
  * A line A–C open since 1900, with one plan, `extension`: a new station B between A and C, then the
  * line on to a new station D, with a transfer from D to C.
  *
- * @returns The network.
+ * @returns The network, as its file is written.
  */
-export const plannedNetwork = (): Network => ({
+export const plannedNetwork = (): WrittenNetwork => ({
   meta: { city: 'Test', country: 'Testland', start: '1899-01-01', built: '2026-01-01', attribution: '' },
   networks: { metro: { name: 'Metro' } },
   lines: { red: { name: 'Red', network: 'metro', mode: 'metro', color: '#ff0000' } },

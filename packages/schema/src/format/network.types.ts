@@ -1,3 +1,4 @@
+import type { Brand } from '@railtime/core/brand.types';
 import type { IsoDate } from '@railtime/core/date.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 
@@ -7,6 +8,18 @@ import type { LngLat } from '@railtime/core/geometry.types';
  *
  * Dates are ISO `YYYY-MM-DD` strings. Coordinates are `[longitude, latitude]`.
  */
+
+/** A station's id, its key in `stations`: only a string checked to be one is (`parseNetwork`, a station looked up). */
+export type StationId = Brand<string, 'StationId'>;
+
+/** A line's id, its key in `lines`: only a string checked to be one is (`parseNetwork`, a line looked up). */
+export type LineId = Brand<string, 'LineId'>;
+
+/** A network's id, its key in `networks`: a family of lines run as one brand. */
+export type NetworkId = Brand<string, 'NetworkId'>;
+
+/** A plan's id, its key in `plans`. */
+export type PlanId = Brand<string, 'PlanId'>;
 
 /**
  * Names in languages other than English, by BCP 47 language code (`uk`, `pt-BR`). The English name
@@ -33,7 +46,7 @@ export type NetworkInfo = {
 /** Until `until`, the line is drawn and named as line `as`: a branch shown as its parent line until it became its own. */
 export type LineAlias = {
   until: IsoDate;
-  as: string;
+  as: LineId;
   /** Shown when the line takes on its own identity. */
   text: string;
 };
@@ -46,7 +59,7 @@ export type Line = {
   fullName?: string;
   /** Its name in other languages, in full as people say it there: "Святошинсько-Броварська лінія". */
   names?: Names;
-  network: string;
+  network: NetworkId;
   mode: Mode;
   color: string;
   /** Used on dark backgrounds where `color` would disappear (a black line). */
@@ -71,15 +84,15 @@ export type Station = {
   names?: Names;
   coordinate: LngLat;
   /** Lines this station opened on after the line was already running through it: line id to date. */
-  infill?: Record<string, IsoDate>;
+  infill?: Record<LineId, IsoDate>;
   /** Lines that stopped calling here while still running through: line id to date. */
-  closed?: Record<string, IsoDate>;
+  closed?: Record<LineId, IsoDate>;
   /** Spells a line ran through here without calling, the station closed for a while: line id to its spells, oldest first. */
-  suspended?: Record<string, Suspension[]>;
+  suspended?: Record<LineId, Suspension[]>;
   /** Lines that run through here and never call: a line's fast track beside another's stopping one. */
-  passes?: string[];
+  passes?: LineId[];
   /** Lines whose trains end here and go back the way they came, from two directions: their track may turn back at it. */
-  reverses?: string[];
+  reverses?: LineId[];
   /** Its earlier names, oldest first. */
   formerNames?: FormerName[];
 };
@@ -102,28 +115,28 @@ export type SegmentLine = {
 
 /** Track between two adjacent stations, shared by every line that runs over it. */
 export type Segment = {
-  stationA: string;
-  stationB: string;
+  stationA: StationId;
+  stationB: StationId;
   /** From station A to station B. */
   coordinates: LngLat[];
-  lines: Record<string, SegmentLine>;
+  lines: Record<LineId, SegmentLine>;
 };
 
 /** Two stations, each its own stop with its own name, that passengers change between (Bank and Monument). */
 export type Transfer = {
-  stationA: string;
-  stationB: string;
+  stationA: StationId;
+  stationB: StationId;
 };
 
 /** A stretch of line a plan builds, through its stations in order. */
 export type PlanSection = {
-  line: string;
+  line: LineId;
   /**
    * Station ids: the network's or the plan's. A new station between two neighbours on the line's
    * track stands on that track; anywhere else, the section runs from station to station over the
    * plan's track between them (`Plan.track`), straight where it has none.
    */
-  stations: string[];
+  stations: StationId[];
 };
 
 /**
@@ -132,8 +145,8 @@ export type PlanSection = {
  * sharper than its trains can.
  */
 export type PlanTrack = {
-  stationA: string;
-  stationB: string;
+  stationA: StationId;
+  stationB: StationId;
   /** From station A to station B. */
   coordinates: LngLat[];
 };
@@ -154,8 +167,8 @@ export type Plan = {
   status: PlanStatus;
   /** What it is, who drew it up and how far it got: shown on its card. */
   description?: string;
-  lines?: Record<string, Line>;
-  stations?: Record<string, Station>;
+  lines?: Record<LineId, Line>;
+  stations?: Record<StationId, Station>;
   sections: PlanSection[];
   /** Where its new track runs, between stations its sections link with no track yet; straight between any others. */
   track?: PlanTrack[];
@@ -173,12 +186,12 @@ export type Network = {
     built: IsoDate;
     attribution: string;
   };
-  networks: Record<string, NetworkInfo>;
-  lines: Record<string, Line>;
-  stations: Record<string, Station>;
+  networks: Record<NetworkId, NetworkInfo>;
+  lines: Record<LineId, Line>;
+  stations: Record<StationId, Station>;
   segments: Segment[];
   /** Changes between stations that are not one station: drawn linked, wherever both are open. */
   transfers?: Transfer[];
   /** Its plans, by id: none is part of the network until chosen (see `buildPlan`). */
-  plans?: Record<string, Plan>;
+  plans?: Record<PlanId, Plan>;
 };

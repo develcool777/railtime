@@ -1,3 +1,4 @@
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { StopSteps } from './stops.types';
 
 /**
@@ -8,7 +9,7 @@ import type { StopSteps } from './stops.types';
  */
 export class StationStops {
   /** By station, then line. */
-  private readonly stops = new Map<string, Map<string, StopSteps>>();
+  private readonly stops = new Map<StationId, Map<LineId, StopSteps>>();
 
   /**
    * A line's stops at a station, made the first time one is set.
@@ -17,8 +18,8 @@ export class StationStops {
    * @param line - The line id.
    * @returns Its record, to set in place.
    */
-  public stopOf(station: string, line: string): StopSteps {
-    const byLine = this.stops.get(station) ?? new Map<string, StopSteps>();
+  public stopOf(station: StationId, line: LineId): StopSteps {
+    const byLine = this.stops.get(station) ?? new Map<LineId, StopSteps>();
     this.stops.set(station, byLine);
     const stop = byLine.get(line) ?? { opens: -1, closes: Infinity, never: false, spells: [] };
     byLine.set(line, stop);
@@ -35,7 +36,7 @@ export class StationStops {
    * @param cursor - The cursor.
    * @returns True if the station is a stop on the line.
    */
-  public serves(station: string, line: string, cursor: number): boolean {
+  public serves(station: StationId, line: LineId, cursor: number): boolean {
     const stop = this.stops.get(station)?.get(line);
     if (!stop) return true;
     const inSpell = stop.spells.some(spell => spell.closes < cursor && cursor <= spell.reopens);
@@ -49,7 +50,7 @@ export class StationStops {
    * @param line - The line id.
    * @returns False if it never does.
    */
-  public ever(station: string, line: string): boolean {
+  public ever(station: StationId, line: LineId): boolean {
     return !this.stops.get(station)?.get(line)?.never;
   }
 }

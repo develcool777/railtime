@@ -50,13 +50,14 @@
 <script setup lang="ts">
   import { toTimestamp, yearOf } from '@railtime/core/date.utils';
   import type { LineDirection, StationInfo } from '@railtime/network/facts.types';
+  import type { LineId, StationId } from '@railtime/schema/network.types';
   import { stripAround } from '~/features/explorer/stations/station.utils';
   import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
     station: StationInfo;
     /** The stops either side of it on each of its lines, on the date shown, by line. */
-    directions: Map<string, LineDirection[]>;
+    directions: Map<LineId, LineDirection[]>;
   }>();
-  const emit = defineEmits<{ select: [station: string]; line: [line: string] }>();
+  const emit = defineEmits<{ select: [station: StationId]; line: [line: LineId] }>();
 </script>

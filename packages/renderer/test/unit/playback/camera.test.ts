@@ -1,5 +1,6 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import {
   CHASE_GLIDE_KM,
@@ -34,7 +35,7 @@ const stepAfter = (date: string) => {
   playback.player.seek(playback.facts.playheads.on(toTimestamp(date)));
   playback.player.skip();
   const fake = fakeMap();
-  const coordOf = (station: string) => playback.index.coordOf(station);
+  const coordOf = (station: string) => playback.index.coordOf(stationId(station));
   // The props the camera reads: changed here as the app would change them.
   const settings: CameraSettings = { padding: PADDING, camera: 'follow', viewMode: '2d' };
   const camera = new CameraDirector(fake.map, () => settings);
@@ -131,7 +132,7 @@ describe('CameraDirector', () => {
     expect(fake.moves.map(move => move.kind)).toEqual(['fit']);
     view('3d');
     settings.camera = 'overview';
-    camera.focusStep(animation, new Set(['a']), coordOf, 1000);
+    camera.focusStep(animation, new Set([stationId('a')]), coordOf, 1000);
     camera.follow(targetAt(coordOf('c')), 0.1);
     expect(fake.moves.map(move => move.kind)).toEqual(['fit', 'ease', 'fit']);
   });
@@ -167,7 +168,7 @@ describe('CameraDirector', () => {
   test('frames a step with the network around it in overview, and leaves the camera to the user when free', () => {
     const { fake, camera, settings, animation, coordOf } = stepAfter('1905-01-01');
     settings.camera = 'overview';
-    camera.focusStep(animation, new Set(['a', 'b']), coordOf, 1000);
+    camera.focusStep(animation, new Set([stationId('a'), stationId('b')]), coordOf, 1000);
     expect(fake.moves[0]?.options.maxZoom).toBe(OVERVIEW_MAX_ZOOM);
     // A, west of the step, is in the frame.
     expect((fake.moves[0]!.target as [[number, number]])[0][0]).toBe(coordOf('a')[0]);
@@ -218,7 +219,7 @@ describe('CameraDirector', () => {
 
   test('frames only the change in follow, not the network already on the map', () => {
     const { fake, camera, animation, coordOf } = stepAfter('1905-01-01');
-    camera.focusStep(animation, new Set(['a']), coordOf, 1000);
+    camera.focusStep(animation, new Set([stationId('a')]), coordOf, 1000);
     // B, the stretch's west end, not A.
     expect((fake.moves[0]!.target as [[number, number]])[0][0]).toBe(coordOf('b')[0]);
   });

@@ -1,4 +1,5 @@
 import type { LineInfo, NetworkChoice } from '@railtime/network/facts.types';
+import { lineId, networkId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { lineGroups, titleInLine } from '~/features/explorer/lines/line.utils';
 
@@ -13,9 +14,9 @@ const RED = { light: '#ff0000', dark: '#ff0000' };
  * @returns The line.
  */
 const lineOf = (id: string, network: string, opened: number | null = 0): LineInfo => ({
-  id,
+  id: lineId(id),
   name: id.charAt(0).toUpperCase() + id.slice(1),
-  network,
+  network: networkId(network),
   networkName: network.charAt(0).toUpperCase() + network.slice(1),
   color: RED,
   opened,
@@ -29,9 +30,9 @@ const lineOf = (id: string, network: string, opened: number | null = 0): LineInf
  * @returns The network.
  */
 const choiceOf = (id: string, lines: [string, boolean][]): NetworkChoice => ({
-  id,
+  id: networkId(id),
   name: id.charAt(0).toUpperCase() + id.slice(1),
-  lines: lines.map(([line, shown]) => ({ id: line, name: line.charAt(0).toUpperCase() + line.slice(1), color: RED, shown })),
+  lines: lines.map(([line, shown]) => ({ id: lineId(line), name: line.charAt(0).toUpperCase() + line.slice(1), color: RED, shown })),
 });
 
 /** The networks the lines below are in, every line shown. */

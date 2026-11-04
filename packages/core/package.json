@@ -9,6 +9,7 @@
     "test-unit-ci": "vitest run"
   },
   "exports": {
+    "./brand.types": "./src/brand.types.ts",
     "./collection.utils": "./src/collection.utils.ts",
     "./date.types": "./src/date.types.ts",
     "./date.utils": "./src/date.utils.ts",

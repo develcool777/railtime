@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
   import type { NetworkGrowth, NetworkRecords } from '@railtime/network/facts.types';
+  import type { LineId, StationId } from '@railtime/schema/network.types';
   import { computed, ref } from 'vue';
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
   import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
@@ -77,7 +78,7 @@
     year: number | null;
   }>();
 
-  const emit = defineEmits<{ year: [year: number]; station: [station: string]; line: [line: string] }>();
+  const emit = defineEmits<{ year: [year: number]; station: [station: StationId]; line: [line: LineId] }>();
 
   const METRICS: { label: string; value: GrowthMetric }[] = [
     { label: 'Stations', value: 'stations' },

@@ -46,7 +46,8 @@ facts.planOnly; // never built: only plans
 facts.plans(); // every plan, with what it would add
 facts.summary(); // the city summed up, for a list of cities
 facts.sketch(); // each line's track today (a network never built: its first plan's), for a picture
-facts.find('station', id); // { id, name }, or null
+facts.findStation(id);
+facts.findLine(id); // a string from outside (an address) as an id: { id, name }, or null
 facts.lines();
 facts.changes();
 facts.change(index);
@@ -65,6 +66,13 @@ then.reach(from);
 facts.coverage(boundary).info(cursor);
 facts.coverage(boundary).history();
 ```
+
+An id is its kind's: a `StationId`, a `LineId`, a `NetworkId`, a `PlanId` (`schema`'s format), each a
+string no other string is, so a line's id given where a station's goes does not compile. A string
+becomes one only where it is checked: `parseNetwork` reading a city's file, `findStation`/`findLine`
+and `planToOpen` taking an address's (`isStationIn`, `isLineIn`, `isPlanIn` beneath them). Every answer
+gives ids already typed, and every question takes them; a test names its own (`stationId('a')`,
+`@railtime/schema/testing/ids`).
 
 Every question takes the moment it is about as an argument. A Vue computed over
 `facts.asOf(store.time)` changes when it does, and at no other time: nothing is read only so that

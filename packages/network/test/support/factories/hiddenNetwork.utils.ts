@@ -1,4 +1,5 @@
 import type { Network } from '@railtime/schema/network.types';
+import { lineId, networkId, planId, stationId } from '@railtime/schema/testing/ids';
 import { tinyNetwork } from './tinyNetwork.utils';
 
 /**
@@ -10,30 +11,27 @@ import { tinyNetwork } from './tinyNetwork.utils';
  */
 export const hiddenNetwork = (): Network => {
   const network = tinyNetwork();
-  network.networks.rail = { name: 'Rail', hidden: true };
-  network.lines.grey = { name: 'Grey', network: 'rail', mode: 'suburban-rail', color: '#888888', darkColor: '#bbbbbb' };
-  network.stations.c = { ...network.stations.c!, infill: { ...network.stations.c!.infill, grey: '1955-01-01' } };
-  network.stations.x = { name: 'X', coordinate: [0.0576, 51.5] };
+  network.networks[networkId('rail')] = { name: 'Rail', hidden: true };
+  network.lines[lineId('grey')] = { name: 'Grey', network: networkId('rail'), mode: 'suburban-rail', color: '#888888', darkColor: '#bbbbbb' };
+  network.stations[stationId('c')]!.infill![lineId('grey')] = '1955-01-01';
+  network.stations[stationId('x')] = { name: 'X', coordinate: [0.0576, 51.5] };
   const shared = network.segments.find(segment => segment.stationA === 'c' && segment.stationB === 'd')!;
-  shared.lines.grey = { open: '1950-01-01' };
+  shared.lines[lineId('grey')] = { open: '1950-01-01' };
   network.segments.push({
-    stationA: 'd',
-    stationB: 'x',
+    stationA: stationId('d'),
+    stationB: stationId('x'),
     coordinates: [
       [0.0432, 51.5],
       [0.0576, 51.5],
     ],
-    lines: { grey: { open: '1950-01-01' } },
+    lines: { [lineId('grey')]: { open: '1950-01-01' } },
   });
-  network.transfers = [...(network.transfers ?? []), { stationA: 'a', stationB: 'x' }];
-  network.plans = {
-    ...network.plans,
-    'grey-on': {
-      name: 'Grey on',
-      status: 'proposed',
-      stations: { y: { name: 'Y', coordinate: [0.072, 51.5] } },
-      sections: [{ line: 'grey', stations: ['x', 'y'] }],
-    },
+  network.transfers = [...(network.transfers ?? []), { stationA: stationId('a'), stationB: stationId('x') }];
+  network.plans![planId('grey-on')] = {
+    name: 'Grey on',
+    status: 'proposed',
+    stations: { [stationId('y')]: { name: 'Y', coordinate: [0.072, 51.5] } },
+    sections: [{ line: lineId('grey'), stations: [stationId('x'), stationId('y')] }],
   };
   return network;
 };

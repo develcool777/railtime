@@ -1,5 +1,5 @@
 import { NetworkFacts } from '@railtime/network/facts.service';
-import type { Network } from '@railtime/schema/network.types';
+import type { LineId, Network, PlanId } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, shallowRef } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
@@ -14,7 +14,7 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
   /** The city's network as stored, every plan and line in it. */
   const stored = shallowRef<Network | null>(null);
   /** The plan picked, if any: shown while every line it builds on is, and kept in the address either way. */
-  const pickedPlan = shallowRef<string | undefined>(undefined);
+  const pickedPlan = shallowRef<PlanId | undefined>(undefined);
   /** The network shown, its facts: the plan picked built on it, the lines hidden left out. */
   const facts = shallowRef<NetworkFacts | null>(null);
 
@@ -47,7 +47,7 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
    * @param shownPlan - The plan to show built on it; none for the network as built.
    * @param hiddenLines - The lines to leave out.
    */
-  const MAKE = (shownPlan: string | undefined, hiddenLines: readonly string[]) => {
+  const MAKE = (shownPlan: PlanId | undefined, hiddenLines: readonly LineId[]) => {
     if (!stored.value) return;
     facts.value = markRaw(NetworkFacts.create(stored.value, { ...(shownPlan && { plan: shownPlan }), hidden: hiddenLines }));
   };
@@ -68,7 +68,7 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
    *
    * @param shownPlan - The plan; none for the network as built.
    */
-  const SHOW_PLAN = (shownPlan: string | undefined) => {
+  const SHOW_PLAN = (shownPlan: PlanId | undefined) => {
     pickedPlan.value = shownPlan;
     MAKE(shownPlan, hidden.value);
   };
@@ -80,7 +80,7 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
    * @param ids - The lines.
    * @param shown - Whether to show them.
    */
-  const SHOW_LINES = (ids: readonly string[], shown: boolean) => {
+  const SHOW_LINES = (ids: readonly LineId[], shown: boolean) => {
     MAKE(pickedPlan.value, shown ? hidden.value.filter(id => !ids.includes(id)) : [...new Set([...hidden.value, ...ids])]);
   };
 

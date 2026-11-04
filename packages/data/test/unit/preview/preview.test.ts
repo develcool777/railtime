@@ -45,7 +45,8 @@ describe('PreviewUtils', () => {
       expect(dark.length).toBeGreaterThan(10);
       expect(dark.every(line => !line.dashed)).toBe(true);
       // The network's first line is drawn last, on top.
-      expect(dark.at(-1)?.color).toBe(london.lines[Object.keys(london.lines)[0] ?? '']?.darkColor ?? london.lines[Object.keys(london.lines)[0] ?? '']?.color);
+      const first = Object.values(london.lines)[0];
+      expect(dark.at(-1)?.color).toBe(first?.darkColor ?? first?.color);
     });
 
     test('draws a network never built as its first plan, dashed', () => {

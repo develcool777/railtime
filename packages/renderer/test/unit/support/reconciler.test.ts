@@ -1,5 +1,6 @@
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { PropsReconciler, stateChanges } from '../../../src/support/reconciler.service';
 import { DEFAULT_MAP_PROPS } from '../../../src/transitMap.constants';
@@ -23,7 +24,7 @@ const recording = () => {
 describe('PropsReconciler', () => {
   test('keeps props given before the map is ready, then runs every effect once as it starts', () => {
     const { reconciler, ran } = recording();
-    reconciler.update({ viewMode: '3d', selectedStation: 'a' });
+    reconciler.update({ viewMode: '3d', selectedStation: stationId('a') });
     expect(ran).toEqual([]);
     expect(reconciler.current).toMatchObject({ viewMode: '3d', selectedStation: 'a' });
     reconciler.start();
@@ -44,7 +45,7 @@ describe('PropsReconciler', () => {
     const { reconciler, ran } = recording();
     reconciler.start();
     ran.length = 0;
-    reconciler.update({ selectedStation: 'a', cover: { top: 0, right: 0, bottom: 0, left: 300 } });
+    reconciler.update({ selectedStation: stationId('a'), cover: { top: 0, right: 0, bottom: 0, left: 300 } });
     expect(ran).toEqual(['cover', 'selectedStation']);
   });
 });
@@ -55,10 +56,12 @@ describe('ReconcilerUtils', () => {
       expect(stateChanges(PROPS, { ...PROPS })).toEqual({});
       const current = {
         ...PROPS,
-        overlay: { kind: 'route' as const, from: 'a', to: 'b', option: 0 },
-        focusedLines: ['a', 'b'],
+        overlay: { kind: 'route' as const, from: stationId('a'), to: stationId('b'), option: 0 },
+        focusedLines: ['red', 'blue'].map(lineId),
       };
-      expect(stateChanges(current, { overlay: { option: 0, to: 'b', from: 'a', kind: 'route' }, focusedLines: ['a', 'b'] })).toEqual({});
+      expect(
+        stateChanges(current, { overlay: { option: 0, to: stationId('b'), from: stationId('a'), kind: 'route' }, focusedLines: ['red', 'blue'].map(lineId) }),
+      ).toEqual({});
     });
 
     test('gives only the parts that differ', () => {
@@ -69,8 +72,8 @@ describe('ReconcilerUtils', () => {
     });
 
     test('tells apart a list in another order, a list from none, and an overlay of another kind', () => {
-      const current = { ...PROPS, focusedLines: ['a', 'b'], overlay: { kind: 'reach' as const, from: 'a' } };
-      expect(stateChanges(current, { focusedLines: ['b', 'a'] })).toEqual({ focusedLines: ['b', 'a'] });
+      const current = { ...PROPS, focusedLines: ['red', 'blue'].map(lineId), overlay: { kind: 'reach' as const, from: stationId('a') } };
+      expect(stateChanges(current, { focusedLines: ['blue', 'red'].map(lineId) })).toEqual({ focusedLines: ['blue', 'red'] });
       expect(stateChanges(current, { focusedLines: null })).toEqual({ focusedLines: null });
       expect(stateChanges(current, { overlay: { kind: 'coverage', metres: 800 } })).toEqual({ overlay: { kind: 'coverage', metres: 800 } });
       expect(stateChanges(current, { overlay: null })).toEqual({ overlay: null });

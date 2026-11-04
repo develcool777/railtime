@@ -1,5 +1,6 @@
+import { entriesOf } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
-import type { Station } from '@railtime/schema/network.types';
+import type { Station, StationId } from '@railtime/schema/network.types';
 import type { NetworkIndex } from './index.service';
 import type { StationStops } from './stops.service';
 import type { DayChanges } from './timeline.types';
@@ -14,16 +15,16 @@ import type { DayChanges } from './timeline.types';
  * @param info - The station.
  * @param day - The changes of a day, made the first time asked for.
  */
-const collectStationDays = (index: NetworkIndex, stops: StationStops, station: string, info: Station, day: (time: number) => DayChanges): void => {
-  for (const [line, date] of Object.entries(info.infill ?? {})) {
+const collectStationDays = (index: NetworkIndex, stops: StationStops, station: StationId, info: Station, day: (time: number) => DayChanges): void => {
+  for (const [line, date] of entriesOf(info.infill ?? {})) {
     const time = toTimestamp(date);
     // A station opening where its line had already gone for good is no event: the line passed by before it.
     const lineLater = index.lineSegmentsAt(station).some(lineSegment => lineSegment.line === line && (lineSegment.closes ?? Infinity) > time);
     if (lineLater) day(time).infills.push({ station, line, reopening: false });
     else stops.stopOf(station, line).never = true;
   }
-  for (const [line, date] of Object.entries(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line, temporary: false });
-  for (const [line, spells] of Object.entries(info.suspended ?? {}))
+  for (const [line, date] of entriesOf(info.closed ?? {})) day(toTimestamp(date)).stationCloses.push({ station, line, temporary: false });
+  for (const [line, spells] of entriesOf(info.suspended ?? {}))
     for (const { from, until } of spells) {
       day(toTimestamp(from)).stationCloses.push({ station, line, temporary: true });
       day(toTimestamp(until)).infills.push({ station, line, reopening: true });
@@ -57,8 +58,8 @@ export const collectDays = (index: NetworkIndex, stops: StationStops): Map<numbe
     day(lineSegment.opens).opens.push(lineSegment);
     if (lineSegment.closes !== null) day(lineSegment.closes).closes.push(lineSegment);
   }
-  for (const [station, info] of Object.entries(index.network.stations)) collectStationDays(index, stops, station, info, day);
-  for (const [line, info] of Object.entries(index.network.lines))
+  for (const [station, info] of entriesOf(index.network.stations)) collectStationDays(index, stops, station, info, day);
+  for (const [line, info] of entriesOf(index.network.lines))
     for (const alias of info.aliases ?? []) {
       const time = toTimestamp(alias.until);
       // A line going out as its alias ends comes back as itself: no step says so.

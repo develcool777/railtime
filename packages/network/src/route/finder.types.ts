@@ -1,9 +1,10 @@
+import type { LineId, StationId } from '@railtime/schema/network.types';
 /** A stretch of a route on one line, from where it is boarded to where it is left. */
 export type RideLeg = {
   kind: 'ride';
-  line: string;
+  line: LineId;
   /** Its stops, from the one boarded at to the one left at. */
-  stops: string[];
+  stops: StationId[];
   /** The track it rides, by `TrackSegment.index`. */
   segments: number[];
   km: number;
@@ -11,7 +12,7 @@ export type RideLeg = {
 };
 
 /** A walk between two stations a transfer links. */
-type WalkLeg = { kind: 'walk'; from: string; to: string; minutes: number };
+type WalkLeg = { kind: 'walk'; from: StationId; to: StationId; minutes: number };
 
 /** One part of a route. */
 export type RouteLeg = RideLeg | WalkLeg;
@@ -27,8 +28,8 @@ export type Route = {
   changes: number;
 };
 
-/** Being at a station on a line: a node of the route graph, `<station>|<line>`. */
-export type Place = string;
+/** Being at a station on a line: a node of the route graph, one object for each, so a map keys by it (`RouteFinder.placeOf`). */
+export type Place = { readonly station: StationId; readonly line: LineId };
 
 /** How a place is reached: by riding a segment of track, changing line at a station, or walking a transfer. */
 export type Move = { kind: 'ride'; segment: number; km: number } | { kind: 'change' } | { kind: 'walk' };

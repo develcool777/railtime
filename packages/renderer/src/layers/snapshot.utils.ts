@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { LineSegment } from '@railtime/network/engine.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { FeatureCollection, LineFeature, NetworkSnapshot, PointFeature, StationLines, StationsFound } from './snapshot.types';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
 import { offsetFor, resolveLine } from './style.utils';
@@ -14,7 +15,7 @@ import { offsetFor, resolveLine } from './style.utils';
  * @param stepPlaying - A step is playing at the cursor.
  * @returns The lines on each segment, in side-by-side order.
  */
-const buildSideBySide = (state: RenderState, lineSegments: LineSegment[], resolved: Map<string, ResolvedLine>, stepPlaying: boolean): SideBySide => {
+const buildSideBySide = (state: RenderState, lineSegments: LineSegment[], resolved: Map<LineId, ResolvedLine>, stepPlaying: boolean): SideBySide => {
   const sideBySide: SideBySide = new Map();
   for (const lineSegment of lineSegments) {
     const onMap = state.timeline.isOpen(lineSegment, state.cursor) || (stepPlaying && state.timeline.opensAt(lineSegment, state.cursor));
@@ -35,9 +36,9 @@ const buildSideBySide = (state: RenderState, lineSegments: LineSegment[], resolv
  * @param stations - The stations on the map.
  * @returns The links, and the stations at either end.
  */
-const linkTransfers = (state: RenderState, stations: Map<string, StationLines>): { transfers: LineFeature[]; linked: Set<string> } => {
+const linkTransfers = (state: RenderState, stations: Map<StationId, StationLines>): { transfers: LineFeature[]; linked: Set<StationId> } => {
   const transfers: LineFeature[] = [];
-  const linked = new Set<string>();
+  const linked = new Set<StationId>();
   for (const { stationA, stationB } of state.index.network.transfers ?? []) {
     if (!stations.has(stationA) || !stations.has(stationB)) continue;
     transfers.push(lineFeature([state.index.coordOf(stationA), state.index.coordOf(stationB)], '', 0));
@@ -75,7 +76,7 @@ const addServedStations = (state: RenderState, lineSegment: LineSegment, line: R
   const { segment } = lineSegment;
   for (const station of [segment.stationA, segment.stationB]) {
     if (!state.timeline.servesStation(station, lineSegment.line, state.cursor)) continue;
-    const served = found.stations.get(station) ?? new Map<string, string>();
+    const served = found.stations.get(station) ?? new Map<LineId, string>();
     served.set(line.id, line.color);
     found.stations.set(station, served);
     if (!closing) found.staying.add(station);
@@ -100,11 +101,11 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   const planned: LineFeature[] = [];
   const ghosts: LineFeature[] = [];
   // The lines drawn on each segment: a line drawn as another is drawn once.
-  const drawn = new Map<number, Set<string>>();
+  const drawn = new Map<number, Set<LineId>>();
   const found: StationsFound = { stations: new Map(), staying: new Set(), built: new Set() };
   const { stations } = found;
   const segmentsOnMap = new Set<number>();
-  const linesOnMap = new Set<string>();
+  const linesOnMap = new Set<LineId>();
 
   for (const lineSegment of index.lineSegments) {
     const { segment } = lineSegment;
@@ -113,7 +114,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
     const isPlanned = lineSegment.section !== null;
-    const drawnHere = drawn.get(segment.index) ?? new Set<string>();
+    const drawnHere = drawn.get(segment.index) ?? new Set<LineId>();
     if (!closing && !drawnHere.has(line.id)) {
       drawnHere.add(line.id);
       drawn.set(segment.index, drawnHere);
@@ -162,7 +163,7 @@ export const emptyCollection = <Item>(): FeatureCollection<Item> => ({ type: 'Fe
  * @param planned - A plan's track, not built: drawn dashed.
  * @returns The feature.
  */
-export const lineFeature = (coordinates: LngLat[], color: string, offset: number, highlight = 0, line = '', planned = false): LineFeature => ({
+export const lineFeature = (coordinates: LngLat[], color: string, offset: number, highlight = 0, line: LineId | '' = '', planned = false): LineFeature => ({
   type: 'Feature',
   properties: { color, offset, highlight, line, planned },
   geometry: { type: 'LineString', coordinates },

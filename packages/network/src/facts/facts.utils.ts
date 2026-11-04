@@ -1,10 +1,10 @@
-import { pushTo, firstDifference } from '@railtime/core/collection.utils';
+import { firstDifference, keysOf, pushTo } from '@railtime/core/collection.utils';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances } from '@railtime/core/geometry.utils';
 import { required } from '@railtime/core/required.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
-import type { Network } from '@railtime/schema/network.types';
+import type { LineId, Network, PlanId, StationId } from '@railtime/schema/network.types';
 import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { REACH_BANDS } from './facts.constants.ts';
 import type { LineSketch, NetworkRecords, NetworkSummary, Playhead, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
@@ -28,11 +28,11 @@ const trackKm = (network: Network): number => network.segments.reduce((total, se
  * @param planId - One of its plans.
  * @returns Its new stations and track, and the lines it builds on.
  */
-export const planFacts = (network: Network, planId: string): PlanFacts => {
+export const planFacts = (network: Network, planId: PlanId): PlanFacts => {
   const built = buildPlan(network, planId);
   const lineIds = [...new Set(built.sections.map(section => section.line))];
   return {
-    stations: Object.keys(network.plans?.[planId]?.stations ?? {}).length,
+    stations: keysOf(network.plans?.[planId]?.stations ?? {}).length,
     // Splitting track for a new station keeps its length: what grows is the new track.
     km: Math.max(0, trackKm(built.network) - trackKm(network)),
     lines: lineIds.flatMap(id => {
@@ -51,15 +51,16 @@ export const planFacts = (network: Network, planId: string): PlanFacts => {
  */
 export const networkSummary = (network: Network): NetworkSummary => {
   const planOnly = isPlanOnly(network);
-  const shown = planOnly ? buildPlan(network, firstPlanOf(network) ?? '').network : network;
+  const first = firstPlanOf(network);
+  const shown = planOnly && first !== undefined ? buildPlan(network, first).network : network;
   const opened = network.segments.flatMap(segment => Object.values(segment.lines).map(dates => dates.open)).toSorted(byCodeUnits)[0];
   return {
     networks: Object.values(network.networks).map(brand => brand.name),
     openedYear: opened ? yearOf(toTimestamp(opened)) : null,
     planOnly,
-    plans: Object.keys(network.plans ?? {}).length,
+    plans: keysOf(network.plans ?? {}).length,
     lines: Object.values(shown.lines).filter(line => !line.pseudo).length,
-    stations: Object.keys(shown.stations).length,
+    stations: keysOf(shown.stations).length,
   };
 };
 
@@ -70,10 +71,11 @@ export const networkSummary = (network: Network): NetworkSummary => {
  * @param network - The network.
  * @returns Each segment's coordinates and line ids.
  */
-const sketchedTrack = (network: Network): { coordinates: LngLat[]; lines: string[] }[] => {
+const sketchedTrack = (network: Network): { coordinates: LngLat[]; lines: LineId[] }[] => {
   const openToday = network.segments.filter(segment => Object.values(segment.lines).some(dates => !dates.close));
-  if (openToday.length > 0 || !network.plans) return openToday.map(segment => ({ coordinates: segment.coordinates, lines: Object.keys(segment.lines) }));
-  const built = buildPlan(network, firstPlanOf(network) ?? '');
+  const first = firstPlanOf(network);
+  if (openToday.length > 0 || first === undefined) return openToday.map(segment => ({ coordinates: segment.coordinates, lines: keysOf(segment.lines) }));
+  const built = buildPlan(network, first);
   return built.sections.flatMap(section =>
     // Within bounds: a built section's segments are the built network's.
     section.segments.map(position => ({ coordinates: built.network.segments[position]!.coordinates, lines: [section.line] })),
@@ -88,13 +90,14 @@ const sketchedTrack = (network: Network): { coordinates: LngLat[]; lines: string
  * @returns The track by line, bottom first.
  */
 export const sketchOf = (network: Network): LineSketch[] => {
-  const lines = { ...network.lines, ...network.plans?.[firstPlanOf(network) ?? '']?.lines };
-  const lineOrder = Object.keys(lines);
+  const first = firstPlanOf(network);
+  const lines = { ...network.lines, ...(first !== undefined && network.plans?.[first]?.lines) };
+  const lineOrder = keysOf(lines);
   const dashed = isPlanOnly(network);
-  const byLine = new Map<string, LngLat[][]>();
+  const byLine = new Map<LineId, LngLat[][]>();
   for (const segment of sketchedTrack(network)) {
-    const first = [...segment.lines].toSorted((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other))[0] ?? '';
-    pushTo(byLine, first, segment.coordinates);
+    const [first] = [...segment.lines].toSorted((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other));
+    if (first !== undefined) pushTo(byLine, first, segment.coordinates);
   }
   return [...byLine]
     .toSorted(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))
@@ -124,8 +127,8 @@ export const bandOf = (minutes: number): number => REACH_BANDS.findIndex(entry =
  * @returns The segments reached, with their times.
  */
 export const reachedSegments = (
-  minutes: ReadonlyMap<string, number>,
-  segments: Iterable<{ index: number; stationA: string; stationB: string }>,
+  minutes: ReadonlyMap<StationId, number>,
+  segments: Iterable<{ index: number; stationA: StationId; stationB: StationId }>,
 ): ReachedSegment[] => {
   const reached: ReachedSegment[] = [];
   for (const segment of segments) {
@@ -147,7 +150,7 @@ export const reachedSegments = (
 export const recordsOf = (source: RecordsSource, count: number, moment: Playhead): NetworkRecords => {
   const { index, timeline, firstYears, colorOf } = source;
   const { stations } = networkAt(index, timeline, moment.cursor);
-  const name = (station: string) => index.stationName(station, moment.time);
+  const name = (station: StationId) => index.stationName(station, moment.time);
   const oldest = [...stations.keys()]
     .flatMap(station => {
       const year = firstYears.get(station);
@@ -183,9 +186,9 @@ export const recordsOf = (source: RecordsSource, count: number, moment: Playhead
 export const trackDatesAt = (
   index: NetworkIndex,
   timeline: Timeline,
-  station: string,
-): Map<string, { opened: number; lastClosed: number; allClosed: boolean }> => {
-  const byLine = new Map<string, { opened: number; lastClosed: number; allClosed: boolean }>();
+  station: StationId,
+): Map<LineId, { opened: number; lastClosed: number; allClosed: boolean }> => {
+  const byLine = new Map<LineId, { opened: number; lastClosed: number; allClosed: boolean }>();
   for (const lineSegment of index.lineSegmentsAt(station)) {
     if (!timeline.everServes(station, lineSegment.line)) continue;
     // Timestamps before 1970 are negative: the latest close starts below any of them.

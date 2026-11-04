@@ -3,11 +3,12 @@ import { byCodeUnits } from '@railtime/core/text.utils';
 import { describe, expect, test } from 'vitest';
 import { buildPlan, firstPlanOf, isPlanOnly } from '../../../src/plan/build.utils';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
+import { asNetwork, lineId, networkId, planId, stationId } from '../../support/ids.utils';
 
 describe('PlanBuildUtils', () => {
   describe('buildPlan', () => {
     test('says what each section opens, in order, with no dates', () => {
-      const { network, sections } = buildPlan(plannedNetwork(), 'extension');
+      const { network, sections } = buildPlan(asNetwork(plannedNetwork()), planId('extension'));
       const named = sections.map(section => ({
         ...section,
         segments: section.segments.map(position => `${network.segments[position]!.stationA}-${network.segments[position]!.stationB}`),
@@ -19,7 +20,7 @@ describe('PlanBuildUtils', () => {
     });
 
     test('stands a new station between two neighbours on their track, split where it is nearest and brought to the station, its dates kept', () => {
-      const { network } = buildPlan(plannedNetwork(), 'extension');
+      const { network } = buildPlan(asNetwork(plannedNetwork()), planId('extension'));
       expect(network.segments.map(segment => `${segment.stationA}-${segment.stationB}`)).toEqual(['a-b', 'b-c', 'c-d']);
       expect(network.segments[0]).toEqual({
         stationA: 'a',
@@ -38,7 +39,7 @@ describe('PlanBuildUtils', () => {
     });
 
     test("lays new track the plan says nothing of on from its line's track, with none of its lines dated on it", () => {
-      const { network } = buildPlan(plannedNetwork(), 'extension');
+      const { network } = buildPlan(asNetwork(plannedNetwork()), planId('extension'));
       const [toC, laid] = [network.segments[1]!, network.segments[2]!];
       expect({ ...laid, coordinates: undefined }).toEqual({ stationA: 'c', stationB: 'd', lines: {}, coordinates: undefined });
       expect([laid.coordinates[0], laid.coordinates.at(-1)]).toEqual([
@@ -50,12 +51,12 @@ describe('PlanBuildUtils', () => {
     });
 
     test('curves new track the plan says nothing of through its stations, as its trains run, never turning a corner at one', () => {
-      const network = plannedNetwork();
-      const extension = network.plans!.extension!;
+      const network = asNetwork(plannedNetwork());
+      const extension = network.plans![planId('extension')]!;
       // On from D a right angle to the north, to E.
-      extension.stations!.e = { name: 'E', coordinate: [0.03, 51.509] };
-      extension.sections[1] = { line: 'red', stations: ['c', 'd', 'e'] };
-      const { network: built } = buildPlan(network, 'extension');
+      extension.stations![stationId('e')] = { name: 'E', coordinate: [0.03, 51.509] };
+      extension.sections[1] = { line: lineId('red'), stations: [stationId('c'), stationId('d'), stationId('e')] };
+      const { network: built } = buildPlan(network, planId('extension'));
       const [toD, toE] = [built.segments.find(segment => segment.stationB === 'd')!, built.segments.find(segment => segment.stationA === 'd')!];
       // Into D and out of it on one heading, a curve either side: over the 80 m round D it bends a few degrees, not the right angle a corner would.
       expect(turnDegrees(toD.coordinates.at(-2)!, [0.03, 51.5], toE.coordinates[1]!)).toBeLessThan(15);
@@ -64,61 +65,61 @@ describe('PlanBuildUtils', () => {
     });
 
     test("lays new track where the plan's track runs, given either way round", () => {
-      const network = plannedNetwork();
+      const network = asNetwork(plannedNetwork());
       const bowed: [number, number][] = [
         [0.03, 51.5],
         [0.025, 51.5003],
         [0.02, 51.5],
       ];
-      network.plans!.extension!.track = [{ stationA: 'd', stationB: 'c', coordinates: bowed }];
-      expect(buildPlan(network, 'extension').network.segments[2]).toEqual({ stationA: 'c', stationB: 'd', lines: {}, coordinates: bowed.toReversed() });
+      network.plans![planId('extension')]!.track = [{ stationA: stationId('d'), stationB: stationId('c'), coordinates: bowed }];
+      expect(buildPlan(network, planId('extension')).network.segments[2]).toEqual({ stationA: 'c', stationB: 'd', lines: {}, coordinates: bowed.toReversed() });
     });
 
     test("keeps a section's segments when a later section splits them", () => {
-      const network = plannedNetwork();
-      network.plans!.extension!.stations!.e = { name: 'E', coordinate: [0.025, 51.5] };
-      network.plans!.extension!.stations!.f = { name: 'F', coordinate: [0.04, 51.5] };
-      network.plans!.extension!.sections[1] = { line: 'red', stations: ['c', 'd', 'f'] };
-      network.plans!.extension!.sections.push({ line: 'red', stations: ['c', 'e', 'd'] });
-      const built = buildPlan(network, 'extension');
+      const network = asNetwork(plannedNetwork());
+      network.plans![planId('extension')]!.stations![stationId('e')] = { name: 'E', coordinate: [0.025, 51.5] };
+      network.plans![planId('extension')]!.stations![stationId('f')] = { name: 'F', coordinate: [0.04, 51.5] };
+      network.plans![planId('extension')]!.sections[1] = { line: lineId('red'), stations: [stationId('c'), stationId('d'), stationId('f')] };
+      network.plans![planId('extension')]!.sections.push({ line: lineId('red'), stations: [stationId('c'), stationId('e'), stationId('d')] });
+      const built = buildPlan(network, planId('extension'));
       const ends = (position: number) => `${built.network.segments[position]!.stationA}-${built.network.segments[position]!.stationB}`;
       expect(built.sections[1]!.segments.map(ends)).toEqual(['c-e', 'e-d', 'd-f']);
       expect(built.sections[2]).toMatchObject({ infills: ['e'], segments: [] });
     });
 
     test("adds the plan's lines, stations and transfers to the network's, and drops the plans", () => {
-      const { network } = buildPlan(plannedNetwork(), 'extension');
+      const { network } = buildPlan(asNetwork(plannedNetwork()), planId('extension'));
       expect(Object.keys(network.stations).toSorted(byCodeUnits)).toEqual(['a', 'b', 'c', 'd']);
       expect(network.transfers).toEqual([{ stationA: 'c', stationB: 'd' }]);
       expect(network.plans).toBeUndefined();
-      const withTransfers = plannedNetwork();
-      withTransfers.transfers = [{ stationA: 'a', stationB: 'c' }];
-      expect(buildPlan(withTransfers, 'extension').network.transfers).toEqual([
+      const withTransfers = asNetwork(plannedNetwork());
+      withTransfers.transfers = [{ stationA: stationId('a'), stationB: stationId('c') }];
+      expect(buildPlan(withTransfers, planId('extension')).network.transfers).toEqual([
         { stationA: 'a', stationB: 'c' },
         { stationA: 'c', stationB: 'd' },
       ]);
-      delete withTransfers.plans!.extension!.transfers;
-      expect(buildPlan(withTransfers, 'extension').network.transfers).toEqual([{ stationA: 'a', stationB: 'c' }]);
+      delete withTransfers.plans![planId('extension')]!.transfers;
+      expect(buildPlan(withTransfers, planId('extension')).network.transfers).toEqual([{ stationA: 'a', stationB: 'c' }]);
     });
 
     test('takes the track a line already runs over as it is, whichever way round a section names it', () => {
-      const network = plannedNetwork();
-      network.plans!.extension!.sections = [{ line: 'red', stations: ['c', 'a'] }];
-      const built = buildPlan(network, 'extension');
+      const network = asNetwork(plannedNetwork());
+      network.plans![planId('extension')]!.sections = [{ line: lineId('red'), stations: [stationId('c'), stationId('a')] }];
+      const built = buildPlan(network, planId('extension'));
       expect(built.sections).toEqual([{ line: 'red', infills: [], segments: [] }]);
       expect(built.network.segments).toHaveLength(1);
     });
 
     test("lays new track for a plan's own line past track it does not run on, splitting nothing, with no transfers where there are none", () => {
-      const network = plannedNetwork();
-      network.plans!.extension = {
+      const network = asNetwork(plannedNetwork());
+      network.plans![planId('extension')] = {
         name: 'Green',
         status: 'proposed',
-        lines: { green: { name: 'Green', network: 'metro', mode: 'metro', color: '#00aa00' } },
-        stations: { b: { name: 'B', coordinate: [0.01, 51.501] } },
-        sections: [{ line: 'green', stations: ['a', 'b', 'c'] }],
+        lines: { [lineId('green')]: { name: 'Green', network: networkId('metro'), mode: 'metro', color: '#00aa00' } },
+        stations: { [stationId('b')]: { name: 'B', coordinate: [0.01, 51.501] } },
+        sections: [{ line: lineId('green'), stations: [stationId('a'), stationId('b'), stationId('c')] }],
       };
-      const built = buildPlan(network, 'extension');
+      const built = buildPlan(network, planId('extension'));
       const ends = (position: number) => `${built.network.segments[position]!.stationA}-${built.network.segments[position]!.stationB}`;
       expect(built.sections).toMatchObject([{ line: 'green', infills: [] }]);
       expect(built.sections[0]!.segments.map(ends)).toEqual(['a-b', 'b-c']);
@@ -127,13 +128,13 @@ describe('PlanBuildUtils', () => {
     });
 
     test('splits nothing where a section reaches its station on track already there, and keeps the other segments of a split', () => {
-      const network = plannedNetwork();
-      network.plans!.extension!.lines = { green: { name: 'Green', network: 'metro', mode: 'metro', color: '#00aa00' } };
-      network.plans!.extension!.sections = [
-        { line: 'green', stations: ['d', 'a', 'b'] },
-        { line: 'red', stations: ['a', 'b', 'c'] },
+      const network = asNetwork(plannedNetwork());
+      network.plans![planId('extension')]!.lines = { [lineId('green')]: { name: 'Green', network: networkId('metro'), mode: 'metro', color: '#00aa00' } };
+      network.plans![planId('extension')]!.sections = [
+        { line: lineId('green'), stations: [stationId('d'), stationId('a'), stationId('b')] },
+        { line: lineId('red'), stations: [stationId('a'), stationId('b'), stationId('c')] },
       ];
-      const built = buildPlan(network, 'extension');
+      const built = buildPlan(network, planId('extension'));
       const ends = (position: number) => `${built.network.segments[position]!.stationA}-${built.network.segments[position]!.stationB}`;
       // Red reaches B on green's new track: a–c is not split, and red is laid from B to C.
       expect(built.sections.map(section => section.segments.map(ends))).toEqual([
@@ -144,27 +145,27 @@ describe('PlanBuildUtils', () => {
     });
 
     test('builds nothing for a plan the network does not have, and leaves the network as it was', () => {
-      const network = plannedNetwork();
-      expect(buildPlan(network, 'nowhere')).toEqual({ network: { ...network, plans: undefined }, sections: [] });
-      buildPlan(network, 'extension');
+      const network = asNetwork(plannedNetwork());
+      expect(buildPlan(network, planId('nowhere'))).toEqual({ network: { ...network, plans: undefined }, sections: [] });
+      buildPlan(network, planId('extension'));
       expect(network.segments).toHaveLength(1);
     });
   });
 
   describe('isPlanOnly', () => {
     test('is a network with plans and no track', () => {
-      expect(isPlanOnly(plannedNetwork())).toBe(false);
-      expect(isPlanOnly({ ...plannedNetwork(), segments: [] })).toBe(true);
-      expect(isPlanOnly({ ...plannedNetwork(), segments: [], plans: {} })).toBe(false);
-      const { plans: _plans, ...withoutPlans } = plannedNetwork();
+      expect(isPlanOnly(asNetwork(plannedNetwork()))).toBe(false);
+      expect(isPlanOnly({ ...asNetwork(plannedNetwork()), segments: [] })).toBe(true);
+      expect(isPlanOnly({ ...asNetwork(plannedNetwork()), segments: [], plans: {} })).toBe(false);
+      const { plans: _plans, ...withoutPlans } = asNetwork(plannedNetwork());
       expect(isPlanOnly({ ...withoutPlans, segments: [] })).toBe(false);
     });
   });
 
   describe('firstPlanOf', () => {
     test("is a network's first plan, and none without plans", () => {
-      expect(firstPlanOf(plannedNetwork())).toBe(Object.keys(plannedNetwork().plans ?? {})[0]);
-      const { plans: _plans, ...withoutPlans } = plannedNetwork();
+      expect(firstPlanOf(asNetwork(plannedNetwork()))).toBe(Object.keys(asNetwork(plannedNetwork()).plans ?? {})[0]);
+      const { plans: _plans, ...withoutPlans } = asNetwork(plannedNetwork());
       expect(firstPlanOf(withoutPlans)).toBeUndefined();
     });
   });

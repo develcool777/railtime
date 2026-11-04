@@ -1,7 +1,7 @@
 import type { Theme } from '@railtime/network/facts.types';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { ViewMode } from '@railtime/renderer/transitMap.types';
-import type { Network } from '@railtime/schema/network.types';
+import type { LineId, Network, PlanId, StationId } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, nextTick, ref } from 'vue';
 import type { WritableComputedRef } from 'vue';
@@ -10,7 +10,18 @@ import type { ExplorerUrlState } from '~/features/explorer/address/address.types
 import { explorerAddressOf, formatExplorerQuery } from '~/features/explorer/address/address.utils';
 import { PANEL_WIDTH } from '~/features/explorer/explorer.constants';
 import type { Dialog, ExplorerScreen, PanelView, Section, SheetSnap } from '~/features/explorer/explorer.types';
-import { chromeOf, mapPropsOf, openOf, openingSectionOf, railSectionOf, walkedTo, withStation, withoutStations } from '~/features/explorer/explorer.utils';
+import {
+  chromeOf,
+  mapPropsOf,
+  openingSectionOf,
+  openLineOf,
+  openStationOf,
+  railSectionOf,
+  viewIn,
+  walkedTo,
+  withStation,
+  withoutStations,
+} from '~/features/explorer/explorer.utils';
 import { mapPaddingFor, panelCoverOf, sheetHeightOf } from '~/features/explorer/layout.utils';
 import { useMapStore } from '~/features/explorer/map/map.store';
 import { useNetworkStore } from '~/features/explorer/network.store';
@@ -65,8 +76,8 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
   const boundaryUrl = ref('');
 
   // ---- Getters
-  const openStation = computed(() => openOf(views.value, 'station'));
-  const openLine = computed(() => openOf(views.value, 'line'));
+  const openStation = computed(() => openStationOf(views.value));
+  const openLine = computed(() => openLineOf(views.value));
   const railSection = computed(() => railSectionOf(section.value, views.value));
   const mapOverlay = computed(() => mapOverlayOf(section.value, timeStore.timeMode));
   const overlayRequest = computed(() =>
@@ -174,11 +185,11 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     const { stored, asked, outline } = opening;
     network.OPEN(stored, asked.plan);
     const facts = network.facts;
-    const line = asked.line && facts?.find('line', asked.line) ? asked.line : undefined;
-    const station = asked.station && facts?.find('station', asked.station) ? asked.station : undefined;
+    const line = asked.line === undefined ? null : (facts?.findLine(asked.line) ?? null);
+    const station = asked.station === undefined ? null : (facts?.findStation(asked.station) ?? null);
     openingSection.value = openingSectionOf(network.pickedPlan);
     section.value = asked.section ?? openingSection.value;
-    views.value = [...(line ? [{ kind: 'line' as const, id: line }] : []), ...(station ? [{ kind: 'station' as const, id: station }] : [])];
+    views.value = [...(line ? [{ kind: 'line' as const, id: line.id }] : []), ...(station ? [{ kind: 'station' as const, id: station.id }] : [])];
     sheet.value = 'peek';
     mapOnly.value = asked.mapOnly ?? false;
     panelOpen.value = asked.panelOpen ?? true;
@@ -195,7 +206,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
   /** The network was made again: what was open stays where it still is, the tools keep their ends, and time is back on the timeline. */
   const remade = () => {
     const facts = network.facts;
-    views.value = views.value.filter(open => facts?.find(open.kind, open.id));
+    views.value = views.value.filter(open => facts && viewIn(facts, open));
     tools.KEEP_ON();
     timeStore.TO_TIMELINE();
   };
@@ -204,7 +215,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param shownPlan - The plan; none for the network as built.
    */
-  const SHOW_PLAN = async (shownPlan: string | undefined) => {
+  const SHOW_PLAN = async (shownPlan: PlanId | undefined) => {
     network.SHOW_PLAN(shownPlan);
     remade();
     // Once the map has the new network (it opens at its today), on to the plan built.
@@ -217,7 +228,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    * @param ids - The lines.
    * @param shown - Whether to show them.
    */
-  const SHOW_LINES = async (ids: readonly string[], shown: boolean) => {
+  const SHOW_LINES = async (ids: readonly LineId[], shown: boolean) => {
     const day = timeStore.time && !timeStore.time.atRest ? timeStore.time.time : undefined;
     network.SHOW_LINES(ids, shown);
     remade();
@@ -318,7 +329,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param id - The line.
    */
-  const PUSH_LINE = (id: string) => {
+  const PUSH_LINE = (id: LineId) => {
     views.value = [{ kind: 'line', id }];
     REVEAL_PANEL();
   };
@@ -328,7 +339,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param id - The station.
    */
-  const PICK_STATION = (id: string) => {
+  const PICK_STATION = (id: StationId) => {
     views.value = withStation(views.value, id);
     REVEAL_PANEL();
   };
@@ -337,7 +348,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param id - The station.
    */
-  const WALK_TO = (id: string) => {
+  const WALK_TO = (id: StationId) => {
     views.value = walkedTo(views.value, id);
   };
   /** Closes the stations' views, back to the line's under them, if any. */
@@ -349,7 +360,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param id - The station, or `null` for a click away from any.
    */
-  const CLICK_STATION = (id: string | null) => {
+  const CLICK_STATION = (id: StationId | null) => {
     if (!id || !network.facts || !timeStore.time) {
       CLOSE_STATION();
       return;

@@ -1,4 +1,5 @@
 import type { CameraMode } from '@railtime/renderer/transitMap.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 
 /** One of the panel's sections, as the rail lists them. */
 export type Section = 'lines' | 'stations' | 'changes' | 'route' | 'reach' | 'coverage' | 'insights' | 'plans';
@@ -13,7 +14,7 @@ export type SheetSnap = 'peek' | 'half' | 'full';
 export type TimeMode = 'timeline' | 'playing';
 
 /** A view pushed over the panel's section: a line's, or a station's. Back pops the last one. */
-export type PanelView = { kind: 'line'; id: string } | { kind: 'station'; id: string };
+export type PanelView = { kind: 'line'; id: LineId } | { kind: 'station'; id: StationId };
 
 /** A dialog over the whole page, one at a time: the search, the help, or the city picker. */
 export type Dialog = 'search' | 'help' | 'cities';

@@ -1,6 +1,7 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import type { RouteFeature } from '../../../src/layers/snapshot.types';
@@ -70,7 +71,7 @@ describe('RouteLayerUtils', () => {
   const routeAtoD = () => {
     const playback = playbackOf(tinyNetwork());
     playback.player.seek(playback.facts.playheads.on(toTimestamp('1935-01-01')));
-    return { index: playback.index, route: networkNow(playback).routes('a', 'd')[0]! };
+    return { index: playback.index, route: networkNow(playback).routes(stationId('a'), stationId('d'))[0]! };
   };
 
   describe('routeTrack', () => {
@@ -81,7 +82,11 @@ describe('RouteLayerUtils', () => {
       );
       const walk = { ...route, legs: [{ kind: 'walk' as const, from: route.from, to: route.to, minutes: 5 }], segments: [[]] };
       expect(routeTrack(index, walk, 'light')).toEqual([
-        { type: 'Feature', properties: { color: '', walk: true }, geometry: { type: 'LineString', coordinates: [index.coordOf('a'), index.coordOf('d')] } },
+        {
+          type: 'Feature',
+          properties: { color: '', walk: true },
+          geometry: { type: 'LineString', coordinates: [index.coordOf(stationId('a')), index.coordOf(stationId('d'))] },
+        },
       ]);
       expect(routeTrack(index, null, 'light')).toEqual([]);
     });
@@ -97,7 +102,7 @@ describe('RouteLayerUtils', () => {
         ['C', 'pass'],
         ['D', 'end'],
       ]);
-      expect(stops[0]?.geometry.coordinates).toEqual(index.coordOf('a'));
+      expect(stops[0]?.geometry.coordinates).toEqual(index.coordOf(stationId('a')));
       expect(routeStops(index, null, 'light')).toEqual([]);
     });
   });
@@ -112,10 +117,10 @@ describe('RouteLayerUtils', () => {
  */
 const ride = (color: string, stops: string[]): RouteLegInfo => ({
   kind: 'ride',
-  line: color,
+  line: lineId(color),
   lineName: color,
   color: { light: color, dark: color.toUpperCase() },
-  stops: stops.map(id => ({ id, name: id.toUpperCase() })),
+  stops: stops.map(id => ({ id: stationId(id), name: id.toUpperCase() })),
   minutes: 0,
   km: 0,
 });
@@ -128,8 +133,8 @@ const ride = (color: string, stops: string[]): RouteLegInfo => ({
  * @returns The route.
  */
 const routeOf = (legs: RouteLegInfo[], to: string): RouteInfo => ({
-  from: { id: 'a', name: 'A' },
-  to: { id: to, name: to.toUpperCase() },
+  from: { id: stationId('a'), name: 'A' },
+  to: { id: stationId(to), name: to.toUpperCase() },
   legs,
   minutes: 0,
   km: 0,
@@ -157,7 +162,7 @@ describe('RouteStopsUtils', () => {
     });
 
     test('rings both ends of a walk, as changes', () => {
-      const walk: RouteLegInfo = { kind: 'walk', from: { id: 'c', name: 'C' }, to: { id: 'x', name: 'X' }, minutes: 3 };
+      const walk: RouteLegInfo = { kind: 'walk', from: { id: stationId('c'), name: 'C' }, to: { id: stationId('x'), name: 'X' }, minutes: 3 };
       const marks = routeStopMarks(routeOf([ride('red', ['a', 'c']), walk, ride('blue', ['x', 'e'])], 'e'), 'light');
       expect(marks.map(entry => [entry.station, entry.kind])).toEqual([
         ['a', 'board'],

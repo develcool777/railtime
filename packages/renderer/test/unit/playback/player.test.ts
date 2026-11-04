@@ -1,6 +1,7 @@
 import { YEAR_MS, toTimestamp } from '@railtime/core/date.utils';
 import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { lineId, planId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
 import { Player } from '../../../src/playback/player.service';
@@ -21,7 +22,7 @@ describe('Player', () => {
   });
 
   test("opens at today; plays a plan's steps after every dated one, the clock standing at the end", () => {
-    const { timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
+    const { timeline, player } = playbackOf(tinyNetwork(), { plan: planId('extension') });
     expect(player.clock).toBe(player.today);
     expect(player.cursor).toBe(timeline.datedCount);
     expect(player.inPlan).toBe(false);
@@ -101,7 +102,7 @@ describe('Player', () => {
   });
 
   test('jumps to the end, the plan built', () => {
-    const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
+    const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: planId('extension') });
     player.seek(facts.playheads.end());
     expect(player.cursor).toBe(timeline.steps.length);
     expect(player.inPlan).toBe(true);
@@ -118,7 +119,7 @@ describe('Player', () => {
   });
 
   test('jumps to just before a step, so playing starts it, or just past it, on its date', () => {
-    const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: 'extension' });
+    const { facts, timeline, player } = playbackOf(tinyNetwork(), { plan: planId('extension') });
     const dated = timeline.steps[2]!;
     player.seek(facts.playheads.after(3));
     expect(player.cursor).toBe(3);
@@ -207,7 +208,7 @@ describe('Player', () => {
 
   test('ends at today, or at a change dated after it, with the clock there', () => {
     const later = tinyNetwork();
-    later.segments[2]!.lines.green!.open = '2030-01-01';
+    later.segments[2]!.lines[lineId('green')]!.open = '2030-01-01';
     const { player, timeline } = playbackOf(later);
     expect(player.end).toBe(toTimestamp('2030-01-01'));
     expect(playbackOf(tinyNetwork()).player.end).toBe(player.today);
@@ -247,11 +248,11 @@ describe('Player', () => {
       history.player.seek(history.facts.playheads.end());
       history.player.play();
       expect([history.player.clock, history.player.playing]).toEqual([toTimestamp('1899-01-01'), true]);
-      const plan = playbackOf(tinyNetwork(), { plan: 'extension' });
+      const plan = playbackOf(tinyNetwork(), { plan: planId('extension') });
       plan.player.seek(plan.facts.playheads.end());
       plan.player.play();
       expect([plan.player.clock, plan.player.cursor]).toEqual([plan.player.today, plan.timeline.datedCount]);
-      const planOnly = playbackOf(planOnlyNetwork(), { plan: 'first' });
+      const planOnly = playbackOf(planOnlyNetwork(), { plan: planId('first') });
       planOnly.player.seek(planOnly.facts.playheads.end());
       planOnly.player.play();
       expect([planOnly.player.clock, planOnly.player.cursor]).toEqual([planOnly.player.today, 0]);

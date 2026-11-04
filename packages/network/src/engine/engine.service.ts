@@ -1,4 +1,4 @@
-import type { Network } from '@railtime/schema/network.types';
+import type { LineId, Network, PlanId } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import type { LineGap } from './engine.types';
 import { NetworkIndex } from './index.service.ts';
@@ -27,7 +27,7 @@ export class NetworkEngine {
    * @param today - Today, as a timestamp.
    * @param gaps - The stretches of time each line is left out: the years it was drawn as a line hidden.
    */
-  public constructor(network: Network, plan: string | null, today: number, gaps: ReadonlyMap<string, readonly LineGap[]> = new Map()) {
+  public constructor(network: Network, plan: PlanId | null, today: number, gaps: ReadonlyMap<LineId, readonly LineGap[]> = new Map()) {
     const built = plan ? buildPlan(network, plan) : null;
     this.index = new NetworkIndex(built?.network ?? network, built?.sections, gaps);
     this.timeline = new Timeline(this.index);

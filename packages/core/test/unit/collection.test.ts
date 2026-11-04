@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { firstDifference, pushTo } from '../../src/collection.utils';
+import { entriesOf, firstDifference, fromEntriesOf, keysOf, pushTo } from '../../src/collection.utils';
 
 describe('CollectionUtils', () => {
   describe('pushTo', () => {
@@ -12,6 +12,34 @@ describe('CollectionUtils', () => {
         ['a', [1, 3]],
         ['b', [2]],
       ]);
+    });
+  });
+
+  describe('keysOf', () => {
+    test("is a record's own keys, in its order", () => {
+      expect(keysOf({ b: 1, a: 2 })).toEqual(['b', 'a']);
+      expect(keysOf({})).toEqual([]);
+    });
+  });
+
+  describe('entriesOf', () => {
+    test("is a record's own keys with their values, in its order", () => {
+      expect(entriesOf({ b: 1, a: 2 })).toEqual([
+        ['b', 1],
+        ['a', 2],
+      ]);
+    });
+  });
+
+  describe('fromEntriesOf', () => {
+    test('makes a record of entries, a later key over an earlier one', () => {
+      expect(
+        fromEntriesOf([
+          ['b', 1],
+          ['a', 2],
+          ['b', 3],
+        ]),
+      ).toEqual({ b: 3, a: 2 });
     });
   });
 

@@ -31,7 +31,7 @@ export const lineGroups = (lines: LineInfo[], choices: NetworkChoice[], query: s
   const wanted = foldName(query);
   const found = (name: string) => !wanted || foldName(name).includes(wanted);
   const onMap = new Map(lines.map(line => [line.id, line]));
-  const networks = choices.map(choice => ({
+  const networks = choices.map((choice): LineGroup => ({
     network: choice.id,
     name: choice.name,
     entries: choice.lines
@@ -43,5 +43,6 @@ export const lineGroups = (lines: LineInfo[], choices: NetworkChoice[], query: s
   const planned = lines
     .filter(line => line.opened === null && found(line.name))
     .map(line => ({ id: line.id, name: line.name, color: line.color, shown: line }));
-  return [...networks, { network: 'planned', name: 'Planned', entries: planned, toggleable: [] }].filter(group => group.entries.length > 0);
+  const plannedGroup: LineGroup = { network: 'planned', name: 'Planned', entries: planned, toggleable: [] };
+  return [...networks, plannedGroup].filter(group => group.entries.length > 0);
 };

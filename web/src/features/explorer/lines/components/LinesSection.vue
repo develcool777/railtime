@@ -54,6 +54,7 @@
 <script setup lang="ts">
   import { yearOf } from '@railtime/core/date.utils';
   import type { LineInfo, NetworkChoice } from '@railtime/network/facts.types';
+  import type { LineId } from '@railtime/schema/network.types';
   import { computed, ref } from 'vue';
   import type { LineGroup } from '~/features/explorer/lines/line.types';
   import { lineGroups } from '~/features/explorer/lines/line.utils';
@@ -67,7 +68,7 @@
     /** The date shown, as a timestamp; `null` in a plan, when every line is open. */
     date: number | null;
   }>();
-  const emit = defineEmits<{ show: [lines: string[], shown: boolean]; open: [line: string] }>();
+  const emit = defineEmits<{ show: [lines: LineId[], shown: boolean]; open: [line: LineId] }>();
 
   const query = ref('');
 
