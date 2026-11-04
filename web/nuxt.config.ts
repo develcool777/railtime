@@ -5,11 +5,31 @@ import { CITIES } from './src/constants/city.constants';
 /** Where the site is published: GitHub Pages, under `/railtime/` (`NUXT_APP_BASE_URL`). */
 const siteUrl = process.env.NUXT_PUBLIC_SITE_URL ?? 'https://develcool777.github.io';
 
+/**
+ * The folder GitHub Pages publishes the site in: what the workflows build it under
+ * (`NUXT_APP_BASE_URL`, `.github/workflows/`), and a page run anywhere else (under `pnpm dev`, a video
+ * recorded) names it by.
+ */
+const PUBLISHED_BASE = '/railtime/';
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
   // The investors site's layout: shared code at the top of src/, each product surface in features/<name>/.
   srcDir: 'src/',
-  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+  modules: [
+    '@nuxt/ui',
+    '@pinia/nuxt',
+    '@nuxtjs/sitemap',
+    '@nuxtjs/robots',
+    // The video pages (features/video) are for recording, under pnpm dev: the site built leaves them out.
+    (_options, nuxt) => {
+      if (nuxt.options.dev) return;
+      nuxt.hook('pages:extend', pages => {
+        const kept = pages.filter(page => !page.path.startsWith('/video'));
+        pages.splice(0, pages.length, ...kept);
+      });
+    },
+  ],
   css: ['~/css/main.css', '@railtime/renderer/transitMap.css'],
   // The map follows the system theme until the user picks one.
   colorMode: { preference: 'system', fallback: 'dark' },
@@ -42,6 +62,8 @@ export default defineNuxtConfig({
       ],
     },
   },
+  // The site's address as published, whatever the app runs under: a video names it (`publishedUrl`).
+  runtimeConfig: { public: { publishedUrl: `${siteUrl}${PUBLISHED_BASE}` } },
   // Every page's canonical address and the sitemap start here; the base URL is added to it. GitHub
   // Pages serves a page's folder at its address with a slash (it redirects /railtime/kyiv to /kyiv/).
   site: { url: siteUrl, name: 'RailTime', trailingSlash: true },

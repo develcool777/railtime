@@ -35,7 +35,7 @@
   import { LETTER_HEADING_ESTIMATE, STATION_ROW_ESTIMATE } from '~/features/explorer/stations/station.constants';
   import type { StationGroup, StationRow } from '~/features/explorer/stations/station.types';
   import { findStations, stationRows, stationsByLetter } from '~/features/explorer/stations/station.utils';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** The stations on the map on the date shown. */

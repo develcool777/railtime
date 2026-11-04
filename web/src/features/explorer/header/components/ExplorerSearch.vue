@@ -25,7 +25,7 @@
   import { computed, ref } from 'vue';
 
   import { CITIES } from '~/constants/city.constants';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** The stations on the map on the date shown. */

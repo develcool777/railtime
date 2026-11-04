@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { counted, formatNumber } from '~/utils/format.utils';
+import { counted, formatNumber, lineColor } from '~/utils/format.utils';
 
 describe('FormatUtils', () => {
   describe('formatNumber', () => {
@@ -17,6 +17,12 @@ describe('FormatUtils', () => {
         '2 lines',
         '1,284 stations',
       ]);
+    });
+  });
+
+  describe('lineColor', () => {
+    test("gives a line's colour in both themes, for the page's colour scheme to pick", () => {
+      expect(lineColor({ light: '#ff0000', dark: '#ff6666' })).toBe('light-dark(#ff0000, #ff6666)');
     });
   });
 });

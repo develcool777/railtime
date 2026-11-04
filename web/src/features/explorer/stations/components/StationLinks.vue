@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
   import type { LineColor } from '@railtime/network/facts.types';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
     /** Each station with the lines' colours to show beside it. */

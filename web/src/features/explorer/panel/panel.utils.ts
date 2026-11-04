@@ -1,9 +1,9 @@
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
 import type { LineDetails, StationInfo } from '@railtime/network/facts.types';
 
-import { formatDay, lineColor } from '~/features/explorer/format.utils';
+import { formatDay } from '~/features/explorer/format.utils';
 import type { PanelTopContent, SectionTopInput } from '~/features/explorer/panel/panel.types';
-import { counted } from '~/utils/format.utils';
+import { counted, lineColor } from '~/utils/format.utils';
 
 /**
  * The top of a station's view: its name; under it, its names in other languages and the year its

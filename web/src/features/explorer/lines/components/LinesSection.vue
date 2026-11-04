@@ -56,7 +56,7 @@
   import { computed, ref } from 'vue';
 
   import { yearOf } from '@railtime/core/date.utils';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
   import type { LineGroup } from '~/features/explorer/lines/line.types';
   import { lineGroups } from '~/features/explorer/lines/line.utils';
 

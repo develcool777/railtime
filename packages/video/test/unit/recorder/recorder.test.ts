@@ -18,9 +18,10 @@ const scopeOf = (): RecordingScope => ({
 
 describe('RecorderUtils', () => {
   describe('recordingOf', () => {
-    test('records the city at 1080p, 60 frames a second, from the app run by pnpm dev, into videos/', () => {
+    test("records the city's video page at 1080p, 60 frames a second, from the app run by pnpm dev, into videos/", () => {
       expect(recordingOf(['kyiv'])).toEqual({
         city: 'kyiv',
+        page: 'video',
         fps: 60,
         width: 1920,
         height: 1080,
@@ -32,9 +33,24 @@ describe('RecorderUtils', () => {
     });
 
     test('takes each option, a query with or without its ?, an origin with or without its /', () => {
-      const args = ['london', '--fps', '30', '--size', '1080x1920', '--seconds', '45', '--query', '?mapOnly=1', '--origin', 'http://localhost:3000/'];
+      const args = [
+        'london',
+        '--page',
+        'explorer',
+        '--fps',
+        '30',
+        '--size',
+        '1080x1920',
+        '--seconds',
+        '45',
+        '--query',
+        '?mapOnly=1',
+        '--origin',
+        'http://localhost:3000/',
+      ];
       expect(recordingOf([...args, '--out', 'short.mp4'])).toEqual({
         city: 'london',
+        page: 'explorer',
         fps: 30,
         width: 1080,
         height: 1920,
@@ -53,13 +69,15 @@ describe('RecorderUtils', () => {
       expect(() => recordingOf(['kyiv', '--seconds', '1.5'])).toThrow('--seconds takes a whole number');
       expect(() => recordingOf(['kyiv', '--size', '1920'])).toThrow('--size takes width x height');
       expect(() => recordingOf(['kyiv', '--origin', 'localhost'])).toThrow('--origin takes an address');
+      expect(() => recordingOf(['kyiv', '--page', 'landing'])).toThrow('--page takes video or explorer, not landing');
     });
   });
 
   describe('pageUrlOf', () => {
-    test("opens the city's page, with the query given", () => {
-      expect(pageUrlOf(recordingOf(['kyiv']))).toBe('http://localhost:5180/kyiv');
-      expect(pageUrlOf(recordingOf(['kyiv', '--query', 'mapOnly=1&speed=2']))).toBe('http://localhost:5180/kyiv?mapOnly=1&speed=2');
+    test("opens the city's video page or explorer, with the query given", () => {
+      expect(pageUrlOf(recordingOf(['kyiv']))).toBe('http://localhost:5180/video/kyiv');
+      expect(pageUrlOf(recordingOf(['kyiv', '--page', 'explorer']))).toBe('http://localhost:5180/kyiv');
+      expect(pageUrlOf(recordingOf(['kyiv', '--page', 'explorer', '--query', 'mapOnly=1&speed=2']))).toBe('http://localhost:5180/kyiv?mapOnly=1&speed=2');
     });
   });
 

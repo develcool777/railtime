@@ -5,19 +5,11 @@ import { dirname } from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { type Browser, chromium, type Page } from 'playwright-core';
-import {
-  FRAME_QUALITY,
-  OPEN_TIMEOUT_MS,
-  PAUSE_BUTTON,
-  PLAY_BUTTON,
-  QUIET_MS,
-  SETTLE_POLL_MS,
-  SETTLE_TIMEOUT_MS,
-  TAIL_SECONDS,
-  WARM_UP_SECONDS,
-} from './recorder.constants.ts';
-import type { RecorderOptions, Recording, RecordingScope } from './recorder.types.ts';
+import { FRAME_QUALITY, OPEN_TIMEOUT_MS, QUIET_MS, SETTLE_POLL_MS, SETTLE_TIMEOUT_MS, WARM_UP_SECONDS } from './recorder.constants.ts';
+import { recordedPageOf } from './recordedPage.utils.ts';
+import type { RecorderOptions, Recording } from './recorder.types.ts';
 import { ffmpegArgsOf, ffmpegPathOf, installRecordingClock, pageUrlOf } from './recorder.utils.ts';
+import type { RecordedWindow } from './videoPage.types.ts';
 
 /**
  * Records a city's page playing its history as a video: the page, in the Chrome installed on this
@@ -100,11 +92,12 @@ export class VideoRecorder {
     // Run in the page as written, on its own `window`, before any of the page's scripts.
     await page.addInitScript({ content: `(${installRecordingClock.toString()})(window);` });
     await page.goto(pageUrlOf(recording), { waitUntil: 'domcontentloaded' });
-    // Its frames run only as the clock moves: moved on until the play button shows, then a little more.
+    // Its frames run only as the clock moves: moved on until it is ready, then a little more.
     const frameMs = 1000 / recording.fps;
     const deadline = Date.now() + OPEN_TIMEOUT_MS;
-    while ((await page.locator(PLAY_BUTTON).count()) === 0) {
-      if (Date.now() > deadline) throw new Error(`the page never offered to play: ${pageUrlOf(recording)}`);
+    const recorded = recordedPageOf(recording.page);
+    while (!(await recorded.ready(page))) {
+      if (Date.now() > deadline) throw new Error(`the page never got ready to play: ${pageUrlOf(recording)}`);
       await this.step(page, frameMs);
     }
     for (let frame = 0; frame < WARM_UP_SECONDS * recording.fps; frame++) await this.step(page, frameMs);
@@ -112,8 +105,8 @@ export class VideoRecorder {
   }
 
   /**
-   * Plays the history and takes a frame at each step of the clock, until it ends and the camera has
-   * moved back to the whole network, or the longest the recording runs.
+   * Plays the page and takes a frame at each step of the clock, until it ends (and, for the explorer,
+   * the camera has moved back to the whole network), or the longest the recording runs.
    *
    * @param page - The page, ready to play.
    * @param recording - The recording.
@@ -123,7 +116,8 @@ export class VideoRecorder {
   private async capture(page: Page, recording: Recording, ffmpeg: string): Promise<number> {
     const encoder = this.startEncoder(recording, ffmpeg);
     const frameMs = 1000 / recording.fps;
-    await page.keyboard.press('Space');
+    const recorded = recordedPageOf(recording.page);
+    await recorded.start(page);
     let taken = 0;
     let tail: number | null = null;
     while (taken < recording.seconds * recording.fps && (tail === null || tail > 0)) {
@@ -134,8 +128,8 @@ export class VideoRecorder {
       if (!encoder.stdin.write(frame)) await Promise.race([once(encoder.stdin, 'drain'), this.encoded]);
       taken++;
       if (tail !== null) tail--;
-      // Once a second, whether it still plays: once it stops, a few seconds more.
-      else if (taken % recording.fps === 0 && (await page.locator(PAUSE_BUTTON).count()) === 0) tail = TAIL_SECONDS * recording.fps;
+      // Once a second, whether it still plays: once it ends, its tail.
+      else if (taken % recording.fps === 0 && (await recorded.ended(page))) tail = recorded.tailSeconds * recording.fps;
       if (taken % (recording.fps * 10) === 0) console.log(`${(taken / recording.fps).toFixed(0)} s recorded`);
     }
     return taken;
@@ -201,7 +195,7 @@ export class VideoRecorder {
    * @param milliseconds - How far.
    */
   private async advance(page: Page, milliseconds: number): Promise<void> {
-    await page.evaluate(time => (window as unknown as RecordingScope).railtimeRecorder?.advance(time), milliseconds);
+    await page.evaluate(time => (window as RecordedWindow).railtimeRecorder?.advance(time), milliseconds);
   }
 
   /**

@@ -1,4 +1,4 @@
-import type { LineColor, NetworkStats } from '@railtime/network/facts.types';
+import type { NetworkStats } from '@railtime/network/facts.types';
 import { decadeOf, yearOf } from '@railtime/core/date.utils';
 
 import { counted } from '~/utils/format.utils';
@@ -50,12 +50,3 @@ export const formatStats = (stats: NetworkStats, short = false): string => {
  * @returns "1930s", or "Plan" for a plan's change, which has no date.
  */
 export const decadeHeading = (time: number | null): string => (time === null ? 'Plan' : `${decadeOf(yearOf(time))}s`);
-
-/**
- * A line's colour as CSS, in whichever theme the page is in: the browser picks by the page's
- * `color-scheme` (`main.css`), so it changes with the theme without asking the network again.
- *
- * @param color - The line's colour in each theme.
- * @returns A `light-dark()` colour.
- */
-export const lineColor = (color: LineColor): string => `light-dark(${color.light}, ${color.dark})`;

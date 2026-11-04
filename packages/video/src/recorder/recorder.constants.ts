@@ -2,10 +2,11 @@ import type { Recording } from './recorder.types.ts';
 
 /** How the command is called. */
 export const RECORD_USAGE =
-  'usage: pnpm video:record <city> [--fps 60] [--size 1920x1080] [--seconds 600] [--query "mapOnly=1"] [--origin http://localhost:5180] [--out file.mp4]';
+  'usage: pnpm video:record <city> [--page video|explorer] [--fps 60] [--size 1920x1080] [--seconds 600] [--query "mapOnly=1"] [--origin http://localhost:5180] [--out file.mp4]';
 
-/** A recording's settings where the command gives none: 1080p at 60 frames a second, from the app run by `pnpm dev`. */
+/** A recording's settings where the command gives none: the video page, 1080p at 60 frames a second, from the app run by `pnpm dev`. */
 export const RECORDING_DEFAULTS: Omit<Recording, 'city' | 'out'> = {
+  page: 'video',
   fps: 60,
   width: 1920,
   height: 1080,
@@ -20,7 +21,7 @@ export const VIDEOS_FOLDER = 'videos';
 /** Virtual seconds the page runs before playback starts: its map drawn, the camera settled. */
 export const WARM_UP_SECONDS = 2;
 
-/** Virtual seconds recorded after playback ends: the camera's move to the whole network. */
+/** Virtual seconds recorded after the explorer's playback ends: the camera's move to the whole network. */
 export const TAIL_SECONDS = 3;
 
 /** Real milliseconds without a request, after the last, before a frame is taken: the tiles that came, drawn. */

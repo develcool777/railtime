@@ -23,7 +23,9 @@ rule here broken changes this file first.
   plan to check it fits, so `network` cannot hold it without a cycle.
 - **`renderer` draws and plays, and knows nothing it can ask `network`.**
 - **`video` records, and knows nothing of what it records.** It takes a page of the app by its address,
-  on a clock it moves a frame at a time; what a video shows is the app's, in `web`.
+  on a clock it moves a frame at a time; what a video shows is the app's, in `web`. The two meet on
+  the page's `window`, in one contract `video` defines (`@railtime/video/videoPage.types`): the
+  recorder's clock, and the page's handle saying when it is ready and when it is over.
 - **A helper used in two packages lives once, in `core`, the bottom of the stack.** Never a copy: a
   date, a distance, a bounding box, `clamp`, `pushTo`, `required`, and the coordinate and date types.
   Within one package, one helper too: the app's counts and numbers are `web/src/utils/format.utils.ts`.

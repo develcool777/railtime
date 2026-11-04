@@ -65,7 +65,8 @@
 
   import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';
   import { yearOf } from '@railtime/core/date.utils';
-  import { formatDay, formatStats, lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
+  import { formatDay, formatStats } from '~/features/explorer/format.utils';
   import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
 
   const props = defineProps<{

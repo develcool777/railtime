@@ -1,7 +1,8 @@
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { FFMPEG_LOCATIONS, RECORD_USAGE, RECORDING_DEFAULTS, VIDEOS_FOLDER } from './recorder.constants.ts';
-import type { Recording, RecordingScope } from './recorder.types.ts';
+import { recordedPageOf } from './recordedPage.utils.ts';
+import type { RecordedPageKind, Recording, RecordingScope } from './recorder.types.ts';
 
 /**
  * A whole number at least 1, from an argument.
@@ -18,6 +19,14 @@ const countOf = (name: string, text: string | undefined, fallback: number): numb
   if (!Number.isInteger(count) || count < 1) throw new Error(`--${name} takes a whole number, not ${text}: ${RECORD_USAGE}`);
   return count;
 };
+
+/**
+ * Whether an argument names a kind of page.
+ *
+ * @param text - What was given.
+ * @returns Whether it is `video` or `explorer`.
+ */
+const isPageKind = (text: string): text is RecordedPageKind => text === 'video' || text === 'explorer';
 
 /**
  * Where the app is served, from an argument.
@@ -48,6 +57,7 @@ export const recordingOf = (args: string[]): Recording => {
         args,
         allowPositionals: true,
         options: {
+          page: { type: 'string' },
           fps: { type: 'string' },
           size: { type: 'string' },
           seconds: { type: 'string' },
@@ -65,8 +75,11 @@ export const recordingOf = (args: string[]): Recording => {
   if (!city || positionals.length > 1) throw new Error(RECORD_USAGE);
   const size = /^(\d+)x(\d+)$/.exec(values.size ?? `${RECORDING_DEFAULTS.width}x${RECORDING_DEFAULTS.height}`);
   if (!size) throw new Error(`--size takes width x height (1920x1080), not ${values.size}: ${RECORD_USAGE}`);
+  const page = values.page ?? RECORDING_DEFAULTS.page;
+  if (!isPageKind(page)) throw new Error(`--page takes video or explorer, not ${page}: ${RECORD_USAGE}`);
   return {
     city,
+    page,
     fps: countOf('fps', values.fps, RECORDING_DEFAULTS.fps),
     width: countOf('size', size[1], RECORDING_DEFAULTS.width),
     height: countOf('size', size[2], RECORDING_DEFAULTS.height),
@@ -81,10 +94,10 @@ export const recordingOf = (args: string[]): Recording => {
  * The address of the page recorded.
  *
  * @param recording - The recording.
- * @returns The city's page, with the query given.
+ * @returns The city's video page or explorer, with the query given.
  */
 export const pageUrlOf = (recording: Recording): string => {
-  const url = new URL(`/${encodeURIComponent(recording.city)}`, recording.origin);
+  const url = new URL(recordedPageOf(recording.page).pathOf(recording.city), recording.origin);
   url.search = recording.query;
   return url.href;
 };

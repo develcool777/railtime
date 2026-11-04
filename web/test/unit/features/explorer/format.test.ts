@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { decadeHeading, formatPlanFacts, formatStats, lineColor } from '~/features/explorer/format.utils';
+import { decadeHeading, formatPlanFacts, formatStats } from '~/features/explorer/format.utils';
 
 describe('FormatUtils', () => {
   describe('formatPlanFacts', () => {
@@ -24,12 +24,6 @@ describe('FormatUtils', () => {
       expect(decadeHeading(Date.UTC(1933, 6, 31))).toBe('1930s');
       expect(decadeHeading(Date.UTC(1940, 0, 1))).toBe('1940s');
       expect(decadeHeading(null)).toBe('Plan');
-    });
-  });
-
-  describe('lineColor', () => {
-    test("gives a line's colour in both themes, for the page's colour scheme to pick", () => {
-      expect(lineColor({ light: '#ff0000', dark: '#ff6666' })).toBe('light-dark(#ff0000, #ff6666)');
     });
   });
 });

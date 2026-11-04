@@ -37,7 +37,7 @@
   import { ref } from 'vue';
 
   import { titleInLine } from '~/features/explorer/lines/line.utils';
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     line: LineDetails;

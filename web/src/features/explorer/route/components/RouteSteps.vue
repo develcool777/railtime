@@ -64,7 +64,7 @@
   import type { RouteInfo } from '@railtime/network/facts.types';
   import { ref, watch } from 'vue';
 
-  import { lineColor } from '~/features/explorer/format.utils';
+  import { lineColor } from '~/utils/format.utils';
   import { rideSummary } from '~/features/explorer/route/route.utils';
 
   const props = defineProps<{

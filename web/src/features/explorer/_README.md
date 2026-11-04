@@ -71,7 +71,7 @@ At the top, what every part shares or what ties them together:
 
 - **The store** holds what is open and what the map last said; **the facts** answer every question
   about the network for the moment the store has (`facts.asOf(store.time)`). A line's colour comes in
-  both themes; `lineColor` (`format.utils.ts`) makes it CSS that follows the page's.
+  both themes; `lineColor` (`~/utils/format.utils.ts`, the video's too) makes it CSS that follows the page's.
   A composable is computeds over the two: it changes when they do, and reads nothing only to re-run.
 - **The map** is touched by one adapter (`useTransitMap`): it gives the map `store.mapProps`, writes
   what the map says into the store (a station clicked: `clickStation`), and destroys it.
