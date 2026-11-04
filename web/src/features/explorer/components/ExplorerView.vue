@@ -40,14 +40,14 @@
             @back="store.GO_BACK"
             @fold="store.SET_PANEL_OPEN(false)" />
           <div class="min-h-0 flex-1 overflow-y-auto">
-            <StationView v-if="station" :station :directions="stationDirections" @select="store.WALK_TO" @line="store.PUSH_LINE" />
+            <StationView v-if="station" :station :directions="stationDirections" @station="store.WALK_TO" @line="store.PUSH_LINE" />
             <LineView
               v-else-if="lineDetails"
               :line="lineDetails"
               :changes="lineChanges"
               :stationColors
               @station="store.PICK_STATION"
-              @change="timeStore.PICK({ kind: 'change', index: $event })" />
+              @pickChange="timeStore.PICK({ kind: 'change', index: $event })" />
             <StationsSection v-else-if="section === 'stations'" :stations @open="store.PICK_STATION" />
             <LinesSection v-else-if="section === 'lines'" :lines :choices="networkChoices" :date="shownDate" @show="store.SHOW_LINES" @open="store.PUSH_LINE" />
             <ChangesSection
@@ -55,7 +55,7 @@
               :changes
               :current="currentChange"
               :playing="timeStore.playerShown"
-              @select="timeStore.PICK_CHANGE" />
+              @pick="timeStore.PICK_CHANGE" />
             <RouteSection
               v-else-if="section === 'route'"
               :stations
@@ -166,8 +166,7 @@
               :settings="player"
               :plan="planSummary"
               :planOnly
-              @play="timeStore.PLAY"
-              @pause="timeStore.PAUSE"
+              @togglePlay="timeStore.TOGGLE_PLAY"
               @previous="timeStore.PREVIOUS_CHANGE"
               @skip="timeStore.NEXT_CHANGE"
               @leave="timeStore.LEAVE_TO"
@@ -202,7 +201,7 @@
 <script setup lang="ts">
   import type { Network } from '@railtime/schema/network.types';
   import { storeToRefs } from 'pinia';
-  import { useTemplateRef } from 'vue';
+  import { useTemplateRef, watch } from 'vue';
   import { useRoute, useRuntimeConfig } from '#imports';
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
@@ -217,26 +216,35 @@
   import { useToolsStore } from '~/features/explorer/tools.store';
   import { boundaryUrlOf } from '~/utils/city.utils';
 
-  const props = defineProps<{ network: Network; city: string }>();
+  const props = defineProps<{
+    /** The city's network, as its file holds it. */
+    network: Network;
+    /** The city, by its id. */
+    city: string;
+  }>();
   const emit = defineEmits<{ city: [city: string] }>();
 
   const explorer = useTemplateRef<HTMLElement>('explorer');
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  // The stores open on the city's network and on what the address says; from then on they are the
-  // page's one source of truth, and what follows only lays out what they hold.
+  // The stores open on the city's network and on what the address says, as the view is given it; from
+  // then on they are the page's one source of truth, and what follows only lays out what they hold.
   const store = useExplorerStore();
   const networkStore = useNetworkStore();
   const mapStore = useMapStore();
   const timeStore = useTimeStore();
   const tools = useToolsStore();
   const panel = usePanelStore();
-  store.OPEN({
-    stored: props.network,
-    asked: parseExplorerQuery(useRoute().query),
-    outline: `${useRuntimeConfig().app.baseURL}${boundaryUrlOf(props.city)}`,
-  });
+  const route = useRoute();
+  const baseURL = useRuntimeConfig().app.baseURL;
+  watch(
+    () => [props.network, props.city] as const,
+    ([network, city]) => {
+      store.OPEN({ stored: network, asked: parseExplorerQuery(route.query), outline: `${baseURL}${boundaryUrlOf(city)}` });
+    },
+    { immediate: true },
+  );
 
   const {
     section,

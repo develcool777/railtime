@@ -2,14 +2,15 @@
   <div class="flex flex-col gap-4 px-4 pt-3 pb-6">
     <!-- A station clicked on the map always starts it: its field ringed, as Route's. -->
     <StationField :stations :stop="from" end="from" label="where it starts" placeholder="From" aimed @pick="emit('from', $event)" />
-    <MapPickHint end="start" :picked="!!from" class="-mt-2" />
+    <MapPickHint end="start" :picked="from !== null" class="-mt-2" />
 
     <UEmpty
       v-if="!from"
+      key="unpicked"
       icon="i-lucide-radar"
       title="How far can you get?"
       description="Pick a station, here or on the map, to see how far you get from it and how long it takes." />
-    <UEmpty v-else-if="!reach" icon="i-lucide-train-front" title="No line calls there" description="Not on the date shown." />
+    <UEmpty v-else-if="!reach" key="unreached" icon="i-lucide-train-front" title="No line calls there" description="Not on the date shown." />
     <template v-else>
       <div class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-3">

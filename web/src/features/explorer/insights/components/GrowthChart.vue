@@ -21,6 +21,7 @@
   const props = defineProps<{
     /** One measure of the network, year by year. */
     points: { year: number; value: number }[];
+    /** Which measure it is: stations, kilometres or lines, for its label and numbers. */
     metric: GrowthMetric;
   }>();
 

@@ -45,7 +45,7 @@ export class Minimap {
     this.map = createMap({
       container,
       style,
-      bounds: bounds,
+      bounds,
       fitBoundsOptions: { padding: MINIMAP_PADDING },
       interactive: false,
       attributionControl: false,

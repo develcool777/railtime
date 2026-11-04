@@ -77,8 +77,11 @@
   import { datedShare, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 
   const props = defineProps<{
+    /** The network's changes, in order: a mark each. */
     changes: ChangeInfo[];
+    /** The timeline's first date and its end, as timestamps. */
     range: { start: number; end: number };
+    /** Where the map is in its history, as it tells it; `null` until it does. */
     time: TimeState | null;
     /** What it sets, for screen readers. */
     label: string;

@@ -36,6 +36,62 @@ export const vueConfig = [
       'vue/no-unused-properties': 'error',
       'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-refs': 'error',
+      // A component's parts declared and typed, as a function's are: its props each with a JSDoc, read as
+      // `props.name` (never destructured), declared by a type; its events and slots too.
+      'vue/require-prop-comment': 'error',
+      'vue/define-props-destructuring': ['error', { destructure: 'never' }],
+      'vue/define-props-declaration': ['error', 'type-based'],
+      'vue/define-emits-declaration': ['error', 'type-literal'],
+      'vue/require-explicit-slots': 'error',
+      'vue/require-typed-ref': 'error',
+      'vue/no-props-shadow': 'error',
+      'vue/no-import-compiler-macros': 'error',
+      'vue/prefer-define-options': 'error',
+      'vue/prefer-prop-type-boolean-first': 'error',
+      // A boolean prop is `false` unless given; a model's value is its parent's, never a default of its own.
+      'vue/no-boolean-default': 'error',
+      'vue/no-define-model-default': 'error',
+      // A prop or a ref read once, at setup, keeps the value it had: what follows it is a `computed`, or
+      // reads it where it is used.
+      'vue/no-setup-props-reactivity-loss': 'error',
+      'vue/no-ref-object-reactivity-loss': 'error',
+      // Names a reader cannot take for something else: no event called as the browser's (`select`,
+      // `change`), components in PascalCase, events and slots in camelCase.
+      'vue/no-shadow-native-events': 'error',
+      'vue/component-name-in-template-casing': ['error', 'PascalCase', { registeredComponentsOnly: false }],
+      'vue/custom-event-name-casing': ['error', 'camelCase'],
+      'vue/slot-name-casing': ['error', 'camelCase'],
+      // What a template means is what it says: the same component in `v-if` and `v-else` keyed apart, so
+      // one never takes the other's state; a `<button>` with its `type`; no property it does not have.
+      'vue/v-if-else-key': 'error',
+      'vue/html-button-has-type': 'error',
+      'vue/no-undef-properties': 'error',
+      'vue/no-use-v-else-with-v-for': 'error',
+      'vue/no-duplicate-attr-inheritance': 'error',
+      'vue/no-empty-component-block': 'error',
+      'vue/no-useless-mustaches': 'error',
+      'vue/no-duplicate-class-names': 'error',
+      'vue/no-multiple-objects-in-class': 'error',
+      'vue/no-static-inline-styles': 'error',
+      'vue/next-tick-style': 'error',
+      'vue/v-slot-style': 'error',
+      // A template's expressions held to what a script's are (`javascript.config.js`).
+      'vue/eqeqeq': 'error',
+      'vue/no-implicit-coercion': 'error',
+      'vue/no-negated-condition': 'error',
+      // A template's guard clauses: the empty state first (`v-if="!from"`), what it shows in `v-else`, as
+      // a function returns early; this rule would put the content first and the empty state last.
+      'vue/no-negated-v-if-condition': 'off',
+      'vue/no-constant-condition': 'error',
+      'vue/dot-notation': 'error',
+      'vue/prefer-template': 'error',
+      'vue/no-useless-concat': 'error',
+      'vue/object-shorthand': 'error',
+      'vue/no-console': 'error',
+      'vue/no-sparse-arrays': 'error',
+      'vue/no-loss-of-precision': 'error',
+      'vue/no-empty-pattern': 'error',
+      'vue/no-irregular-whitespace': 'error',
       // The recommended set's other rules, which it only warns of: what a template means, never how it is laid out.
       'vue/attributes-order': 'error',
       'vue/component-definition-name-casing': 'error',

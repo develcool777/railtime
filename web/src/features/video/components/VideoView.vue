@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
   import type { Network } from '@railtime/schema/network.types';
-  import { useTemplateRef } from 'vue';
+  import { computed, useTemplateRef } from 'vue';
   import { useRuntimeConfig } from '#imports';
   import { useVideoMap } from '~/features/video/video.composable';
   import { useVideoStore } from '~/features/video/video.store';
@@ -29,9 +29,9 @@
 
   const store = useVideoStore();
   const container = useTemplateRef<HTMLElement>('container');
-  useVideoMap(container, props.network);
+  useVideoMap(container, () => props.network);
 
-  const cityName = cityNameOf(props.city);
-  const summary = citySummaryOf(props.city);
+  const cityName = computed(() => cityNameOf(props.city));
+  const summary = computed(() => citySummaryOf(props.city));
   const address = spokenAddress(useRuntimeConfig().public.publishedUrl);
 </script>

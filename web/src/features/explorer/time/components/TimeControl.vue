@@ -10,7 +10,7 @@
         <p class="truncate tabular-nums" :class="headline.strong ? 'text-highlighted text-sm font-bold' : 'text-muted text-sm'">{{ headline.text }}</p>
         <p v-if="headline.detail && !phone" class="text-muted truncate text-xs tabular-nums">{{ headline.detail }}</p>
       </div>
-      <PlayerSettings :settings :phone @change="emit('settings', $event)" />
+      <PlayerSettings :settings :phone @settings="emit('settings', $event)" />
     </div>
     <div class="flex items-center" :class="phone ? 'gap-2' : 'gap-3'">
       <div class="flex flex-none items-center gap-1">
@@ -30,7 +30,7 @@
             class="flex-none justify-center rounded-full"
             :class="phone ? 'size-9' : 'size-10'"
             :aria-label="playing ? 'Pause' : playLabel"
-            @click="playing ? emit('pause') : emit('play')" />
+            @click="emit('togglePlay')" />
         </UTooltip>
         <UTooltip text="Next change" :kbds="playing ? ['→'] : undefined">
           <UButton
@@ -69,11 +69,15 @@
   import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
+    /** The timeline, or the player playing the history. */
     mode: TimeMode;
     /** On a phone: smaller, the change's title without its details. */
     phone: boolean;
+    /** Where the map is in its history, as it tells it; `null` until it does. */
     time: TimeState | null;
+    /** The network's changes, in order: the steps back and on, and the timeline's marks. */
     changes: ChangeInfo[];
+    /** The timeline's first date, its end and today, as timestamps. */
     range: { start: number; end: number; today: number };
     /** The change playing now, for the caption. */
     step: StepInfo | null;
@@ -85,8 +89,7 @@
     planOnly: boolean;
   }>();
   const emit = defineEmits<{
-    play: [];
-    pause: [];
+    togglePlay: [];
     previous: [];
     skip: [];
     leave: [place: 'today' | 'end'];

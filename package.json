@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit -p packages/core && tsc --noEmit -p packages/schema && tsc --noEmit -p packages/network && tsc --noEmit -p packages/renderer && tsc --noEmit -p packages/data && tsc --noEmit -p packages/tooling && tsc --noEmit -p packages/video && pnpm --filter @railtime/web type-check",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run",
-    "eslint-check": "eslint",
+    "eslint-check": "eslint --max-warnings 0",
     "eslint-fix": "eslint --fix",
     "format": "prettier --write .",
     "format-check": "prettier --check .",

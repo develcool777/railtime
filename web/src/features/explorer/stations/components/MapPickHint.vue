@@ -18,4 +18,8 @@
     /** It is picked already: a click changes it. */
     picked: boolean;
   }>();
+  defineSlots<{
+    /** Beside the hint: what clears the field. */
+    default?: () => unknown;
+  }>();
 </script>

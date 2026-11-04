@@ -69,6 +69,7 @@
       end: 'from' | 'to';
       /** What the field is for, as its button says it ("where it starts"). */
       label: string;
+      /** What the field says while empty ("From"). */
       placeholder: string;
       /** A station left out of the list: a route's other end. */
       omit?: string | null;
@@ -77,7 +78,7 @@
       /** A button beside it aims the map at this field: where there is another field to aim at. */
       aimable?: boolean;
     }>(),
-    { omit: null, aimed: false, aimable: false },
+    { omit: null },
   );
   const emit = defineEmits<{ pick: [stop: Stop | null]; aim: [] }>();
 

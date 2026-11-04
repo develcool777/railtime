@@ -1,15 +1,20 @@
 <template>
   <div class="px-4 pb-6">
     <PanelSearch v-model="query" placeholder="Search changes" />
-    <UEmpty v-if="changes.length === 0" icon="i-lucide-history" title="No changes yet" description="Nothing has opened or closed by the date shown." />
-    <UEmpty v-else-if="rows.length === 0" icon="i-lucide-search-x" title="No change matches" description="Try a line, a station or a year." />
+    <UEmpty
+      v-if="changes.length === 0"
+      key="none"
+      icon="i-lucide-history"
+      title="No changes yet"
+      description="Nothing has opened or closed by the date shown." />
+    <UEmpty v-else-if="rows.length === 0" key="unmatched" icon="i-lucide-search-x" title="No change matches" description="Try a line, a station or a year." />
     <PanelList v-else ref="list" label="Changes" :rows :estimate :covered="PANEL_SEARCH_HEIGHT">
       <template #sticky="{ row }">
         <div class="eyebrow text-muted bg-default pt-1 pb-2">{{ row.decade }}</div>
       </template>
       <template #row="{ row }">
         <h3 v-if="row.heading" class="eyebrow text-muted pt-1 pb-2">{{ row.decade }}</h3>
-        <ChangeTimelineItem :change="row.change" :state="changeState(row.change.index, current)" :last="row.last" @select="emit('select', row.change.index)" />
+        <ChangeTimelineItem :change="row.change" :state="changeState(row.change.index, current)" :last="row.last" @pick="emit('pick', row.change.index)" />
       </template>
     </PanelList>
   </div>
@@ -25,13 +30,14 @@
   import type { PanelListHandle } from '~/features/explorer/panel/panel.types';
 
   const props = defineProps<{
+    /** The changes up to the date shown, in order. */
     changes: ChangeInfo[];
     /** The change the map is at, by its position; none before the first. */
     current: number | null;
     /** History is playing: the change playing stays in the middle. */
     playing: boolean;
   }>();
-  const emit = defineEmits<{ select: [index: number] }>();
+  const emit = defineEmits<{ pick: [index: number] }>();
 
   const list = useTemplateRef<PanelListHandle>('list');
   const query = ref('');

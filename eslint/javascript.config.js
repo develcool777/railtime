@@ -24,6 +24,14 @@ export const javascriptConfig = [
       'id-length': ['error', { min: 3, exceptions: SHORT_NAMES, properties: 'never' }],
       // Guard clauses: after an `if` that returns, the rest is not an `else`.
       'no-else-return': ['error', { allowElseIf: false }],
+      // Each thing said one way: `===`, `Boolean(x)` for `!!x`, a template literal for `'a' + b`, `{ bounds }`.
+      eqeqeq: 'error',
+      'no-implicit-coercion': 'error',
+      'prefer-template': 'error',
+      'no-useless-concat': 'error',
+      'object-shorthand': 'error',
+      // What the site and the packages say goes on the page or in a thrown error, never to the console.
+      'no-console': 'error',
 
       // Unicorn's modern JavaScript, but where it argues with the house style:
       // `null` is how "nothing here" is said, by us and by Vue and MapLibre alike.
@@ -78,6 +86,8 @@ export const javascriptConfig = [
   // The data and video commands drive one browser page, or a service that asks for a pause between
   // requests, and a recorder steps its page a frame at a time: their awaits wait in turn on purpose.
   { files: ['packages/{data,video}/src/**/*.ts'], rules: { 'no-await-in-loop': 'off' } },
+  // A command says what it did on the console, and the test setup watches it, failing a test that warns.
+  { files: ['packages/{data,video,tooling}/src/**/*.ts', 'vitest.setup.ts'], rules: { 'no-console': 'off' } },
   // A class outside a service file is in the wrong place.
   {
     files: ['**/*.ts'],

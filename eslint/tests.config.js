@@ -42,6 +42,8 @@ export const testsConfig = [
       'unicorn/no-array-front-mutation': 'off',
       // A stand-in for an async API (a browser, a page) is `async` without waiting for anything.
       '@typescript-eslint/require-await': 'off',
+      // A test checks what a command prints (`expect(console.log).toHaveBeenCalledWith(…)`).
+      'no-console': 'off',
       // A test's helper sits in the `describe` that uses it, beside its tests.
       'unicorn/consistent-function-scoping': 'off',
       // A test's checks may sit in a helper of `test/support/` (`expectPlays`, `checkHistory`).

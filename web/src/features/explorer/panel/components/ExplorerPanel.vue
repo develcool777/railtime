@@ -30,7 +30,7 @@
           :aria-pressed="tab.id === shown"
           :aria-description="marks[tab.id]"
           @click="emit('pick', tab.id)">
-          <UChip :show="!!marks[tab.id]" size="md">
+          <UChip :show="marks[tab.id] !== undefined" size="md">
             <UIcon :name="tab.icon" class="size-5" />
           </UChip>
           <span v-if="tabLabels" class="text-[11px] leading-4 font-semibold">{{ tab.label }}</span>
@@ -81,6 +81,7 @@
     width: number;
     /** Beside the map: its edge is being dragged. */
     resizing: boolean;
+    /** The city's sections, as its tabs list them on a phone. */
     sections: { id: Section; label: string; icon: string }[];
     /** On a phone: the section its tabs mark open. */
     section: Section;
@@ -88,6 +89,10 @@
     marks: Partial<Record<Section, string>>;
   }>();
   const emit = defineEmits<{ pick: [section: Section]; resize: [event: PointerEvent] }>();
+  defineSlots<{
+    /** The open section. */
+    default: () => unknown;
+  }>();
   const snap = defineModel<SheetSnap>('snap', { required: true });
 
   // The drawer measures its snaps from the window's foot, as fractions of its height or in pixels:
