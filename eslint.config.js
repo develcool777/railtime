@@ -69,8 +69,12 @@ const SHORT_NAMES = ['id', 'x', 'y', 'km', 'on', 'to', '_'];
 
 /** What a source file may be called: `<camelName>.<role>.ts`, or `<camelName>.<role>.types.ts` for the types of one file. */
 const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store)).@(service|utils|constants|types|schema|composable|store)';
-/** What a test file may be called: `<camelName>.test.ts`, run in node, `.spec.ts`, in happy-dom (`vitest.shared.ts`), or a support file's `.utils.ts`/`.types.ts`/`.constants.ts`. */
-const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|spec|utils|types|constants)';
+/**
+ * What a test file may be called: `<camelName>.test.ts`, run in node, `.spec.ts`, in happy-dom
+ * (`vitest.shared.ts`), `.bench.ts`, timed (`pnpm test-bench`), or a support file's
+ * `.utils.ts`/`.types.ts`/`.constants.ts`.
+ */
+const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|spec|bench|utils|types|constants)';
 
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */
 const TEST_FILES = ['packages/*/test/**/*.ts', 'web/test/**/*.ts'];
@@ -225,10 +229,18 @@ export default defineConfig(
       'unicorn/prefer-number-coercion': 'off',
       // `void promise` is how a promise left to run on its own is written (`no-floating-promises`).
       'sonarjs/void-use': 'off',
+      // A `shift` or `unshift` copies the whole array: a queue built on them is O(n²). Read a queue from
+      // its head; build backwards, then `toReversed()`.
+      'unicorn/no-array-front-mutation': 'error',
+      // Promises that need not wait on one another run together (`Promise.all`).
+      'no-await-in-loop': 'error',
       // A suggestion to weigh, never a defect: which condition reads first is the author's call.
       'unicorn/prefer-simple-condition-first': 'off',
     },
   },
+  // The data and video commands drive one browser page, or a service that asks for a pause between
+  // requests, and a recorder steps its page a frame at a time: their awaits wait in turn on purpose.
+  { files: ['packages/{data,video}/src/**/*.ts'], rules: { 'no-await-in-loop': 'off' } },
   // Tool configs and plain JavaScript sit in no tsconfig: no rule that needs types.
   { files: ['**/*.js', ...TOOL_CONFIGS], extends: [tseslint.configs.disableTypeChecked] },
   {
@@ -293,6 +305,8 @@ export default defineConfig(
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
+      // A stand-in's queue holds a frame or two: what ships is held to O(n) queues.
+      'unicorn/no-array-front-mutation': 'off',
       // A stand-in for an async API (a browser, a page) is `async` without waiting for anything.
       '@typescript-eslint/require-await': 'off',
       // A test's helper sits in the `describe` that uses it, beside its tests.
@@ -408,8 +422,12 @@ export default defineConfig(
     rules: {
       'check-file/filename-naming-convention': ['error', { '**/*.ts': TEST_FILE }],
       'check-file/folder-naming-convention': ['error', { '**/': 'CAMEL_CASE' }],
-      // A test is in `test/unit/` (beside the code it mirrors) or helps them from `test/support/`.
-      'check-file/folder-match-with-fex': ['error', { '*.test.ts': '**/test/unit/**', '*.spec.ts': '**/test/unit/**', '*.utils.ts': '**/test/support/**' }],
+      // A test is in `test/unit/` (beside the code it mirrors), a benchmark in `test/bench/`, and what
+      // they share in `test/support/`.
+      'check-file/folder-match-with-fex': [
+        'error',
+        { '*.test.ts': '**/test/unit/**', '*.spec.ts': '**/test/unit/**', '*.bench.ts': '**/test/bench/**', '*.utils.ts': '**/test/support/**' },
+      ],
     },
   },
   {

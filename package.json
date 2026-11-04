@@ -20,6 +20,7 @@
     "data:previews": "pnpm --filter @railtime/data previews",
     "video:record": "pnpm --filter @railtime/video record",
     "test-unit-coverage": "vitest run --coverage",
+    "test-bench": "pnpm --filter @railtime/data test-bench",
     "test-mutation": "node packages/tooling/src/cli.mutation.ts"
   },
   "devDependencies": {

@@ -46,7 +46,11 @@ landing page's pictures in Chrome).
   one that does).
 - **Loops say what they loop over.** No `for (;;)` or `while (true)`;
   `for (const [place, stop] of run.entries())`, never `forEach` (`unicorn/no-array-for-each`), nor
-  `reduce` (`unicorn/no-array-reduce`): a sum or a fold is a loop and a `let`.
+  `reduce` (`unicorn/no-array-reduce`): a sum or a fold is a loop and a `let`. A queue is read from its
+  head, never `shift`ed, and a list built from its end is pushed then `toReversed()`, never
+  `unshift`ed: each copies the whole array, so the loop is O(n²) (`unicorn/no-array-front-mutation`).
+  Promises that need not wait for one another run together, `Promise.all` (`no-await-in-loop`; off for
+  the data and video commands, which drive one page or a service asking for a pause between requests).
 - **Imports in one block, in order** (`import-x/order`; `pnpm eslint-fix` sorts them): packages, `node:`
   among them, then the app's own (`#imports`, `~/`, `@test/`), then relative, each group alphabetical,
   no blank lines. No module imports itself round a circle (`import-x/no-cycle`).
@@ -183,6 +187,7 @@ packages/data/
                             format/, boundary/, preview/ (a command each)
   test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
                             cities/united-kingdom/london/london.json, played through the renderer
+  test/bench/               the work a visitor waits on, timed on the largest city (`pnpm test-bench`)
 web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts); components are checked in the browser;
                             they import as the app does, from ~/, and test/support/ from @test/
 ```
@@ -217,6 +222,13 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
   loads (a Zod schema, a constant built from others), run with `--fresh`, or those mutants keep their
   old result. A survivor that changes nothing (`i >= 0` where `i > 0` and `list[-1]` is `undefined`)
   or only how the map looks (a halo width) is left; one that changes behaviour gets a test.
+- Benchmarks, by hand: `pnpm test-bench` times the work a visitor waits on, on London, the largest
+  network (in `packages/data/test/bench/`, with the cities: `network` and the renderer know none):
+  opening a city, a route, a reach, coverage's history, a frame's snapshot. Each is set beside its last
+  run on this machine (kept in `packages/data/test-reports/bench/`, never committed): run it on main,
+  then on a branch, to see what the branch changed; a few per cent either way is noise. Each first
+  checks its work does its job, so a slip cannot pass for speed. Work a visitor waits on gets one. Lint
+  cannot see how much data a loop runs over; this does.
 
 ## Data
 

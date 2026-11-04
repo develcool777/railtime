@@ -25,6 +25,7 @@ pnpm eslint-check        # pnpm eslint-fix to fix
 pnpm format              # Prettier (pnpm format-check to check)
 pnpm code-quality:dead-code   # knip
 pnpm test-mutation packages/schema   # Stryker: which deliberate bugs the folder's tests miss (no folder: the list, with scores)
+pnpm test-bench          # how long opening London, a route, coverage and a frame take, beside the last run
 
 pnpm data:summaries  # sum up every city into cities/cities.json, the landing page's list
 pnpm data:previews london  # draw its card's pictures (needs Chrome)
