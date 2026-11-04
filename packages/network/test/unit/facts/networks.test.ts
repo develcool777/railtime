@@ -1,3 +1,4 @@
+import { keysOf } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { lineId, networkId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
@@ -23,8 +24,8 @@ describe('NetworksUtils', () => {
   describe('withLinesHidden', () => {
     test('leaves a line hidden out as if it were not there: its own track and stations, its changes and plans, and a network with none left', () => {
       const shown = withLinesHidden(hiddenNetwork(), [lineId('grey')]).network;
-      expect(Object.keys(shown.networks)).toEqual(['metro']);
-      expect(Object.keys(shown.lines)).not.toContain('grey');
+      expect(keysOf(shown.networks)).toEqual(['metro']);
+      expect(keysOf(shown.lines)).not.toContain('grey');
       expect(shown.segments.find(segment => segment.stationA === 'c' && segment.stationB === 'd')?.lines).not.toHaveProperty('grey');
       expect(shown.segments.some(segment => segment.stationB === 'x')).toBe(false);
       expect(shown.stations).not.toHaveProperty('x');
@@ -33,7 +34,7 @@ describe('NetworksUtils', () => {
         red: [{ from: '1930-01-01', until: '1931-01-01' }],
       });
       expect(shown.transfers?.some(transfer => transfer.stationB === 'x')).toBe(false);
-      expect(Object.keys(shown.plans ?? {})).toEqual(['extension']);
+      expect(keysOf(shown.plans ?? {})).toEqual(['extension']);
     });
 
     test('takes the years another line was drawn as one hidden with it: its gaps, which the engine cuts its runs at', () => {
@@ -45,7 +46,7 @@ describe('NetworksUtils', () => {
       expect(shown.lines[lineId('pink')]?.aliases).toBeUndefined();
       expect(gaps).toEqual(new Map([['pink', [{ from: -Infinity, until: toTimestamp('1990-01-01') }]]]));
       expect(shown.plans).toEqual({});
-      expect(Object.keys(withLinesHidden(tinyNetwork(), [lineId('red'), lineId('pink')]).network.lines)).toEqual(['blue', 'green']);
+      expect(keysOf(withLinesHidden(tinyNetwork(), [lineId('red'), lineId('pink')]).network.lines)).toEqual(['blue', 'green']);
     });
 
     test('drops a run all inside a gap', () => {
@@ -75,7 +76,7 @@ describe('NetworksUtils', () => {
       ];
       const plan = withLinesHidden(network, [lineId('red')]).network.plans?.[planId('extension')];
       expect(plan?.sections).toEqual([{ line: 'blue', stations: ['b', 'g'] }]);
-      expect(Object.keys(plan?.stations ?? {})).toEqual(['g']);
+      expect(keysOf(plan?.stations ?? {})).toEqual(['g']);
       expect(plan?.transfers).toEqual([{ stationA: 'g', stationB: 'a' }]);
       expect(withLinesHidden(network, [lineId('red'), lineId('blue')]).network.plans).toEqual({});
     });

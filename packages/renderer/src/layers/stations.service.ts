@@ -279,8 +279,10 @@ export class StationLayer extends MapLayer {
    */
   public stationAt(point: PointLike): StationId | null {
     const [hit] = this.map.queryRenderedFeatures(point, { layers: [LAYERS.stations] });
-    // The id this layer gave the dot (`StationProperties`): MapLibre hands its properties back untyped.
-    return (hit?.properties.id as StationId | undefined) ?? null;
+    const id: unknown = hit?.properties.id;
+    // One of the dots this layer drew, by the id it gave it: MapLibre hands its properties back untyped.
+    for (const station of this.appearedAt.keys()) if (station === id) return station;
+    return null;
   }
 
   /** Forgets running pulses: after a jump in time they would belong to nothing. */

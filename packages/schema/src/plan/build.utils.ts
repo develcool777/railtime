@@ -44,7 +44,7 @@ export const buildPlan = (network: Network, planId: PlanId): BuiltPlan => {
  * @param network - The network.
  * @returns True if it has plans and nothing else.
  */
-export const isPlanOnly = (network: Network): boolean => network.segments.length === 0 && Object.keys(network.plans ?? {}).length > 0;
+export const isPlanOnly = (network: Network): boolean => network.segments.length === 0 && keysOf(network.plans ?? {}).length > 0;
 
 /**
  * The plan a network is shown by when none is asked for and it was never built: its first.

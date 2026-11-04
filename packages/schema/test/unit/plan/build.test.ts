@@ -1,3 +1,4 @@
+import { keysOf } from '@railtime/core/collection.utils';
 import { turnDegrees } from '@railtime/core/geometry.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import { describe, expect, test } from 'vitest';
@@ -89,7 +90,7 @@ describe('PlanBuildUtils', () => {
 
     test("adds the plan's lines, stations and transfers to the network's, and drops the plans", () => {
       const { network } = buildPlan(asNetwork(plannedNetwork()), planId('extension'));
-      expect(Object.keys(network.stations).toSorted(byCodeUnits)).toEqual(['a', 'b', 'c', 'd']);
+      expect(keysOf(network.stations).toSorted(byCodeUnits)).toEqual(['a', 'b', 'c', 'd']);
       expect(network.transfers).toEqual([{ stationA: 'c', stationB: 'd' }]);
       expect(network.plans).toBeUndefined();
       const withTransfers = asNetwork(plannedNetwork());
@@ -164,7 +165,7 @@ describe('PlanBuildUtils', () => {
 
   describe('firstPlanOf', () => {
     test("is a network's first plan, and none without plans", () => {
-      expect(firstPlanOf(asNetwork(plannedNetwork()))).toBe(Object.keys(asNetwork(plannedNetwork()).plans ?? {})[0]);
+      expect(firstPlanOf(asNetwork(plannedNetwork()))).toBe(keysOf(asNetwork(plannedNetwork()).plans ?? {})[0]);
       const { plans: _plans, ...withoutPlans } = asNetwork(plannedNetwork());
       expect(firstPlanOf(withoutPlans)).toBeUndefined();
     });

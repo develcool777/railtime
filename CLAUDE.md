@@ -15,7 +15,7 @@ and its plans; `NetworkEngine`, `facts.engine`, the raw network the renderer pla
 `packages/renderer` (drawing: the MapLibre engine, `TransitMap`), `packages/data` (storage: every
 city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline and pictures; the index
 of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
-`boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`),
+`boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`, and the house's typed lint rules),
 `packages/video` (videos of the app: `pnpm video:record <city>` records its video page frame by frame,
 on a clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `web`) and `web`
 (the app: the Nuxt 4 + Nuxt UI explorer, and the video page, `/video/<city>`, under `pnpm dev` only).
@@ -79,10 +79,14 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `schema`'s format): a line's id where a station's goes does not compile, and a map or set of them
   says which (`Map<StationId, number>`). A string becomes an id only where it is checked: `parseNetwork`
   for a city's file, `isStationIn`/`isLineIn`/`isPlanIn` (`facts.findStation`, `findLine`, `planToOpen`)
-  for an address; never by `as` elsewhere. A record keyed by ids is walked with `keysOf`/`entriesOf`
-  and made with `fromEntriesOf` (`@railtime/core/collection.utils`), which keep the key's kind, where
-  `Object.keys` makes it `string`. A test names its ids with `stationId('a')`, `lineId('red')`, and
-  writes a network as its file is, `asNetwork({…})` (`@railtime/schema/testing/ids`).
+  for an address; never by `as` elsewhere (`house/checked-ids`). A record keyed by ids is walked with
+  `keysOf`/`entriesOf` and made with `fromEntriesOf` (`@railtime/core/collection.utils`), which keep the
+  key's kind, where `Object.keys` makes it `string` (`house/branded-record-keys`). An id key beside a
+  spread, `{ ...plans, [id]: plan }`, is one TypeScript checks nothing under: copy, then set it by key
+  (`house/branded-spread-key`). A test names its ids with `stationId('a')`, `lineId('red')`, and writes a
+  network as its file is, `asNetwork({…})` (`@railtime/schema/testing/ids`), helpers that trust what
+  they are given, which source never imports (`house/test-helpers`). The house's rules read types, and
+  live, tested, in `packages/tooling/src/lint/`.
 - **A key left out is not a key given `undefined`** (`exactOptionalPropertyTypes`, in the packages):
   `{ plan?: string }` takes no `plan: undefined`; pass it on as `...(plan && { plan })`, and leave a
   key out with `const { plans: _plans, ...rest } = network`. Where `undefined` does mean "not given",
