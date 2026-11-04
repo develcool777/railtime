@@ -1,23 +1,22 @@
+import eslint from '@eslint/js';
+import vitest from '@vitest/eslint-plugin';
+import { defineConfig } from 'eslint/config';
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import checkFile from 'eslint-plugin-check-file';
+import importX from 'eslint-plugin-import-x';
 import jsdoc from 'eslint-plugin-jsdoc';
 import sonarjs from 'eslint-plugin-sonarjs';
+import unicorn from 'eslint-plugin-unicorn';
 import vuePlugin from 'eslint-plugin-vue';
 import vueAccessibility from 'eslint-plugin-vuejs-accessibility';
-import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import vueParser from 'vue-eslint-parser';
-import eslint from '@eslint/js';
 
 /**
- * The code conventions (CLAUDE.md), as rules, so they hold without anyone remembering them:
- *
- *   - arrow functions only, never `function`
- *   - no `for (;;)` / `while (true)`: loops say what they loop over
- *   - classes only in `*.service.ts` (several of one subject may share one); helpers in `*.utils.ts`,
- *     constants in `*.constants.ts`, types in `*.types.ts`
- *   - every class member has an access modifier; every class, member and export has JSDoc
- *   - names say what they hold: no one- or two-letter names but a few well-known ones
+ * The code conventions (CLAUDE.md), as rules, so they hold without anyone remembering them; each
+ * convention there names the rule that checks it. Nothing is on `warn`: a rule is `error`, or `off`
+ * with a line saying why, so a slip fails `pnpm eslint-check` instead of scrolling past.
  */
 
 /** Loop and function shapes banned everywhere. */
@@ -42,10 +41,25 @@ const NETWORK_ENGINE = {
 
 /** The data commands run under Node's type stripping, which finds a file only by its whole name. */
 const NAMED_FILE = {
-  regex: '^\\.{1,2}/.*(?<!\\.ts)$',
+  regex: String.raw`^\.{1,2}/.*(?<!\.ts)$`,
   allowTypeImports: true,
   message: 'A runtime import names its file, `.ts` included: the data commands run this code under Node.',
 };
+
+/** What a `*.utils.ts` may not take at run time: a store, a composable, Vue, the map. Its types are erased, so they may. */
+const IMPURE = {
+  regex: String.raw`^(vue|pinia|#imports|maplibre-gl|@vueuse/.*)$|\.(store|composable)(\.ts)?$`,
+  allowTypeImports: true,
+  message: 'A utils file is pure: no store, composable, Vue or map. Take what it needs as arguments, or move this into a store or composable.',
+};
+
+/**
+ * House conventions that reuse a generic rule, each under a name of its own. A flat config keeps one
+ * setting per rule per file, the last block's, so a second `no-restricted-imports` would silently
+ * replace the package fences; named apart, each holds alone, and its name says which convention a
+ * report is about (as in dataroom-ui).
+ */
+const house = { rules: { 'pure-utils': tseslint.plugin.rules['no-restricted-imports'] } };
 
 /** Outside a `*.service.ts`, a class is in the wrong file. */
 const NO_CLASS_OUTSIDE_SERVICE = { selector: 'ClassDeclaration', message: 'Classes live in a `*.service.ts` file.' };
@@ -61,17 +75,14 @@ const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|spec|utils|types|constants)';
 /** Each package's tests, beside its code: `test/unit/` mirrors `src/`, `test/support/` is what they share. */
 const TEST_FILES = ['packages/*/test/**/*.ts', 'web/test/**/*.ts'];
 
-/**
- * Tests run the real code, as in dataroom-ui: a test that mocks our own module ends up testing the
- * mock. One way to write a test, so they read alike.
- */
+/** Tests run the real code, as in dataroom-ui: a test that mocks our own module ends up testing the mock. */
 const TEST_SYNTAX = [
   {
     selector: "CallExpression[callee.object.name='vi'][callee.property.name=/^(mock|doMock)$/]",
     message: 'Tests run the real code: no vi.mock. Build the input with a factory in test/support/.',
   },
-  { selector: "CallExpression[callee.name='it']", message: 'Write `test(…)`, not `it(…)`.' },
 ];
+/** A command's file name. */
 const SCRIPT_FILE = 'cli?(.+([a-zA-Z0-9]))';
 /**
  * Commands run with node: `src/cli.<name>.ts`, or a feature's own, `src/<feature>/cli.ts`
@@ -79,12 +90,19 @@ const SCRIPT_FILE = 'cli?(.+([a-zA-Z0-9]))';
  */
 const CLI_FILES = ['packages/*/src/cli.*.ts', 'packages/*/src/*/cli.ts'];
 
-/** Config files at a package root follow their tool's naming, not ours. */
-const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**/app.config.ts'];
+/** Config files at a package root follow their tool's naming, not ours, and sit in no tsconfig. */
+const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**/app.config.ts', 'vitest.*.ts'];
+
+/** The code a JSDoc mirrors the signature of: every function but an arrow in an array (a table, documented as one). */
+const JSDOC_FUNCTIONS = ['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression:not(ArrayExpression > ArrowFunctionExpression)'];
 
 export default defineConfig(
   eslint.configs.recommended,
-  tseslint.configs.recommended,
+  tseslint.configs.strictTypeChecked,
+  tseslint.configs.stylisticTypeChecked,
+  unicorn.configs.recommended,
+  importX.flatConfigs.recommended,
+  importX.flatConfigs.typescript,
   ...vuePlugin.configs['flat/recommended'],
   // What a screen reader or a keyboard needs of a template: labels, roles, keys for what is clicked.
   ...vueAccessibility.configs['flat/recommended'],
@@ -95,12 +113,27 @@ export default defineConfig(
   // ---- Everything -----------------------------------------------------------
   {
     files: ['**/*.{js,ts,vue}'],
-    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+      // Types for every rule that needs them (a promise left floating, a condition that is always true):
+      // each file is read with its own package's tsconfig, web's from `.nuxt/` (`nuxt prepare`, on install).
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname, extraFileExtensions: ['.vue'] },
+    },
+    settings: {
+      // Nuxt's generated `#imports` re-exports every composable: read through, every file importing it
+      // would look like a circle.
+      'import-x/ignore': [String.raw`[/\\]\.nuxt[/\\]`],
+      'import-x/resolver-next': [
+        createTypeScriptImportResolver({
+          project: ['packages/*/tsconfig.json', 'web/.nuxt/tsconfig.app.json', 'web/.nuxt/tsconfig.node.json'],
+          noWarnOnMultipleProjects: true,
+        }),
+      ],
+    },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
-      // Geometry and timeline code is index-heavy by nature.
-      'sonarjs/cognitive-complexity': ['error', 25],
+      'sonarjs/cognitive-complexity': ['error', 15],
       'sonarjs/pseudo-random': 'off',
       // `IsoDate` and friends are aliases on purpose: they say what a string holds.
       'sonarjs/redundant-type-aliases': 'off',
@@ -108,8 +141,96 @@ export default defineConfig(
       'prefer-arrow-callback': 'error',
       'no-restricted-syntax': ['error', ...SHARED_SYNTAX],
       'id-length': ['error', { min: 3, exceptions: SHORT_NAMES, properties: 'never' }],
+      // Guard clauses: after an `if` that returns, the rest is not an `else`.
+      'no-else-return': ['error', { allowElseIf: false }],
+
+      // Imports: packages (`node:` among them), then the app's own (`~/`, `@test/`), then relative,
+      // one run with no blank lines (as in dataroom-ui), each group in order; `eslint --fix` sorts them.
+      'import-x/order': [
+        'error',
+        {
+          groups: [['builtin', 'external'], 'internal', ['parent', 'sibling', 'index']],
+          pathGroups: [{ pattern: '{~,@test}/**', group: 'internal' }],
+          pathGroupsExcludedImportTypes: ['builtin'],
+          'newlines-between': 'never',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
+      'import-x/first': 'error',
+      'import-x/newline-after-import': 'error',
+      'import-x/no-duplicates': 'error',
+      // Stores, packages and modules read one another one way: never in a circle.
+      'import-x/no-cycle': 'error',
+      // TypeScript checks every import already, what it finds and what it takes (`#imports` and `~/` too).
+      'import-x/no-unresolved': 'off',
+      'import-x/named': 'off',
+      'import-x/default': 'off',
+      'import-x/namespace': 'off',
+      'import-x/no-named-as-default': 'off',
+      'import-x/no-named-as-default-member': 'off',
+
+      // TypeScript's stricter checks, tuned to the house style.
+      // A number in a message or a URL is how one is written.
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      // `() => map.play()` and `(next) => (time.value = next)` are how actions and handlers are written.
+      '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
+      // A test may read a private member, as `animation['context']`, which TypeScript allows only so.
+      '@typescript-eslint/dot-notation': ['error', { allowPrivateClassPropertyAccess: true }],
+      // A callback that does nothing is `() => {}`.
+      '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions'] }],
+      // Every shape is a `type`, so one reads like the next.
+      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      // `!` is allowed where a loop's bounds guarantee the element, with a comment saying so (CLAUDE.md,
+      // strict indexing); an id the network supplied goes through `required()`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+
+      // Unicorn's modern JavaScript, but where it argues with the house style:
+      // `null` is how "nothing here" is said, by us and by Vue and MapLibre alike.
+      'unicorn/no-null': 'off',
+      // File names are `check-file`'s (`collection.utils.ts`, camelCase), and names `id-length`'s.
+      'unicorn/filename-case': 'off',
+      'unicorn/name-replacements': 'off',
+      // A boolean says what holds (`playing`, `inPlan`), not `is…`.
+      'unicorn/consistent-boolean-name': 'off',
+      // A one-line JSDoc is `/** … */`, and a longer one has its column of asterisks.
+      'unicorn/single-line-block-comment-style': 'off',
+      'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
+      // A class keeps a private helper near the method it serves; this rule would put every private
+      // member first, ahead of what the class offers.
+      'unicorn/consistent-class-member-order': 'off',
+      // `required(reach[0], …)` inside a call is the strict-indexing convention, not a tangle.
+      'unicorn/max-nested-calls': 'off',
+      // A typed array's cell (`inside[cell]`) is not an object's key.
+      'unicorn/no-computed-property-existence-check': 'off',
+      // `flatMap(item => (keep ? [item] : []))` filters and maps in one pass.
+      'unicorn/no-unnecessary-array-flat-map': 'off',
+      // `.some(inRing)`: TypeScript checks a callback's parameters.
+      'unicorn/no-array-callback-reference': 'off',
+      // Named imports (`import { join } from 'node:path'`), as everywhere else.
+      'unicorn/import-style': 'off',
+      // Iterator helpers (`map.values().toArray()`) are newer than some browsers the site serves (Safari before 18.4).
+      'unicorn/prefer-iterator-to-array': 'off',
+      // The renderer's `EventEmitter` is typed; an `EventTarget`'s events are not.
+      'unicorn/prefer-event-target': 'off',
+      // What runs in a page (a component, a recorder's `page.evaluate`) says `window`, typed as one.
+      'unicorn/prefer-global-this': 'off',
+      // Guard clauses read one at a time: never merged into one condition, or into a ternary.
+      'unicorn/prefer-ternary': 'off',
+      'unicorn/prefer-combined-guards': 'off',
+      // A loop's head says what it loops over (`for (const [place, stop] of run.entries())`).
+      'unicorn/no-unreadable-for-of-expression': 'off',
+      // Prettier writes number literals (`0x0b`).
+      'unicorn/number-literal-case': 'off',
+      // `Number.parseFloat('12px')` is 12, where `Number('12px')` is NaN.
+      'unicorn/prefer-number-coercion': 'off',
+      // `void promise` is how a promise left to run on its own is written (`no-floating-promises`).
+      'sonarjs/void-use': 'off',
+      // A suggestion to weigh, never a defect: which condition reads first is the author's call.
+      'unicorn/prefer-simple-condition-first': 'off',
     },
   },
+  // Tool configs and plain JavaScript sit in no tsconfig: no rule that needs types.
+  { files: ['**/*.js', ...TOOL_CONFIGS], extends: [tseslint.configs.disableTypeChecked] },
   {
     files: ['**/*.vue'],
     rules: {
@@ -145,15 +266,45 @@ export default defineConfig(
     ignores: ['**/*.service.ts', ...TOOL_CONFIGS],
     rules: { 'no-restricted-syntax': ['error', ...SHARED_SYNTAX, NO_CLASS_OUTSIDE_SERVICE] },
   },
+
+  // ---- Tests --------------------------------------------------------------------
+  // One way to write a test, so they read alike; none left focused or skipped; each matcher the one
+  // that says what it checks, so a failure says what went wrong.
   {
     files: TEST_FILES,
-    rules: { 'no-restricted-syntax': ['error', ...SHARED_SYNTAX, NO_CLASS_OUTSIDE_SERVICE, ...TEST_SYNTAX] },
+    plugins: { vitest },
+    rules: {
+      ...vitest.configs.recommended.rules,
+      'no-restricted-syntax': ['error', ...SHARED_SYNTAX, NO_CLASS_OUTSIDE_SERVICE, ...TEST_SYNTAX],
+      'vitest/consistent-test-it': ['error', { fn: 'test', withinDescribe: 'test' }],
+      'vitest/no-focused-tests': 'error',
+      'vitest/no-disabled-tests': 'error',
+      'vitest/prefer-to-be': 'error',
+      'vitest/prefer-to-have-length': 'error',
+      'vitest/prefer-to-contain': 'error',
+      'vitest/prefer-comparison-matcher': 'error',
+      'vitest/prefer-equality-matcher': 'error',
+      'vitest/prefer-to-have-been-called-times': 'error',
+      'vitest/prefer-hooks-on-top': 'error',
+      // Vitest takes a message beside the value: `expect(existsSync(path), path)`.
+      'vitest/valid-expect': ['error', { maxArgs: 2 }],
+      // An asymmetric matcher (`expect.closeTo(…)`) is typed `any`, and a test reads JSON files: what it
+      // checks of them is checked at run time.
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      // A stand-in for an async API (a browser, a page) is `async` without waiting for anything.
+      '@typescript-eslint/require-await': 'off',
+      // A test's helper sits in the `describe` that uses it, beside its tests.
+      'unicorn/consistent-function-scoping': 'off',
+      // A test's checks may sit in a helper of `test/support/` (`expectPlays`, `checkHistory`).
+      'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'expect*', 'check*'] }],
+    },
   },
 
-  // ---- JSDoc on every class, member and export ---------------------------------
+  // ---- JSDoc on every class, member, module-level constant and type --------------------
   {
     files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'web/src/**/*.ts'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
     plugins: { jsdoc },
     rules: {
       'jsdoc/require-jsdoc': [
@@ -161,16 +312,54 @@ export default defineConfig(
         {
           publicOnly: false,
           require: { ClassDeclaration: true, MethodDefinition: true, FunctionDeclaration: true },
-          contexts: ['PropertyDefinition', 'ExportNamedDeclaration:has(> VariableDeclaration)', 'ExportNamedDeclaration:has(> TSTypeAliasDeclaration)'],
+          contexts: [
+            'PropertyDefinition',
+            'Program > VariableDeclaration',
+            'ExportNamedDeclaration:has(> VariableDeclaration)',
+            'Program > TSTypeAliasDeclaration',
+            'ExportNamedDeclaration:has(> TSTypeAliasDeclaration)',
+          ],
           checkConstructors: false,
           checkGetters: true,
+          // `--fix` would write an empty `/** */`: a doc is written, never stamped.
+          enableFixer: false,
         },
       ],
-      'jsdoc/check-param-names': 'error',
+    },
+  },
+  // ---- …and every JSDoc, a component's too, mirroring its signature ------------------------
+  {
+    files: ['packages/*/src/**/*.ts', '**/test/support/**/*.ts', 'web/src/**/*.{ts,vue}'],
+    plugins: { jsdoc },
+    rules: {
+      // A `@param <name> - <what>` for each parameter and none for one gone; a `@returns` for a value,
+      // none for `void`. No `{type}`, no `[optional]`, no default: TypeScript says those.
+      'jsdoc/require-param': ['error', { checkDestructured: false, contexts: JSDOC_FUNCTIONS, enableFixer: false }],
+      'jsdoc/check-param-names': ['error', { checkDestructured: false }],
+      'jsdoc/require-param-description': 'error',
+      'jsdoc/require-hyphen-before-param-description': 'error',
+      // A getter's doc says what it is: no `@returns` beside it.
+      'jsdoc/require-returns': [
+        'error',
+        { checkGetters: false, contexts: JSDOC_FUNCTIONS.map(node => `${node}:not([returnType.typeAnnotation.type='TSVoidKeyword'])`) },
+      ],
+      'jsdoc/require-returns-check': 'error',
+      'jsdoc/require-returns-description': 'error',
       'jsdoc/check-tag-names': 'error',
       'jsdoc/no-types': 'error',
-      'jsdoc/require-param-description': 'error',
-      'jsdoc/require-returns-description': 'error',
+      'jsdoc/no-defaults': 'error',
+      'jsdoc/no-restricted-syntax': [
+        'error',
+        {
+          contexts: [
+            {
+              comment: String.raw`JsdocBlock:has(JsdocTag[tag="param"][name=/^\[/])`,
+              context: 'any',
+              message: 'No [optional] brackets on a @param: TypeScript says what is optional.',
+            },
+          ],
+        },
+      ],
     },
   },
 
@@ -194,6 +383,12 @@ export default defineConfig(
     files: ['packages/{data,video}/src/**/*.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE, NAMED_FILE] }] },
   },
+  // Pure first: a `*.utils.ts` takes what it needs as arguments, so it runs and is tested anywhere.
+  {
+    files: ['packages/*/src/**/*.utils.ts', 'web/src/**/*.utils.ts'],
+    plugins: { house },
+    rules: { 'house/pure-utils': ['error', { patterns: [IMPURE] }] },
+  },
 
   // ---- File names ------------------------------------------------------------
   {
@@ -203,6 +398,8 @@ export default defineConfig(
     rules: {
       'check-file/filename-naming-convention': ['error', { '**/*.ts': SOURCE_FILE }],
       'check-file/folder-naming-convention': ['error', { '**/': 'CAMEL_CASE' }],
+      // No barrels, no `types/` folders: a file's types sit beside it, as `<name>.types.ts`.
+      'check-file/filename-blocklist': ['error', { '**/index.ts': '*.utils.ts', '**/types/**/*.ts': '*.types.ts' }],
     },
   },
   {
@@ -231,20 +428,34 @@ export default defineConfig(
     files: ['**/*.vue'],
     languageOptions: {
       parser: vueParser,
-      parserOptions: { parser: tseslint.parser, extraFileExtensions: ['.vue'] },
+      parserOptions: { parser: tseslint.parser, projectService: true, tsconfigRootDir: import.meta.dirname, extraFileExtensions: ['.vue'] },
     },
     rules: {
       'vue/multi-word-component-names': 'off',
       'vue/block-lang': ['error', { script: { lang: 'ts' } }],
       'vue/block-order': ['error', { order: ['template', 'script[setup]', 'style'] }],
+      'vue/padding-line-between-blocks': ['error', 'always'],
       'vue/component-api-style': ['error', ['script-setup', 'composition']],
-      'vue/require-macro-variable-name': ['error', { defineProps: 'props', defineEmits: 'emit' }],
+      'vue/define-macros-order': ['error', { order: ['defineProps', 'defineEmits'] }],
+      'vue/require-macro-variable-name': ['error', { defineProps: 'props', defineEmits: 'emit', defineSlots: 'slots', useSlots: 'slots', useAttrs: 'attrs' }],
       'vue/attribute-hyphenation': ['error', 'never'],
       'vue/v-on-event-hyphenation': ['error', 'never', { autofix: true }],
       'vue/prop-name-casing': ['error', 'camelCase'],
       'vue/v-bind-style': ['error', 'shorthand', { sameNameShorthand: 'always' }],
       'vue/v-on-style': ['error', 'shorthand'],
       'vue/no-v-html': 'error',
+      // A component's `<script setup>` runs once for each: its top level is the component's own.
+      'unicorn/no-top-level-assignment-in-function': 'off',
+      // A template says each thing one way: `class` apart from `:class`, `disabled` for `:disabled="true"`.
+      'vue/no-useless-v-bind': 'error',
+      'vue/prefer-separate-static-class': 'error',
+      'vue/prefer-true-attribute-shorthand': ['error', 'always'],
+      // An element's ref is `useTemplateRef`, typed by what it holds.
+      'vue/prefer-use-template-ref': 'error',
+      // Nothing declared and never used: a prop, an event, a ref.
+      'vue/no-unused-properties': 'error',
+      'vue/no-unused-emit-declarations': 'error',
+      'vue/no-unused-refs': 'error',
       // The recommended set's other rules, which it only warns of: what a template means, never how it is laid out.
       'vue/attributes-order': 'error',
       'vue/component-definition-name-casing': 'error',

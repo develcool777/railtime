@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest';
-import type { Line, Station } from '@railtime/schema/network.types';
 import { toTimestamp } from '@railtime/core/date.utils';
+import type { Line, Station } from '@railtime/schema/network.types';
+import { describe, expect, test } from 'vitest';
 import { gapsOf, lineWithout, runsOutside, stationOutside } from '../../../src/facts/aliases.utils';
 
 /** A line drawn as `red` until 1950, then as `blue` until 1970. */

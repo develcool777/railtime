@@ -62,16 +62,9 @@
 <script setup lang="ts">
   import type { NetworkGrowth, NetworkRecords } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
-
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
   import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
   import { lineColor } from '~/utils/format.utils';
-
-  const METRICS: { label: string; value: GrowthMetric }[] = [
-    { label: 'Stations', value: 'stations' },
-    { label: 'Km', value: 'km' },
-    { label: 'Lines', value: 'lines' },
-  ];
 
   const props = defineProps<{
     /** The network year by year; `null` until the map is mounted. */
@@ -83,7 +76,14 @@
     /** The year shown on the map; `null` in a plan. */
     year: number | null;
   }>();
+
   const emit = defineEmits<{ year: [year: number]; station: [station: string]; line: [line: string] }>();
+
+  const METRICS: { label: string; value: GrowthMetric }[] = [
+    { label: 'Stations', value: 'stations' },
+    { label: 'Km', value: 'km' },
+    { label: 'Lines', value: 'lines' },
+  ];
 
   const metric = ref<GrowthMetric>('stations');
   const points = computed(() => (props.growth ? growthSeries(props.growth.years, metric.value) : []));

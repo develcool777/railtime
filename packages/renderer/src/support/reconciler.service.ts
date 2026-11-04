@@ -71,4 +71,5 @@ const sameValue = (first: unknown, second: unknown): boolean => {
  * @returns The parts that change.
  */
 export const stateChanges = (current: MapProps, next: Partial<MapProps>): Partial<MapProps> =>
-  Object.fromEntries(Object.entries(next).filter(([key, value]) => value !== undefined && !sameValue(current[key as keyof MapProps], value)));
+  // A prop given as `undefined` is one not given.
+  Object.fromEntries((Object.entries(next) as [keyof MapProps, unknown][]).filter(([key, value]) => value !== undefined && !sameValue(current[key], value)));

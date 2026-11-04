@@ -30,13 +30,8 @@
 <script setup lang="ts">
   import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed } from 'vue';
-
   import { cityNameOf, previewUrlOf } from '~/utils/city.utils';
   import { counted } from '~/utils/format.utils';
-
-  /** A preview's size, as it was drawn: the box it fills crops it. */
-  const PREVIEW_WIDTH = 400;
-  const PREVIEW_HEIGHT = 170;
 
   const props = defineProps<{
     city: string;
@@ -45,6 +40,9 @@
     /** Among the first cards on the page: its picture loads at once, not when scrolled to. */
     eager?: boolean;
   }>();
+  /** A preview's size, as it was drawn: the box it fills crops it. */
+  const PREVIEW_WIDTH = 400;
+  const PREVIEW_HEIGHT = 170;
 
   const name = computed(() => cityNameOf(props.city));
 </script>

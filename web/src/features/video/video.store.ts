@@ -4,7 +4,6 @@ import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { Credit, TimeState } from '@railtime/renderer/transitMap.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, ref, shallowRef } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 import type { VideoOpening, VideoScene, VideoSize } from '~/features/video/video.types';
 import { historySpan, pageStateOf, sceneAfter, videoLayersOf, videoMapPropsOf } from '~/features/video/video.utils';
@@ -92,9 +91,13 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
    *
    * @param mounted - The map.
    */
-  const ATTACH = (mounted: TransitMap) => (map.value = markRaw(mounted));
+  const ATTACH = (mounted: TransitMap) => {
+    map.value = markRaw(mounted);
+  };
   /** Lets the map go, as it is taken down. */
-  const DETACH = () => (map.value = null);
+  const DETACH = () => {
+    map.value = null;
+  };
   /** The map is ready: at the history's start, nothing built, and the video ready to start. */
   const MAP_READY = () => {
     if (!facts.value || !map.value) return;
@@ -121,7 +124,9 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
    *
    * @param state - Where it is.
    */
-  const SET_TIME = (state: TimeState) => (time.value = state);
+  const SET_TIME = (state: TimeState) => {
+    time.value = state;
+  };
   /**
    * A change starts, captioned; or its caption should go.
    *
@@ -132,10 +137,12 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
       caption.value = step;
       captionShownAt.value = now.value;
       captionGoneAt.value = null;
-    } else if (captionGoneAt.value === null) captionGoneAt.value = now.value;
+    } else captionGoneAt.value ??= now.value;
   };
   /** The history has played to today: the end card. */
-  const END_HISTORY = () => ENTER('end');
+  const END_HISTORY = () => {
+    ENTER('end');
+  };
 
   return {
     // State

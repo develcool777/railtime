@@ -1,12 +1,13 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import { describe, expect, test } from 'vitest';
+import type { LineSegment, TrackSegment } from '../../../src/engine/engine.types';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
+import { forkedParts, linesByStation, planGrowth } from '../../../src/engine/timeline.utils';
 import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
-import type { LineSegment, TrackSegment } from '../../../src/engine/engine.types';
-import { forkedParts, planGrowth } from '../../../src/engine/timeline.utils';
 
 const timelineOf = (network = tinyNetwork()) => {
   const index = new NetworkIndex(network);
@@ -36,7 +37,7 @@ describe('Timeline', () => {
     const first = timeline.steps[0];
     if (first?.kind !== 'open') throw new Error('expected the first step to open a line');
     expect(first.line).toBe('red');
-    expect(first.lineSegments.map(lineSegment => lineSegment.line).sort()).toEqual(['pink', 'red']);
+    expect(first.lineSegments.map(lineSegment => lineSegment.line).toSorted(byCodeUnits)).toEqual(['pink', 'red']);
   });
 
   test('puts the cursor after every step on or before a day', () => {
@@ -152,7 +153,7 @@ describe('Timeline', () => {
     const parts = openings.map(step => step.segments.map(segment => `${segment.stationA}-${segment.stationB}`));
     // The longest way through first, two segments; then the branch left off it at B.
     expect(parts.map(part => part.length)).toEqual([2, 1]);
-    expect(parts.flat().sort()).toEqual(['a-b', 'b-c', 'b-d']);
+    expect(parts.flat().toSorted(byCodeUnits)).toEqual(['a-b', 'b-c', 'b-d']);
   });
 
   test("keeps a plan's station off its line until its section plays", () => {
@@ -241,7 +242,7 @@ describe('Timeline', () => {
       { name: 'Old D', until: '1925-01-01' },
     ];
     const { timeline } = timelineOf(network);
-    expect(timeline.steps.filter(step => step.kind === 'rename').map(step => step.kind === 'rename' && [step.from, step.to])).toEqual([
+    expect(timeline.steps.flatMap(step => (step.kind === 'rename' ? [[step.from, step.to]] : []))).toEqual([
       ['Older D', 'Old D'],
       ['Old D', 'D'],
     ]);
@@ -318,10 +319,9 @@ describe('Timeline', () => {
     );
     const { timeline } = timelineOf(network);
     const closures = timeline.steps.filter(step => step.kind === 'close' && step.lineSegments.some(({ segment }) => segment.stationA === 'e'));
-    expect(closures.map(step => step.kind === 'close' && step.lineSegments.map(({ segment }) => `${segment.stationA}–${segment.stationB}`).sort())).toEqual([
-      ['e–g'],
-      ['d–e', 'e–f'],
-    ]);
+    expect(
+      closures.map(step => step.kind === 'close' && step.lineSegments.map(({ segment }) => `${segment.stationA}–${segment.stationB}`).toSorted(byCodeUnits)),
+    ).toEqual([['e–g'], ['d–e', 'e–f']]);
   });
 
   test('stops a closing front only where its line called, not at a station it ran past', () => {
@@ -383,6 +383,20 @@ const track = (index: number, stationA: string, stationB: string, lengthKm: numb
 const onLine = (segment: TrackSegment): LineSegment => ({ segment, line: 'red', opens: 0, closes: null, section: null, previous: null, next: null });
 
 describe('TimelineUtils', () => {
+  describe('linesByStation', () => {
+    test('groups changes by station, each station first met first, its lines in the order given', () => {
+      const changes = [
+        { station: 'b', line: 'red' },
+        { station: 'a', line: 'blue' },
+        { station: 'b', line: 'pink' },
+      ];
+      expect([...linesByStation(changes)]).toEqual([
+        ['b', ['red', 'pink']],
+        ['a', ['blue']],
+      ]);
+    });
+  });
+
   describe('planGrowth', () => {
     test('grows out of stations already on the map, reaching new ones in order', () => {
       const { index } = factsOf(tinyNetwork()).engine;

@@ -2,7 +2,6 @@ import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { Credit, MapView } from '@railtime/renderer/transitMap.types';
 import { defineStore } from 'pinia';
 import { markRaw, shallowRef } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 
 /**
@@ -25,7 +24,9 @@ export const useMapStore = defineStore(STORE_IDS.EXPLORER_MAP, () => {
    *
    * @param opening - Where it looks, or `null` to fit the network.
    */
-  const OPEN = (opening: MapView | null) => (view.value = opening);
+  const OPEN = (opening: MapView | null) => {
+    view.value = opening;
+  };
   /**
    * Takes the map, once mounted.
    *
@@ -36,19 +37,29 @@ export const useMapStore = defineStore(STORE_IDS.EXPLORER_MAP, () => {
     credits.value = mounted.credits;
   };
   /** Lets the map go, as it is taken down. */
-  const DETACH = () => (map.value = null);
+  const DETACH = () => {
+    map.value = null;
+  };
   /**
    * The map stopped moving: where it looks now.
    *
    * @param next - Where it looks.
    */
-  const SET_VIEW = (next: MapView) => (view.value = next);
+  const SET_VIEW = (next: MapView) => {
+    view.value = next;
+  };
   /** Zooms in a step. */
-  const ZOOM_IN = () => map.value?.zoomIn();
+  const ZOOM_IN = () => {
+    map.value?.zoomIn();
+  };
   /** Zooms out a step. */
-  const ZOOM_OUT = () => map.value?.zoomOut();
+  const ZOOM_OUT = () => {
+    map.value?.zoomOut();
+  };
   /** Frames the whole network. */
-  const FIT_NETWORK = () => map.value?.fitNetwork();
+  const FIT_NETWORK = () => {
+    map.value?.fitNetwork();
+  };
 
   return {
     // State

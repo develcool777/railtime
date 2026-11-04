@@ -23,7 +23,7 @@ export const cities = (): City[] =>
       const base = `${CITIES_FOLDER}${country}/${id}/${id}`;
       return { country, id, networkPath: `${base}.json`, boundaryPath: `${base}.boundary.json` };
     })
-    .sort((first, second) => first.networkPath.localeCompare(second.networkPath));
+    .toSorted((first, second) => first.networkPath.localeCompare(second.networkPath));
 
 /**
  * The cities a command was asked for.

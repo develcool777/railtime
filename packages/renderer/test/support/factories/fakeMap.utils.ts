@@ -62,7 +62,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const images = new Map<string, { url: string; coordinates: unknown }>();
   const sends = new Map<string, number>();
   const states = new Map<string, Record<string, number>>();
-  const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer } as FakeLayer]));
+  const layers = new Map<string, FakeLayer>(style.map(layer => [layer.id, { paint: {}, layout: {}, ...layer }]));
   const moves: FakeMap['moves'] = [];
   const rendered: FakeMap['rendered'] = [];
   const handlers = new Map<string, ((payload: unknown) => void)[]>();
@@ -77,7 +77,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       ...[...images].map(([id, image]) => [id, { type: 'image', ...image }]),
       ...(source && !data.has(source) && !images.has(source) ? [[source, { type: 'vector', tiles: ['https://tiles.invalid/{z}/{x}/{y}.pbf'] }]] : []),
     ]);
-    const errors = validateStyleMin({ version: 8, sources, layers: [layer as LayerSpecification] });
+    const errors = validateStyleMin({ version: 8, sources, layers: [layer] });
     if (errors.length > 0) throw new Error(`layer ${layer.id}: ${errors.map(error => error.message).join('; ')}`);
   };
   // A layer reading a property its source's features never carry draws nothing, or its default: each
@@ -172,8 +172,12 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       });
       Object.assign(view, { center: [(west + east) / 2, (south + north) / 2], zoom: options.maxZoom });
     },
-    easeTo: (options: Record<string, unknown>) => moves.push({ kind: 'ease', target: options.center, options }),
-    jumpTo: (options: Record<string, unknown>) => moves.push({ kind: 'jump', target: options.center, options }),
+    easeTo: (options: Record<string, unknown>) => {
+      moves.push({ kind: 'ease', target: options.center, options });
+    },
+    jumpTo: (options: Record<string, unknown>) => {
+      moves.push({ kind: 'jump', target: options.center, options });
+    },
     isMoving: () => view.moving,
     areTilesLoaded: () => view.tilesLoaded,
     // What the renderer needs of a whole map: its events, its canvas, and where it looks.

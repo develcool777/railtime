@@ -50,7 +50,6 @@
 <script setup lang="ts">
   import { toTimestamp, yearOf } from '@railtime/core/date.utils';
   import type { LineDirection, StationInfo } from '@railtime/network/facts.types';
-
   import { stripAround } from '~/features/explorer/stations/station.utils';
   import { lineColor } from '~/utils/format.utils';
 

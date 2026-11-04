@@ -1,11 +1,11 @@
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
 import type { LineDetails, PlanInfo, StationInfo } from '@railtime/network/facts.types';
-
 import { SECTIONS } from '~/features/explorer/explorer.constants';
 import type { Section, SectionEntry } from '~/features/explorer/explorer.types';
 import { formatDay, formatPlanFacts } from '~/features/explorer/format.utils';
-import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
 import type { MarksInput, PanelTopContent, PlanLegend, PlanSummary, SectionTopInput } from '~/features/explorer/panel/panel.types';
+import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
 import { counted, lineColor } from '~/utils/format.utils';
 
 /**
@@ -17,7 +17,7 @@ import { counted, lineColor } from '~/utils/format.utils';
  * @returns The panel's top.
  */
 export const stationTop = (station: StationInfo, backLabel: string): PanelTopContent => {
-  const opened = station.lines.flatMap(line => (line.opened ? [line.opened] : [])).sort()[0];
+  const opened = station.lines.flatMap(line => (line.opened ? [line.opened] : [])).toSorted(byCodeUnits)[0];
   return {
     title: station.name,
     context: [...station.otherNames, opened ? `opened ${yearOf(toTimestamp(opened))}` : 'planned'].join(' · '),
@@ -40,27 +40,45 @@ export const lineTop = (line: LineDetails, backLabel: string): PanelTopContent =
 };
 
 /**
+ * The top of the Lines list: its name and how many lines, and how many of them are hidden.
+ *
+ * @param input - The section, and what its counts are read from.
+ * @returns The panel's top.
+ */
+const linesTop = (input: SectionTopInput): PanelTopContent => {
+  const count = counted(input.lines.length, 'line');
+  return { title: input.label, context: input.hidden > 0 ? `${count} · ${input.hidden} hidden` : count };
+};
+
+/**
+ * The top of the Changes list: while it plays, what is playing and the change it is at; else its
+ * name, how many changes and the year of the first.
+ *
+ * @param input - The section, and what its counts are read from.
+ * @returns The panel's top.
+ */
+const changesTop = (input: SectionTopInput): PanelTopContent => {
+  const { playing, time, changes, currentChange } = input;
+  const playingTitle = input.hasPlan ? 'Playing the plan' : 'Playing history';
+  const title = playing ? playingTitle : input.label;
+  if (playing && currentChange !== null && time)
+    return { title, context: `${currentChange + 1} of ${changes.length} · ${time.inPlan ? 'Plan' : formatDay(time.time)}` };
+  const first = changes.find(change => change.time !== null)?.time;
+  const count = counted(changes.length, 'change');
+  return { title, context: first ? `${count} since ${yearOf(first)}` : count };
+};
+
+/**
  * The top of a section's own list: its name (Changes says what is playing while it plays) and its counts.
  *
  * @param input - The section, and what its counts are read from.
  * @returns The panel's top.
  */
 export const sectionTop = (input: SectionTopInput): PanelTopContent => {
-  const { section, playing, time, changes, currentChange } = input;
-  if (section === 'lines') {
-    const count = counted(input.lines.length, 'line');
-    return { title: input.label, context: input.hidden > 0 ? `${count} · ${input.hidden} hidden` : count };
-  }
+  const { section } = input;
+  if (section === 'lines') return linesTop(input);
   if (section === 'stations') return { title: input.label, context: `${counted(input.stationCount, 'station')} on the map` };
-  if (section === 'changes') {
-    const playingTitle = input.hasPlan ? 'Playing the plan' : 'Playing history';
-    const title = playing ? playingTitle : input.label;
-    if (playing && currentChange !== null && time)
-      return { title, context: `${currentChange + 1} of ${changes.length} · ${time.inPlan ? 'Plan' : formatDay(time.time)}` };
-    const first = changes.find(change => change.time !== null)?.time;
-    const count = counted(changes.length, 'change');
-    return { title, context: first ? `${count} since ${yearOf(first)}` : count };
-  }
+  if (section === 'changes') return changesTop(input);
   if (section === 'route') return { title: input.label, context: 'Between any two stations, on the date shown' };
   if (section === 'insights') return { title: input.label, context: 'How the network grew, and its records' };
   if (section === 'reach') return { title: input.label, context: 'How far you get from a station' };

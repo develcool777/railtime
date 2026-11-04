@@ -1,8 +1,9 @@
+import { byCodeUnits } from '@railtime/core/text.utils';
+import type { TrackOut } from './checks.types';
+import { checkNetwork, datedTracksOut, pushTrack, segmentTurnProblem, throughStationProblems, tracksOut } from './checks.utils.ts';
 import type { Network, Plan } from '../format/network.types';
 import type { BuiltPlan } from '../plan/build.types';
 import { buildPlan } from '../plan/build.utils.ts';
-import { checkNetwork, datedTracksOut, pushTrack, segmentTurnProblem, throughStationProblems, tracksOut } from './checks.utils.ts';
-import type { TrackOut } from './checks.types';
 
 /**
  * A plan's ids that are already the network's, and its sections' lines and stations that are no one's.
@@ -27,6 +28,15 @@ const planReferenceProblems = (network: Network, plan: Plan): string[] => [
 ];
 
 /**
+ * Two stations as a pair, the same whichever way round they are given.
+ *
+ * @param stationA - One station.
+ * @param stationB - The other.
+ * @returns The pair, as `a – b`.
+ */
+const pairOf = (stationA: string, stationB: string): string => [stationA, stationB].toSorted(byCodeUnits).join(' – ');
+
+/**
  * A plan's track that would never be laid: between a station no one has, two stations no section
  * links, or two the network links already; or given twice. Where it is laid, the network built is
  * checked as any other: its ends on its stations, no turn sharper than its trains can.
@@ -36,7 +46,6 @@ const planReferenceProblems = (network: Network, plan: Plan): string[] => [
  * @returns A problem for each.
  */
 const planTrackProblems = (network: Network, plan: Plan): string[] => {
-  const pairOf = (stationA: string, stationB: string) => [stationA, stationB].sort().join(' – ');
   const linked = new Set(plan.sections.flatMap(section => section.stations.slice(1).map((station, position) => pairOf(section.stations[position]!, station))));
   const built = new Set(network.segments.map(segment => pairOf(segment.stationA, segment.stationB)));
   const seen = new Set<string>();

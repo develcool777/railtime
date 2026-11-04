@@ -1,6 +1,3 @@
-import type { NetworkIndex } from '../engine/index.service';
-import type { Edge, Move, Place, RideLeg, Route, RouteLeg, SearchTerms } from './finder.types';
-import type { Timeline } from '../engine/timeline.service';
 import {
   ALTERNATIVE_EXTRA_MINUTES,
   ALTERNATIVE_SEARCHES,
@@ -12,6 +9,9 @@ import {
   ROUTE_OPTIONS,
   WALK_MINUTES,
 } from './finder.constants.ts';
+import type { Edge, Move, Place, RideLeg, Route, RouteLeg, SearchTerms } from './finder.types';
+import type { NetworkIndex } from '../engine/index.service';
+import type { Timeline } from '../engine/timeline.service';
 
 /**
  * A binary min-heap: items come out cheapest first. What Dijkstra's search takes its next place
@@ -82,7 +82,9 @@ export class PriorityQueue<Item> {
    */
   private swap(first: number, second: number): void {
     // Within bounds: both are positions the caller took from the heap.
-    [this.entries[first], this.entries[second]] = [this.entries[second]!, this.entries[first]!];
+    const held = this.entries[first]!;
+    this.entries[first] = this.entries[second]!;
+    this.entries[second] = held;
   }
 }
 
@@ -136,7 +138,7 @@ export class RouteFinder {
         weights.set(segment, (weights.get(segment) ?? 1) * SEGMENT_PENALTY_FACTOR);
       keep(this.best(from, to, { cursor, penalty: 0, weights }), slowest);
     }
-    return found.sort((first, second) => first.minutes - second.minutes);
+    return found.toSorted((first, second) => first.minutes - second.minutes);
   }
 
   /**
@@ -297,7 +299,7 @@ export class RouteFinder {
         continue;
       }
       if (ride) legs.push(ride);
-      if (move?.kind === 'walk') legs.push({ kind: 'walk', from: ride?.stops[ride.stops.length - 1] ?? station, to: station, minutes: WALK_MINUTES });
+      if (move?.kind === 'walk') legs.push({ kind: 'walk', from: ride?.stops.at(-1) ?? station, to: station, minutes: WALK_MINUTES });
       ride = { kind: 'ride', line, stops: [station], segments: [], km: 0, minutes: 0 };
     }
     if (ride) legs.push(ride);

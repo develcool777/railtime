@@ -18,11 +18,11 @@
 <script setup lang="ts">
   import type { ChangeInfo } from '@railtime/network/facts.types';
   import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
-
   import { CHANGE_ROW_ESTIMATE, DECADE_HEADING_ESTIMATE } from '~/features/explorer/changes/changes.constants';
   import type { ChangeRow } from '~/features/explorer/changes/changes.types';
   import { changeRows, changeState, changesByDecade, findChanges } from '~/features/explorer/changes/changes.utils';
   import { PANEL_SEARCH_HEIGHT } from '~/features/explorer/panel/panel.constants';
+  import type { PanelListHandle } from '~/features/explorer/panel/panel.types';
 
   const props = defineProps<{
     changes: ChangeInfo[];
@@ -33,7 +33,7 @@
   }>();
   const emit = defineEmits<{ select: [index: number] }>();
 
-  const list = useTemplateRef('list');
+  const list = useTemplateRef<PanelListHandle>('list');
   const query = ref('');
   const rows = computed(() => changeRows(changesByDecade(findChanges(props.changes, query.value))));
 

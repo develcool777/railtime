@@ -2,8 +2,7 @@ import { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { Network } from '@railtime/schema/network.types';
 import type { RecordedWindow } from '@railtime/video/videoPage.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import { onBeforeUnmount, onMounted, type Ref } from 'vue';
-
+import { onBeforeUnmount, onMounted, type ShallowRef } from 'vue';
 import { useVideoStore } from '~/features/video/video.store';
 
 /**
@@ -18,7 +17,7 @@ import { useVideoStore } from '~/features/video/video.store';
  * @param container - Where the map goes.
  * @param network - The city's network.
  */
-export const useVideoMap = (container: Ref<HTMLElement | null>, network: Network): void => {
+export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>, network: Network): void => {
   const store = useVideoStore();
   const page = window as Window & RecordedWindow;
   let map: TransitMap | null = null;

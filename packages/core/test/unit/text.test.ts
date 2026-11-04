@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { slugOf } from '../../src/text.utils';
+import { byCodeUnits, slugOf } from '../../src/text.utils';
 
 describe('TextUtils', () => {
   describe('slugOf', () => {
@@ -9,6 +9,16 @@ describe('TextUtils', () => {
         'czechia',
         'bosnia-and-herzegovina',
       ]);
+    });
+  });
+
+  describe('byCodeUnits', () => {
+    test('orders as a bare sort does: digits before capitals before lower case, a prefix before what it starts', () => {
+      expect(['b', 'B', '2026-01-02', 'a-b', 'a', '1863-01-10'].toSorted(byCodeUnits)).toEqual(['1863-01-10', '2026-01-02', 'B', 'a', 'a-b', 'b']);
+    });
+
+    test('says two equal texts are the same', () => {
+      expect(byCodeUnits('pink', 'pink')).toBe(0);
     });
   });
 });

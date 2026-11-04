@@ -57,7 +57,6 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-
   import type { SectionEntry } from '~/features/explorer/explorer.types';
   import { HELP_TOPICS } from '~/features/explorer/help/help.constants';
   import { SHORTCUTS } from '~/features/explorer/shortcuts.constants';

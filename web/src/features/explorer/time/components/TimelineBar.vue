@@ -66,14 +66,13 @@
 </template>
 
 <script setup lang="ts">
+  import { YEAR_MS, yearOf } from '@railtime/core/date.utils';
+  import { clamp } from '@railtime/core/number.utils';
   import type { ChangeInfo } from '@railtime/network/facts.types';
   import type { TimeState } from '@railtime/renderer/transitMap.types';
   import { useElementSize } from '@vueuse/core';
   import { computed, ref, useTemplateRef } from 'vue';
-
   import { TICK_LOOK, TIMELINE_LABEL_GAP_PX } from '~/features/explorer/time/time.constants';
-  import { YEAR_MS, yearOf } from '@railtime/core/date.utils';
-  import { clamp } from '@railtime/core/number.utils';
   import type { TimelineScale, TimelineTarget, TimelineTick } from '~/features/explorer/time/timeline.types';
   import { datedShare, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 
@@ -110,7 +109,12 @@
     return props.time.inPlan ? 'Plan' : String(yearOf(props.time.time));
   });
 
-  /** A tick's colour: its line's, and while playing grey for a change still to come. */
+  /**
+   * A tick's colour: its line's, and while playing grey for a change still to come.
+   *
+   * @param tick - The tick.
+   * @returns Its colour, as CSS.
+   */
   const tickColor = (tick: TimelineTick): string => {
     if (props.playing && props.time && tick.index >= props.time.cursor) return 'var(--ui-border-accented)';
     return tick.color;
@@ -118,13 +122,22 @@
 
   const percent = (fraction: number): string => `${(fraction * 100).toFixed(3)}%`;
 
-  /** The first label reads rightwards from its mark; Today, at the end of the dates, and Plan leftwards; the rest are centred. */
+  /**
+   * The first label reads rightwards from its mark; Today, at the end of the dates, and Plan leftwards; the rest are centred.
+   *
+   * @param left - Where its mark stands, as a share of the bar.
+   * @returns Its classes.
+   */
   const labelAlign = (left: number): string => {
     if (left === 0) return '';
     return left >= share.value - 0.001 ? '-translate-x-full' : '-translate-x-1/2';
   };
 
-  /** Picks what the pointer is over. */
+  /**
+   * Picks what the pointer is over.
+   *
+   * @param clientX - The pointer, across the window.
+   */
   const pickAt = (clientX: number) => {
     const rect = bar.value?.getBoundingClientRect();
     if (!rect || rect.width === 0) return;
@@ -141,7 +154,11 @@
     if (dragging.value) pickAt(event.clientX);
   };
 
-  /** Arrow keys step a year; Home and End go to the first date and the last. */
+  /**
+   * Arrow keys step a year; Home and End go to the first date and the last.
+   *
+   * @param event - The key pressed.
+   */
   const onKey = (event: KeyboardEvent) => {
     const now = props.time?.time ?? scale.value.end;
     const moves: Record<string, number> = { ArrowLeft: now - YEAR_MS, ArrowRight: now + YEAR_MS, Home: scale.value.start, End: scale.value.end };

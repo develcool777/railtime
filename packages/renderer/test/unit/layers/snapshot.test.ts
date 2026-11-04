@@ -1,7 +1,8 @@
+import { toTimestamp } from '@railtime/core/date.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { toTimestamp } from '@railtime/core/date.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { networkNow, playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('NetworkSnapshotUtils', () => {
@@ -43,7 +44,7 @@ describe('NetworkSnapshotUtils', () => {
       expect(snapshotOn('1905-01-01').transfers.features).toHaveLength(0);
       const linked = snapshotOn('1915-01-01');
       expect(linked.transfers.features).toHaveLength(1);
-      expect([...linked.linked].sort()).toEqual(['a', 'd']);
+      expect([...linked.linked].toSorted(byCodeUnits)).toEqual(['a', 'd']);
     });
 
     test('draws a suspended section as a ghost until its line is back there, and none once it has closed for good', () => {

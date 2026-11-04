@@ -2,10 +2,10 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, test, vi } from 'vitest';
 import { cities, readNetwork } from '../../../src/city.utils.ts';
 import { PREVIEW_SIZE, PREVIEW_THEMES, SOCIAL_SIZE, SOCIAL_THEME } from '../../../src/preview/preview.constants.ts';
-import { fakeBrowser } from '../../support/factories/fakeBrowser.utils.ts';
-import { cityApart } from '../../support/folders.utils.ts';
 import { PreviewRenderer } from '../../../src/preview/preview.service.ts';
 import { fitView, previewPathOf, previewRequestOf, previewTrackOf, socialPathOf } from '../../../src/preview/preview.utils.ts';
+import { fakeBrowser } from '../../support/factories/fakeBrowser.utils.ts';
+import { cityApart } from '../../support/folders.utils.ts';
 
 /** Every city. */
 const CITIES = cities();
@@ -45,9 +45,7 @@ describe('PreviewUtils', () => {
       expect(dark.length).toBeGreaterThan(10);
       expect(dark.every(line => !line.dashed)).toBe(true);
       // The network's first line is drawn last, on top.
-      expect(dark[dark.length - 1]?.color).toBe(
-        london.lines[Object.keys(london.lines)[0] ?? '']?.darkColor ?? london.lines[Object.keys(london.lines)[0] ?? '']?.color,
-      );
+      expect(dark.at(-1)?.color).toBe(london.lines[Object.keys(london.lines)[0] ?? '']?.darkColor ?? london.lines[Object.keys(london.lines)[0] ?? '']?.color);
     });
 
     test('draws a network never built as its first plan, dashed', () => {
@@ -108,7 +106,7 @@ describe('PreviewRenderer', () => {
     test("draws each theme's preview and the social card, writes each beside the network, and closes Chrome", async () => {
       const city = cityApart('kyiv');
       const browser = fakeBrowser(pictureOf);
-      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      vi.spyOn(console, 'log').mockImplementation(() => {});
       await new PreviewRenderer({ launch: browser.launch }).drawCities([city]);
       expect(browser.drawn.map(({ theme, request }) => [theme, request.width, request.format])).toEqual([
         ...PREVIEW_THEMES.map(theme => [theme, PREVIEW_SIZE.width, undefined]),
@@ -121,7 +119,7 @@ describe('PreviewRenderer', () => {
 
     test('serves the page its script and MapLibre its worker, and nothing else', async () => {
       const browser = fakeBrowser(pictureOf);
-      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      vi.spyOn(console, 'log').mockImplementation(() => {});
       await new PreviewRenderer({ launch: browser.launch }).drawCities([cityApart('kyiv')]);
       expect(browser.served.get('/')?.body).toContain('<script src="/preview.js"></script>');
       expect(browser.served.get('/preview.js')?.body).toContain('takePreview');
@@ -139,8 +137,8 @@ describe('PreviewRenderer', () => {
     });
 
     test('says what goes wrong in the page, its errors and the errors it logs, and nothing else it logs', async () => {
-      const said = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const said = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
       const browser = fakeBrowser((theme, request) => {
         browser.say('pageerror', new Error('tiles refused'));
         browser.say('console', { type: () => 'error', text: () => 'style not found' });

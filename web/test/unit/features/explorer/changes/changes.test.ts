@@ -1,7 +1,7 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-import { changeRows, changeState, changesByDecade, currentChangeIndex, findChanges } from '~/features/explorer/changes/changes.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
+import { changeRows, changeState, changesByDecade, currentChangeIndex, findChanges } from '~/features/explorer/changes/changes.utils';
 
 /**
  * A change in the timeline.

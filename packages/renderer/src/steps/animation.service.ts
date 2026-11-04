@@ -1,13 +1,13 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
-import type { StepContext, StepDrawing, StepFrame, Stretch } from './animation.types';
-import { lineFeature, pointFeature } from '../layers/snapshot.utils';
-import { offsetFor, resolveLine } from '../layers/style.utils';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
-import { easeInOut } from '../support/drawing.utils';
-import { arrivalSeconds, chaseAlong, frontKmAt, growthSeconds, stretchOf } from './animation.utils';
+import type { SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
 import { CLOSE_HOLD_SECONDS, GROWTH_PACE, MIN_DRAW_SECONDS, OPEN_HOLD_SECONDS, STEP_TIMES } from './animation.constants';
+import type { StepContext, StepDrawing, StepFrame, Stretch } from './animation.types';
+import { arrivalSeconds, chaseAlong, frontKmAt, growthSeconds, stretchOf } from './animation.utils';
+import { lineFeature, pointFeature } from '../layers/snapshot.utils';
+import { offsetFor, resolveLine } from '../layers/style.utils';
+import { easeInOut } from '../support/drawing.utils';
 
 /**
  * How a step plays, whatever its kind: how long it takes, what the camera frames, and what it draws
@@ -58,17 +58,21 @@ export class StepAnimation {
     const { step } = this;
     const { index } = this.context;
     switch (step.kind) {
-      case 'open':
+      case 'open': {
         return step.segments.flatMap(segment => segment.coordinates);
-      case 'close':
+      }
+      case 'close': {
         return step.lineSegments.flatMap(lineSegment => lineSegment.segment.coordinates);
-      case 'identity':
+      }
+      case 'identity': {
         // What changes colour is what is on the map: not track the line has yet to open, or has left.
         return index.lineSegments
           .filter(lineSegment => step.lines.includes(lineSegment.line) && this.context.timeline.isOpen(lineSegment, step.index))
           .flatMap(lineSegment => lineSegment.segment.coordinates);
-      default:
+      }
+      default: {
         return [index.coordOf(step.station)];
+      }
     }
   }
 
@@ -96,10 +100,14 @@ export class StepAnimation {
   public draw(frame: StepFrame, drawing: StepDrawing): void {
     const { step } = this;
     switch (step.kind) {
-      case 'open':
-        return this.drawOpening(frame, drawing);
-      case 'close':
-        return this.drawClosing(frame, drawing);
+      case 'open': {
+        this.drawOpening(frame, drawing);
+        return;
+      }
+      case 'close': {
+        this.drawClosing(frame, drawing);
+        return;
+      }
       case 'infill': {
         // Its lines call there once this step has played: asked of the network as it stands after it.
         const after = { ...frame, state: { ...frame.state, cursor: step.index + 1 } };
@@ -108,18 +116,22 @@ export class StepAnimation {
         if (step.reopening) drawing.spells.add(step.station);
         return;
       }
-      case 'stationClose':
+      case 'stationClose': {
         if (step.temporary) drawing.spells.add(step.station);
-        return this.drawStationClosing(step, frame, drawing);
-      case 'rename':
+        this.drawStationClosing(step, frame, drawing);
+        return;
+      }
+      case 'rename': {
         // The map labels it with its name on the step's date, the new one, over the one it had.
         if (!frame.snapshot.stations.has(step.station)) return;
         drawing.highlighted.add(step.station);
         drawing.renamed.set(step.station, step.from);
         return;
-      case 'identity':
+      }
+      case 'identity': {
         // The network layer draws the blend, redrawing every frame while `changesIdentity`.
         return;
+      }
     }
   }
 
@@ -214,7 +226,7 @@ export class StepAnimation {
     if (path.length > 0) drawing.chase = chaseAlong(path, frontKm, true);
     const { closingOnly } = frame.snapshot;
     // The stations it takes off the map, in the order the front gets to them: the stops, each with its time.
-    const leaving = growth.reach.filter(reached => reached.isNew).reverse();
+    const leaving = growth.reach.filter(reached => reached.isNew).toReversed();
     const arrivals = arrivalSeconds(stops, growth.totalKm, pace);
     for (const [order, reached] of leaving.entries()) {
       const arrived = arrivals[order];
@@ -259,7 +271,7 @@ export class StepAnimation {
     const { state } = frame;
     if (!state.timeline.servesStation(station, line, state.cursor)) return;
     const resolved = resolveLine(state, line);
-    const served = drawing.reached.get(station) ?? new Map();
+    const served = drawing.reached.get(station) ?? new Map<string, string>();
     served.set(resolved.id, resolved.color);
     drawing.reached.set(station, served);
   }

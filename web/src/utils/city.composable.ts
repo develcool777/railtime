@@ -1,7 +1,6 @@
-import { useFetch, useRuntimeConfig } from '#imports';
 import type { Network } from '@railtime/schema/network.types';
 import type { Ref } from 'vue';
-
+import { useFetch, useRuntimeConfig } from '#imports';
 import { networkUrlOf } from '~/utils/city.utils';
 
 /**

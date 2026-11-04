@@ -1,11 +1,11 @@
-import { emptyCollection } from '../layers/snapshot.utils';
+import { pushTo } from '@railtime/core/collection.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
 import type { Growth, LineSegment, SegmentPlan } from '@railtime/network/engine.types';
-import { pushTo } from '@railtime/core/collection.utils';
 import { CHASE_AHEAD_KM, CHASE_BEHIND_KM, CHASE_SMOOTHING_KM } from './animation.constants';
 import type { ChaseTarget, GrowthMove, GrowthPace, StepDrawing, Stretch } from './animation.types';
+import { emptyCollection } from '../layers/snapshot.utils';
 
 /**
  * A drawing with nothing in it, for a frame to fill.
@@ -149,14 +149,15 @@ const endsOf = (plan: SegmentPlan): [string, string] =>
  * @returns The segments of the way, in order.
  */
 export const mainPathOf = (plans: SegmentPlan[]): SegmentPlan[] => {
-  const first = plans.reduce<SegmentPlan | null>((earliest, plan) => (!earliest || plan.startKm < earliest.startKm ? plan : earliest), null);
+  let first: SegmentPlan | undefined;
+  for (const plan of plans) if (!first || plan.startKm < first.startKm) first = plan;
   if (!first) return [];
   const path = [first];
   // The longest segment going on from where one ends; never one already on the way.
   const after = (plan: SegmentPlan) =>
     plans
       .filter(other => !path.includes(other) && endsOf(other)[0] === endsOf(plan)[1] && Math.abs(other.startKm - plan.startKm - plan.segment.lengthKm) < 1e-6)
-      .sort((one, other) => other.segment.lengthKm - one.segment.lengthKm)[0];
+      .toSorted((one, other) => other.segment.lengthKm - one.segment.lengthKm)[0];
   let next = after(first);
   while (next) {
     path.push(next);
@@ -233,7 +234,7 @@ export const stretchOf = (growth: Growth, lineSegments: LineSegment[], retracts:
   const stops = growth.reach.filter(reached => reached.isNew).map(reached => reached.km);
   return {
     growth,
-    stops: retracts ? stops.map(km => growth.totalKm - km).reverse() : stops,
+    stops: retracts ? stops.map(km => growth.totalKm - km).toReversed() : stops,
     path: mainPathOf(growth.plans),
     linesBySegment,
     linesByStation,

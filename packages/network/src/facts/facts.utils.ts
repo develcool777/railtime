@@ -1,15 +1,16 @@
-import type { Network } from '@railtime/schema/network.types';
-import { cumulativeDistances } from '@railtime/core/geometry.utils';
-import type { LngLat } from '@railtime/core/geometry.types';
 import { pushTo } from '@railtime/core/collection.utils';
-import { required } from '@railtime/core/required.utils';
-import type { LineSketch, NetworkRecords, NetworkSummary, Playhead, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
-import { networkAt } from '../engine/history.utils.ts';
-import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
+import type { LngLat } from '@railtime/core/geometry.types';
+import { cumulativeDistances } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import type { Network } from '@railtime/schema/network.types';
 import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
 import { REACH_BANDS } from './facts.constants.ts';
+import type { LineSketch, NetworkRecords, NetworkSummary, Playhead, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
+import { networkAt } from '../engine/history.utils.ts';
 import type { NetworkIndex } from '../engine/index.service';
+import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import type { Timeline } from '../engine/timeline.service';
 
 /**
@@ -51,7 +52,7 @@ export const planFacts = (network: Network, planId: string): PlanFacts => {
 export const networkSummary = (network: Network): NetworkSummary => {
   const planOnly = isPlanOnly(network);
   const shown = planOnly ? buildPlan(network, firstPlanOf(network) ?? '').network : network;
-  const opened = network.segments.flatMap(segment => Object.values(segment.lines).map(dates => dates.open)).sort()[0];
+  const opened = network.segments.flatMap(segment => Object.values(segment.lines).map(dates => dates.open)).toSorted(byCodeUnits)[0];
   return {
     networks: Object.values(network.networks).map(brand => brand.name),
     openedYear: opened ? yearOf(toTimestamp(opened)) : null,
@@ -92,11 +93,11 @@ export const sketchOf = (network: Network): LineSketch[] => {
   const dashed = isPlanOnly(network);
   const byLine = new Map<string, LngLat[][]>();
   for (const segment of sketchedTrack(network)) {
-    const first = [...segment.lines].sort((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other))[0] ?? '';
+    const first = [...segment.lines].toSorted((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other))[0] ?? '';
     pushTo(byLine, first, segment.coordinates);
   }
   return [...byLine]
-    .sort(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))
+    .toSorted(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))
     .map(([id, paths]) => {
       const line = required(lines[id], `line ${id}`);
       return { line: id, color: { light: line.color, dark: line.darkColor ?? line.color }, paths, dashed };
@@ -152,20 +153,20 @@ export const recordsOf = (source: RecordsSource, count: number, moment: Playhead
       const year = firstYears.get(station);
       return year === undefined ? [] : [{ id: station, name: name(station), year }];
     })
-    .sort((first, second) => first.year - second.year || first.name.localeCompare(second.name))
+    .toSorted((first, second) => first.year - second.year || first.name.localeCompare(second.name))
     .slice(0, count);
   const busiest = [...stations]
     .map(([station, lines]) => ({
       id: station,
       name: name(station),
-      lines: [...lines].sort(index.compareLines).map(line => ({ id: line, name: index.lineName(line), color: colorOf(line) })),
+      lines: [...lines].toSorted(index.compareLines).map(line => ({ id: line, name: index.lineName(line), color: colorOf(line) })),
     }))
-    .sort((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
+    .toSorted((first, second) => second.lines.length - first.lines.length || first.name.localeCompare(second.name))
     .slice(0, count);
   const longest = index.lineIds
     .map(line => ({ id: line, name: index.lineName(line), color: colorOf(line), km: lineLengthKm(index, timeline, line, moment.cursor) }))
     .filter(line => line.km > 0)
-    .sort((first, second) => second.km - first.km)
+    .toSorted((first, second) => second.km - first.km)
     .slice(0, count);
   return { oldest, busiest, longest };
 };

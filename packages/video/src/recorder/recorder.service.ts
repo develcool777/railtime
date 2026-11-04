@@ -5,8 +5,8 @@ import { dirname } from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { type Browser, chromium, type Page } from 'playwright-core';
-import { FRAME_QUALITY, OPEN_TIMEOUT_MS, QUIET_MS, SETTLE_POLL_MS, SETTLE_TIMEOUT_MS, WARM_UP_SECONDS } from './recorder.constants.ts';
 import { recordedPageOf } from './recordedPage.utils.ts';
+import { FRAME_QUALITY, OPEN_TIMEOUT_MS, QUIET_MS, SETTLE_POLL_MS, SETTLE_TIMEOUT_MS, WARM_UP_SECONDS } from './recorder.constants.ts';
 import type { RecorderOptions, Recording } from './recorder.types.ts';
 import { ffmpegArgsOf, ffmpegPathOf, installRecordingClock, pageUrlOf } from './recorder.utils.ts';
 import type { RecordedWindow } from './videoPage.types.ts';
@@ -147,9 +147,11 @@ export class VideoRecorder {
     const encoder = spawn(ffmpeg, ffmpegArgsOf(recording), { stdio: ['pipe', 'ignore', 'pipe'] });
     this.encoder = encoder;
     this.encoderSaid = [];
-    encoder.stderr.on('data', (chunk: Buffer) => this.encoderSaid.push(chunk.toString()));
+    encoder.stderr.on('data', (chunk: Buffer) => {
+      this.encoderSaid.push(chunk.toString());
+    });
     // Its input closes under a frame being written when it stops: said by how it ended.
-    encoder.stdin.on('error', () => undefined);
+    encoder.stdin.on('error', () => {});
     this.encoded = new Promise(resolve => {
       encoder.on('error', resolve);
       encoder.on('close', resolve);

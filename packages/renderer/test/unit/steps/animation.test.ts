@@ -1,13 +1,14 @@
+import { toTimestamp } from '@railtime/core/date.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import type { Network } from '@railtime/schema/network.types';
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { arrivalSeconds, chaseAlong, emptyDrawing, frontKmAt, growthSeconds, mainPathOf, pointAlong } from '../../../src/steps/animation.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { playbackOf, renderStateOf } from '../../support/playback.utils';
-import { toTimestamp } from '@railtime/core/date.utils';
 import { CLOSE_HOLD_SECONDS, GROWTH_PACE, OPEN_HOLD_SECONDS } from '../../../src/steps/animation.constants';
 import { StepAnimation } from '../../../src/steps/animation.service';
+import { arrivalSeconds, chaseAlong, emptyDrawing, frontKmAt, growthSeconds, mainPathOf, pointAlong } from '../../../src/steps/animation.utils';
+import { playbackOf, renderStateOf } from '../../support/playback.utils';
 import { stepAfter } from '../../support/stepFrames.utils';
-import type { Network } from '@railtime/schema/network.types';
 
 describe('StepAnimation', () => {
   describe('every kind', () => {
@@ -149,7 +150,7 @@ describe('StepAnimation, opening a stretch', () => {
     expect([early.links.features, [...early.linked]]).toEqual([[], []]);
     const reached = draw(1);
     expect(reached.links.features.map(link => link.geometry.coordinates)).toEqual([[playback.index.coordOf('d'), playback.index.coordOf('a')]]);
-    expect([...reached.linked].sort()).toEqual(['a', 'd']);
+    expect([...reached.linked].toSorted(byCodeUnits)).toEqual(['a', 'd']);
   });
 });
 

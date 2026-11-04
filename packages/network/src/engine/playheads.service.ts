@@ -1,8 +1,8 @@
+import { DAY_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
 import { required } from '@railtime/core/required.utils';
-import { DAY_MS } from '@railtime/core/date.utils';
-import type { Playhead } from '../facts/facts.types';
 import type { Timeline } from './timeline.service';
+import type { Playhead } from '../facts/facts.types';
 
 /**
  * Where in its history the map can be, as a `Playhead`, and the one place its rules are: the date each

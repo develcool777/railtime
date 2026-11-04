@@ -1,8 +1,8 @@
+import type { Theme } from '@railtime/network/facts.types';
 import { type GeoJSONSource, type LineLayerSpecification, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl';
 import { recolorBasemap } from '../layers/basemap.utils';
 import { LINE_LAYOUT } from '../layers/ids.constants';
 import { DEFAULT_BASEMAP, PALETTES } from '../layers/theme.constants';
-import type { Theme } from '@railtime/network/facts.types';
 import type { Credit } from '../transitMap.types';
 import { STILL_CREDITS, STILL_FORMAT, STILL_LINE_WIDTH, STILL_PIXEL_RATIO, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from './basemap.constants';
 import type { BasemapStillOptions, StillRequest, StillTrack } from './basemap.types';
@@ -22,8 +22,8 @@ export class BasemapStill {
   private readonly container: HTMLDivElement;
   /** The style has loaded and been recoloured. */
   private readonly loaded: Promise<void>;
-  /** The last still or theme asked for: each waits for the one before. */
-  private queue: Promise<unknown> = Promise.resolve();
+  /** The last still or theme asked for, settled: each waits for the one before. */
+  private queue: Promise<void> = Promise.resolve();
 
   public constructor(options: BasemapStillOptions = {}) {
     if (options.workerUrl) setWorkerUrl(options.workerUrl);
@@ -58,7 +58,7 @@ export class BasemapStill {
    */
   public setTheme(theme: Theme): void {
     // In the queue: a still asked for before the change is taken in the old colours.
-    this.queue = this.queue.then(async () => {
+    void this.inTurn(async () => {
       await this.loaded;
       recolorBasemap(this.map, PALETTES[theme], { labels: true });
     });
@@ -71,10 +71,44 @@ export class BasemapStill {
    * @returns The picture, as a data URL.
    */
   public take(request: StillRequest): Promise<string> {
-    const still = this.queue.then(() => this.shoot(request));
-    // A failed still does not hold up the rest.
-    this.queue = still.catch(() => undefined);
-    return still;
+    return this.inTurn(() => this.shoot(request));
+  }
+
+  /**
+   * Runs a task once every one asked for before it is done: one that fails holds up none after it.
+   *
+   * @param task - The task.
+   * @returns What it gives.
+   */
+  private inTurn<Result>(task: () => Promise<Result>): Promise<Result> {
+    const run = this.after(this.queue, task);
+    this.queue = this.ended(run);
+    return run;
+  }
+
+  /**
+   * Runs a task once another is done.
+   *
+   * @param before - The one before, settled.
+   * @param task - The task.
+   * @returns What it gives.
+   */
+  private async after<Result>(before: Promise<void>, task: () => Promise<Result>): Promise<Result> {
+    await before;
+    return task();
+  }
+
+  /**
+   * A task's end, whether it did or failed: whoever asked for it hears of a failure.
+   *
+   * @param task - The task running.
+   */
+  private async ended(task: Promise<unknown>): Promise<void> {
+    try {
+      await task;
+    } catch {
+      // Told to whoever asked for it; the queue goes on.
+    }
   }
 
   /** Removes the hidden map. */
@@ -125,7 +159,7 @@ export class BasemapStill {
       properties: { color: line.color, dashed: line.dashed === true },
       geometry: { type: 'MultiLineString' as const, coordinates: line.paths },
     }));
-    (this.map.getSource(STILL_TRACK.source) as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
+    void this.map.getSource<GeoJSONSource>(STILL_TRACK.source)?.setData({ type: 'FeatureCollection', features });
   }
 
   /**

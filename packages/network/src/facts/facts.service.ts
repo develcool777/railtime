@@ -1,20 +1,9 @@
+import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
+import { required } from '@railtime/core/required.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
 import { firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
-import { required } from '@railtime/core/required.utils';
-import { todayTimestamp, toIsoDate, toTimestamp, yearOf } from '@railtime/core/date.utils';
 import { REACH_BANDS } from './facts.constants.ts';
-import { bandOf, byOpening, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
-import { linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from './networks.utils.ts';
-import { RouteFinder } from '../route/finder.service.ts';
-import type { NetworkHistory } from '../engine/history.types';
-import { networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
-import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../engine/lineDetails.utils.ts';
-import { CoverageMeasure } from '../coverage/coverage.service.ts';
-import type { NetworkIndex } from '../engine/index.service';
-import { NetworkEngine } from '../engine/engine.service.ts';
-import type { Timeline } from '../engine/timeline.service';
-import { captionOf } from '../engine/caption.utils.ts';
 import type {
   ChangeInfo,
   FactsAt,
@@ -36,6 +25,17 @@ import type {
   StationSummary,
   TransferInfo,
 } from './facts.types';
+import { bandOf, byOpening, networkSummary, planFacts, reachedSegments, recordsOf, sketchOf, trackDatesAt } from './facts.utils.ts';
+import { linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from './networks.utils.ts';
+import { CoverageMeasure } from '../coverage/coverage.service.ts';
+import { captionOf } from '../engine/caption.utils.ts';
+import { NetworkEngine } from '../engine/engine.service.ts';
+import type { NetworkHistory } from '../engine/history.types';
+import { networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
+import type { NetworkIndex } from '../engine/index.service';
+import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../engine/lineDetails.utils.ts';
+import type { Timeline } from '../engine/timeline.service';
+import { RouteFinder } from '../route/finder.service.ts';
 
 /**
  * A city's network, its history and its plans, and every fact about them: what it is and was on any
@@ -153,7 +153,7 @@ export class NetworkFacts {
       id,
       name: plan.name,
       status: plan.status,
-      ...(plan.description ? { description: plan.description } : {}),
+      ...(plan.description && { description: plan.description }),
       facts: planFacts(this.source, id),
     }));
   }
@@ -407,7 +407,7 @@ export class NetworkFacts {
         // A station the track passes but no line calls at is not one to look for.
         .filter(({ served }) => served)
         .map(({ served: _served, ...station }) => station)
-        .sort((first, second) => first.name.localeCompare(second.name))
+        .toSorted((first, second) => first.name.localeCompare(second.name))
     );
   }
 
@@ -423,7 +423,7 @@ export class NetworkFacts {
   private stationAt(station: string, moment: Playhead): StationInfo {
     const info = this.index.stationOf(station);
     const calling = new Set(this.callingAt(station, moment.cursor));
-    const lines = [...trackDatesAt(this.index, this.timeline, station).entries()].map(([line, dates]) => {
+    const lines = [...trackDatesAt(this.index, this.timeline, station)].map(([line, dates]) => {
       // The line stopped calling here, or its track here closed.
       const closed = info.closed?.[line] ?? (dates.allClosed ? toIsoDate(dates.lastClosed) : undefined);
       return {
@@ -432,7 +432,7 @@ export class NetworkFacts {
         color: this.colorOf(line),
         // A plan's line has no date: Infinity, from its undated line segments.
         opened: info.infill?.[line] ?? (dates.opened === Infinity ? null : toIsoDate(dates.opened)),
-        ...(closed ? { closed } : {}),
+        ...(closed && { closed }),
         calls: calling.has(line),
       };
     });
@@ -440,7 +440,7 @@ export class NetworkFacts {
       id: station,
       name: this.index.stationName(station, moment.time),
       otherNames: this.index.otherNames(this.index.namedAt(station, moment.time)),
-      lines: lines.sort(byOpening),
+      lines: lines.toSorted(byOpening),
       // Only the names it had dropped by the moment.
       formerNames: (info.formerNames ?? [])
         .filter(former => toTimestamp(former.until) <= moment.time)
@@ -461,7 +461,7 @@ export class NetworkFacts {
       .lineSegmentsAt(station)
       .filter(lineSegment => this.timeline.isOpen(lineSegment, cursor) && this.timeline.servesStation(station, lineSegment.line, cursor))
       .map(lineSegment => lineSegment.line);
-    return [...new Set(lines)].sort(this.index.compareLines);
+    return [...new Set(lines)].toSorted(this.index.compareLines);
   }
 
   /**
@@ -476,7 +476,7 @@ export class NetworkFacts {
       // The lines calling there now, each as it is drawn then (a branch still shown as its parent).
       const calling = this.callingAt(other, moment.cursor).map(line => this.timeline.identityOf(line, moment.cursor).id);
       if (calling.length === 0) return [];
-      const ordered = [...new Set(calling)].sort(this.index.compareLines);
+      const ordered = [...new Set(calling)].toSorted(this.index.compareLines);
       return [
         {
           id: other,

@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
+/** A date, `YYYY-MM-DD`. */
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
-const lngLat = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
+/** A point: its longitude, then its latitude. */
+export const lngLat = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
+/** A colour, `#rrggbb`. */
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'expected #rrggbb');
 /** A BCP 47 language code: `uk`, `pt-BR`. */
 const LANGUAGE_CODE = /^[a-z]{2,3}(-[A-Z][A-Za-z0-9]{1,7})?$/;
@@ -12,6 +15,7 @@ const names = z.record(z.string(), z.string().min(1)).superRefine((byLanguage, c
     if (!LANGUAGE_CODE.test(code)) context.addIssue({ code: 'custom', message: `expected a language code: uk, pt-BR, not ${code}` });
 });
 
+/** A line: its names, its network, its mode and colours, and what it was drawn as for a while. */
 const lineSchema = z.object({
   name: z.string().min(1),
   fullName: z.string().min(1).optional(),
@@ -24,8 +28,10 @@ const lineSchema = z.object({
   pseudo: z.boolean().optional(),
 });
 
+/** A spell a station or a stretch of track was closed, reopened after. */
 const suspension = z.object({ from: isoDate, until: isoDate });
 
+/** A station: its names, where it stands, and how each line's calls there changed. */
 const stationSchema = z.object({
   name: z.string().min(1),
   names: names.optional(),
@@ -38,6 +44,7 @@ const stationSchema = z.object({
   formerNames: z.array(z.object({ name: z.string().min(1), names: names.optional(), until: isoDate })).optional(),
 });
 
+/** Track between two stations, and when each line ran on it. */
 const segmentSchema = z.object({
   stationA: z.string(),
   stationB: z.string(),
@@ -45,8 +52,10 @@ const segmentSchema = z.object({
   lines: z.record(z.string(), z.object({ open: isoDate, close: isoDate.optional(), suspended: z.array(suspension).optional() })),
 });
 
+/** Two stations a change walks between. */
 const transferSchema = z.object({ stationA: z.string(), stationB: z.string() });
 
+/** A plan: its lines, stations and track of its own, and the sections it builds, in order. */
 const planSchema = z.object({
   name: z.string().min(1),
   names: names.optional(),

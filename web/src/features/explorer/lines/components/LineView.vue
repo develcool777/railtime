@@ -35,7 +35,6 @@
 <script setup lang="ts">
   import type { ChangeInfo, LineColor, LineDetails } from '@railtime/network/facts.types';
   import { ref } from 'vue';
-
   import { titleInLine } from '~/features/explorer/lines/line.utils';
   import { lineColor } from '~/utils/format.utils';
 
@@ -55,7 +54,12 @@
     { label: 'History', value: 'history' as const },
   ];
 
-  /** The other lines' colours at a stop: none for a stop on this line alone. */
+  /**
+   * The other lines' colours at a stop: none for a stop on this line alone.
+   *
+   * @param station - The stop.
+   * @returns Their colours, as CSS.
+   */
   const otherLines = (station: string): string[] =>
     (props.stationColors.get(station) ?? []).filter(color => color.light !== props.line.color.light || color.dark !== props.line.color.dark).map(lineColor);
 </script>

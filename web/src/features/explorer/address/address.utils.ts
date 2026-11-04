@@ -1,12 +1,12 @@
+import { DAY_MS, toIsoDate } from '@railtime/core/date.utils';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { Playhead } from '@railtime/network/facts.types';
-import { DAY_MS, toIsoDate } from '@railtime/core/date.utils';
-import { coverageDistanceOf } from '~/features/explorer/coverage/coverage.utils';
 import type { AddressInput, ExplorerQuery, ExplorerUrlState, LinkedPlayhead, RouteLink } from '~/features/explorer/address/address.types';
+import { coverageDistanceOf } from '~/features/explorer/coverage/coverage.utils';
 import { SECTIONS } from '~/features/explorer/explorer.constants';
-import { CAMERA_OPTIONS, DEFAULT_PLAYER, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
 import type { Section } from '~/features/explorer/explorer.types';
+import { CAMERA_OPTIONS, DEFAULT_PLAYER, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
 
 /** A playhead: its cursor, the next change's progress in hundredths or the day the clock is on, `202.4` or `202,1928-06-01`. */
 const PLAYHEAD = /^(\d+)(?:\.(\d{1,2})|,(\d{4})-(\d{2})-(\d{2}))?$/;
@@ -113,12 +113,12 @@ const parseSection = (text: string | undefined): Section | undefined => SECTIONS
  * @returns The route, or nothing for one with no end.
  */
 const parseRoute = (text: string): RouteLink | undefined => {
-  const [from = '', to = '', optionText] = text.split(',');
+  const [from = '', to = '', optionText] = text.split(',', 3);
   const option = Number(optionText);
   const link: RouteLink = {
-    ...(SLUG.test(from) ? { from } : {}),
-    ...(SLUG.test(to) ? { to } : {}),
-    ...(Number.isInteger(option) && option > 0 ? { option } : {}),
+    ...(SLUG.test(from) && { from }),
+    ...(SLUG.test(to) && { to }),
+    ...(Number.isSafeInteger(option) && option > 0 && { option }),
   };
   return link.from || link.to ? link : undefined;
 };
@@ -132,14 +132,24 @@ const parseRoute = (text: string): RouteLink | undefined => {
 const formatRoute = (link: RouteLink): string => [link.from ?? '', link.to ?? '', ...(link.option ? [String(link.option)] : [])].join(',');
 
 /**
- * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
+ * Where an address puts the map: its playhead and its view.
  *
- * @param query - The address's query: `at`, `map`, `station`, `plan`, `tab`, `walk`, `route`, `reach`, `line`, `view`, `names`, `streets`, `mapOnly`, `panel`, `speed`, `camera`, `minimap`.
- * @returns What it asks for.
+ * @param query - The address's query.
+ * @returns Its `at` and `view`, each where well formed.
  */
-export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
+const parsePosition = (query: ExplorerQuery): ExplorerUrlState => {
   const playhead = parsePlayhead(single(query.at) ?? '');
   const view = parseView(single(query.map) ?? '');
+  return { ...(playhead && { at: playhead }), ...(view && { view }) };
+};
+
+/**
+ * What an address has open: a station, a plan, the section, the walk, a route, a reach, a line.
+ *
+ * @param query - The address's query.
+ * @returns Each where well formed and not the default.
+ */
+const parseOpened = (query: ExplorerQuery): ExplorerUrlState => {
   const station = single(query.station);
   const plan = single(query.plan);
   const section = parseSection(single(query.tab));
@@ -147,28 +157,59 @@ export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => {
   const route = parseRoute(single(query.route) ?? '');
   const reach = single(query.reach);
   const line = single(query.line);
+  return {
+    ...(station && SLUG.test(station) && { station }),
+    ...(plan && SLUG.test(plan) && { plan }),
+    ...(section && { section }),
+    ...(walk && walk !== COVERAGE_DEFAULT_METRES && { walk }),
+    ...(route && { route }),
+    ...(reach && SLUG.test(reach) && { reach }),
+    ...(line && SLUG.test(line) && { line }),
+  };
+};
+
+/**
+ * How an address has the map seen: in 3D, names hidden, the map alone, the panel folded.
+ *
+ * @param query - The address's query.
+ * @returns Each that is not the default.
+ */
+const parseLook = (query: ExplorerQuery): ExplorerUrlState => ({
+  ...(single(query.view) === '3d' && { viewMode: '3d' as const }),
+  ...(single(query.names) === 'off' && { stationNames: false as const }),
+  ...(single(query.streets) === 'off' && { streetNames: false as const }),
+  ...(single(query.mapOnly) === '1' && { mapOnly: true as const }),
+  ...(single(query.panel) === 'off' && { panelOpen: false as const }),
+});
+
+/**
+ * Playback's settings an address names: its speed, its camera, the minimap.
+ *
+ * @param query - The address's query.
+ * @returns Each that is one offered and not the default.
+ */
+const parsePlayer = (query: ExplorerQuery): ExplorerUrlState => {
   const speed = SPEED_OPTIONS.find(option => String(option.value) === single(query.speed))?.value;
   const camera = CAMERA_OPTIONS.find(option => option.value === single(query.camera))?.value;
   return {
-    ...(playhead ? { at: playhead } : {}),
-    ...(view ? { view } : {}),
-    ...(station && SLUG.test(station) ? { station } : {}),
-    ...(plan && SLUG.test(plan) ? { plan } : {}),
-    ...(section ? { section } : {}),
-    ...(walk && walk !== COVERAGE_DEFAULT_METRES ? { walk } : {}),
-    ...(route ? { route } : {}),
-    ...(reach && SLUG.test(reach) ? { reach } : {}),
-    ...(line && SLUG.test(line) ? { line } : {}),
-    ...(single(query.view) === '3d' ? { viewMode: '3d' as const } : {}),
-    ...(single(query.names) === 'off' ? { stationNames: false as const } : {}),
-    ...(single(query.streets) === 'off' ? { streetNames: false as const } : {}),
-    ...(single(query.mapOnly) === '1' ? { mapOnly: true as const } : {}),
-    ...(single(query.panel) === 'off' ? { panelOpen: false as const } : {}),
-    ...(speed !== undefined && speed !== DEFAULT_PLAYER.speed ? { speed } : {}),
-    ...(camera && camera !== DEFAULT_PLAYER.camera ? { camera } : {}),
-    ...(single(query.minimap) === 'off' ? { minimap: false as const } : {}),
+    ...(speed !== undefined && speed !== DEFAULT_PLAYER.speed && { speed }),
+    ...(camera && camera !== DEFAULT_PLAYER.camera && { camera }),
+    ...(single(query.minimap) === 'off' && { minimap: false as const }),
   };
 };
+
+/**
+ * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
+ *
+ * @param query - The address's query: `at`, `map`, `station`, `plan`, `tab`, `walk`, `route`, `reach`, `line`, `view`, `names`, `streets`, `mapOnly`, `panel`, `speed`, `camera`, `minimap`.
+ * @returns What it asks for.
+ */
+export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => ({
+  ...parsePosition(query),
+  ...parseOpened(query),
+  ...parseLook(query),
+  ...parsePlayer(query),
+});
 
 /**
  * Whether two queries say the same, whatever their keys' order.
@@ -183,51 +224,133 @@ export const sameQuery = (first: ExplorerQuery, second: ExplorerQuery): boolean 
 };
 
 /**
+ * Writes where the map is: its playhead and its view.
+ *
+ * @param state - What the address shows.
+ * @returns The `at` and `map` parameters, each where there is one.
+ */
+const formatPosition = ({ at: playhead, view }: ExplorerUrlState): Record<string, string> => ({
+  ...(playhead && { at: formatPlayhead(playhead) }),
+  ...(view && { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` }),
+});
+
+/**
+ * Writes what is open: a station, a plan, the section, the walk, a route, a reach, a line.
+ *
+ * @param state - What the address shows.
+ * @returns Their parameters, each where there is one.
+ */
+const formatOpened = (state: ExplorerUrlState): Record<string, string> => {
+  const { station, plan, section, walk, route, reach, line } = state;
+  return {
+    ...(station && { station }),
+    ...(plan && { plan }),
+    ...(section && { tab: section }),
+    ...(walk && { walk: String(walk) }),
+    ...(route && { route: formatRoute(route) }),
+    ...(reach && { reach }),
+    ...(line && { line }),
+  };
+};
+
+/**
+ * Writes how the map is seen: in 3D, names hidden, the map alone, the panel folded.
+ *
+ * @param state - What the address shows.
+ * @returns Their parameters, each where it is not the default.
+ */
+const formatLook = (state: ExplorerUrlState): Record<string, string> => {
+  const { viewMode, stationNames, streetNames, mapOnly, panelOpen } = state;
+  return {
+    ...(viewMode === '3d' && { view: '3d' }),
+    ...(stationNames === false && { names: 'off' }),
+    ...(streetNames === false && { streets: 'off' }),
+    ...(mapOnly && { mapOnly: '1' }),
+    ...(panelOpen === false && { panel: 'off' }),
+  };
+};
+
+/**
+ * Writes playback's settings: its speed, its camera, the minimap.
+ *
+ * @param state - What the address shows.
+ * @returns Their parameters, each where there is one.
+ */
+const formatPlayer = ({ speed, camera, minimap }: ExplorerUrlState): Record<string, string> => ({
+  ...(speed !== undefined && { speed: String(speed) }),
+  ...(camera && { camera }),
+  ...(minimap === false && { minimap: 'off' }),
+});
+
+/**
  * Writes an explorer address, rounded to what a link needs: zoom to 0.01, coordinates to ~1 m.
  *
  * @param state - What it shows.
  * @returns The query.
  */
-export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => {
-  const {
-    at: playhead,
-    view,
-    station,
-    plan,
-    section,
-    walk,
-    route,
-    reach,
-    line,
-    viewMode,
-    stationNames,
-    streetNames,
-    mapOnly,
-    panelOpen,
-    speed,
-    camera,
-    minimap,
-  } = state;
+export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, string> => ({
+  ...formatPosition(state),
+  ...formatOpened(state),
+  ...formatLook(state),
+  ...formatPlayer(state),
+});
+
+/**
+ * The route the address names: its ends, and the way drawn after the fastest.
+ *
+ * @param input - What the stores hold.
+ * @returns The route, or nothing while neither end is picked.
+ */
+const routeLinkOf = (input: AddressInput): RouteLink | undefined => {
+  const { from, to } = input.routeEnds;
+  if (!(from ?? to)) return undefined;
+  return { ...(from && { from: from.id }), ...(to && { to: to.id }), ...(input.routeOption > 0 && { option: input.routeOption }) };
+};
+
+/**
+ * What the stores have open, for the address: a station, a plan, the section, the walk, a route, a reach, a line.
+ *
+ * @param input - What the stores hold.
+ * @returns Each that is set and not as a page opens without it.
+ */
+const openedOf = (input: AddressInput): ExplorerUrlState => {
+  const route = routeLinkOf(input);
   return {
-    ...(playhead ? { at: formatPlayhead(playhead) } : {}),
-    ...(view ? { map: `${view.zoom.toFixed(2)}/${view.center[1].toFixed(5)}/${view.center[0].toFixed(5)}` } : {}),
-    ...(station ? { station } : {}),
-    ...(plan ? { plan } : {}),
-    ...(section ? { tab: section } : {}),
-    ...(walk ? { walk: String(walk) } : {}),
-    ...(route ? { route: formatRoute(route) } : {}),
-    ...(reach ? { reach } : {}),
-    ...(line ? { line } : {}),
-    ...(viewMode === '3d' ? { view: '3d' } : {}),
-    ...(stationNames === false ? { names: 'off' } : {}),
-    ...(streetNames === false ? { streets: 'off' } : {}),
-    ...(mapOnly ? { mapOnly: '1' } : {}),
-    ...(panelOpen === false ? { panel: 'off' } : {}),
-    ...(speed === undefined ? {} : { speed: String(speed) }),
-    ...(camera ? { camera } : {}),
-    ...(minimap === false ? { minimap: 'off' } : {}),
+    ...(input.openStation && { station: input.openStation }),
+    ...(input.plan && { plan: input.plan }),
+    ...(input.section !== input.openingSection && { section: input.section }),
+    ...(input.coverageMetres !== COVERAGE_DEFAULT_METRES && { walk: input.coverageMetres }),
+    ...(route && { route }),
+    ...(input.reachFrom && { reach: input.reachFrom.id }),
+    ...(input.openLine && { line: input.openLine }),
   };
 };
+
+/**
+ * How the stores have the map seen, for the address: in 3D, names hidden, the map alone, the panel folded.
+ *
+ * @param input - What the stores hold.
+ * @returns Each that is not the default.
+ */
+const lookOf = (input: AddressInput): ExplorerUrlState => ({
+  ...(input.viewMode === '3d' && { viewMode: '3d' as const }),
+  ...(!input.stationNames && { stationNames: false as const }),
+  ...(!input.streetNames && { streetNames: false as const }),
+  ...(input.mapOnly && { mapOnly: true as const }),
+  ...(!input.panelOpen && { panelOpen: false as const }),
+});
+
+/**
+ * Playback's settings, for the address: its speed, its camera, the minimap.
+ *
+ * @param input - What the stores hold.
+ * @returns Each that is not the default.
+ */
+const playerOf = ({ player }: AddressInput): ExplorerUrlState => ({
+  ...(player.speed !== DEFAULT_PLAYER.speed && { speed: player.speed }),
+  ...(player.camera !== DEFAULT_PLAYER.camera && { camera: player.camera }),
+  ...(!player.minimap && { minimap: false as const }),
+});
 
 /**
  * What the explorer's address says of what it shows: everything a link needs to open it again, each
@@ -237,33 +360,10 @@ export const formatExplorerQuery = (state: ExplorerUrlState): Record<string, str
  * @param input - What the stores hold.
  * @returns The address's state, for `formatExplorerQuery`.
  */
-export const explorerAddressOf = (input: AddressInput): ExplorerUrlState => {
-  const { routeEnds, player } = input;
-  return {
-    ...(input.at ? { at: input.at } : {}),
-    ...(input.view ? { view: input.view } : {}),
-    ...(input.openStation ? { station: input.openStation } : {}),
-    ...(input.plan ? { plan: input.plan } : {}),
-    ...(input.section === input.openingSection ? {} : { section: input.section }),
-    ...(input.coverageMetres === COVERAGE_DEFAULT_METRES ? {} : { walk: input.coverageMetres }),
-    ...(routeEnds.from || routeEnds.to
-      ? {
-          route: {
-            ...(routeEnds.from ? { from: routeEnds.from.id } : {}),
-            ...(routeEnds.to ? { to: routeEnds.to.id } : {}),
-            ...(input.routeOption > 0 ? { option: input.routeOption } : {}),
-          },
-        }
-      : {}),
-    ...(input.reachFrom ? { reach: input.reachFrom.id } : {}),
-    ...(input.openLine ? { line: input.openLine } : {}),
-    ...(input.viewMode === '3d' ? { viewMode: '3d' as const } : {}),
-    ...(input.stationNames ? {} : { stationNames: false as const }),
-    ...(input.streetNames ? {} : { streetNames: false as const }),
-    ...(input.mapOnly ? { mapOnly: true as const } : {}),
-    ...(input.panelOpen ? {} : { panelOpen: false as const }),
-    ...(player.speed === DEFAULT_PLAYER.speed ? {} : { speed: player.speed }),
-    ...(player.camera === DEFAULT_PLAYER.camera ? {} : { camera: player.camera }),
-    ...(player.minimap ? {} : { minimap: false as const }),
-  };
-};
+export const explorerAddressOf = (input: AddressInput): ExplorerUrlState => ({
+  ...(input.at && { at: input.at }),
+  ...(input.view && { view: input.view }),
+  ...openedOf(input),
+  ...lookOf(input),
+  ...playerOf(input),
+});

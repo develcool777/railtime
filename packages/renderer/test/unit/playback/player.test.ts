@@ -1,12 +1,12 @@
-import { describe, expect, test } from 'vitest';
 import { YEAR_MS, toTimestamp } from '@railtime/core/date.utils';
-import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
 import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { playbackOf } from '../../support/playback.utils';
+import { describe, expect, test } from 'vitest';
+import { FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from '../../../src/playback/player.constants';
 import { Player } from '../../../src/playback/player.service';
 import { StepAnimation } from '../../../src/steps/animation.service';
 import type { ViewMode } from '../../../src/transitMap.types';
+import { playbackOf } from '../../support/playback.utils';
 
 describe('Player', () => {
   test('stops on each step and plays it through its phases to the end', () => {
@@ -14,7 +14,7 @@ describe('Player', () => {
     player.seek(facts.playheads.on(toTimestamp('1899-06-01')));
     player.play();
     const events: string[] = [];
-    for (let frame = 0; frame < 20000 && player.playing; frame++) events.push(...player.tick(1 / 30).map(event => event.type));
+    for (let frame = 0; frame < 20_000 && player.playing; frame++) events.push(...player.tick(1 / 30).map(event => event.type));
     expect(events.filter(type => type === 'stepStart')).toHaveLength(timeline.steps.length);
     expect(events.at(-1)).toBe('end');
     expect(player.cursor).toBe(timeline.steps.length);
@@ -27,12 +27,14 @@ describe('Player', () => {
     expect(player.inPlan).toBe(false);
     player.play();
     const started: boolean[] = [];
+    const inPlanWhileDrawing: boolean[] = [];
     for (let frame = 0; frame < 2000 && player.playing; frame++) {
       for (const event of player.tick(1 / 30)) if (event.type === 'stepStart') started.push(event.playback.animation.step.planned);
-      if (player.active) expect(player.inPlan).toBe(true);
+      if (player.active) inPlanWhileDrawing.push(player.inPlan);
       expect(player.clock).toBe(player.end);
     }
     expect(started).toEqual([true, true]);
+    expect(inPlanWhileDrawing).not.toContain(false);
     expect(player.cursor).toBe(timeline.steps.length);
   });
 
@@ -139,16 +141,19 @@ describe('Player', () => {
     player.play();
     const frame = 1 / 60;
     const speeds: number[] = [];
-    for (let tick = 0; tick < 1000 && !player.active; tick++) {
+    for (let tick = 0; tick < 1000; tick++) {
       const before = player.clock;
       player.tick(frame);
-      if (!player.active) speeds.push((player.clock - before) / YEAR_MS / frame);
+      if (player.active) break;
+      speeds.push((player.clock - before) / YEAR_MS / frame);
     }
     expect(player.active?.animation.step).toBe(timeline.steps[1]);
     expect(speeds[0]).toBeCloseTo(FAST_YEARS_PER_SECOND);
     expect(speeds.at(-1)).toBeCloseTo(SLOW_YEARS_PER_SECOND);
     // Frame to frame, the speed changes by a few per cent at most.
-    for (const [position, speed] of speeds.entries()) if (position > 0) expect(Math.abs(speed - speeds[position - 1]!) / speed).toBeLessThan(0.05);
+    // Within bounds: the speed one frame before.
+    const changes = speeds.slice(1).map((speed, position) => Math.abs(speed - speeds[position]!) / speed);
+    expect(Math.max(...changes)).toBeLessThan(0.05);
   });
 
   test('plays a step through its phases at their exact edges: a beat for the camera, the change drawn, then held', () => {
@@ -212,12 +217,15 @@ describe('Player', () => {
     fresh.player.seek(fresh.facts.playheads.after(fresh.timeline.steps.length));
     fresh.player.play();
     const events: string[] = [];
+    const ticked: { clock: number; playing: boolean }[] = [];
     let frames = 0;
     for (; frames < 5000 && fresh.player.playing; frames++) {
       events.push(...fresh.player.tick(1 / 30).map(event => event.type));
-      if (fresh.player.playing) expect(fresh.player.clock).toBeLessThan(fresh.player.end);
+      ticked.push({ clock: fresh.player.clock, playing: fresh.player.playing });
     }
     expect(events).toEqual(['end']);
+    // Short of the end while it plays on.
+    expect(ticked.filter(({ playing }) => playing).map(({ clock }) => clock < fresh.player.end)).not.toContain(false);
     // 36 years from 1990, at 4 a second at most: seconds of frames, not one.
     expect(frames).toBeGreaterThan(200);
     expect(fresh.player.clock).toBe(fresh.player.end);

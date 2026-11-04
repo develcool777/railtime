@@ -12,14 +12,13 @@
 </template>
 
 <script setup lang="ts">
-  import { useRuntimeConfig } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
-  import { ref } from 'vue';
-
-  import { cityNameOf, citySummaryOf } from '~/utils/city.utils';
+  import { useTemplateRef } from 'vue';
+  import { useRuntimeConfig } from '#imports';
   import { useVideoMap } from '~/features/video/video.composable';
   import { useVideoStore } from '~/features/video/video.store';
   import { spokenAddress } from '~/features/video/video.utils';
+  import { cityNameOf, citySummaryOf } from '~/utils/city.utils';
 
   const props = defineProps<{
     /** The city's network. */
@@ -29,7 +28,7 @@
   }>();
 
   const store = useVideoStore();
-  const container = ref<HTMLElement | null>(null);
+  const container = useTemplateRef<HTMLElement>('container');
   useVideoMap(container, props.network);
 
   const cityName = cityNameOf(props.city);

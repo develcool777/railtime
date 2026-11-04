@@ -1,7 +1,7 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { NetworkIndex } from '../../../src/engine/index.service';
 import { buildPlan } from '@railtime/schema/plan.utils';
+import { describe, expect, test } from 'vitest';
+import { NetworkIndex } from '../../../src/engine/index.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
 describe('NetworkIndex', () => {
@@ -108,7 +108,7 @@ describe('NetworkIndex', () => {
     ];
     const [segment] = new NetworkIndex(network).segments;
     expect(segment?.coordinates[0]).toEqual([0, 51.5]);
-    expect(segment?.reversedCoordinates).toEqual([...segment!.coordinates].reverse());
+    expect(segment?.reversedCoordinates).toEqual([...segment!.coordinates].toReversed());
     expect(segment?.lengthKm).toBeCloseTo(segment!.distances[2]!, 9);
     expect(segment?.lengthKm).toBeGreaterThan(segment!.distances[1]! * 1.5);
   });
@@ -118,6 +118,6 @@ describe('NetworkIndex', () => {
     network.lines.ghost = { name: 'Ghost', network: 'metro', mode: 'metro', color: '#999999', pseudo: true };
     const index = new NetworkIndex(network);
     expect(index.lineIds).toEqual(['red', 'blue', 'pink', 'green']);
-    expect(['green', 'pink', 'red', 'blue'].sort(index.compareLines)).toEqual(['red', 'blue', 'pink', 'green']);
+    expect(['green', 'pink', 'red', 'blue'].toSorted(index.compareLines)).toEqual(['red', 'blue', 'pink', 'green']);
   });
 });

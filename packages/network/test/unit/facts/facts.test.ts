@@ -1,13 +1,14 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { NetworkFacts } from '../../../src/facts/facts.service';
-import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
-import { hiddenNetwork } from '../../support/factories/hiddenNetwork.utils';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
-import { routeNetwork } from '../../support/factories/routeNetwork.utils';
-import { factsOf as plainFactsOf, questionsOn } from '../../support/facts.utils';
-import { bandOf, networkSummary, planFacts, reachedSegments } from '../../../src/facts/facts.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import { describe, expect, test } from 'vitest';
 import { REACH_BANDS } from '../../../src/facts/facts.constants';
+import { NetworkFacts } from '../../../src/facts/facts.service';
+import { bandOf, networkSummary, planFacts, reachedSegments } from '../../../src/facts/facts.utils';
+import { hiddenNetwork } from '../../support/factories/hiddenNetwork.utils';
+import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
+import { routeNetwork } from '../../support/factories/routeNetwork.utils';
+import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
+import { factsOf as plainFactsOf, questionsOn } from '../../support/facts.utils';
 
 /** Today, for every network here. */
 const TODAY = toTimestamp('2026-01-01');
@@ -21,7 +22,7 @@ const TODAY = toTimestamp('2026-01-01');
 const factsOf = (plan?: string) => {
   const network = tinyNetwork();
   network.lines.red = { ...network.lines.red!, darkColor: '#ff6666' };
-  return NetworkFacts.create(network, { ...(plan ? { plan } : {}), today: TODAY });
+  return NetworkFacts.create(network, { ...(plan && { plan }), today: TODAY });
 };
 
 describe('NetworkFacts', () => {
@@ -106,7 +107,7 @@ describe('NetworkFacts', () => {
       early
         .stations()
         .map(station => station.id)
-        .sort(),
+        .toSorted(byCodeUnits),
     ).toEqual(['a', 'b']);
     expect(later.stations().map(station => station.id)).toContain('d');
     expect(early.station('b').lines.find(line => line.id === 'blue')?.opened).toBe('1930-01-01');

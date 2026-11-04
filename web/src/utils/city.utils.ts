@@ -65,7 +65,7 @@ export const boundaryUrlOf = (city: string): string => networkUrlOf(city).replac
  * @param theme - The site's colour theme.
  * @returns Its path, relative to the base URL: `data/<country>/<city>/<city>.<theme>.webp`.
  */
-export const previewUrlOf = (city: string, theme: 'dark' | 'light'): string => networkUrlOf(city).replace(/\.json$/, `.${theme}.webp`);
+export const previewUrlOf = (city: string, theme: 'dark' | 'light'): string => networkUrlOf(city).replace(/\.json$/, () => `.${theme}.webp`);
 
 /**
  * A city's name for display.

@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import type { LineInfo, NetworkChoice } from '@railtime/network/facts.types';
+import { describe, expect, test } from 'vitest';
 import { lineGroups, titleInLine } from '~/features/explorer/lines/line.utils';
 
 const RED = { light: '#ff0000', dark: '#ff0000' };

@@ -19,7 +19,7 @@ export const fakeBrowser = (picture: (theme: Theme, request: StillRequest) => st
   const listeners = new Map<string, (payload: unknown) => void>();
   const life = { closed: false };
   const page = {
-    setDefaultTimeout: () => undefined,
+    setDefaultTimeout: () => {},
     on: (event: string, listener: (payload: unknown) => void) => listeners.set(event, listener),
     goto: async (url: string) => {
       for (const path of PAGE_PATHS) {
@@ -27,7 +27,7 @@ export const fakeBrowser = (picture: (theme: Theme, request: StillRequest) => st
         served.set(path, { status: response.status, body: await response.text() });
       }
     },
-    waitForFunction: async () => undefined,
+    waitForFunction: async () => {},
     evaluate: async (_draw: unknown, [theme, request]: [Theme, StillRequest]) => {
       drawn.push({ theme, request });
       return picture(theme, request);

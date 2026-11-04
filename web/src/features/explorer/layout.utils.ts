@@ -1,6 +1,5 @@
 import { clamp } from '@railtime/core/number.utils';
 import type { Padding } from '@railtime/renderer/transitMap.types';
-
 import { PANEL_WIDTH, SHEET_HEIGHTS, TAB_LABELS_HEIGHT } from '~/features/explorer/explorer.constants';
 import type { SheetSnap } from '~/features/explorer/explorer.types';
 

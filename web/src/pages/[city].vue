@@ -26,13 +26,12 @@
 </template>
 
 <script setup lang="ts">
-  import { definePageMeta, navigateTo, useRoute, useRuntimeConfig } from '#imports';
   import { computed } from 'vue';
-
+  import { definePageMeta, navigateTo, useRoute, useRuntimeConfig } from '#imports';
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
+  import { citySeo } from '~/features/seo/seo.utils';
   import { useCityNetwork } from '~/utils/city.composable';
   import { cityNameOf, citySummaryOf, isCity, previewUrlOf } from '~/utils/city.utils';
-  import { citySeo } from '~/features/seo/seo.utils';
 
   // Only cities with a dataset have a page: any other address is a 404. Each city is a page of its
   // own, mounted afresh (its title and description with it); a plan in the address changes neither.

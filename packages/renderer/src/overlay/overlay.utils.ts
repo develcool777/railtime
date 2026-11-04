@@ -1,12 +1,12 @@
-import type { NetworkEngine } from '@railtime/network/engine.service';
 import { required } from '@railtime/core/required.utils';
+import type { NetworkEngine } from '@railtime/network/engine.service';
+import type { CoverageCells, ReachInfo, RouteInfo, Theme } from '@railtime/network/facts.types';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { COVERAGE_ALPHA, UNCOVERED_ALPHA, UNCOVERED_COLOR } from './overlay.constants';
+import type { CoverageDrawing, RouteStopKind, RouteStopMark } from './overlay.types';
 import type { PointFeature, ReachStopProperties, ReachTrackFeature, RouteFeature, RouteStopProperties } from '../layers/snapshot.types';
 import { pointFeature } from '../layers/snapshot.utils';
-import type { CoverageCells, ReachInfo, RouteInfo, Theme } from '@railtime/network/facts.types';
-import type { CoverageDrawing, RouteStopKind, RouteStopMark } from './overlay.types';
-import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { channelsOf } from '../support/drawing.utils';
-import { COVERAGE_ALPHA, UNCOVERED_ALPHA, UNCOVERED_COLOR } from './overlay.constants';
 
 /**
  * A route's track: each ride along its segments in its line's colour, each walk straight from one
@@ -66,7 +66,8 @@ export const routeStopMarks = (route: RouteInfo, theme: Theme): RouteStopMark[] 
   for (const leg of route.legs) {
     if (leg.kind !== 'ride') continue;
     // Where a ride begins or ends is a change, its start, or (marked below) its end.
-    leg.stops.forEach((stop, place) => mark(stop.id, stop.name, place === 0 || place === leg.stops.length - 1 ? 'board' : 'pass', leg.color[theme]));
+    for (const [place, stop] of leg.stops.entries())
+      mark(stop.id, stop.name, place === 0 || place === leg.stops.length - 1 ? 'board' : 'pass', leg.color[theme]);
   }
   const lastRide = route.legs.findLast(leg => leg.kind === 'ride');
   mark(route.to.id, route.to.name, 'end', lastRide?.kind === 'ride' ? lastRide.color[theme] : '');
@@ -131,10 +132,10 @@ export const coverageImage = (coverage: CoverageCells): Uint8ClampedArray => {
   const pixels = new Uint8ClampedArray(coverage.cells.length * 4);
   const colors = coverage.bands.map(band => [...channelsOf(band.color), COVERAGE_ALPHA]);
   const uncovered = [...channelsOf(UNCOVERED_COLOR), UNCOVERED_ALPHA];
-  coverage.cells.forEach((band, cell) => {
+  for (const [cell, band] of coverage.cells.entries()) {
     // Outside the city stays clear; past the last band is the city beyond them all.
     if (band >= 0) pixels.set(colors[band] ?? uncovered, cell * 4);
-  });
+  }
   return pixels;
 };
 

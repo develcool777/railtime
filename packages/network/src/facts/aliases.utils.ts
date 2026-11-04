@@ -1,5 +1,5 @@
-import type { Line, SegmentLine, Station, Suspension } from '@railtime/schema/network.types';
 import { toIsoDate, toTimestamp } from '@railtime/core/date.utils';
+import type { Line, SegmentLine, Station, Suspension } from '@railtime/schema/network.types';
 import type { LineGap } from '../engine/engine.types';
 import { outsideGaps } from '../engine/gaps.utils.ts';
 
@@ -15,7 +15,7 @@ export const gapsOf = (lines: Record<string, Line>, hidden: Set<string>): Map<st
   new Map(
     Object.entries(lines).flatMap(([id, line]) => {
       if (hidden.has(id)) return [];
-      const aliases = [...(line.aliases ?? [])].sort((first, second) => first.until.localeCompare(second.until));
+      const aliases = [...(line.aliases ?? [])].toSorted((first, second) => first.until.localeCompare(second.until));
       const gaps = aliases.flatMap((alias, position) => {
         if (!hidden.has(alias.as)) return [];
         const before = aliases[position - 1];
@@ -87,7 +87,7 @@ const gapAt = (day: string, gaps: readonly LineGap[]): LineGap | undefined => {
  * @returns The station.
  */
 export const stationOutside = (station: Station, gaps: ReadonlyMap<string, readonly LineGap[]>): Station => {
-  const lines = [...gaps.keys()].filter(line => station.infill?.[line] || station.closed?.[line] || station.suspended?.[line]);
+  const lines = [...gaps.keys()].filter(line => (station.infill?.[line] ?? station.closed?.[line] ?? station.suspended?.[line]) !== undefined);
   if (lines.length === 0) return station;
   const gapsOfLine = (line: string) => gaps.get(line) ?? [];
   const infill = Object.entries(station.infill ?? {}).map(([line, day]): [string, string] => {
@@ -112,9 +112,9 @@ export const stationOutside = (station: Station, gaps: ReadonlyMap<string, reado
   delete out.passes;
   return {
     ...out,
-    ...(infill.length > 0 ? { infill: Object.fromEntries(infill) } : {}),
-    ...(closed.length > 0 ? { closed: Object.fromEntries(closed) } : {}),
-    ...(suspended.length > 0 ? { suspended: Object.fromEntries(suspended) } : {}),
-    ...(passes.length > 0 ? { passes } : {}),
+    ...(infill.length > 0 && { infill: Object.fromEntries(infill) }),
+    ...(closed.length > 0 && { closed: Object.fromEntries(closed) }),
+    ...(suspended.length > 0 && { suspended: Object.fromEntries(suspended) }),
+    ...(passes.length > 0 && { passes }),
   };
 };

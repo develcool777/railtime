@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { parseNetwork } from '../../../src/validation/network.schema';
 import type { Network } from '../../../src/format/network.types';
+import { parseNetwork } from '../../../src/validation/network.schema';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
 
 /**
@@ -343,7 +343,7 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual([]);
     network.lines.blue = { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' };
     network.segments[0]!.lines.red!.close = '1950-01-01';
-    network.stations.a = { ...network.stations.a!, passes: ['nowhere', 'blue'] };
+    network.stations.a = { ...network.stations.a, passes: ['nowhere', 'blue'] };
     network.stations.c = { ...network.stations.c!, passes: ['red'], infill: { red: '1960-01-01' } };
     expect(problemsOf(network)).toEqual([
       'station a: passed by unknown line nowhere',

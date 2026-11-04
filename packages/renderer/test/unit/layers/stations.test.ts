@@ -1,7 +1,7 @@
 import { expression, latest } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, test } from 'vitest';
-import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from '../../../src/layers/snapshot.types';
 import { LAYERS, POP_IN_MS, PULSE_MS, SOURCES } from '../../../src/layers/ids.constants';
+import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from '../../../src/layers/snapshot.types';
 import { StationLayer } from '../../../src/layers/stations.service';
 import type { StationFrame } from '../../../src/layers/stations.types';
 import { PALETTES } from '../../../src/layers/theme.constants';

@@ -15,7 +15,7 @@ export const SHARED_TEST_OPTIONS = {
   unstubGlobals: true,
   unstubEnvs: true,
   sequence: { shuffle: true },
-  setupFiles: [fileURLToPath(new URL('./vitest.setup.ts', import.meta.url))],
+  setupFiles: [fileURLToPath(new URL('vitest.setup.ts', import.meta.url))],
 } as const;
 
 /**
@@ -50,13 +50,20 @@ export const assertTestsMirrorSource = (root: string, testDir: string, sourceDir
 };
 
 /**
+ * A camelCase name in kebab case: `tyneAndWear` as `tyne-and-wear`.
+ *
+ * @param name - The name.
+ * @returns It, in kebab case.
+ */
+const kebab = (name: string): string => name.replaceAll(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+
+/**
  * Refuses to start while a city's test has no city: `test/unit/cities/unitedKingdom/tyneAndWear.test.ts`
  * checks `cities/united-kingdom/tyne-and-wear/tyne-and-wear.json`.
  *
  * @param root - The data package's folder.
  */
 export const assertTestsMirrorCities = (root: string): void => {
-  const kebab = (name: string) => name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
   const orphans = globSync('*/*.test.ts', { cwd: join(root, 'test/unit/cities') }).filter(testPath => {
     const [country = '', city = ''] = testPath
       .replace(/\.test\.ts$/, '')

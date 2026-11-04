@@ -1,9 +1,9 @@
-import type { LngLat } from '@railtime/core/geometry.types';
 import { RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { offsetKm } from '@railtime/core/geometry.utils';
 import { MIN_TURN_KM, TURN_RATE } from './camera.constants';
-import type { ChaseTarget } from '../steps/animation.types';
 import type { Chase } from './camera.types';
+import type { ChaseTarget } from '../steps/animation.types';
 
 /**
  * The way from one point to another.

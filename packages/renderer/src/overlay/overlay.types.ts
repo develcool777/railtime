@@ -1,5 +1,5 @@
-import type { OutlineFeature } from '../layers/snapshot.types';
 import type { CoverageCells } from '@railtime/network/facts.types';
+import type { OutlineFeature } from '../layers/snapshot.types';
 
 /** How a route marks a stop: one it passes, one where a ride begins (its start, or a change), or its end. */
 export type RouteStopKind = 'pass' | 'board' | 'end';

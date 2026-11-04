@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
-import { BasemapStill } from '../../../src/still/basemap.service';
-import { STILL_CREDITS, STILL_FORMAT, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from '../../../src/still/basemap.constants';
 import { PALETTES } from '../../../src/layers/theme.constants';
+import { STILL_CREDITS, STILL_FORMAT, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from '../../../src/still/basemap.constants';
+import { BasemapStill } from '../../../src/still/basemap.service';
 import type { StillRequest } from '../../../src/still/basemap.types';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { LAND_LAYER } from '../../support/fakeMap.constants';
@@ -106,7 +106,11 @@ describe('BasemapStill', () => {
     fake.view.tilesLoaded = false;
     fake.fire('style.load');
     let taken = false;
-    const picture = still.take(REQUEST).then(() => (taken = true));
+    const takeAndTell = async () => {
+      await still.take(REQUEST);
+      taken = true;
+    };
+    const picture = takeAndTell();
     await vi.advanceTimersByTimeAsync(STILL_TIMEOUT_MS - 1);
     expect(taken).toBe(false);
     await vi.advanceTimersByTimeAsync(1);

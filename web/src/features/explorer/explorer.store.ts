@@ -5,7 +5,6 @@ import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, nextTick, ref } from 'vue';
 import type { WritableComputedRef } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { explorerAddressOf, formatExplorerQuery } from '~/features/explorer/address/address.utils';
@@ -135,7 +134,17 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param next - The dialog, or `null` to close the one open.
    */
-  const SET_DIALOG = (next: Dialog | null) => (dialog.value = next);
+  const SET_DIALOG = (next: Dialog | null) => {
+    dialog.value = next;
+  };
+  /**
+   * Closes a dialog, if it is the one open: closing one never closes another opened meanwhile.
+   *
+   * @param name - The dialog.
+   */
+  const CLOSE_DIALOG = (name: Dialog) => {
+    if (dialog.value === name) dialog.value = null;
+  };
   /**
    * A dialog's open state, for its `v-model:open`: opening it closes any other, closing it leaves
    * another alone.
@@ -146,10 +155,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
   const dialogOpen = (name: Dialog): WritableComputedRef<boolean> =>
     computed({
       get: () => dialog.value === name,
-      set: shown => {
-        if (shown) SET_DIALOG(name);
-        else if (dialog.value === name) SET_DIALOG(null);
-      },
+      set: shown => (shown ? SET_DIALOG(name) : CLOSE_DIALOG(name)),
     });
   /** Fetches the city's outline the first time coverage is open, which measures within it. */
   const wantCoverage = () => {
@@ -242,7 +248,9 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param next - The theme.
    */
-  const SET_THEME = (next: Theme) => (theme.value = next);
+  const SET_THEME = (next: Theme) => {
+    theme.value = next;
+  };
   /** Brings the panel into sight: unfolds it, or raises the phone's sheet to half. */
   const REVEAL_PANEL = () => {
     if (!phone.value) panelOpen.value = true;
@@ -257,25 +265,33 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param open - Unfolded.
    */
-  const SET_PANEL_OPEN = (open: boolean) => (panelOpen.value = open);
+  const SET_PANEL_OPEN = (open: boolean) => {
+    panelOpen.value = open;
+  };
   /**
    * Starts or ends dragging the panel's edge.
    *
    * @param dragging - Being dragged.
    */
-  const SET_RESIZING = (dragging: boolean) => (resizing.value = dragging);
+  const SET_RESIZING = (dragging: boolean) => {
+    resizing.value = dragging;
+  };
   /**
    * The panel's width, dragged.
    *
    * @param width - Pixels.
    */
-  const SET_PANEL_WIDTH = (width: number) => (panelWidth.value = width);
+  const SET_PANEL_WIDTH = (width: number) => {
+    panelWidth.value = width;
+  };
   /**
    * Where the phone's sheet rests.
    *
    * @param snap - Its height, by name.
    */
-  const SET_SHEET = (snap: SheetSnap) => (sheet.value = snap);
+  const SET_SHEET = (snap: SheetSnap) => {
+    sheet.value = snap;
+  };
   /**
    * Opens a section over any pushed view, and brings the panel into sight.
    *
@@ -321,16 +337,23 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param id - The station.
    */
-  const WALK_TO = (id: string) => (views.value = walkedTo(views.value, id));
+  const WALK_TO = (id: string) => {
+    views.value = walkedTo(views.value, id);
+  };
   /** Closes the stations' views, back to the line's under them, if any. */
-  const CLOSE_STATION = () => (views.value = withoutStations(views.value));
+  const CLOSE_STATION = () => {
+    views.value = withoutStations(views.value);
+  };
   /**
    * A station clicked on the map: with Route or Reach in sight, picked as their ends; else it opens.
    *
    * @param id - The station, or `null` for a click away from any.
    */
   const CLICK_STATION = (id: string | null) => {
-    if (!id || !network.facts || !timeStore.time) return CLOSE_STATION();
+    if (!id || !network.facts || !timeStore.time) {
+      CLOSE_STATION();
+      return;
+    }
     const stop = { id, name: network.facts.asOf(timeStore.time).station(id).name };
     const picking = views.value.length === 0 && (phone.value || panelOpen.value);
     const pick = stationPickOf({ section: section.value, picking, routeEnds: tools.routeEnds, routeAim: tools.routeAim }, stop);
@@ -339,7 +362,9 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     else PICK_STATION(id);
   };
   /** Back from a pushed view: to the station walked from, the line under it, else the section. */
-  const GO_BACK = () => (views.value = views.value.slice(0, -1));
+  const GO_BACK = () => {
+    views.value = views.value.slice(0, -1);
+  };
   /**
    * Enters or leaves map only; the layout takes the page full screen with it.
    *
@@ -354,19 +379,25 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
    *
    * @param mode - 3D or flat.
    */
-  const SET_VIEW_MODE = (mode: ViewMode) => (viewMode.value = mode);
+  const SET_VIEW_MODE = (mode: ViewMode) => {
+    viewMode.value = mode;
+  };
   /**
    * Names the stations on the map, or shows only their dots.
    *
    * @param shown - Named.
    */
-  const SET_STATION_NAMES = (shown: boolean) => (stationNames.value = shown);
+  const SET_STATION_NAMES = (shown: boolean) => {
+    stationNames.value = shown;
+  };
   /**
    * Shows the basemap's street and place names, or the city unnamed.
    *
    * @param shown - Named.
    */
-  const SET_STREET_NAMES = (shown: boolean) => (streetNames.value = shown);
+  const SET_STREET_NAMES = (shown: boolean) => {
+    streetNames.value = shown;
+  };
 
   return {
     // State
@@ -396,6 +427,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     address,
     // Actions
     SET_DIALOG,
+    CLOSE_DIALOG,
     dialogOpen,
     OPEN,
     SHOW_PLAN,

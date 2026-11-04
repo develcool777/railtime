@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { describe, expect, test } from 'vitest';
 import { explorerAddressOf, formatExplorerQuery, linkedPlayheadOf, parseExplorerQuery, playheadOf, sameQuery } from '~/features/explorer/address/address.utils';
 
 /** The tiny network's playheads, today 1 January 2026, and with its plan built. */

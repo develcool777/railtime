@@ -1,5 +1,5 @@
-import type { LngLatBoundsLike, MapOptions } from 'maplibre-gl';
 import type { Bounds } from '@railtime/core/geometry.types';
+import type { MapOptions } from 'maplibre-gl';
 import { OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from './transitMap.constants';
 import type { MapView, Padding } from './transitMap.types';
 
@@ -22,7 +22,7 @@ export const openingOf = (
   view
     ? { center: view.center, zoom: view.zoom }
     : {
-        bounds: bounds as LngLatBoundsLike,
+        bounds: bounds,
         // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
         fitBoundsOptions: {
           padding: {

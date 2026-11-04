@@ -1,8 +1,8 @@
-import type { NetworkStats } from '@railtime/network/facts.types';
 import { decadeOf, yearOf } from '@railtime/core/date.utils';
-
+import type { NetworkStats } from '@railtime/network/facts.types';
 import { counted } from '~/utils/format.utils';
 
+/** The months' names, January first. */
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 /**

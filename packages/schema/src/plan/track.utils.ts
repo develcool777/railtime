@@ -1,9 +1,9 @@
-import { clamp } from '@railtime/core/number.utils';
-import type { LngLat } from '@railtime/core/geometry.types';
 import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
+import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, offsetKm, sliceAlong } from '@railtime/core/geometry.utils';
-import { HANDLE_SHARE, CURVE_STEP_KM, HEADING_SPAN_KM } from './track.constants.ts';
+import { clamp } from '@railtime/core/number.utils';
 import type { Heading } from './build.types';
+import { HANDLE_SHARE, CURVE_STEP_KM, HEADING_SPAN_KM } from './track.constants.ts';
 
 /**
  * Where a point falls on a track: the nearest point on it, and the track either side of it.
@@ -85,7 +85,12 @@ export const curveBetween = (from: LngLat, to: LngLat, leaving: Heading, arrivin
     const along = step / steps;
     const weights = [(1 - along) ** 3, 3 * along * (1 - along) ** 2, 3 * along ** 2 * (1 - along), along ** 3];
     // Within bounds: four weights for the four points.
-    const [x, y] = points.reduce<[number, number]>((sum, point, index) => [sum[0] + point[0] * weights[index]!, sum[1] + point[1] * weights[index]!], [0, 0]);
+    let x = 0;
+    let y = 0;
+    for (const [index, [pointX, pointY]] of points.entries()) {
+      x += pointX * weights[index]!;
+      y += pointY * weights[index]!;
+    }
     return offsetBy(from, x, y);
   });
 };

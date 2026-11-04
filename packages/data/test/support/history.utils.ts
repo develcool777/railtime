@@ -1,9 +1,9 @@
-import type { Network } from '@railtime/schema/network.types';
-import { globSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { toIsoDate } from '@railtime/core/date.utils';
 import type { LineSegment } from '@railtime/network/engine.types';
 import { drawnStep, playbackOf } from '@railtime/renderer/testing/playback';
+import type { Network } from '@railtime/schema/network.types';
+import { globSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 /** The package's `cities/` folder: each country's cities, `<country>/<city>/<city>.json`. */
 const DATA = fileURLToPath(new URL('../../cities/', import.meta.url));
@@ -80,7 +80,7 @@ export const playWholeHistory = (network: Network, shown: { plan?: string; hidde
  * @returns How it went, counting the steps from today alone.
  */
 export const playPlan = (network: Network, plan: string, hidden?: readonly string[]): PlayedHistory => {
-  const playback = playbackOf(network, { plan, ...(hidden ? { hidden } : {}) });
+  const playback = playbackOf(network, { plan, ...(hidden && { hidden }) });
   // The player opens at today: whatever is dated after it plays first, as in the app.
   return playOut(playback, playback.player.cursor);
 };

@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'vitest';
 import { turnDegrees } from '@railtime/core/geometry.utils';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import { describe, expect, test } from 'vitest';
 import { buildPlan, firstPlanOf, isPlanOnly } from '../../../src/plan/build.utils';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
 
@@ -87,7 +88,7 @@ describe('PlanBuildUtils', () => {
 
     test("adds the plan's lines, stations and transfers to the network's, and drops the plans", () => {
       const { network } = buildPlan(plannedNetwork(), 'extension');
-      expect(Object.keys(network.stations).sort()).toEqual(['a', 'b', 'c', 'd']);
+      expect(Object.keys(network.stations).toSorted(byCodeUnits)).toEqual(['a', 'b', 'c', 'd']);
       expect(network.transfers).toEqual([{ stationA: 'c', stationB: 'd' }]);
       expect(network.plans).toBeUndefined();
       const withTransfers = plannedNetwork();

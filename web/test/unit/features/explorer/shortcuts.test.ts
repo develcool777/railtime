@@ -7,7 +7,7 @@ describe('Shortcuts', () => {
     const keys = SHORTCUTS.map(shortcut => shortcut.key);
     expect(new Set(keys).size).toBe(keys.length);
     expect(new Set(SHORTCUTS.map(shortcut => shortcut.action)).size).toBe(SHORTCUTS.length);
-    const sectionKeys = SECTIONS.map((_, position) => String(position + 1));
-    expect(keys.filter(key => sectionKeys.includes(key))).toEqual([]);
+    const sectionKeys = new Set(SECTIONS.map((_, position) => String(position + 1)));
+    expect(keys.filter(key => sectionKeys.has(key))).toEqual([]);
   });
 });

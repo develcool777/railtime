@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import { boundaryUrlOf, citiesByCountry, cityMenu, cityNameOf, citySummaryOf, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
 import { CITIES } from '~/constants/city.constants';
+import { boundaryUrlOf, citiesByCountry, cityMenu, cityNameOf, citySummaryOf, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));

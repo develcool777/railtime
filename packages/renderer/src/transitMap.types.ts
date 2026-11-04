@@ -1,7 +1,7 @@
-import type { CoverageDistance, CoverageInfo, NetworkStats, Playhead, ReachInfo, RouteInfo, StepInfo, Theme } from '@railtime/network/facts.types';
-import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LngLat } from '@railtime/core/geometry.types';
+import type { NetworkFacts } from '@railtime/network/facts.service';
+import type { CoverageDistance, CoverageInfo, NetworkStats, Playhead, ReachInfo, RouteInfo, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
 import type { FrameRenderer } from './layers/frame.service';
 import type { OverlayController } from './overlay/controller.service';

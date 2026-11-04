@@ -1,6 +1,5 @@
 import type { CoverageDistance, Playhead, Stop } from '@railtime/network/facts.types';
 import type { CameraMode, MapView, ViewMode } from '@railtime/renderer/transitMap.types';
-
 import type { PlayerSettings, Section } from '~/features/explorer/explorer.types';
 import type { RouteEnds } from '~/features/explorer/tools.types';
 

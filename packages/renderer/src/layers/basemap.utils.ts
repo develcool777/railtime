@@ -78,20 +78,24 @@ const namesStreets = (layer: LayerSpecification): boolean => {
 const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Palette): void => {
   const sourceLayer = 'source-layer' in layer ? (layer['source-layer'] ?? '') : '';
   switch (layer.type) {
-    case 'background':
+    case 'background': {
       paintIfPresent(map, layer.id, 'background-color', palette.background);
       break;
-    case 'fill':
+    }
+    case 'fill': {
       paintIfPresent(map, layer.id, 'fill-color', fillColor(sourceLayer, palette));
       paintIfPresent(map, layer.id, 'fill-outline-color', fillColor(sourceLayer, palette));
       break;
-    case 'fill-extrusion':
+    }
+    case 'fill-extrusion': {
       paintIfPresent(map, layer.id, 'fill-extrusion-color', palette.building);
       break;
-    case 'line':
+    }
+    case 'line': {
       paintIfPresent(map, layer.id, 'line-color', lineColor(sourceLayer, layer.id, palette));
       break;
-    case 'symbol':
+    }
+    case 'symbol': {
       if (!namesStreets(layer)) {
         map.setLayoutProperty(layer.id, 'visibility', 'none');
         break;
@@ -100,6 +104,7 @@ const recolorLayer = (map: MapLibreMap, layer: LayerSpecification, palette: Pale
       paintIfPresent(map, layer.id, 'text-halo-color', palette.basemapHalo);
       paintIfPresent(map, layer.id, 'icon-opacity', 0);
       break;
+    }
   }
 };
 

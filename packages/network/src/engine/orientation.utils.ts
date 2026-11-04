@@ -1,7 +1,7 @@
 import { pushTo } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
 import type { TrackSegment, Travel } from './engine.types';
-import type { Chain } from './orientation.types';
+import type { Chain, ChainLink } from './orientation.types';
 
 /**
  * Groups things by each station they touch.
@@ -58,9 +58,9 @@ const buildChains = (segments: TrackSegment[], segmentsAt: Map<string, TrackSegm
     chains.push({
       // From the far end behind, through the seed (A→B), to the far end ahead.
       segments: [
-        ...behind.steps.reverse().map(step => ({ segment: step.segment, travel: (step.segment.stationB === step.enteredAt ? 1 : -1) as Travel })),
-        { segment: seed, travel: 1 as Travel },
-        ...ahead.steps.map(step => ({ segment: step.segment, travel: (step.segment.stationA === step.enteredAt ? 1 : -1) as Travel })),
+        ...behind.steps.toReversed().map((step): ChainLink => ({ segment: step.segment, travel: step.segment.stationB === step.enteredAt ? 1 : -1 })),
+        { segment: seed, travel: 1 },
+        ...ahead.steps.map((step): ChainLink => ({ segment: step.segment, travel: step.segment.stationA === step.enteredAt ? 1 : -1 })),
       ],
       start: behind.stoppedAt,
       end: ahead.stoppedAt,
@@ -84,6 +84,23 @@ const headsEast = (chain: Chain): boolean => {
 };
 
 /**
+ * The chains meeting a chain at either end, each with the direction that carries on from it: those
+ * at its end leave from there, those at its start lead into it.
+ *
+ * @param chain - The chain.
+ * @param travel - Its direction.
+ * @param chainsAt - Chains by the stations they start or end at.
+ * @returns Each neighbour with its direction, those at its end first.
+ */
+const continuations = (chain: Chain, travel: Travel, chainsAt: Map<string, Chain[]>): [Chain, Travel][] => {
+  const [start, end] = travel === 1 ? [chain.start, chain.end] : [chain.end, chain.start];
+  return [
+    ...chainsAt.get(end)!.map((next): [Chain, Travel] => [next, next.start === end ? 1 : -1]),
+    ...chainsAt.get(start)!.map((previous): [Chain, Travel] => [previous, previous.end === start ? 1 : -1]),
+  ];
+};
+
+/**
  * Picks each chain's direction (1 = start→end) so that, where it can, a chain starts where its neighbour ends.
  *
  * @param chains - The chains.
@@ -103,9 +120,7 @@ const alignChains = (chains: Chain[]): Map<Chain, Travel> => {
     visit(seed, headsEast(seed) ? 1 : -1);
     while (queue.length > 0) {
       const chain = queue.shift()!;
-      const [start, end] = direction.get(chain) === 1 ? [chain.start, chain.end] : [chain.end, chain.start];
-      for (const next of chainsAt.get(end)!) visit(next, next.start === end ? 1 : -1);
-      for (const previous of chainsAt.get(start)!) visit(previous, previous.end === start ? 1 : -1);
+      for (const [neighbour, travel] of continuations(chain, required(direction.get(chain), 'direction of a chain'), chainsAt)) visit(neighbour, travel);
     }
   }
   return direction;

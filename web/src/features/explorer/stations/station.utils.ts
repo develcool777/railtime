@@ -1,5 +1,4 @@
 import type { LineDirection, StationSummary, StopToward } from '@railtime/network/facts.types';
-
 import type { StationGroup, StationRow, StripStop } from '~/features/explorer/stations/station.types';
 
 /**
@@ -12,8 +11,8 @@ import type { StationGroup, StationRow, StripStop } from '~/features/explorer/st
 export const foldName = (text: string): string =>
   text
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/['’ʼ.]/g, '')
+    .replaceAll(/[̀-ͯ]/g, '')
+    .replaceAll(/['’ʼ.]/g, '')
     .toLowerCase()
     .trim();
 
@@ -39,7 +38,7 @@ export const findStations = (stations: StationSummary[], query: string, limit: n
     })
     .filter((entry): entry is { station: StationSummary; rank: number } => entry.rank !== null);
   return ranked
-    .sort((first, second) => first.rank - second.rank || first.station.name.localeCompare(second.station.name))
+    .toSorted((first, second) => first.rank - second.rank || first.station.name.localeCompare(second.station.name))
     .slice(0, limit)
     .map(entry => entry.station);
 };
@@ -53,7 +52,7 @@ export const findStations = (stations: StationSummary[], query: string, limit: n
  * @returns The stations listed.
  */
 export const stationChoices = (stations: StationSummary[], query: string): StationSummary[] =>
-  foldName(query) ? findStations(stations, query, stations.length) : [...stations].sort((first, second) => first.name.localeCompare(second.name));
+  foldName(query) ? findStations(stations, query, stations.length) : [...stations].toSorted((first, second) => first.name.localeCompare(second.name));
 
 /**
  * The stations A to Z, under the first letter of their names (accents dropped, so "Náměstí" is
@@ -64,7 +63,7 @@ export const stationChoices = (stations: StationSummary[], query: string): Stati
  */
 export const stationsByLetter = (stations: StationSummary[]): StationGroup[] => {
   const groups: StationGroup[] = [];
-  const sorted = [...stations].sort((first, second) => first.name.localeCompare(second.name));
+  const sorted = [...stations].toSorted((first, second) => first.name.localeCompare(second.name));
   for (const station of sorted) {
     const letter = (foldName(station.name).charAt(0) || '#').toUpperCase();
     const group = groups.at(-1);

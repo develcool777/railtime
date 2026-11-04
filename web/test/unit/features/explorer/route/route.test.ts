@@ -1,6 +1,5 @@
 import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-
 import { ROUTE_STRENGTHS } from '~/features/explorer/route/route.constants';
 import { rideSummary, routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
 

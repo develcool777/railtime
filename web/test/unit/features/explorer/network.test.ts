@@ -2,7 +2,6 @@ import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, test } from 'vitest';
-
 import { useNetworkStore } from '~/features/explorer/network.store';
 
 describe('NetworkStore', () => {

@@ -1,10 +1,9 @@
-import type { CoverageDistance, Stop } from '@railtime/network/facts.types';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
+import type { CoverageDistance, Stop } from '@railtime/network/facts.types';
 import type { OverlayResult } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, ref, shallowRef } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { useNetworkStore } from '~/features/explorer/network.store';
@@ -47,6 +46,20 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
   const coverageHistory = computed(() => (boundary.value && network.facts ? network.facts.coverage(boundary.value).history(coverageMetres.value) : []));
 
   // ---- Actions
+  /**
+   * A station of the network shown, by its id: one it does not have is a stale link.
+   *
+   * @param id - The station's id, if one is given.
+   * @returns The station, or `null`.
+   */
+  const stop = (id: string | undefined) => (id && network.facts ? network.facts.find('station', id) : null);
+  /**
+   * A station kept on a network made again: `null` if it has it no more.
+   *
+   * @param kept - The station, or `null`.
+   * @returns It, or `null`.
+   */
+  const keep = (kept: Stop | null) => (kept && network.facts?.find('station', kept.id) ? kept : null);
 
   /**
    * Sets the tools as a page opens, from its address: a station the network does not have is a stale
@@ -55,7 +68,6 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * @param address - What the address asks for.
    */
   const OPEN = (address: ExplorerUrlState) => {
-    const stop = (id: string | undefined) => (id && network.facts ? network.facts.find('station', id) : null);
     routeEnds.value = { from: stop(address.route?.from), to: stop(address.route?.to) };
     routeOption.value = address.route?.option ?? 0;
     routeAim.value = routeAimOf(routeEnds.value);
@@ -70,7 +82,6 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * Keeps the ends on the network made again of the same city (a plan shown, lines hidden): those it has.
    */
   const KEEP_ON = () => {
-    const keep = (stop: Stop | null) => (stop && network.facts?.find('station', stop.id) ? stop : null);
     routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
     routeAim.value = routeAimOf(routeEnds.value);
     reachFrom.value = keep(reachFrom.value);
@@ -93,35 +104,49 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * @param end - Where it starts, or where it ends.
    * @param stop - The station, or `null`.
    */
-  const SET_ROUTE_END = (end: keyof RouteEnds, stop: Stop | null) => SET_ROUTE_ENDS({ ...routeEnds.value, [end]: stop });
+  const SET_ROUTE_END = (end: keyof RouteEnds, stop: Stop | null) => {
+    SET_ROUTE_ENDS({ ...routeEnds.value, [end]: stop });
+  };
   /**
    * Aims the map at one end of the route: the next station clicked on it is that end.
    *
    * @param end - Where it starts, or where it ends.
    */
-  const AIM_ROUTE = (end: keyof RouteEnds) => (routeAim.value = end);
+  const AIM_ROUTE = (end: keyof RouteEnds) => {
+    routeAim.value = end;
+  };
   /** Clears both ends of the route, to start again. */
-  const CLEAR_ROUTE = () => SET_ROUTE_ENDS({ from: null, to: null });
+  const CLEAR_ROUTE = () => {
+    SET_ROUTE_ENDS({ from: null, to: null });
+  };
   /** Swaps where the route starts and ends. */
-  const SWAP_ENDS = () => SET_ROUTE_ENDS({ from: routeEnds.value.to, to: routeEnds.value.from });
+  const SWAP_ENDS = () => {
+    SET_ROUTE_ENDS({ from: routeEnds.value.to, to: routeEnds.value.from });
+  };
   /**
    * Draws another way between the route's ends.
    *
    * @param option - Its place among them, fastest first.
    */
-  const CHOOSE_ROUTE = (option: number) => (routeOption.value = option);
+  const CHOOSE_ROUTE = (option: number) => {
+    routeOption.value = option;
+  };
   /**
    * Sets where the reach starts, or clears it.
    *
    * @param stop - The station, or `null`.
    */
-  const SET_REACH_FROM = (stop: Stop | null) => (reachFrom.value = stop);
+  const SET_REACH_FROM = (stop: Stop | null) => {
+    reachFrom.value = stop;
+  };
   /**
    * Coverage measured within another distance of a station: the panel's figures and the map's shading.
    *
    * @param metres - The distance.
    */
-  const SHOW_COVERAGE_WITHIN = (metres: CoverageDistance) => (coverageMetres.value = metres);
+  const SHOW_COVERAGE_WITHIN = (metres: CoverageDistance) => {
+    coverageMetres.value = metres;
+  };
 
   /**
    * Fetches the city's outline the first time it is wanted; a city without one is said to have none.
@@ -146,7 +171,9 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    *
    * @param result - What it found, or `null` once the overlay is cleared.
    */
-  const SET_OVERLAY_RESULT = (result: OverlayResult | null) => (overlayResult.value = result);
+  const SET_OVERLAY_RESULT = (result: OverlayResult | null) => {
+    overlayResult.value = result;
+  };
 
   return {
     // State

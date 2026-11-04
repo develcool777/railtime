@@ -31,7 +31,6 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-
   import type { CityFilter } from '~/features/landing/cityFilter.types';
   import { NO_FILTER, isFiltering } from '~/features/landing/cityFilter.utils';
   import { citiesByCountry } from '~/utils/city.utils';
@@ -52,8 +51,14 @@
     set: (value: string) => (filter.value = { ...filter.value, country: value === ALL_COUNTRIES ? '' : value }),
   });
 
-  /** Picks a kind of city, or lets it go when it is picked already: history and never built rule each other out. */
-  const toggleKind = (kind: Exclude<CityFilter['kind'], 'all'>) => (filter.value = { ...filter.value, kind: filter.value.kind === kind ? 'all' : kind });
+  /**
+   * Picks a kind of city, or lets it go when it is picked already: history and never built rule each other out.
+   *
+   * @param kind - The kind.
+   */
+  const toggleKind = (kind: Exclude<CityFilter['kind'], 'all'>) => {
+    filter.value = { ...filter.value, kind: filter.value.kind === kind ? 'all' : kind };
+  };
 
   const pills = computed(() => [
     { label: 'History to play', icon: 'i-lucide-history', on: filter.value.kind === 'history', toggle: () => toggleKind('history') },

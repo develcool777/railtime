@@ -1,7 +1,7 @@
-import type { ExpressionSpecification } from 'maplibre-gl';
 import type { TrackSegment } from '@railtime/network/engine.types';
-import { channelsOf } from '../support/drawing.utils';
+import type { ExpressionSpecification } from 'maplibre-gl';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
+import { channelsOf } from '../support/drawing.utils';
 
 /**
  * A value interpolated by zoom between zoom 10 (the whole city) and zoom 14 (a neighbourhood).

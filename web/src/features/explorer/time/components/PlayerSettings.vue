@@ -49,7 +49,6 @@
 <script setup lang="ts">
   import type { CameraMode } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
-
   import type { PlayerSettings } from '~/features/explorer/explorer.types';
   import { CAMERA_OPTIONS, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
 

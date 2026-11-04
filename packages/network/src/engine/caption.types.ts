@@ -1,6 +1,6 @@
-import type { LineColor } from '../facts/facts.types';
 import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';
+import type { LineColor } from '../facts/facts.types';
 
 /** What a change's caption is worked out from: the network, its timeline, and its lines' colours. */
 export type CaptionContext = {

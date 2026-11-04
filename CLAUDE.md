@@ -1,7 +1,8 @@
 # CLAUDE.md
 
 Guidance for Claude Code in this repository. The conventions follow `dataroom-ui`'s, and ESLint
-enforces them: `pnpm eslint-check` must pass.
+enforces them: `pnpm eslint-check` must pass. Each convention below names the rule that checks it, so
+a report points back here; `eslint.config.js` says, beside every rule it turns off, why.
 
 ## What this is
 
@@ -25,28 +26,57 @@ on a clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `
 
 `pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
 `pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
-After adding a city or changing one's lines, stations or plans, run `pnpm data:summaries` (the landing
+ESLint reads every file with its package's types (web's from `.nuxt/`, which `pnpm install` writes),
+so the rules that need them hold too; `pnpm eslint-fix` sorts imports and fixes what a rule can.
+Nothing is a warning: a rule is an error, or off with its reason. After adding a city or changing one's lines, stations or plans, run `pnpm data:summaries` (the landing
 page's list); after changing its track or lines' colours, `pnpm data:previews <city>` too (it draws the
 landing page's pictures in Chrome).
 
 ## Conventions (enforced)
 
-- **Arrow functions only.** `const name = (…): Type => …`; no `function`, declaration or expression.
+- **Arrow functions only.** `const name = (…): Type => …`; no `function`, declaration or expression
+  (`func-style`, `no-restricted-syntax`).
 - **A store is a setup store, laid out as `dataroom-ui`'s**: `defineStore(STORE_IDS.NAME, () => …)`, its
   id in `STORE_IDS` (`web/src/constants/store.constants.ts`, where a test finds every store's); inside,
   in this order, each under its heading comment: `// ---- State`, its refs; `// ---- Getters`, its
   computed; `// ---- Actions`, named in capitals (`OPEN`, `SET_TIME`, `RESET` where it needs one), so a
   call reads as one wherever it is made; then what it returns, in the same order. Its state changes
-  only by its actions: a component or composable reads it and calls them.
-- **Loops say what they loop over.** No `for (;;)` or `while (true)`.
+  only by its actions: a component or composable reads it and calls them. An action is a block,
+  `(next) => { time.value = next; }`: it returns nothing (`jsdoc/require-returns` asks a `@returns` of
+  one that does).
+- **Loops say what they loop over.** No `for (;;)` or `while (true)`;
+  `for (const [place, stop] of run.entries())`, never `forEach` (`unicorn/no-array-for-each`), nor
+  `reduce` (`unicorn/no-array-reduce`): a sum or a fold is a loop and a `let`.
+- **Imports in one block, in order** (`import-x/order`; `pnpm eslint-fix` sorts them): packages, `node:`
+  among them, then the app's own (`#imports`, `~/`, `@test/`), then relative, each group alphabetical,
+  no blank lines. No module imports itself round a circle (`import-x/no-cycle`).
+- **Modern JavaScript** (`unicorn`): an array is never sorted or reversed in place: `toSorted`,
+  `toReversed` (`unicorn/no-array-sort`, `no-array-reverse`), with a comparator always (`byCodeUnits` from
+  `@railtime/core/text.utils` for ids and ISO dates, `localeCompare` for a name a reader sees);
+  `list.at(-1)`, `replaceAll`, `Number.isSafeInteger`, `Set` methods (`difference`); a callback that does
+  nothing is `() => {}`. The rules that argue with the house style are off, each with its reason.
+- **What the types say holds** (`typescript-eslint`'s strict, type-checked rules): no condition the types
+  already answer (`no-unnecessary-condition`), `??` over `||` for a value that may be missing
+  (`prefer-nullish-coalescing`), no promise left floating (`no-floating-promises`: awaited, or `void`
+  where it is meant to run on its own), no `any` from `JSON.parse` or an untyped `new Map()` (say what
+  it holds: `as CityIndex`, `new Map<string, string>()`), no assertion the types make needless.
+- **Guard clauses**: an early `return` ends the case, with no `else` after it (`no-else-return`), each
+  guard on its own line, never folded into one condition or a ternary.
+- **A function a reader takes in at once** (`sonarjs/cognitive-complexity`, 15, as `dataroom-ui`'s): past
+  that, it splits into named steps.
 - **Classes live in `*.service.ts`**, helpers in `*.utils.ts`; a file may hold several classes of
   one subject (a base and its kinds). Types and constants keep files of their own, beside the code
   they belong to (`camera.types.ts` next to `camera.service.ts`): when code merges, its types and
-  constants merge into the merged file's. No `types/` folders, no barrels. No file passes ~500
-  lines: a subject that big splits by job, never by role.
+  constants merge into the merged file's. No `types/` folders, no barrels (`check-file`). No file passes ~500
+  lines: a subject that big splits by job, never by role. A `*.utils.ts` is pure: it takes no store,
+  composable, Vue or map at run time (`house/pure-utils`), only their types.
 - **Every class member has an access modifier** (`public`, `protected`, `private`), and every class,
-  member, exported function, constant and type has a JSDoc comment.
-- **Names say what they hold**: three letters at least, but for `id`, `x`, `y`, `km`, `on`, `to`.
+  member, function, constant and type at a module's top has a JSDoc comment (`jsdoc/require-jsdoc`).
+  A JSDoc mirrors its signature, a component's functions' too: a `@param name - what` for each
+  parameter, a `@returns what` for a value (none for `void`, nor beside a getter, whose doc says what it
+  is), no `{type}`, `[optional]` or default, which TypeScript says (`jsdoc/require-param`,
+  `require-returns`, `no-types`).
+- **Names say what they hold**: three letters at least, but for `id`, `x`, `y`, `km`, `on`, `to` (`id-length`).
 - **Strict indexing** (`noUncheckedIndexedAccess`): a lookup by an id the network supplied goes
   through `required()` (or `NetworkIndex.stationOf`/`lineOf`), which fails loudly; `!` only inside a
   loop whose bounds guarantee the element, with a comment saying so.
@@ -127,8 +157,12 @@ landing page's pictures in Chrome).
   to the address bar, its only writer. A component lays out what stores hold and calls their actions.
 - What is looked at and how it is set goes in the address; dark or light, the one preference, in the browser (`features/explorer/_README.md`).
 
-- Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
-  camelCase attributes and events.
+- Vue: `<script setup lang="ts">`, block order template → script → style, a blank line between
+  them, `defineProps` before `defineEmits`, `props`/`emit`/`slots`/`attrs` names, camelCase attributes
+  and events (`eslint-plugin-vue`). A template says a thing one way: `disabled`, not `:disabled="true"`,
+  a static `class` apart from `:class`. An element's ref is `useTemplateRef<HTMLElement>('name')`; a
+  child's, the type of what it exposes (`PanelListHandle`, beside its `defineExpose`). Nothing declared
+  and unused: a prop, an event, a ref.
 
 ## Tests
 
@@ -167,7 +201,11 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
 - A test mirrors one source file, or Vitest refuses to start; `*.test.ts` and `*.spec.ts` only in `test/unit/`,
   helpers only in `test/support/` (ESLint).
 - `describe('<Module>')` (`Timeline`, `GrowthUtils`), a nested `describe` per function for a utils
-  module, then `test('does what, when')`; never `it`.
+  module, then `test('does what, when')`; never `it`, nor a test left `.only` or `.skip`
+  (`@vitest/eslint-plugin`). Each check says what it checks, so a failure says what went wrong:
+  `toHaveLength(n)`, `toBeNull()`, `toContain`, `toBeGreaterThan` (`vitest/prefer-to-*`). No `expect`
+  inside an `if` (`vitest/no-conditional-expect`): gather what a loop finds, then check it once
+  (`expect(far).toEqual(far.map(() => Infinity))`).
 - A `console.warn` or `console.error` during a test fails it (`vitest.setup.ts`).
 - Coverage: `pnpm test-unit-coverage`, into `test-reports/coverage/`.
 - Mutation testing, by hand, as in dataroom-ui: `pnpm test-mutation packages/network/src/route` has

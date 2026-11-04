@@ -1,9 +1,8 @@
 import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
+import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
 import { standInMap } from '@test/support/factories/transitMap.utils';
-import { describe, expect, test } from 'vitest';
-
 import { useMapStore } from '~/features/explorer/map/map.store';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useTimeStore } from '~/features/explorer/time/time.store';

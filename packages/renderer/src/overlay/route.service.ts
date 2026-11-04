@@ -1,9 +1,9 @@
 import type { ExpressionSpecification, FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import { LAYERS, LINE_LAYOUT, SOURCES } from '../layers/ids.constants';
+import { MapLayer } from '../layers/layer.service';
 import type { FeatureCollection, PointFeature, RouteFeature, RouteStopProperties } from '../layers/snapshot.types';
 import { emptyCollection } from '../layers/snapshot.utils';
 import { byZoom } from '../layers/style.utils';
-import { LAYERS, LINE_LAYOUT, SOURCES } from '../layers/ids.constants';
-import { MapLayer } from '../layers/layer.service';
 import type { Palette } from '../layers/theme.types';
 
 /**

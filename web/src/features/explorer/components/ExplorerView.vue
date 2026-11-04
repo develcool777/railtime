@@ -200,11 +200,10 @@
 </template>
 
 <script setup lang="ts">
-  import { useRoute, useRuntimeConfig } from '#imports';
   import type { Network } from '@railtime/schema/network.types';
   import { storeToRefs } from 'pinia';
   import { useTemplateRef } from 'vue';
-
+  import { useRoute, useRuntimeConfig } from '#imports';
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { useExplorerStore } from '~/features/explorer/explorer.store';

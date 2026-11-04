@@ -35,10 +35,9 @@
 <script setup lang="ts">
   import type { PlanInfo } from '@railtime/network/facts.types';
   import { computed } from 'vue';
-
+  import { formatPlanFacts } from '~/features/explorer/format.utils';
   import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
   import { lineColor } from '~/utils/format.utils';
-  import { formatPlanFacts } from '~/features/explorer/format.utils';
 
   const props = defineProps<{
     /** The city's plans, each with what it would add. */
@@ -55,8 +54,14 @@
   /** The key of the card for the network as it is. */
   const BUILT = 'built';
 
-  /** Shows the plan picked, or the network as built. */
-  const choose = (value: unknown) => emit('choose', value === BUILT ? undefined : String(value));
+  /**
+   * Shows the plan picked, or the network as built.
+   *
+   * @param value - The choice: a plan's id, or the network as built.
+   */
+  const choose = (value: unknown) => {
+    emit('choose', value === BUILT ? undefined : String(value));
+  };
 
   const cards = computed(() => {
     const plans = props.plans.map(plan => ({

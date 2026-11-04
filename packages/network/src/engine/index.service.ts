@@ -1,10 +1,10 @@
 import { pushTo } from '@railtime/core/collection.utils';
-import type { Line, Network, Segment, Station } from '@railtime/schema/network.types';
-import type { Bounds, LngLat } from '@railtime/core/geometry.types';
-import type { BuiltSection } from '@railtime/schema/plan.types';
-import { required } from '@railtime/core/required.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
+import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import { boundsOf, cumulativeDistances } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
+import type { Line, Network, Segment, SegmentLine, Station } from '@railtime/schema/network.types';
+import type { BuiltSection } from '@railtime/schema/plan.types';
 import type { LineGap, LineSegment, TrackSegment } from './engine.types';
 import { outsideGaps } from './gaps.utils.ts';
 import { orientSegments } from './orientation.utils.ts';
@@ -80,7 +80,7 @@ export class NetworkIndex {
    */
   public otherNames(named: Pick<Station, 'name' | 'names'>): string[] {
     return Object.entries(named.names ?? {})
-      .sort(([first], [second]) => first.localeCompare(second))
+      .toSorted(([first], [second]) => first.localeCompare(second))
       .map(([, name]) => name)
       .filter(name => name !== named.name);
   }
@@ -211,7 +211,7 @@ export class NetworkIndex {
    * @returns The prepared segment; its `travel` is set afterwards, once all segments exist.
    */
   private indexSegment(segment: Segment, index: number): TrackSegment {
-    const reversedCoordinates = segment.coordinates.slice().reverse();
+    const reversedCoordinates = segment.coordinates.toReversed();
     const distances = cumulativeDistances(segment.coordinates);
     const trackSegment: TrackSegment = {
       index,
@@ -224,35 +224,44 @@ export class NetworkIndex {
       lengthKm: distances.at(-1) ?? 0,
       travel: 1,
     };
-    for (const [line, dates] of Object.entries(segment.lines)) {
-      // Each spell without trains ends one period and starts the next.
-      const starts = [dates.open, ...(dates.suspended ?? []).map(spell => spell.until)];
-      const ends = [...(dates.suspended ?? []).map(spell => spell.from), dates.close];
-      // The period before, while it ran up to the spell: one a gap cut short leaves the next apart.
-      let previous: LineSegment | null = null;
-      for (const [period, start] of starts.entries()) {
-        const end = ends[period];
-        const opens = toTimestamp(start);
-        const closes = end ? toTimestamp(end) : null;
-        const pieces = outsideGaps(opens, closes, this.gaps.get(line) ?? []).map((piece): LineSegment => ({
-          segment: trackSegment,
-          line,
-          ...piece,
-          section: null,
-          previous: null,
-          next: null,
-        }));
-        const [first] = pieces;
-        if (first && previous && first.opens === opens) {
-          first.previous = previous;
-          previous.next = first;
-        }
-        for (const piece of pieces) this.addLineSegment(piece);
-        const last = pieces.at(-1);
-        previous = last?.closes === closes ? last : null;
-      }
-    }
+    for (const [line, dates] of Object.entries(segment.lines)) this.indexLineOnSegment(trackSegment, line, dates);
     return trackSegment;
+  }
+
+  /**
+   * Indexes one line's periods on a segment: a period per spell it runs there, cut where the line is left out.
+   *
+   * @param trackSegment - The prepared segment.
+   * @param line - The line's id.
+   * @param dates - Its dates on the segment, as the network has them.
+   */
+  private indexLineOnSegment(trackSegment: TrackSegment, line: string, dates: SegmentLine): void {
+    // Each spell without trains ends one period and starts the next.
+    const starts = [dates.open, ...(dates.suspended ?? []).map(spell => spell.until)];
+    const ends = [...(dates.suspended ?? []).map(spell => spell.from), dates.close];
+    // The period before, while it ran up to the spell: one a gap cut short leaves the next apart.
+    let previous: LineSegment | null = null;
+    for (const [period, start] of starts.entries()) {
+      const end = ends[period];
+      const opens = toTimestamp(start);
+      const closes = end ? toTimestamp(end) : null;
+      const pieces = outsideGaps(opens, closes, this.gaps.get(line) ?? []).map((piece): LineSegment => ({
+        segment: trackSegment,
+        line,
+        ...piece,
+        section: null,
+        previous: null,
+        next: null,
+      }));
+      const [first] = pieces;
+      if (first && previous && first.opens === opens) {
+        first.previous = previous;
+        previous.next = first;
+      }
+      for (const piece of pieces) this.addLineSegment(piece);
+      const last = pieces.at(-1);
+      previous = last?.closes === closes ? last : null;
+    }
   }
 
   /**

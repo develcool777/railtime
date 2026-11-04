@@ -1,7 +1,6 @@
 import { z } from 'zod';
+import { lngLat } from './shape.schema.ts';
 import type { CityBoundary } from '../format/boundary.types';
-
-const lngLat = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
 
 /** A closed ring: three corners at least, its last point its first. */
 const ring = z
@@ -9,6 +8,7 @@ const ring = z
   .min(4)
   .refine(points => points[0]?.[0] === points.at(-1)?.[0] && points[0]?.[1] === points.at(-1)?.[1], 'expected a closed ring: its last point its first');
 
+/** An outline: its name, where it came from, and its polygons. */
 const boundarySchema = z.object({
   name: z.string().min(1),
   source: z.string().min(1),

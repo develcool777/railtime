@@ -1,6 +1,5 @@
-import type { PlanStatus } from '@railtime/schema/network.types';
-
 import type { BadgeProps } from '@nuxt/ui';
+import type { PlanStatus } from '@railtime/schema/network.types';
 
 /** How a plan's card names its status, and the badge's colour. */
 export const PLAN_STATUSES: Record<PlanStatus, { label: string; color: BadgeProps['color'] }> = {

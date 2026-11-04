@@ -59,15 +59,14 @@
 </template>
 
 <script setup lang="ts">
+  import { yearOf } from '@railtime/core/date.utils';
   import type { ChangeInfo, StepInfo } from '@railtime/network/facts.types';
   import type { TimeState } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
-
   import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';
-  import { yearOf } from '@railtime/core/date.utils';
-  import { lineColor } from '~/utils/format.utils';
   import { formatDay, formatStats } from '~/features/explorer/format.utils';
   import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
+  import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     mode: TimeMode;

@@ -23,7 +23,6 @@
 <script setup lang="ts">
   import type { ViewMode } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
-
   import type { MapTool } from '~/features/explorer/map/map.types';
 
   const props = defineProps<{

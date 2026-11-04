@@ -1,9 +1,9 @@
 import { endOfYear } from '@railtime/core/date.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { CoverageBand, CoverageDistance, CoverageInfo, CoverageYear } from '../facts/facts.types';
+import type { CoverageGrid } from './coverage.service';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
-import type { CoverageGrid } from './coverage.service';
+import type { CoverageBand, CoverageDistance, CoverageInfo, CoverageYear } from '../facts/facts.types';
 
 /**
  * Where the stations a line calls at stand, at a cursor: a station the track passes but no train
@@ -72,15 +72,17 @@ export const coverageOf = (
 ): Omit<CoverageInfo, 'name' | 'source'> => {
   const km2 = bands.map(() => 0);
   let beyond = 0;
-  for (let cell = 0; cell < distances.length; cell++) {
+  for (const [cell, distance] of distances.entries()) {
     if (!grid.inside[cell]) continue;
     // Within bounds: the loop's.
-    const band = bandAt(distances[cell]!, bands);
+    const band = bandAt(distance, bands);
     if (band === -1) beyond += grid.cellKm2(cell);
     else km2[band]! += grid.cellKm2(cell);
   }
   const share = (area: number) => (grid.km2 > 0 ? area / grid.km2 : 0);
-  const within = bands.reduce((total, band, position) => (band.upTo <= metres ? total + km2[position]! : total), 0);
+  let within = 0;
+  // Within bounds: an area per band.
+  for (const [position, band] of bands.entries()) if (band.upTo <= metres) within += km2[position]!;
   return {
     km2: grid.km2,
     metres,

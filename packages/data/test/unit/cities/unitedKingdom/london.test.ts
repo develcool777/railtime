@@ -1,8 +1,9 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { NetworkFacts } from '@railtime/network/facts.service';
+import { byCodeUnits } from '@railtime/core/text.utils';
 import type { TrackSegment } from '@railtime/network/engine.types';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
+import { describe, expect, test } from 'vitest';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 const london = cityNetwork('london');
@@ -43,15 +44,15 @@ describe('London', () => {
   });
 
   test('opens the Hampstead tube in 1907 a branch at a time: to Golders Green, then from Camden Town to Highgate', () => {
-    const opened = stepsOn('1907-06-22').filter(step => step.kind === 'open');
-    const ends = opened.map(step => (step.kind === 'open' ? new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB])) : new Set()));
+    const ends = stepsOn('1907-06-22').flatMap(step =>
+      step.kind === 'open' ? [new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB]))] : [],
+    );
     expect(ends.map(stations => ['golders-green', 'archway'].filter(station => stations.has(station)))).toEqual([['golders-green'], ['archway']]);
   });
 
   test('closes the East London line in 2007 a branch at a time: New Cross Gate back to Surrey Quays, then the rest', () => {
-    const closed = stepsOn('2007-12-23').filter(step => step.kind === 'close');
-    const reaches = closed.map(step =>
-      step.kind === 'close' ? step.lineSegments.some(({ segment }) => segment.stationB === 'new-cross-gate' || segment.stationA === 'new-cross-gate') : null,
+    const reaches = stepsOn('2007-12-23').flatMap(step =>
+      step.kind === 'close' ? [step.lineSegments.some(({ segment }) => segment.stationB === 'new-cross-gate' || segment.stationA === 'new-cross-gate')] : [],
     );
     expect(reaches).toEqual([true, false]);
   });
@@ -166,8 +167,8 @@ describe('London', () => {
 
   test('ends with every line open but the two that closed for good', () => {
     const open = new Set(index.lineSegments.filter(lineSegment => timeline.isOpen(lineSegment, timeline.steps.length)).map(lineSegment => lineSegment.line));
-    const closed = ['east-london', 'northern-city'];
-    expect([...open].sort()).toEqual(index.lineIds.filter(line => !closed.includes(line)).sort());
+    const closed = new Set(['east-london', 'northern-city']);
+    expect([...open].toSorted(byCodeUnits)).toEqual(index.lineIds.filter(line => !closed.has(line)).toSorted(byCodeUnits));
   });
 
   test('suspends the Aldwych branch through the war', () => {
@@ -187,7 +188,7 @@ describe('London', () => {
     const segmentsAt = new Map<string, TrackSegment[]>();
     for (const segment of index.segments)
       for (const station of [segment.stationA, segment.stationB]) segmentsAt.set(station, [...(segmentsAt.get(station) ?? []), segment]);
-    const plain = [...segmentsAt.entries()].filter(([, segments]) => segments.length === 2);
+    const plain = [...segmentsAt].filter(([, segments]) => segments.length === 2);
     const broken = plain.filter(([station, [first, second]]) => {
       const continues = (from?: TrackSegment, to?: TrackSegment) =>
         from !== undefined && to !== undefined && endOf(from) === station && startOf(to) === station;
@@ -240,7 +241,7 @@ describe('London', () => {
     const stationsOf = (step: (typeof railSteps)[number] | undefined) => {
       if (step?.kind === 'open') return new Set(step.segments.flatMap(segment => [segment.stationA, segment.stationB]));
       if (step?.kind === 'close') return new Set(step.lineSegments.flatMap(({ segment }) => [segment.stationA, segment.stationB]));
-      return new Set();
+      return new Set<string>();
     };
 
     test('keeps each line in one piece, but where its history parts it', () => {
@@ -253,7 +254,7 @@ describe('London', () => {
 
     test("opens London's first railway in 1836, Spa Road to Deptford, then into London Bridge", () => {
       expect(railSteps[0]?.kind === 'open' && railSteps[0].line).toBe('south-eastern');
-      expect([...stationsOf(railStepsOn('1836-02-08')[0])].sort()).toEqual(['deptford', 'spa-road']);
+      expect([...stationsOf(railStepsOn('1836-02-08')[0])].toSorted(byCodeUnits)).toEqual(['deptford', 'spa-road']);
       expect(stationsOf(railStepsOn('1836-12-14')[0])).toContain('london-bridge');
     });
 
@@ -261,7 +262,7 @@ describe('London', () => {
       const opened = railStepsOn('1838-05-21').find(step => step.kind === 'open' && step.line === 'south-western');
       expect([...stationsOf(opened)]).toEqual(expect.arrayContaining(['nine-elms-2', 'wimbledon', 'surbiton']));
       const moved = railStepsOn('1848-07-11').filter(step => (step.kind === 'open' || step.kind === 'close') && step.line === 'south-western');
-      expect(moved.map(step => step.kind).sort()).toEqual(['close', 'open']);
+      expect(moved.map(step => step.kind).toSorted(byCodeUnits)).toEqual(['close', 'open']);
       expect(stationsOf(moved.find(step => step.kind === 'open'))).toContain('waterloo');
     });
 
@@ -272,7 +273,7 @@ describe('London', () => {
       const { index: railIndex } = playbackOf(london, { hidden: shown });
       const linesOn = new Map<unknown, string[]>();
       for (const { segment, line } of railIndex.lineSegmentsAt('forest-hill')) linesOn.set(segment, [...(linesOn.get(segment) ?? []), line]);
-      expect([...linesOn.values()].map(lines => lines.sort())).toEqual([
+      expect([...linesOn.values()].map(lines => lines.toSorted(byCodeUnits))).toEqual([
         ['southern', 'windrush'],
         ['southern', 'windrush'],
       ]);

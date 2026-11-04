@@ -1,7 +1,7 @@
+import type { Playback } from './playback.types';
 import type { RenderState } from '../../src/layers/style.types';
 import type { StepAnimation } from '../../src/steps/animation.service';
 import type { StepDrawing } from '../../src/steps/animation.types';
-import type { Playback } from './playback.types';
 
 /** How a frame is drawn: how far its highlight has faded. */
 export type FrameOptions = { holdProgress?: number };

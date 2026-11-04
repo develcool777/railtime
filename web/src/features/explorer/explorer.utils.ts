@@ -2,7 +2,6 @@ import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { Theme } from '@railtime/network/facts.types';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-
 import type { Chrome, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**

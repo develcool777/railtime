@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'vitest';
-
 import { STORE_IDS } from '~/constants/store.constants';
 
 /** Every store's source, read as text: a store module run would make its map, its network and the rest. */
-const STORE_SOURCES = import.meta.glob('../../../src/**/*.store.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+const STORE_SOURCES = import.meta.glob<string>('../../../src/**/*.store.ts', { query: '?raw', import: 'default', eager: true });
 
 /** The ids the stores are made with, by their names in `STORE_IDS`. */
 const declaredIds = new Set(

@@ -1,11 +1,11 @@
-import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
-import type { Network } from '@railtime/schema/network.types';
-import { NetworkFacts } from '@railtime/network/facts.service';
 import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
+import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
+import type { Network } from '@railtime/schema/network.types';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { SUMMARIES_PATH, cities, readNetwork } from '../city.utils.ts';
 import type { City } from '../city.types.ts';
+import { SUMMARIES_PATH, cities, readNetwork } from '../city.utils.ts';
 
 /**
  * One city, summed up for the landing page: its name and country, and its network's summary
@@ -65,7 +65,7 @@ export const writeSummaries = (found: City[] = cities(), path = SUMMARIES_PATH):
       return [city.id, summaryOf(network)];
     }),
   );
-  const previous: CityIndex = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+  const previous = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as CityIndex) : {};
   writeFileSync(path, formatSummaries(inListOrder(summaries, previous)));
   console.log(`${path}: ${Object.keys(summaries).length} cities`);
 };

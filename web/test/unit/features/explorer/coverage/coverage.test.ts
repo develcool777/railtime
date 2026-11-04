@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-
 import { coverageDistanceOf, formatArea, formatShare, formatWalk } from '~/features/explorer/coverage/coverage.utils';
 
 describe('CoverageUtils', () => {

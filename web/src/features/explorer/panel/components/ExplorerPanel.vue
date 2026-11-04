@@ -2,11 +2,11 @@
   <!-- On a phone: a drawer over the map's foot, always there, snapping to its tabs (named under their icons where the screen is wide enough), half the screen or all of it; dragged by its handle, so the lists in it scroll. -->
   <UDrawer
     v-if="phone"
-    :open="true"
+    open
     :modal="false"
     :dismissible="false"
     :overlay="false"
-    :noBodyStyles="true"
+    noBodyStyles
     handleOnly
     :snapPoints="Object.values(snapPoints)"
     :activeSnapPoint="snapPoints[snap]"
@@ -66,10 +66,9 @@
 <script setup lang="ts">
   import { useWindowSize } from '@vueuse/core';
   import { computed } from 'vue';
-
   import { SHEET_HEIGHTS, SHEET_TOP_GAP } from '~/features/explorer/explorer.constants';
-  import { sheetHeightOf } from '~/features/explorer/layout.utils';
   import type { Section, SheetSnap } from '~/features/explorer/explorer.types';
+  import { sheetHeightOf } from '~/features/explorer/layout.utils';
 
   const props = defineProps<{
     /** The phone's layout: a drawer, not a column. */
@@ -103,7 +102,11 @@
   // Down to its tabs, no section is shown as open.
   const shown = computed(() => (snap.value === 'peek' ? null : props.section));
 
-  /** Follows the drawer to the snap it was dragged or tapped to. */
+  /**
+   * Follows the drawer to the snap it was dragged or tapped to.
+   *
+   * @param point - Where it came to rest, as the drawer gives it.
+   */
   const toSnap = (point: number | string | null) => {
     const found = (Object.entries(snapPoints.value) as [SheetSnap, string][]).find(([, value]) => value === point);
     if (found) snap.value = found[0];

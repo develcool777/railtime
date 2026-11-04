@@ -1,13 +1,12 @@
+import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
 import { standInMap } from '@test/support/factories/transitMap.utils';
-import { describe, expect, test } from 'vitest';
-
 import type { PanelView } from '~/features/explorer/explorer.types';
+import { chromeOf, openingSectionOf, openOf, railSectionOf, walkedTo, withoutStations, withStation } from '~/features/explorer/explorer.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useTimeStore } from '~/features/explorer/time/time.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
-import { chromeOf, openingSectionOf, openOf, railSectionOf, walkedTo, withoutStations, withStation } from '~/features/explorer/explorer.utils';
 
 const line = (id: string): PanelView => ({ kind: 'line', id });
 const station = (id: string): PanelView => ({ kind: 'station', id });
@@ -183,6 +182,11 @@ describe('ExplorerStore', () => {
     expect(explorer.dialog).toBe('help');
     search.value = false;
     expect(explorer.dialog).toBe('help');
+    explorer.CLOSE_DIALOG('search');
+    expect(explorer.dialog).toBe('help');
+    help.value = false;
+    expect(explorer.dialog).toBeNull();
+    explorer.SET_DIALOG('help');
     explorer.SET_MAP_ONLY(true);
     expect(explorer.dialog).toBeNull();
   });

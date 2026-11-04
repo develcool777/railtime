@@ -1,7 +1,7 @@
+import type { LngLat } from '@railtime/core/geometry.types';
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
-import type { LngLat } from '@railtime/core/geometry.types';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 import type { City } from '../city.types.ts';
@@ -18,12 +18,15 @@ import type { BoundaryArgs, NominatimPlace, OutlineGeometry } from './boundary.t
  */
 export const holds = (boundary: CityBoundary, point: LngLat): boolean => {
   const [longitude, latitude] = point;
-  const inRing = (ring: LngLat[]) =>
-    ring.slice(0, -1).reduce((inside, [fromX, fromY], position) => {
+  const inRing = (ring: LngLat[]) => {
+    let inside = false;
+    for (const [position, [fromX, fromY]] of ring.slice(0, -1).entries()) {
       // Within bounds: a ring's next point, the last being the first.
       const [toX, toY] = ring[position + 1]!;
-      return fromY > latitude !== toY > latitude && longitude < fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY) ? !inside : inside;
-    }, false);
+      if (fromY > latitude !== toY > latitude && longitude < fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY)) inside = !inside;
+    }
+    return inside;
+  };
   return boundary.polygons.some(([outer = [], ...holes]) => inRing(outer) && !holes.some(inRing));
 };
 
@@ -97,7 +100,7 @@ export const boundaryOf = (place: NominatimPlace, name?: string): CityBoundary =
  */
 export const formatBoundary = (boundary: CityBoundary): string => {
   const polygons = boundary.polygons.map(polygon => {
-    const rings = polygon.map(ring => '      ' + JSON.stringify(ring));
+    const rings = polygon.map(ring => ' '.repeat(6) + JSON.stringify(ring));
     return `    [\n${rings.join(',\n')}\n    ]`;
   });
   return `{\n  "name": ${JSON.stringify(boundary.name)},\n  "source": ${JSON.stringify(boundary.source)},\n  "polygons": [\n${polygons.join(',\n')}\n  ]\n}\n`;
@@ -118,7 +121,7 @@ export const boundaryArgsOf = (args: string[]): BoundaryArgs => {
   if (rest.length > 0) throw new Error(BOUNDARY_USAGE);
   if (relationText === undefined) return { city, relation: null };
   const relation = Number(relationText);
-  if (!Number.isInteger(relation) || relation <= 0) throw new Error(BOUNDARY_USAGE);
+  if (!Number.isSafeInteger(relation) || relation <= 0) throw new Error(BOUNDARY_USAGE);
   return { city, relation };
 };
 
@@ -145,7 +148,7 @@ export const fetchBoundary = async (city: City, relationGiven: number | null): P
   const text = formatBoundary(boundary);
   const changed = !existsSync(city.boundaryPath) || readFileSync(city.boundaryPath, 'utf8') !== text;
   writeFileSync(city.boundaryPath, text);
-  const points = boundary.polygons.flat(2).length;
+  const points = boundary.polygons.flat(2 /* a polygon's rings, a ring's points */).length;
   console.log(
     `${city.id}: ${boundary.name}, relation ${relation}, ${points} points, ${Math.round(held * 100)}% of its stations, ${changed ? 'written' : 'unchanged'}`,
   );

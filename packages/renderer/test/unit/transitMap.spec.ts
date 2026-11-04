@@ -1,18 +1,18 @@
-import { describe, expect, test } from 'vitest';
-import type { LayerSpecification } from 'maplibre-gl';
 import { toTimestamp } from '@railtime/core/date.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import type { LayerSpecification } from 'maplibre-gl';
+import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
 import { DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from '../../src/layers/theme.constants';
 import { MINIMAP_SOURCES, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from '../../src/minimap/minimap.constants';
-import { NetworkFacts } from '@railtime/network/facts.service';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
-import { TransitMap } from '../../src/transitMap.service';
-import { FIT_NETWORK_MS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
 import { END_OVERVIEW_MS, MAX_TILE_WAIT_SECONDS } from '../../src/playback/playback.constants';
+import { FIT_NETWORK_MS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
+import { TransitMap } from '../../src/transitMap.service';
 import type { MapProps, TransitMapListeners, TransitMapOptions } from '../../src/transitMap.types';
 import { openingOf } from '../../src/transitMap.utils';
 import { fakeMap } from '../support/factories/fakeMap.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 
 /**
  * The tiny network's map on a stand-in, with frames stepped by hand, and every event it delivers.
@@ -51,8 +51,15 @@ const mapOf = (
     on: recordAll,
     ...options,
     minimapContainer,
-    createMap: options => (options.container === minimapContainer ? mini.map : fake.map),
-    scheduler: { request: frame => pending.push(frame), cancel: () => (pending.length = 0) },
+    createMap: options => (minimapContainer && options.container === minimapContainer ? mini.map : fake.map),
+    scheduler: {
+      // The frame's id: where it waits.
+      request: frame => {
+        pending.push(frame);
+        return pending.length;
+      },
+      cancel: () => (pending.length = 0),
+    },
   });
   let now = 0;
   const frame = () => {
@@ -139,7 +146,14 @@ describe('TransitMap', () => {
 
   test('a listener may call the map: it runs after the call it heard of is done', () => {
     const calls: string[] = [];
-    const { map, ready } = mapOf({}, { status: () => calls.push(`status while ${map.status}`) });
+    const { map, ready } = mapOf(
+      {},
+      {
+        status: () => {
+          calls.push(`status while ${map.status}`);
+        },
+      },
+    );
     ready();
     expect(calls).toEqual(['status while ready']);
   });

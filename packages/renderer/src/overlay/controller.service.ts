@@ -1,9 +1,11 @@
+import { boundsOf } from '@railtime/core/geometry.utils';
+import type { Playhead } from '@railtime/network/facts.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { coverageDrawing, reachStops, reachTrack, routeStops, routeTrack } from './overlay.utils';
-import { boundsOf } from '@railtime/core/geometry.utils';
 import { OPENING_MAX_ZOOM, ROUTE_NAME_ROOM, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from '../transitMap.constants';
-import type { OverlayRequest } from '../transitMap.types';
-import type { OverlayParts } from './controller.types';
+import type { OverlayRequest, OverlayResult } from '../transitMap.types';
+import type { OverlayDrawing, OverlayParts } from './controller.types';
+import type { PointFeature, ReachStopProperties, RouteFeature } from '../layers/snapshot.types';
 
 /**
  * What is drawn over the network: a route, a reach or the city's coverage, as the props ask. Works it
@@ -36,43 +38,23 @@ export class OverlayController {
    * @param boundary - The city's outline, for coverage.
    */
   public draw(request: OverlayRequest | null, boundary: CityBoundary | null): void {
-    const { facts, route: routeLayer, reach: reachLayer, coverage: coverageLayer, camera } = this.parts;
+    const { facts, route: routeLayer, reach: reachLayer, coverage: coverageLayer } = this.parts;
     const moment = this.parts.moment();
     const theme = this.parts.theme();
-    const then = facts.asOf(moment);
     this.drawnAt = moment.cursor;
     if (boundary !== this.boundary && request?.kind === 'coverage') this.framed = null;
     this.boundary = boundary;
+    const drawing = this.workOut(request, boundary, moment);
 
-    const routes = request?.kind === 'route' ? then.routes(request.from, request.to) : [];
-    // The option asked for, or the last there is on this date.
-    const shown = request?.kind === 'route' && routes.length > 0 ? Math.min(request.option, routes.length - 1) : null;
-    const route = shown === null ? null : (routes[shown] ?? null);
-    const reach = request?.kind === 'reach' ? then.reach(request.from) : null;
-    // Coverage is measured within the distance asked for, once the outline is in.
-    const coverage = request?.kind === 'coverage' && boundary ? { measure: facts.coverage(boundary), metres: request.metres } : null;
-    const routeLine = routeTrack(facts.engine.index, route, theme);
-    const reachStations = reachStops(facts.engine.index, reach);
-    routeLayer.update(routeLine, routeStops(facts.engine.index, route, theme));
-    reachLayer.update(reachTrack(facts.engine.index, reach), reachStations);
+    const { index } = facts.engine;
+    const { route, reach, coverage } = drawing;
+    const routeLine = routeTrack(index, route, theme);
+    const reachStations = reachStops(index, reach);
+    routeLayer.update(routeLine, routeStops(index, route, theme));
+    reachLayer.update(reachTrack(index, reach), reachStations);
     coverageLayer.update(coverage ? coverageDrawing(coverage.measure.cells(moment.cursor, coverage.metres), coverage.measure.boundary) : null);
-
-    const subject = overlaySubjectOf(request);
-    if (subject !== this.framed) {
-      // A route keeps room for its names; coverage frames the whole city, as a reach frames what it gets to.
-      const routeBounds = route && boundsOf(routeLine.flatMap(feature => feature.geometry.coordinates));
-      const reachBounds = reach && boundsOf(reachStations.map(stop => stop.geometry.coordinates));
-      if (routeBounds) camera.fit(routeBounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS, ROUTE_NAME_ROOM);
-      else if (reachBounds) camera.fit(reachBounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
-      else if (coverage) camera.fit(coverage.measure.bounds, OPENING_MAX_ZOOM, SELECT_FLY_MS);
-      // Framed once there is something to frame: coverage waits for the outline, a route for the date to have one.
-      if (route || reach || coverage || !request) this.framed = subject;
-    }
-
-    if (request?.kind === 'route') this.parts.report({ kind: 'route', routes, shown });
-    else if (request?.kind === 'reach') this.parts.report({ kind: 'reach', reach });
-    else if (request?.kind === 'coverage') this.parts.report({ kind: 'coverage', coverage: coverage?.measure.info(moment.cursor, coverage.metres) ?? null });
-    else this.parts.report(null);
+    this.frame(request, drawing, routeLine, reachStations);
+    this.parts.report(this.resultOf(request, drawing, moment.cursor));
   }
 
   /**
@@ -83,6 +65,78 @@ export class OverlayController {
    */
   public follow(request: OverlayRequest | null, boundary: CityBoundary | null): void {
     if (request && this.parts.moment().cursor !== this.drawnAt) this.draw(request, boundary);
+  }
+
+  /**
+   * What the overlay asked for comes to at a moment.
+   *
+   * @param request - What the props ask for.
+   * @param boundary - The city's outline, for coverage.
+   * @param moment - The moment shown.
+   * @returns The routes, the one shown, the reach and the coverage.
+   */
+  private workOut(request: OverlayRequest | null, boundary: CityBoundary | null, moment: Playhead): OverlayDrawing {
+    const { facts } = this.parts;
+    const then = facts.asOf(moment);
+    const routes = request?.kind === 'route' ? then.routes(request.from, request.to) : [];
+    // The option asked for, or the last there is on this date.
+    const shown = request?.kind === 'route' && routes.length > 0 ? Math.min(request.option, routes.length - 1) : null;
+    return {
+      routes,
+      shown,
+      route: shown === null ? null : (routes[shown] ?? null),
+      reach: request?.kind === 'reach' ? then.reach(request.from) : null,
+      // Coverage is measured within the distance asked for, once the outline is in.
+      coverage: request?.kind === 'coverage' && boundary ? { measure: facts.coverage(boundary), metres: request.metres } : null,
+    };
+  }
+
+  /**
+   * Frames the overlay drawn when it is of something new; the same one is left be.
+   *
+   * @param request - What the props ask for.
+   * @param drawing - What it came to.
+   * @param routeLine - The route's track as drawn.
+   * @param reachStations - The stations the reach gets to, as drawn.
+   */
+  private frame(request: OverlayRequest | null, drawing: OverlayDrawing, routeLine: RouteFeature[], reachStations: PointFeature<ReachStopProperties>[]): void {
+    const subject = overlaySubjectOf(request);
+    if (subject === this.framed) return;
+    const { route, reach, coverage } = drawing;
+    const { camera } = this.parts;
+    // A route keeps room for its names; coverage frames the whole city, as a reach frames what it gets to.
+    const routeBounds = route && boundsOf(routeLine.flatMap(feature => feature.geometry.coordinates));
+    const reachBounds = reach && boundsOf(reachStations.map(stop => stop.geometry.coordinates));
+    if (routeBounds) camera.fit(routeBounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS, ROUTE_NAME_ROOM);
+    else if (reachBounds) camera.fit(reachBounds, SELECTED_STATION_ZOOM, SELECT_FLY_MS);
+    else if (coverage) camera.fit(coverage.measure.bounds, OPENING_MAX_ZOOM, SELECT_FLY_MS);
+    // Framed once there is something to frame: coverage waits for the outline, a route for the date to have one.
+    if (route || reach || coverage || !request) this.framed = subject;
+  }
+
+  /**
+   * What the overlay came to, as it is reported.
+   *
+   * @param request - What the props ask for.
+   * @param drawing - What it came to.
+   * @param cursor - The cursor shown, for coverage's figures.
+   * @returns The result; `null` for no overlay.
+   */
+  private resultOf(request: OverlayRequest | null, drawing: OverlayDrawing, cursor: number): OverlayResult | null {
+    switch (request?.kind) {
+      case 'route': {
+        return { kind: 'route', routes: drawing.routes, shown: drawing.shown };
+      }
+      case 'reach': {
+        return { kind: 'reach', reach: drawing.reach };
+      }
+      case 'coverage': {
+        return { kind: 'coverage', coverage: drawing.coverage?.measure.info(cursor, drawing.coverage.metres) ?? null };
+      }
+      default: {
+        return null;
+      }
+    }
   }
 }
 

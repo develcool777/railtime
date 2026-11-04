@@ -1,6 +1,5 @@
-import { useRoute, useRouter } from '#imports';
 import { watchThrottled } from '@vueuse/core';
-
+import { useRoute, useRouter } from '#imports';
 import { ADDRESS_WRITE_MS } from '~/features/explorer/address/address.constants';
 import { sameQuery } from '~/features/explorer/address/address.utils';
 import { useExplorerStore } from '~/features/explorer/explorer.store';

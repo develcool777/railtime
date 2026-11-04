@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { describe, expect, test } from 'vitest';
 import {
   CHASE_GLIDE_KM,
   CHASE_ZOOM,
@@ -14,11 +15,10 @@ import {
 } from '../../../src/playback/camera.constants';
 import { CameraDirector } from '../../../src/playback/camera.service';
 import type { CameraSettings } from '../../../src/playback/camera.types';
-import type { ViewMode } from '../../../src/transitMap.types';
 import { chaseStartOf, followOf } from '../../../src/playback/camera.utils';
 import type { StepAnimation } from '../../../src/steps/animation.service';
+import type { ViewMode } from '../../../src/transitMap.types';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 const PADDING = { top: 10, right: 20, bottom: 30, left: 40 };

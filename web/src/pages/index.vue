@@ -40,15 +40,14 @@
 </template>
 
 <script setup lang="ts">
-  import { navigateTo, useRoute } from '#imports';
   import { computed, ref } from 'vue';
-
+  import { navigateTo, useRoute } from '#imports';
+  import { CITIES } from '~/constants/city.constants';
   import type { CityFilter } from '~/features/landing/cityFilter.types';
   import { NO_FILTER, matchesFilter } from '~/features/landing/cityFilter.utils';
-  import { citiesByCountry, citySummaryOf, isCity } from '~/utils/city.utils';
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
-  import { CITIES } from '~/constants/city.constants';
   import { landingSeo } from '~/features/seo/seo.utils';
+  import { citiesByCountry, citySummaryOf, isCity } from '~/utils/city.utils';
 
   usePageSeo(landingSeo(CITIES.length));
 

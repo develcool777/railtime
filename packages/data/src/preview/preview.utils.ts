@@ -1,10 +1,10 @@
+import type { LngLat } from '@railtime/core/geometry.types';
+import { latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import type { Theme } from '@railtime/network/facts.types';
 import type { StillRequest, StillTrack } from '@railtime/renderer/basemapStill.types';
 import type { MapView } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
-import type { LngLat } from '@railtime/core/geometry.types';
-import { latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
-import { NetworkFacts } from '@railtime/network/facts.service';
 import { MAX_PREVIEW_ZOOM, PREVIEW_PADDING, TILE_SIZE } from './preview.constants.ts';
 import type { PreviewSize } from './preview.types.ts';
 
@@ -71,7 +71,7 @@ export const previewRequestOf = (network: Network, theme: Theme, size: PreviewSi
  * @param theme - The preview's theme.
  * @returns The path of `<city>.<theme>.webp` beside it.
  */
-export const previewPathOf = (networkPath: string, theme: Theme): string => networkPath.replace(/\.json$/, `.${theme}.webp`);
+export const previewPathOf = (networkPath: string, theme: Theme): string => networkPath.replace(/\.json$/, () => `.${theme}.webp`);
 
 /**
  * Where a city's social card is kept: the picture a link to its page shows, beside its network. JPEG,

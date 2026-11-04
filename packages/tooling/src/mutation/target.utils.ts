@@ -49,6 +49,15 @@ export const sourceDirOf = (path: string): string => {
 export const testDirOf = (dir: string): string => dir.replace(/\/src(\/|$)/, '/test/unit$1');
 
 /**
+ * The files of a folder Stryker breaks: in the web app only the plain helpers, as its components are
+ * checked in the browser.
+ *
+ * @param dir - The folder.
+ * @returns Its files, as a glob.
+ */
+const mutatedFilesOf = (dir: string): string => (dir.startsWith('web/') ? `${dir}/**/*.utils.ts` : `${dir}/**/*.ts`);
+
+/**
  * What a run mutates, which tests it runs, and where it writes: one report and one cache per target,
  * so a run on one folder leaves another's in place. Each folder's own tests only: another that happens
  * to cover the code would catch more, but every test of the package for each mutant is slow.
@@ -60,10 +69,8 @@ export const testDirOf = (dir: string): string => dir.replace(/\/src(\/|$)/, '/t
 export const targetOf = (dirs: string[], options: Omit<MutationOptions, 'paths'>): MutationTarget => {
   const { fresh, disableBail, concurrency } = options;
   const label = dirs.map(dir => dir.replaceAll('/', '-')).join('+');
-  // In the web app only the plain helpers are tested here: its components are checked in the browser.
-  const files = (dir: string) => (dir.startsWith('web/') ? `${dir}/**/*.utils.ts` : `${dir}/**/*.ts`);
   return {
-    mutate: [...dirs.map(files), ...NOT_MUTATED.map(pattern => `!${pattern}`)],
+    mutate: [...dirs.map(mutatedFilesOf), ...NOT_MUTATED.map(pattern => `!${pattern}`)],
     testFiles: dirs.map(dir => `${testDirOf(dir)}/**/*.@(test|spec).ts`),
     incrementalFile: `test-reports/stryker-incremental/${label}${disableBail ? '.all-tests' : ''}.json`,
     force: fresh,
