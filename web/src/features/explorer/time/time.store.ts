@@ -191,6 +191,7 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
     player,
     time,
     step,
+    openingAt,
     // Getters
     playerShown,
     linkedPlayhead,

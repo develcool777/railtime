@@ -1,3 +1,4 @@
+import type { ViewMode } from '@railtime/renderer/transitMap.types';
 import type { Network } from '@railtime/schema/network.types';
 
 /**
@@ -26,5 +27,5 @@ export type VideoMoment = {
 /** How much of each piece over the map shows, 0 to 1. */
 export type VideoLayers = { title: number; year: number; caption: number; end: number };
 
-/** What a video opens with: the city's network, and the frame's size. */
-export type VideoOpening = { network: Network; size: VideoSize };
+/** What a video opens with: the city's network, the frame's size, and how the map is seen. */
+export type VideoOpening = { network: Network; size: VideoSize; viewMode: ViewMode };

@@ -1,7 +1,7 @@
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { StepInfo } from '@railtime/network/facts.types';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
-import type { Credit, TimeState } from '@railtime/renderer/transitMap.types';
+import type { Credit, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, ref, shallowRef } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
@@ -21,6 +21,8 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const facts = shallowRef<NetworkFacts | null>(null);
   /** The video's size, once its frame is laid out. */
   const size = ref<VideoSize>({ width: 0, height: 0 });
+  /** In 3D, or flat. */
+  const viewMode = ref<ViewMode>('3d');
   /** The page's clock, ms: moved on each frame, by the recorder when one records it. */
   const now = ref(0);
   const scene = ref<VideoScene>('loading');
@@ -39,7 +41,7 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
 
   // ---- Getters
   /** What the map shows, once there is a network. */
-  const mapProps = computed(() => (facts.value ? videoMapPropsOf(facts.value, size.value) : null));
+  const mapProps = computed(() => (facts.value ? videoMapPropsOf(facts.value, size.value, viewMode.value) : null));
   /** How much of each piece over the map shows this frame. */
   const layers = computed(() =>
     videoLayersOf({
@@ -79,12 +81,13 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   /**
    * Opens a city's network, the video not started.
    *
-   * @param opening - The network, and the frame's size.
+   * @param opening - The network, the frame's size, and how the map is seen.
    */
   const OPEN = (opening: VideoOpening) => {
     RESET();
     facts.value = markRaw(NetworkFacts.create(opening.network));
     size.value = opening.size;
+    viewMode.value = opening.viewMode;
   };
   /**
    * Takes the map, once it is made.
@@ -147,10 +150,17 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   return {
     // State
     facts,
+    size,
+    viewMode,
+    now,
     scene,
+    sceneStartedAt,
     time,
     caption,
+    captionShownAt,
+    captionGoneAt,
     credits,
+    map,
     // Getters
     mapProps,
     layers,

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { recordedPageOf } from './recordedPage.utils.ts';
-import { FFMPEG_LOCATIONS, RECORD_USAGE, RECORDING_DEFAULTS, VIDEOS_FOLDER } from './recorder.constants.ts';
+import { FFMPEG_LOCATIONS, RECORD_USAGE, RECORDING_DEFAULTS, STREAM_REQUESTS, VIDEOS_FOLDER } from './recorder.constants.ts';
 import type { RecordedPageKind, Recording, RecordingScope } from './recorder.types.ts';
 
 /**
@@ -56,8 +56,10 @@ export const recordingOf = (args: string[]): Recording => {
       return parseArgs({
         args,
         allowPositionals: true,
+        allowNegative: true,
         options: {
           page: { type: 'string' },
+          rehearse: { type: 'boolean' },
           fps: { type: 'string' },
           size: { type: 'string' },
           seconds: { type: 'string' },
@@ -79,6 +81,7 @@ export const recordingOf = (args: string[]): Recording => {
   return {
     city,
     page,
+    rehearse: values.rehearse ?? RECORDING_DEFAULTS.rehearse,
     fps: countOf('fps', values.fps, RECORDING_DEFAULTS.fps),
     width: countOf('size', size[1], RECORDING_DEFAULTS.width),
     height: countOf('size', size[2], RECORDING_DEFAULTS.height),
@@ -177,3 +180,12 @@ export const installRecordingClock = (scope: RecordingScope): void => {
     },
   };
 };
+
+/**
+ * Whether a frame waits for a request to be answered before it is taken: any but a stream, which stays
+ * open as long as the page.
+ *
+ * @param resourceType - The request's kind, as the browser says it (`fetch`, `image`, `eventsource`…).
+ * @returns Whether a frame waits for it.
+ */
+export const awaitedByFrame = (resourceType: string): boolean => !STREAM_REQUESTS.has(resourceType);

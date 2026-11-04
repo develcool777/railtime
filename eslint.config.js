@@ -11,6 +11,7 @@ import { idsConfig } from './eslint/ids.config.js';
 import { importsConfig } from './eslint/imports.config.js';
 import { javascriptConfig } from './eslint/javascript.config.js';
 import { jsdocConfig } from './eslint/jsdoc.config.js';
+import { storesConfig } from './eslint/stores.config.js';
 import { testsConfig } from './eslint/tests.config.js';
 import { typescriptConfig } from './eslint/typescript.config.js';
 import { vueConfig } from './eslint/vue.config.js';
@@ -46,6 +47,7 @@ export default defineConfig(
   importsConfig,
   jsdocConfig,
   idsConfig,
+  storesConfig,
   filesConfig,
   vueConfig,
   testsConfig,

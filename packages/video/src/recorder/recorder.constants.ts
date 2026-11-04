@@ -1,12 +1,14 @@
+import { fileURLToPath } from 'node:url';
 import type { Recording } from './recorder.types.ts';
 
 /** How the command is called. */
 export const RECORD_USAGE =
-  'usage: pnpm video:record <city> [--page video|explorer] [--fps 60] [--size 1920x1080] [--seconds 600] [--query "mapOnly=1"] [--origin http://localhost:5180] [--out file.mp4]';
+  'usage: pnpm video:record <city> [--page video|explorer] [--no-rehearse] [--fps 60] [--size 1920x1080] [--seconds 600] [--query "mapOnly=1"] [--origin http://localhost:5180] [--out file.mp4]';
 
 /** A recording's settings where the command gives none: the video page, 1080p at 60 frames a second, from the app run by `pnpm dev`. */
 export const RECORDING_DEFAULTS: Omit<Recording, 'city' | 'out'> = {
   page: 'video',
+  rehearse: true,
   fps: 60,
   width: 1920,
   height: 1080,
@@ -15,8 +17,17 @@ export const RECORDING_DEFAULTS: Omit<Recording, 'city' | 'out'> = {
   query: '',
 };
 
-/** Where a video goes where the command names no file: `videos/<city>.mp4`, beside the package's code. */
-export const VIDEOS_FOLDER = 'videos';
+/** The package's own folder, whatever folder the command is run from. */
+const PACKAGE_FOLDER = fileURLToPath(new URL('../../', import.meta.url));
+
+/**
+ * Chrome's own profile for recording, in the package's `.cache/`: its cache keeps the map's tiles
+ * between recordings (served to be kept a day), so a city recorded again fetches none it has.
+ */
+export const BROWSER_PROFILE = `${PACKAGE_FOLDER}.cache/chrome`;
+
+/** Where a video goes where the command names no file: `videos/<city>.mp4`, in the package. */
+export const VIDEOS_FOLDER = `${PACKAGE_FOLDER}videos`;
 
 /** Virtual seconds the page runs before playback starts: its map drawn, the camera settled. */
 export const WARM_UP_SECONDS = 2;
@@ -47,3 +58,9 @@ export const FFMPEG_LOCATIONS = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffm
 
 /** A frame's JPEG quality: high enough that the encoder, not the frame, decides what is lost. */
 export const FRAME_QUALITY = 95;
+
+/**
+ * The kinds of request that stay open as long as the page does (Nuxt's dev server streams its errors,
+ * `/__nuxt_dev__/error/events`): a frame never waits for one to end.
+ */
+export const STREAM_REQUESTS: ReadonlySet<string> = new Set(['eventsource', 'websocket']);

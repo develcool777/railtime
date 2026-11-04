@@ -413,6 +413,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
   return {
     // State
     section,
+    openingSection,
     views,
     phone,
     tabLabels,
@@ -426,6 +427,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     stationNames,
     streetNames,
     theme,
+    boundaryUrl,
     // Getters
     openStation,
     openLine,

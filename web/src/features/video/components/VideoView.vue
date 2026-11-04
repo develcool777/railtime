@@ -14,10 +14,10 @@
 <script setup lang="ts">
   import type { Network } from '@railtime/schema/network.types';
   import { computed, useTemplateRef } from 'vue';
-  import { useRuntimeConfig } from '#imports';
+  import { useRoute, useRuntimeConfig } from '#imports';
   import { useVideoMap } from '~/features/video/video.composable';
   import { useVideoStore } from '~/features/video/video.store';
-  import { spokenAddress } from '~/features/video/video.utils';
+  import { spokenAddress, videoViewOf } from '~/features/video/video.utils';
   import { cityNameOf, citySummaryOf } from '~/utils/city.utils';
 
   const props = defineProps<{
@@ -29,7 +29,9 @@
 
   const store = useVideoStore();
   const container = useTemplateRef<HTMLElement>('container');
-  useVideoMap(container, () => props.network);
+  // The video opens on the city's network, seen as its address asks: in 3D, or flat (`?view=2d`).
+  const route = useRoute();
+  useVideoMap(container, () => ({ network: props.network, viewMode: videoViewOf(route.query.view) }));
 
   const cityName = computed(() => cityNameOf(props.city));
   const summary = computed(() => citySummaryOf(props.city));

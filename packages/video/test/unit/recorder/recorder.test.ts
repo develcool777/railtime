@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { FFMPEG_LOCATIONS, RECORD_USAGE } from '../../../src/recorder/recorder.constants.ts';
 import { VideoRecorder } from '../../../src/recorder/recorder.service.ts';
 import type { RecordingScope } from '../../../src/recorder/recorder.types.ts';
-import { ffmpegArgsOf, ffmpegPathOf, installRecordingClock, pageUrlOf, recordingOf } from '../../../src/recorder/recorder.utils.ts';
+import { awaitedByFrame, ffmpegArgsOf, ffmpegPathOf, installRecordingClock, pageUrlOf, recordingOf } from '../../../src/recorder/recorder.utils.ts';
 
 /**
  * A page's globals as the clock finds them: a clock at 1000 ms, a date at 5000, and no frames.
@@ -22,13 +22,14 @@ describe('RecorderUtils', () => {
       expect(recordingOf(['kyiv'])).toEqual({
         city: 'kyiv',
         page: 'video',
+        rehearse: true,
         fps: 60,
         width: 1920,
         height: 1080,
         seconds: 600,
         origin: 'http://localhost:5180',
         query: '',
-        out: 'videos/kyiv.mp4',
+        out: expect.stringMatching(/\/packages\/video\/videos\/kyiv\.mp4$/),
       });
     });
 
@@ -37,6 +38,7 @@ describe('RecorderUtils', () => {
         'london',
         '--page',
         'explorer',
+        '--no-rehearse',
         '--fps',
         '30',
         '--size',
@@ -51,6 +53,7 @@ describe('RecorderUtils', () => {
       expect(recordingOf([...args, '--out', 'short.mp4'])).toEqual({
         city: 'london',
         page: 'explorer',
+        rehearse: false,
         fps: 30,
         width: 1080,
         height: 1920,
@@ -73,6 +76,13 @@ describe('RecorderUtils', () => {
     });
   });
 
+  describe('awaitedByFrame', () => {
+    test('waits for what a frame draws, never for a stream open as long as the page', () => {
+      expect(['document', 'script', 'fetch', 'xhr', 'image'].map(awaitedByFrame)).toEqual([true, true, true, true, true]);
+      expect(['eventsource', 'websocket'].map(awaitedByFrame)).toEqual([false, false]);
+    });
+  });
+
   describe('pageUrlOf', () => {
     test("opens the city's video page or explorer, with the query given", () => {
       expect(pageUrlOf(recordingOf(['kyiv']))).toBe('http://localhost:5180/video/kyiv');
@@ -87,7 +97,7 @@ describe('RecorderUtils', () => {
       expect(args.join(' ')).toContain('-f image2pipe -framerate 30 -c:v mjpeg -i -');
       expect(args.join(' ')).toContain('-c:v libx264');
       expect(args.join(' ')).toContain('-pix_fmt yuv420p');
-      expect(args.at(-1)).toBe('videos/kyiv.mp4');
+      expect(args.at(-1)).toMatch(/\/packages\/video\/videos\/kyiv\.mp4$/);
     });
   });
 

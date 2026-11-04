@@ -1,9 +1,7 @@
 import { AST_NODE_TYPES, ESLintUtils } from '@typescript-eslint/utils';
 import type { TSESTree } from '@typescript-eslint/utils';
 import { holdsBrand, isKeyedByBrand } from './brand.utils.ts';
-
-/** Makes a rule whose docs are the convention it checks, in CLAUDE.md. */
-const createRule = ESLintUtils.RuleCreator(name => `https://github.com/develcool777/railtime/blob/main/CLAUDE.md#${name}`);
+import { createRule } from './rule.utils.ts';
 
 /** The `Object` functions that type a record's keys `string`, and the helpers that keep their kind. */
 const OBJECT_KEYS = new Map([
