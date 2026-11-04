@@ -1,4 +1,4 @@
-import type { Browser, Page } from 'playwright-core';
+import type { BrowserContext, Page } from 'playwright-core';
 import type { RecordedWindow } from './videoPage.types.ts';
 
 /** The page a video is made of: the one made for it, or the explorer as anyone sees it. */
@@ -10,6 +10,8 @@ export type Recording = {
   city: string;
   /** Which of its pages. */
   page: RecordedPageKind;
+  /** Played through once first, no frame taken, so the take finds every tile in the cache. */
+  rehearse: boolean;
   /** Frames a second. */
   fps: number;
   /** The video's size, in pixels. */
@@ -38,8 +40,11 @@ export type RecordingScope = {
 
 /** What a `VideoRecorder` is made with. */
 export type RecorderOptions = {
-  /** Starts the browser the page is recorded in: the Chrome installed on this machine, unless a test gives a stand-in. */
-  launch?: () => Promise<Browser>;
+  /**
+   * Starts the browser the page is recorded in, at the recording's size: the Chrome installed on this
+   * machine, with its own profile (`BROWSER_PROFILE`), unless a test gives a stand-in.
+   */
+  launch?: (recording: Recording) => Promise<BrowserContext>;
 };
 
 /** How a kind of page is recorded: where it is, when it is ready, how it starts, and when it is over. */

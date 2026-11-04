@@ -1,6 +1,7 @@
 import { dirname } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { ID_RULES } from '../packages/tooling/src/lint/idRules.utils.ts';
+import { STORE_RULES } from '../packages/tooling/src/lint/storeRules.utils.ts';
 
 /** The repository's root, where each file's tsconfig is found from. */
 export const ROOT = dirname(import.meta.dirname);
@@ -26,9 +27,14 @@ export const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**
  * The house's own rules. Conventions that reuse a generic rule, each under a name of its own: a flat
  * config keeps one setting per rule per file, the last block's, so a second `no-restricted-imports`
  * would silently replace the package fences; named apart, each holds alone, and its name says which
- * convention a report is about (as in dataroom-ui). And the rules about ids, which read types
- * (`packages/tooling/src/lint/`, tested there).
+ * convention a report is about (as in dataroom-ui). And the rules about ids, which read types, and
+ * about stores (`packages/tooling/src/lint/`, tested there).
  */
 export const house = {
-  rules: { 'pure-utils': tseslint.plugin.rules['no-restricted-imports'], 'test-helpers': tseslint.plugin.rules['no-restricted-imports'], ...ID_RULES },
+  rules: {
+    'pure-utils': tseslint.plugin.rules['no-restricted-imports'],
+    'test-helpers': tseslint.plugin.rules['no-restricted-imports'],
+    ...ID_RULES,
+    ...STORE_RULES,
+  },
 };

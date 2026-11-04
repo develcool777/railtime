@@ -13,5 +13,7 @@ test-reports/*
 # Each benchmark's last run, on this machine (`pnpm test-bench`).
 packages/*/test-reports/
 .stryker-tmp/
-# The videos recorded (`pnpm video:record`): uploaded, not kept here.
+# The videos recorded (`pnpm video:record`): uploaded, not kept here; and the browser profile it
+# records in, which caches the map's tiles.
 packages/video/videos/
+packages/video/.cache/

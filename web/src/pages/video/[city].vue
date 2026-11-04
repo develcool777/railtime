@@ -1,5 +1,5 @@
 <template>
-  <!-- A city's history as a video, to record (pnpm video:record); only under pnpm dev: the site built leaves it out (nuxt.config.ts). -->
+  <!-- A city's history as a video, to record (pnpm video:record); only under pnpm dev: the site built leaves it out (nuxt.config.ts). 3D, or flat with ?view=2d. -->
   <ClientOnly>
     <VideoView v-if="network" :network :city />
     <div v-else class="grid h-dvh place-items-center bg-black text-sm text-white/60">

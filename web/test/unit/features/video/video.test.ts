@@ -12,6 +12,7 @@ import {
   videoLayersOf,
   videoMapPropsOf,
   videoPaddingOf,
+  videoViewOf,
 } from '~/features/video/video.utils';
 
 /**
@@ -111,15 +112,24 @@ describe('VideoUtils', () => {
   });
 
   describe('videoMapPropsOf', () => {
-    test("shows the network dark, at the video's pace, without street names, framing clear of what lies over it", () => {
+    test("shows the network dark, seen as asked, at the video's pace, without street names, framing clear of what lies over it", () => {
       const facts = {} as NetworkFacts;
-      expect(videoMapPropsOf(facts, { width: 1920, height: 1080 })).toEqual({
+      expect(videoMapPropsOf(facts, { width: 1920, height: 1080 }, '3d')).toEqual({
         facts,
         theme: 'dark',
+        viewMode: '3d',
         speed: VIDEO_SPEED,
         streetLabels: false,
         padding: videoPaddingOf({ width: 1920, height: 1080 }),
       });
+    });
+  });
+
+  describe('videoViewOf', () => {
+    test('sees the video in 3D, unless its address asks for flat', () => {
+      expect(videoViewOf(undefined)).toBe('3d');
+      expect(videoViewOf('3d')).toBe('3d');
+      expect(videoViewOf('2d')).toBe('2d');
     });
   });
 

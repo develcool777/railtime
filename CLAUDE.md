@@ -19,8 +19,10 @@ city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline a
 of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
 `boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`, and the house's typed lint rules),
 `packages/video` (videos of the app: `pnpm video:record <city>` records its video page frame by frame,
-on a clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `web`) and `web`
-(the app: the Nuxt 4 + Nuxt UI explorer, and the video page, `/video/<city>`, under `pnpm dev` only).
+on a clock only it moves, into an MP4 with ffmpeg, after a rehearsal that fetches every map tile the
+camera will look at into Chrome's own cache; a frame waits for what it draws, never for a stream open
+as long as the page; what a video shows stays in `web`) and `web` (the app: the Nuxt 4 + Nuxt UI
+explorer, and the video page, `/video/<city>`, in 3D or flat with `?view=2d`, under `pnpm dev` only).
 `README.md` has the commands; `ARCHITECTURE.md` the contract between the parts;
 `packages/network/_README.md` steps and cursors; `packages/renderer/_README.md` the frame model.
 
@@ -47,7 +49,9 @@ landing page's pictures in Chrome).
   id in `STORE_IDS` (`web/src/constants/store.constants.ts`, where a test finds every store's); inside,
   in this order, each under its heading comment: `// ---- State`, its refs; `// ---- Getters`, its
   computed; `// ---- Actions`, named in capitals (`OPEN`, `SET_TIME`, `RESET` where it needs one), so a
-  call reads as one wherever it is made; then what it returns, in the same order. Its state changes
+  call reads as one wherever it is made; then what it returns, in the same order, all its state among
+  it (`house/store-returns-state`): Pinia keeps only what a setup store returns, and a ref left out is
+  invisible to its devtools and plugins, and lost in server rendering. Its state changes
   only by its actions: a component or composable reads it and calls them. An action is a block,
   `(next) => { time.value = next; }`: it returns nothing (`jsdoc/require-returns` asks a `@returns` of
   one that does).

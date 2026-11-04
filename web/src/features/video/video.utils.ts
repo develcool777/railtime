@@ -1,7 +1,7 @@
 import { yearOf } from '@railtime/core/date.utils';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { ChangeInfo } from '@railtime/network/facts.types';
-import type { MapProps } from '@railtime/renderer/transitMap.types';
+import type { MapProps, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { VideoPageState } from '@railtime/video/videoPage.types';
 import { END_CARD_DELAY_MS, END_MS, FADE_MS, TITLE_MS, VIDEO_PADDING_SHARES, VIDEO_SPEED } from '~/features/video/video.constants';
 import type { VideoLayers, VideoMoment, VideoPadding, VideoScene, VideoSize } from '~/features/video/video.types';
@@ -103,16 +103,27 @@ export const videoPaddingOf = (size: VideoSize): VideoPadding => ({
 });
 
 /**
- * What the map shows in a video: the network, dark, at the video's pace, without the basemap's
- * street names, framing clear of what lies over it.
+ * How a video sees the map, as its address asks: in 3D, the city's buildings standing as the camera
+ * comes down to each change, unless it asks for flat (`view=2d`).
+ *
+ * @param view - The address's `view`.
+ * @returns 3D, or flat.
+ */
+export const videoViewOf = (view: unknown): ViewMode => (view === '2d' ? '2d' : '3d');
+
+/**
+ * What the map shows in a video: the network, dark, seen as asked, at the video's pace, without the
+ * basemap's street names, framing clear of what lies over it.
  *
  * @param facts - The city's network.
  * @param size - The video's size.
+ * @param viewMode - In 3D, or flat.
  * @returns The map's props.
  */
-export const videoMapPropsOf = (facts: NetworkFacts, size: VideoSize): Pick<MapProps, 'facts'> & Partial<MapProps> => ({
+export const videoMapPropsOf = (facts: NetworkFacts, size: VideoSize, viewMode: ViewMode): Pick<MapProps, 'facts'> & Partial<MapProps> => ({
   facts,
   theme: 'dark',
+  viewMode,
   speed: VIDEO_SPEED,
   streetLabels: false,
   padding: videoPaddingOf(size),
