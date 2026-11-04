@@ -1,9 +1,8 @@
+import { yearOf } from '@railtime/core/date.utils';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { ChangeInfo } from '@railtime/network/facts.types';
-import { yearOf } from '@railtime/core/date.utils';
 import type { MapProps } from '@railtime/renderer/transitMap.types';
 import type { VideoPageState } from '@railtime/video/videoPage.types';
-
 import { END_CARD_DELAY_MS, END_MS, FADE_MS, TITLE_MS, VIDEO_PADDING_SHARES, VIDEO_SPEED } from '~/features/video/video.constants';
 import type { VideoLayers, VideoMoment, VideoPadding, VideoScene, VideoSize } from '~/features/video/video.types';
 

@@ -23,15 +23,14 @@
 </template>
 
 <script setup lang="ts">
-  import theme from '#build/ui/timeline';
-  import { useAppConfig } from '#imports';
   import { tv } from '@nuxt/ui/utils/tv';
+  import { yearOf } from '@railtime/core/date.utils';
   import type { ChangeInfo } from '@railtime/network/facts.types';
   import { computed } from 'vue';
-
-  import { yearOf } from '@railtime/core/date.utils';
-  import type { ChangeState } from '~/features/explorer/changes/changes.types';
+  import theme from '#build/ui/timeline';
+  import { useAppConfig } from '#imports';
   import { TIMELINE_GAP, TIMELINE_SIZE } from '~/features/explorer/changes/changes.constants';
+  import type { ChangeState } from '~/features/explorer/changes/changes.types';
   import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
@@ -47,7 +46,7 @@
 
   const appConfig = useAppConfig();
   // As `UTimeline` makes them: its theme, extended by the app's.
-  const classes = computed(() => tv({ extend: theme, ...appConfig.ui?.timeline })({ orientation: 'vertical', size: TIMELINE_SIZE }));
+  const classes = computed(() => tv({ extend: theme, ...appConfig.ui.timeline })({ orientation: 'vertical', size: TIMELINE_SIZE }));
 
   /**
    * A change's dot: filled in its line's colour for an opening, hollow for a plan's, grey for a closure.

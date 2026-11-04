@@ -14,20 +14,20 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-
   import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
   import { formatMetric } from '~/features/explorer/insights/insights.utils';
   import { formatNumber } from '~/utils/format.utils';
-
-  /** What each measure is called in the readout. */
-  const METRIC_LABELS: Record<GrowthMetric, string> = { stations: 'Stations', km: 'Track', lines: 'Lines' };
 
   const props = defineProps<{
     /** One measure of the network, year by year. */
     points: { year: number; value: number }[];
     metric: GrowthMetric;
   }>();
+
   const emit = defineEmits<{ pick: [year: number] }>();
+
+  /** What each measure is called in the readout. */
+  const METRIC_LABELS: Record<GrowthMetric, string> = { stations: 'Stations', km: 'Track', lines: 'Lines' };
 
   const summary = computed(() => {
     const first = props.points[0];

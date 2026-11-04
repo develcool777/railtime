@@ -1,8 +1,7 @@
-import { useColorMode } from '#imports';
 import { useEventListener, useFullscreen, useMediaQuery } from '@vueuse/core';
 import { watch } from 'vue';
 import type { ShallowRef } from 'vue';
-
+import { useColorMode } from '#imports';
 import { PHONE_QUERY, TAB_LABELS_QUERY } from '~/features/explorer/explorer.constants';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import type { ExplorerLayout } from '~/features/explorer/layout.composable.types';
@@ -52,7 +51,13 @@ export const useExplorerLayout = (root: Readonly<ShallowRef<HTMLElement | null>>
   const { isFullscreen, enter, exit } = useFullscreen(root);
   watch(
     () => store.mapOnly,
-    shown => (shown ? enter() : exit()).catch(() => undefined),
+    async shown => {
+      try {
+        await (shown ? enter() : exit());
+      } catch {
+        // The browser said no (no click to go on): the panels hide all the same.
+      }
+    },
   );
   // Leaving full screen (Esc, or the browser's own control) brings the panels back.
   watch(isFullscreen, full => {

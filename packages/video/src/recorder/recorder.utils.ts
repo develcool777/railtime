@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { FFMPEG_LOCATIONS, RECORD_USAGE, RECORDING_DEFAULTS, VIDEOS_FOLDER } from './recorder.constants.ts';
 import { recordedPageOf } from './recordedPage.utils.ts';
+import { FFMPEG_LOCATIONS, RECORD_USAGE, RECORDING_DEFAULTS, VIDEOS_FOLDER } from './recorder.constants.ts';
 import type { RecordedPageKind, Recording, RecordingScope } from './recorder.types.ts';
 
 /**
@@ -16,7 +16,7 @@ import type { RecordedPageKind, Recording, RecordingScope } from './recorder.typ
 const countOf = (name: string, text: string | undefined, fallback: number): number => {
   if (text === undefined) return fallback;
   const count = Number(text);
-  if (!Number.isInteger(count) || count < 1) throw new Error(`--${name} takes a whole number, not ${text}: ${RECORD_USAGE}`);
+  if (!Number.isSafeInteger(count) || count < 1) throw new Error(`--${name} takes a whole number, not ${text}: ${RECORD_USAGE}`);
   return count;
 };
 
@@ -51,7 +51,7 @@ const originOf = (text: string): string => {
  * @throws {Error} For no city, an option it does not know, or a value it cannot read; with how to call it.
  */
 export const recordingOf = (args: string[]): Recording => {
-  const parsed = (() => {
+  const { values, positionals } = (() => {
     try {
       return parseArgs({
         args,
@@ -70,7 +70,6 @@ export const recordingOf = (args: string[]): Recording => {
       throw new Error(`${error instanceof Error ? error.message : String(error)}: ${RECORD_USAGE}`, { cause: error });
     }
   })();
-  const { values, positionals } = parsed;
   const [city] = positionals;
   if (!city || positionals.length > 1) throw new Error(RECORD_USAGE);
   const size = /^(\d+)x(\d+)$/.exec(values.size ?? `${RECORDING_DEFAULTS.width}x${RECORDING_DEFAULTS.height}`);
@@ -123,9 +122,27 @@ export const ffmpegPathOf = (installed: (path: string) => boolean): string => {
  * @returns ffmpeg's arguments.
  */
 export const ffmpegArgsOf = (recording: Recording): string[] => [
-  ...['-y', '-loglevel', 'error'],
-  ...['-f', 'image2pipe', '-framerate', String(recording.fps), '-c:v', 'mjpeg', '-i', '-'],
-  ...['-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'],
+  '-y',
+  '-loglevel',
+  'error',
+  '-f',
+  'image2pipe',
+  '-framerate',
+  String(recording.fps),
+  '-c:v',
+  'mjpeg',
+  '-i',
+  '-',
+  '-c:v',
+  'libx264',
+  '-preset',
+  'medium',
+  '-crf',
+  '18',
+  '-pix_fmt',
+  'yuv420p',
+  '-movflags',
+  '+faststart',
   recording.out,
 ];
 

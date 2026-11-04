@@ -1,7 +1,7 @@
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import { cityNameOf, networkUrlOf } from '~/utils/city.utils';
-import type { PageSeo } from './seo.types';
 import { counted } from '~/utils/format.utils';
+import type { PageSeo } from './seo.types';
 
 /** The site's name, as titles end with it. */
 const SITE_NAME = 'RailTime';

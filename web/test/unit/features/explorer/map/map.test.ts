@@ -1,7 +1,6 @@
-import { standInMap } from '@test/support/factories/transitMap.utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, test } from 'vitest';
-
+import { standInMap } from '@test/support/factories/transitMap.utils';
 import { useMapStore } from '~/features/explorer/map/map.store';
 
 describe('MapStore', () => {

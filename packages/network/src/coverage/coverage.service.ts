@@ -1,13 +1,13 @@
-import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { Bounds, LngLat } from '@railtime/core/geometry.types';
-import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
-import { boundsOf, latitudeOf, mercatorY, offsetKm } from '@railtime/core/geometry.utils';
 import { yearOf } from '@railtime/core/date.utils';
+import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
+import type { Bounds, LngLat } from '@railtime/core/geometry.types';
+import { boundsOf, latitudeOf, mercatorY, offsetKm } from '@railtime/core/geometry.utils';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { COVERAGE_BANDS, MAX_CELLS, MIN_CELL_KM } from './coverage.constants.ts';
+import { bandsWithin, cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils.ts';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
 import type { CoverageCells, CoverageDistance, CoverageInfo, CoverageYear, GridCorners } from '../facts/facts.types';
-import { bandsWithin, cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils.ts';
-import { COVERAGE_BANDS, MAX_CELLS, MIN_CELL_KM } from './coverage.constants.ts';
 
 /**
  * A city cut into cells, as the map draws it: columns even in longitude, rows even on the map, the
@@ -39,7 +39,7 @@ export class CoverageGrid {
   private readonly rowY: number;
 
   public constructor(boundary: CityBoundary) {
-    const [[west, south], [east, north]] = boundsOf(boundary.polygons.flat(2)) ?? [
+    const [[west, south], [east, north]] = boundsOf(boundary.polygons.flat(2 /* a polygon's rings, a ring's points */)) ?? [
       [0, 0],
       [0, 0],
     ];

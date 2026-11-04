@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
+import { describe, expect, test } from 'vitest';
 import { linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from '../../../src/facts/networks.utils';
 import { hiddenNetwork } from '../../support/factories/hiddenNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';

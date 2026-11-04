@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
+import { describe, expect, test } from 'vitest';
 import { collectDays } from '../../../src/engine/days.utils';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { StationStops } from '../../../src/engine/stops.service';

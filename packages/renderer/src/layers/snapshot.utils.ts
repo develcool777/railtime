@@ -1,8 +1,8 @@
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { LineSegment } from '@railtime/network/engine.types';
-import type { FeatureCollection, LineFeature, NetworkSnapshot, PointFeature, StationLines } from './snapshot.types';
+import type { FeatureCollection, LineFeature, NetworkSnapshot, PointFeature, StationLines, StationsFound } from './snapshot.types';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
 import { offsetFor, resolveLine } from './style.utils';
-import type { LngLat } from '@railtime/core/geometry.types';
 
 /**
  * Which lines run side by side on each segment: those open, plus those the playing step is opening,
@@ -47,6 +47,43 @@ const linkTransfers = (state: RenderState, stations: Map<string, StationLines>):
 };
 
 /**
+ * Whether a line's track shows as a ghost: track a line is leaving is one as it goes; suspended, until
+ * its line returns there. Closed for good, it is gone.
+ *
+ * @param state - The frame's render state.
+ * @param lineSegment - The line's track on a segment.
+ * @param closing - The step playing closes it.
+ * @returns Whether it is drawn as a ghost.
+ */
+const leavesGhost = (state: RenderState, lineSegment: LineSegment, closing: boolean): boolean => {
+  const { timeline, cursor } = state;
+  const suspended = lineSegment.next !== null && timeline.hasClosed(lineSegment, cursor);
+  const returned = lineSegment.next !== null && (timeline.isOpen(lineSegment.next, cursor) || timeline.hasClosed(lineSegment.next, cursor));
+  return (closing || suspended) && !returned;
+};
+
+/**
+ * Adds the stations an open line's track serves at its ends to those on the map, with the line's colour.
+ *
+ * @param state - The frame's render state.
+ * @param lineSegment - The line's track on a segment, open at the cursor.
+ * @param line - The line as drawn.
+ * @param closing - The step playing closes it: its stations stay only by another line.
+ * @param found - The stations so far, and those staying and built.
+ */
+const addServedStations = (state: RenderState, lineSegment: LineSegment, line: ResolvedLine, closing: boolean, found: StationsFound): void => {
+  const { segment } = lineSegment;
+  for (const station of [segment.stationA, segment.stationB]) {
+    if (!state.timeline.servesStation(station, lineSegment.line, state.cursor)) continue;
+    const served = found.stations.get(station) ?? new Map<string, string>();
+    served.set(line.id, line.color);
+    found.stations.set(station, served);
+    if (!closing) found.staying.add(station);
+    if (lineSegment.section === null) found.built.add(station);
+  }
+};
+
+/**
  * Everything already on the map at the cursor: lines, planned and closed track, stations and their lines, stats.
  *
  * @param state - The frame's render state.
@@ -64,19 +101,15 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   const ghosts: LineFeature[] = [];
   // The lines drawn on each segment: a line drawn as another is drawn once.
   const drawn = new Map<number, Set<string>>();
-  const stations = new Map<string, StationLines>();
-  const stayingStations = new Set<string>();
-  const builtStations = new Set<string>();
+  const found: StationsFound = { stations: new Map(), staying: new Set(), built: new Set() };
+  const { stations } = found;
   const segmentsOnMap = new Set<number>();
   const linesOnMap = new Set<string>();
 
   for (const lineSegment of index.lineSegments) {
     const { segment } = lineSegment;
-    // Track a line is leaving is a ghost as it goes; suspended, until its line returns there. Closed for good, it is gone.
     const closing = closingNow(lineSegment);
-    const suspended = lineSegment.next !== null && timeline.hasClosed(lineSegment, cursor);
-    const returned = lineSegment.next !== null && (timeline.isOpen(lineSegment.next, cursor) || timeline.hasClosed(lineSegment.next, cursor));
-    if ((closing || suspended) && !returned) ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0, 0, lineSegment.line));
+    if (leavesGhost(state, lineSegment, closing)) ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0, 0, lineSegment.line));
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     const line = resolved.get(lineSegment.line)!;
     const isPlanned = lineSegment.section !== null;
@@ -88,14 +121,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     }
     segmentsOnMap.add(segment.index);
     linesOnMap.add(line.id);
-    for (const station of [segment.stationA, segment.stationB]) {
-      if (!timeline.servesStation(station, lineSegment.line, cursor)) continue;
-      const served = stations.get(station) ?? new Map();
-      served.set(line.id, line.color);
-      stations.set(station, served);
-      if (!closing) stayingStations.add(station);
-      if (!isPlanned) builtStations.add(station);
-    }
+    addServedStations(state, lineSegment, line, closing, found);
   }
 
   const { transfers, linked } = linkTransfers(state, stations);
@@ -108,8 +134,8 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     transfers: { type: 'FeatureCollection', features: transfers },
     linked,
     stations,
-    plannedStations: new Set([...stations.keys()].filter(station => !builtStations.has(station))),
-    closingOnly: new Set([...stations.keys()].filter(station => !stayingStations.has(station))),
+    plannedStations: new Set([...stations.keys()].filter(station => !found.built.has(station))),
+    closingOnly: new Set([...stations.keys()].filter(station => !found.staying.has(station))),
     stats: {
       stations: stations.size,
       km: [...segmentsOnMap].reduce((total, segmentIndex) => total + (index.segments[segmentIndex]?.lengthKm ?? 0), 0),

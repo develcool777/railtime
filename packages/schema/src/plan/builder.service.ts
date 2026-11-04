@@ -1,7 +1,7 @@
-import type { Network, PlanSection, PlanTrack, Segment } from '../format/network.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { Heading, SectionWorks } from './build.types';
 import { curveBetween, headingOf, splitTrack } from './track.utils.ts';
+import type { Network, PlanSection, PlanTrack, Segment } from '../format/network.types';
 
 /**
  * Builds plan sections on a network, keeping track of segments as objects, so splitting one never

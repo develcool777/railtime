@@ -15,7 +15,7 @@ export const matchesFilter = (city: (typeof CITIES)[number], summary: CityIndexE
   if (filter.country && city.country !== filter.country) return false;
   const wanted = filter.query.trim().toLowerCase();
   const names = [city.label, city.country, ...(summary?.networks ?? [])].map(name => name.toLowerCase());
-  if (wanted && !names.some(name => name.includes(wanted))) return false;
+  if (wanted && names.every(name => !name.includes(wanted))) return false;
   if (filter.kind === 'all' && !filter.withPlans) return true;
   if (!summary) return false;
   if (filter.kind === 'history' && summary.planOnly) return false;

@@ -1,7 +1,7 @@
 import { checkNetwork } from './checks.utils.ts';
 import { checkPlans } from './plans.utils.ts';
-import type { Network } from '../format/network.types';
 import { networkShape } from './shape.schema.ts';
+import type { Network } from '../format/network.types';
 
 /** The network's shape, plus the references between its parts and its plans'. */
 const networkSchema = networkShape.superRefine((network, context) => {

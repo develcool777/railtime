@@ -1,10 +1,10 @@
+import { required } from '@railtime/core/required.utils';
 import { copyFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { onTestFinished } from 'vitest';
-import { required } from '@railtime/core/required.utils';
-import { citiesNamed } from '../../src/city.utils.ts';
 import type { City } from '../../src/city.types.ts';
+import { citiesNamed } from '../../src/city.utils.ts';
 
 /**
  * A folder of the test's own, removed once it has finished: what a command writes goes there, never

@@ -1,6 +1,5 @@
 import type { CoverageDistance, CoverageInfo, ReachInfo, Stop } from '@railtime/network/facts.types';
 import type { OverlayRequest, OverlayResult } from '@railtime/renderer/transitMap.types';
-
 import type { Section, TimeMode } from '~/features/explorer/explorer.types';
 import type { FoundRoutes, MapOverlay, RouteEnds, StationPick } from '~/features/explorer/tools.types';
 

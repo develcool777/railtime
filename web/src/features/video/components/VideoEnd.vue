@@ -13,7 +13,6 @@
 
 <script setup lang="ts">
   import type { NetworkStats } from '@railtime/network/facts.types';
-
   import { counted, formatNumber } from '~/utils/format.utils';
 
   defineProps<{

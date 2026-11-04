@@ -4,7 +4,6 @@ import type { Playhead, StepInfo } from '@railtime/network/facts.types';
 import type { TimeState } from '@railtime/renderer/transitMap.types';
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 import type { ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
 import { linkedPlayheadOf, playheadOf } from '~/features/explorer/address/address.utils';
@@ -87,13 +86,17 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
    *
    * @param next - Where it is.
    */
-  const SET_TIME = (next: TimeState) => (time.value = next);
+  const SET_TIME = (next: TimeState) => {
+    time.value = next;
+  };
   /**
    * A change started, or its caption should go.
    *
    * @param next - The change, or `null`.
    */
-  const SET_STEP = (next: StepInfo | null) => (step.value = next);
+  const SET_STEP = (next: StepInfo | null) => {
+    step.value = next;
+  };
   /** Playback reached its end: the timeline, at today. */
   const PLAYBACK_ENDED = () => {
     if (playerShown.value) timeMode.value = 'timeline';
@@ -103,7 +106,9 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
    *
    * @param change - The settings changed.
    */
-  const SET_PLAYER = (change: Partial<PlayerSettings>) => (player.value = { ...player.value, ...change });
+  const SET_PLAYER = (change: Partial<PlayerSettings>) => {
+    player.value = { ...player.value, ...change };
+  };
   /**
    * Plays on from the date the timeline stands at, where it was dragged or paused (from the start
    * again once at its end); the panel stays on what is open in it (Changes, open, follows along).
@@ -118,7 +123,10 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
     timeMode.value = 'timeline';
   };
   /** Pauses while the map moves in the player; else plays. */
-  const TOGGLE_PLAY = () => (playerShown.value && time.value?.playing ? PAUSE() : PLAY());
+  const TOGGLE_PLAY = () => {
+    if (playerShown.value && time.value?.playing) PAUSE();
+    else PLAY();
+  };
   /**
    * Leaves for one of the network's places: today, where the map rests (today, or a plan built) or the
    * end; in the player, it stops, the whole network back in view.
@@ -131,9 +139,13 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
     SEEK(playheads => playheads[place]());
   };
   /** The change before the one shown; in the player, it plays again. */
-  const PREVIOUS_CHANGE = () => mapStore.map?.previousChange();
+  const PREVIOUS_CHANGE = () => {
+    mapStore.map?.previousChange();
+  };
   /** Finishes the change playing, or goes to the next one. */
-  const NEXT_CHANGE = () => mapStore.map?.skip();
+  const NEXT_CHANGE = () => {
+    mapStore.map?.skip();
+  };
   /**
    * Shows what the timeline was picked at: in the player, it plays on from there.
    *
@@ -169,7 +181,9 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
    *
    * @param year - The year.
    */
-  const SHOW_YEAR = (year: number) => SEEK(playheads => playheads.on(Math.min(endOfYear(year), playheads.today().time)));
+  const SHOW_YEAR = (year: number) => {
+    SEEK(playheads => playheads.on(Math.min(endOfYear(year), playheads.today().time)));
+  };
 
   return {
     // State

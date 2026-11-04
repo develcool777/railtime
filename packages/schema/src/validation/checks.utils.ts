@@ -1,8 +1,8 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
-import type { Mode, Network, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
-import type { TrackOut } from './checks.types';
 import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
+import type { TrackOut } from './checks.types';
+import type { Mode, Network, Segment, SegmentLine, Station, Suspension } from '../format/network.types';
 
 /**
  * The sharpest a line of a mode may turn over `CURVE_SPAN_METRES` either side of a point: as much as
@@ -121,12 +121,24 @@ const checkStationLines = (network: Network, stationId: string, station: Station
   for (const [lineId, spells] of Object.entries(station.suspended ?? {}))
     for (const wrong of suspensionProblems(network, stationId, station, lineId, spells))
       problem(`station ${stationId}: closed for a while on ${lineId}, ${wrong}`);
-  for (const lineId of station.passes ?? []) {
-    if (!network.lines[lineId]) problem(`station ${stationId}: passed by unknown line ${lineId}`);
-    else if (linePeriodsAt(network, stationId, lineId).length === 0) problem(`station ${stationId}: passed by ${lineId}, which doesn't run there`);
-    if (station.infill?.[lineId] || station.closed?.[lineId] || station.suspended?.[lineId])
-      problem(`station ${stationId}: passed by ${lineId}, which it also dates calling there`);
-  }
+  for (const lineId of station.passes ?? []) checkPass(network, stationId, station, lineId, problem);
+};
+
+/**
+ * Checks a line a station says it runs through without calling: a known line that runs there, and
+ * one the station dates no calls of.
+ *
+ * @param network - The network.
+ * @param stationId - The station id.
+ * @param station - The station.
+ * @param lineId - The line passing it.
+ * @param problem - Reports one problem.
+ */
+const checkPass = (network: Network, stationId: string, station: Station, lineId: string, problem: (message: string) => void): void => {
+  if (!network.lines[lineId]) problem(`station ${stationId}: passed by unknown line ${lineId}`);
+  else if (linePeriodsAt(network, stationId, lineId).length === 0) problem(`station ${stationId}: passed by ${lineId}, which doesn't run there`);
+  if (station.infill?.[lineId] || station.closed?.[lineId] || station.suspended?.[lineId])
+    problem(`station ${stationId}: passed by ${lineId}, which it also dates calling there`);
 };
 
 /**
@@ -136,21 +148,32 @@ const checkStationLines = (network: Network, stationId: string, station: Station
  * @param problem - Reports one problem.
  */
 const checkStations = (network: Network, problem: (message: string) => void): void => {
-  for (const [stationId, station] of Object.entries(network.stations)) {
-    for (const [lineId, date] of Object.entries(station.closed ?? {})) {
-      if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
-      const opened = station.infill?.[lineId];
-      if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
-    }
-    checkStationLines(network, stationId, station, problem);
-    for (const lineId of station.reverses ?? []) if (!network.lines[lineId]) problem(`station ${stationId}: reverses unknown line ${lineId}`);
-    const until = (station.formerNames ?? []).map(former => former.until);
-    if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
-  }
+  for (const [stationId, station] of Object.entries(network.stations)) checkStation(network, stationId, station, problem);
   for (const { stationA, stationB } of network.transfers ?? []) {
     for (const station of [stationA, stationB]) if (!network.stations[station]) problem(`transfer ${stationA} – ${stationB}: unknown station ${station}`);
     if (stationA === stationB) problem(`transfer ${stationA}: to itself`);
   }
+};
+
+/**
+ * Checks a station: its closings on known lines and after it opens there, its lines' dates, the
+ * lines it reverses, and its former names in order.
+ *
+ * @param network - The network, its shape already valid.
+ * @param stationId - The station id.
+ * @param station - The station.
+ * @param problem - Reports one problem.
+ */
+const checkStation = (network: Network, stationId: string, station: Station, problem: (message: string) => void): void => {
+  for (const [lineId, date] of Object.entries(station.closed ?? {})) {
+    if (!network.lines[lineId]) problem(`station ${stationId}: closed on unknown line ${lineId}`);
+    const opened = station.infill?.[lineId];
+    if (opened && date <= opened) problem(`station ${stationId}: closes on ${lineId} before it opens`);
+  }
+  checkStationLines(network, stationId, station, problem);
+  for (const lineId of station.reverses ?? []) if (!network.lines[lineId]) problem(`station ${stationId}: reverses unknown line ${lineId}`);
+  const until = (station.formerNames ?? []).map(former => former.until);
+  if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
 };
 
 /**
@@ -162,7 +185,8 @@ const checkStations = (network: Network, problem: (message: string) => void): vo
  */
 const startOf = (network: Network, lineId: string): string => {
   const info = network.networks[network.lines[lineId]?.network ?? ''];
-  return (info?.hidden && info.start) || network.meta.start;
+  if (info?.hidden && info.start) return info.start;
+  return network.meta.start;
 };
 
 /**
@@ -190,7 +214,24 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
   // Named by its stations, not its place in the list: a plan's split moves the places on.
   const name = `segment ${segment.stationA} – ${segment.stationB}`;
   for (const station of [segment.stationA, segment.stationB]) if (!network.stations[station]) problem(`${name}: unknown station ${station}`);
-  // Its track starts at station A and ends at station B, or the line misses their dots.
+  checkSegmentEnds(network, segment, name, problem);
+  const turn = segmentTurnProblem(
+    segment,
+    Object.keys(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []),
+  );
+  if (turn) problem(turn);
+  for (const [lineId, dates] of Object.entries(segment.lines)) checkSegmentLine(network, name, lineId, dates, problem);
+};
+
+/**
+ * Checks a segment's track starts at station A and ends at station B, or the line misses their dots.
+ *
+ * @param network - The network, its shape already valid.
+ * @param segment - The segment.
+ * @param name - The segment, as problems name it.
+ * @param problem - Reports one problem.
+ */
+const checkSegmentEnds = (network: Network, segment: Segment, name: string, problem: (message: string) => void): void => {
   const ends = [
     [segment.stationA, segment.coordinates[0]],
     [segment.stationB, segment.coordinates.at(-1)],
@@ -200,21 +241,27 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
     const gap = place && end ? distanceKm(place, end) * 1000 : 0;
     if (gap > STATION_GAP_METRES) problem(`${name}: its track ends ${Math.round(gap)} m from ${station}`);
   }
-  const turn = segmentTurnProblem(
-    segment,
-    Object.keys(segment.lines).flatMap(lineId => network.lines[lineId]?.mode ?? []),
-  );
-  if (turn) problem(turn);
-  for (const [lineId, dates] of Object.entries(segment.lines)) {
-    if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);
-    // Before its timeline starts, a line's opening would never play.
-    const start = startOf(network, lineId);
-    if (dates.open < start) problem(`${name}: ${lineId} opens before its timeline starts, ${start}`);
-    if (dates.close && dates.close <= dates.open) problem(`${name}: ${lineId} closes before it opens`);
-    // Open, then each spell's start and end, then close: each after the one before.
-    const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
-    if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`${name}: ${lineId} suspended out of order`);
-  }
+};
+
+/**
+ * Checks a line's dates on a segment: a known line, opening once its timeline starts, closing after
+ * it opens, its spells in order between.
+ *
+ * @param network - The network, its shape already valid.
+ * @param name - The segment, as problems name it.
+ * @param lineId - The line.
+ * @param dates - Its dates on the segment.
+ * @param problem - Reports one problem.
+ */
+const checkSegmentLine = (network: Network, name: string, lineId: string, dates: SegmentLine, problem: (message: string) => void): void => {
+  if (!network.lines[lineId]) problem(`${name}: unknown line ${lineId}`);
+  // Before its timeline starts, a line's opening would never play.
+  const start = startOf(network, lineId);
+  if (dates.open < start) problem(`${name}: ${lineId} opens before its timeline starts, ${start}`);
+  if (dates.close && dates.close <= dates.open) problem(`${name}: ${lineId} closes before it opens`);
+  // Open, then each spell's start and end, then close: each after the one before.
+  const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
+  if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`${name}: ${lineId} suspended out of order`);
 };
 
 /**
@@ -292,11 +339,12 @@ export const pushTrack = (leaving: Map<string, TrackOut[]>, station: string, lin
 export const throughStationProblems = (network: Network, leaving: Map<string, TrackOut[]>, checks: (out: TrackOut) => boolean = () => true): string[] => {
   const problems: string[] = [];
   for (const [key, tracks] of leaving) {
-    const [station = '', lineId = ''] = key.split('|');
+    const [station = '', lineId = ''] = key.split('|', 2);
     const mode = network.lines[lineId]?.mode;
     if (!mode || network.stations[station]?.reverses?.includes(lineId)) continue;
     let sharpest = 0;
-    for (const out of tracks.filter(checks)) {
+    for (const out of tracks) {
+      if (!checks(out)) continue;
       const turns = tracks.filter(into => into !== out && overlap(into.dates, out.dates)).map(into => turnThrough(into.track, out.track));
       if (turns.length > 0) sharpest = Math.max(sharpest, Math.min(...turns));
     }

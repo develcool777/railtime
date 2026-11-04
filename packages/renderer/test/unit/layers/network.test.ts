@@ -1,14 +1,14 @@
+import { toTimestamp } from '@railtime/core/date.utils';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES, UNFOCUSED_OPACITY } from '../../../src/layers/ids.constants';
 import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
 import { buildNetworkSnapshot, lineFeature } from '../../../src/layers/snapshot.utils';
-import { PALETTES } from '../../../src/layers/theme.constants';
-import { toTimestamp } from '@railtime/core/date.utils';
-import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { playbackOf, renderStateOf } from '../../support/playback.utils';
-import { emptyDrawing } from '../../../src/steps/animation.utils';
 import { byZoom, highlightedOpacity, highlightedWidth } from '../../../src/layers/style.utils';
+import { PALETTES } from '../../../src/layers/theme.constants';
+import { emptyDrawing } from '../../../src/steps/animation.utils';
+import { fakeMap } from '../../support/factories/fakeMap.utils';
+import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('NetworkLayer', () => {
   test("draws a snapshot's lines, ghosts, plans and transfers", () => {

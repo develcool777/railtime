@@ -1,9 +1,9 @@
 import type { Step } from '@railtime/network/engine.types';
 import type { NetworkParts } from '../transitMap.types';
-import { FREE_CAMERA_PRE_SECONDS } from './player.constants';
-import type { PlayerEvent } from './player.types';
 import { END_OVERVIEW_MS, MAX_TILE_WAIT_SECONDS } from './playback.constants';
 import type { PlaybackOptions } from './playback.types';
+import { FREE_CAMERA_PRE_SECONDS } from './player.constants';
+import type { PlayerEvent } from './player.types';
 
 /**
  * The history played on the map: each frame, the player's clock moved on (held while the map's tiles
@@ -111,7 +111,7 @@ export class Playback {
     const { frames, facts } = this.parts;
     frames.redraw();
     const next = facts.engine.timeline.steps[step.index + 1];
-    if (!next || next.time !== step.time) this.options.notify('step', null);
+    if (next?.time !== step.time) this.options.notify('step', null);
   }
 
   /** Playback reached its end: the whole network in view. */

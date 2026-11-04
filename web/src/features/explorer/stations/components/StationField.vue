@@ -55,10 +55,9 @@
 <script setup lang="ts">
   import type { Stop, StationSummary } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
-
-  import { lineColor } from '~/utils/format.utils';
   import type { StationChoice } from '~/features/explorer/stations/station.types';
   import { stationChoices } from '~/features/explorer/stations/station.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   const props = withDefaults(
     defineProps<{

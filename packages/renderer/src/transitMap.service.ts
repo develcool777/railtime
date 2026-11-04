@@ -1,31 +1,31 @@
-import { Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
-import { EventEmitter } from './support/eventEmitter.service';
-import { BuildingsLayer } from './layers/buildings.service';
-import { CoverageLayer } from './overlay/coverage.service';
-import { ActiveStepLayer, NetworkLayer } from './layers/network.service';
-import { basemapFont, recolorBasemap, showBasemapLabels } from './layers/basemap.utils';
-import { LAYERS } from './layers/ids.constants';
-import type { MapLayer } from './layers/layer.service';
-import { FrameRenderer } from './layers/frame.service';
-import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from './layers/theme.constants';
-import { Minimap } from './minimap/minimap.service';
 import type { NetworkEngine } from '@railtime/network/engine.service';
+import type { Step } from '@railtime/network/engine.types';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { Playhead } from '@railtime/network/facts.types';
+import { Map as MapLibreMap, type MapMouseEvent, setWorkerUrl } from 'maplibre-gl';
+import { basemapFont, recolorBasemap, showBasemapLabels } from './layers/basemap.utils';
+import { BuildingsLayer } from './layers/buildings.service';
+import { FrameRenderer } from './layers/frame.service';
+import { LAYERS } from './layers/ids.constants';
+import type { MapLayer } from './layers/layer.service';
+import { ActiveStepLayer, NetworkLayer } from './layers/network.service';
+import { emptyCollection } from './layers/snapshot.utils';
+import { StationLayer } from './layers/stations.service';
+import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from './layers/theme.constants';
+import { Minimap } from './minimap/minimap.service';
 import { OverlayController } from './overlay/controller.service';
+import { CoverageLayer } from './overlay/coverage.service';
 import { ReachLayer } from './overlay/reach.service';
 import { RouteLayer } from './overlay/route.service';
-import { StationLayer } from './layers/stations.service';
-import { PropsReconciler } from './support/reconciler.service';
 import { CameraDirector } from './playback/camera.service';
-import { Player } from './playback/player.service';
 import { Playback } from './playback/playback.service';
-import type { Step } from '@railtime/network/engine.types';
+import { Player } from './playback/player.service';
 import { StepAnimation } from './steps/animation.service';
+import { EventEmitter } from './support/eventEmitter.service';
+import { PropsReconciler } from './support/reconciler.service';
 import { DEFAULT_MAP_PROPS, FIT_NETWORK_MS, MAX_FRAME_SECONDS, SELECTED_STATION_ZOOM, SELECT_FLY_MS } from './transitMap.constants';
 import type { Credit, FrameScheduler, MapProps, MapView, NetworkParts, Padding, TransitMapEvents, TransitMapOptions } from './transitMap.types';
 import { openingOf } from './transitMap.utils';
-import { emptyCollection } from './layers/snapshot.utils';
 
 /** Frames from the browser, unless a test steps them by hand. */
 const BROWSER_FRAMES: FrameScheduler = {
@@ -334,8 +334,8 @@ export class TransitMap {
         this.parts = this.partsFor(facts);
         this.minimap?.frame(facts.engine.index.bounds);
         this.minimap?.setActive(emptyCollection());
-        const effects = this.effects;
-        for (const effect of [effects.speed, effects.overlay]) effect();
+        this.player.setSpeed(this.props.current.speed);
+        this.drawOverlay();
         this.playback.jumped();
       },
       theme: () => {
@@ -371,8 +371,8 @@ export class TransitMap {
       speed: () => this.player.setSpeed(this.props.current.speed),
       // The camera reads them each time it frames; a change waits as long as the camera's move to it
       // takes, a free camera's none (`Playback.focusActive`).
-      camera: () => undefined,
-      padding: () => undefined,
+      camera: () => {},
+      padding: () => {},
       cover: () => this.coverEdges(this.props.current.cover),
     };
   }

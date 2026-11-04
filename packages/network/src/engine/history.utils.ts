@@ -1,9 +1,8 @@
 import { decadeOf, endOfYear, yearOf } from '@railtime/core/date.utils';
-import type { NetworkStats } from '../facts/facts.types.ts';
-import type { DecadeOpenings, YearStats } from '../facts/facts.types';
 import type { NetworkHistory, OpenNetwork } from './history.types';
 import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';
+import type { DecadeOpenings, YearStats, NetworkStats } from '../facts/facts.types';
 
 /**
  * What is open at a cursor: the stations a line calls at (with those lines), the track, and the

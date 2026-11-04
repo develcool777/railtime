@@ -19,28 +19,63 @@ export const connectedStretches = (lineSegments: LineSegment[], coordOf: (statio
   for (const segment of bySegment.keys()) for (const station of [segment.stationA, segment.stationB]) pushTo(segmentsAt, station, segment);
 
   const seen = new Set<TrackSegment>();
-  const stretches: { lineSegments: LineSegment[]; distanceToCentre: number }[] = [];
+  const stretches: Stretch[] = [];
   for (const start of bySegment.keys()) {
     if (seen.has(start)) continue;
     seen.add(start);
-    const queue = [start];
-    const stretch: LineSegment[] = [];
-    let distanceToCentre = Infinity;
-    while (queue.length > 0) {
-      const segment = queue.pop()!;
-      stretch.push(...bySegment.get(segment)!);
-      for (const station of [segment.stationA, segment.stationB]) {
-        distanceToCentre = Math.min(distanceToCentre, distanceKm(coordOf(station), centre));
-        for (const next of segmentsAt.get(station)!) {
-          if (seen.has(next)) continue;
-          seen.add(next);
-          queue.push(next);
-        }
+    stretches.push(collectStretch(start, bySegment, segmentsAt, seen, station => distanceKm(coordOf(station), centre)));
+  }
+  return stretches.toSorted((first, second) => first.distanceToCentre - second.distanceToCentre).map(stretch => stretch.lineSegments);
+};
+
+/** A connected stretch's line segments, and how near it comes to the network's centre. */
+type Stretch = { lineSegments: LineSegment[]; distanceToCentre: number };
+
+/**
+ * Collects the stretch a segment belongs to: every segment joined to it, station by station.
+ *
+ * @param start - A segment of the stretch, already seen.
+ * @param bySegment - The line segments on each segment.
+ * @param segmentsAt - Segments by station.
+ * @param seen - Segments already in a stretch; extended with every segment collected.
+ * @param distanceToCentreOf - How far a station is from the network's centre.
+ * @returns The stretch's line segments, and its station nearest the centre's distance.
+ */
+const collectStretch = (
+  start: TrackSegment,
+  bySegment: Map<TrackSegment, LineSegment[]>,
+  segmentsAt: Map<string, TrackSegment[]>,
+  seen: Set<TrackSegment>,
+  distanceToCentreOf: (station: string) => number,
+): Stretch => {
+  const queue = [start];
+  const lineSegments: LineSegment[] = [];
+  let distanceToCentre = Infinity;
+  while (queue.length > 0) {
+    const segment = queue.pop()!;
+    lineSegments.push(...bySegment.get(segment)!);
+    for (const station of [segment.stationA, segment.stationB]) {
+      distanceToCentre = Math.min(distanceToCentre, distanceToCentreOf(station));
+      for (const next of segmentsAt.get(station)!) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        queue.push(next);
       }
     }
-    stretches.push({ lineSegments: stretch, distanceToCentre });
   }
-  return stretches.sort((first, second) => first.distanceToCentre - second.distanceToCentre).map(stretch => stretch.lineSegments);
+  return { lineSegments, distanceToCentre };
+};
+
+/**
+ * Groups changes at stations by station, keeping each one's lines in order.
+ *
+ * @param changes - The changes, each a line at a station.
+ * @returns Station id to its lines.
+ */
+export const linesByStation = (changes: { station: string; line: string }[]): Map<string, string[]> => {
+  const byStation = new Map<string, string[]>();
+  for (const change of changes) pushTo(byStation, change.station, change.line);
+  return byStation;
 };
 
 /**
@@ -143,7 +178,7 @@ export const planGrowth = (
   const onMap = (candidates: string[]) => candidates.filter(station => stationsOnMap.has(station));
   const [source] =
     [ends.filter(station => stationsOnLine.has(station)), onMap(ends), ends, onMap(stations), stations]
-      .map(candidates => candidates.slice().sort(nearCentre))
+      .map(candidates => candidates.toSorted(nearCentre))
       .find(candidates => candidates.length > 0) ?? [];
   const sources = source === undefined ? [] : [source];
 
@@ -167,6 +202,6 @@ export const planGrowth = (
   return {
     plans,
     totalKm: Math.max(0.01, ...plans.map(plan => plan.startKm + plan.segment.lengthKm)),
-    reach: [...distances.entries()].map(([station, km]) => ({ station, km, isNew: !stationsOnMap.has(station) })).sort((first, second) => first.km - second.km),
+    reach: [...distances].map(([station, km]) => ({ station, km, isNew: !stationsOnMap.has(station) })).toSorted((first, second) => first.km - second.km),
   };
 };

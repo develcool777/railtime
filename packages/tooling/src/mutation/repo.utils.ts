@@ -26,7 +26,7 @@ export const recordScore = (root: string, target: string, entry: ScoreEntry): vo
   const history = readScores(root);
   history[target] = [...(history[target] ?? []), entry];
   // Targets in order, so a run moves one line of the diff rather than the file.
-  const sorted = Object.fromEntries(Object.entries(history).sort(([first], [second]) => first.localeCompare(second)));
+  const sorted = Object.fromEntries(Object.entries(history).toSorted(([first], [second]) => first.localeCompare(second)));
   const file = join(root, SCORES_FILE);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`);
@@ -41,4 +41,4 @@ export const recordScore = (root: string, target: string, entry: ScoreEntry): vo
 export const testedFolders = (root: string): string[] =>
   globSync(['packages/*/src', 'packages/*/src/*/'], { cwd: root })
     .filter(dir => existsSync(join(root, testDirOf(dir))))
-    .sort((first, second) => first.localeCompare(second));
+    .toSorted((first, second) => first.localeCompare(second));

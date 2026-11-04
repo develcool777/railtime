@@ -1,12 +1,12 @@
+import { required } from '@railtime/core/required.utils';
+import { slugOf } from '@railtime/core/text.utils';
+import type { CityIndex } from '@railtime/schema/cityIndex.types';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test, vi } from 'vitest';
-import { folderApart } from '../../support/folders.utils.ts';
-import { required } from '@railtime/core/required.utils';
 import { SUMMARIES_PATH, cities, citiesNamed, readNetwork } from '../../../src/city.utils.ts';
-import type { CityIndex } from '@railtime/schema/cityIndex.types';
-import { slugOf } from '@railtime/core/text.utils';
 import { formatSummaries, inListOrder, summaryOf, writeSummaries } from '../../../src/summary/summary.utils.ts';
+import { folderApart } from '../../support/folders.utils.ts';
 
 /** Every city's network, with its country. */
 const CITIES = cities().map(city => ({ country: city.country, city: city.id, network: readNetwork(city) }));
@@ -81,7 +81,7 @@ describe('SummaryUtils', () => {
      */
     const listApart = () => {
       const folder = folderApart();
-      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      vi.spyOn(console, 'log').mockImplementation(() => {});
       return join(folder, 'cities.json');
     };
 

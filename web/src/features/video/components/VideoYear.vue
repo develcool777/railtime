@@ -12,7 +12,6 @@
   import { yearOf } from '@railtime/core/date.utils';
   import type { TimeState } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
-
   import { counted, formatNumber } from '~/utils/format.utils';
 
   const props = defineProps<{

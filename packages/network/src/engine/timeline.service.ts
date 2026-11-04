@@ -1,12 +1,12 @@
+import { pushTo } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { required } from '@railtime/core/required.utils';
-import type { NetworkIndex } from './index.service';
-import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
-import { pushTo } from '@railtime/core/collection.utils';
-import { StationStops } from './stops.service.ts';
 import { collectDays } from './days.utils.ts';
-import { connectedStretches, forkedParts, planGrowth } from './timeline.utils.ts';
+import type { CloseStep, Growth, LineSegment, OpenStep, Step } from './engine.types';
+import type { NetworkIndex } from './index.service';
+import { StationStops } from './stops.service.ts';
 import type { AliasEnd, DayChanges, LineIdentity, StepDraft } from './timeline.types';
+import { connectedStretches, forkedParts, linesByStation, planGrowth } from './timeline.utils.ts';
 
 /**
  * The network's history as an ordered list of steps.
@@ -44,7 +44,7 @@ export class Timeline {
   public constructor(index: NetworkIndex) {
     this.index = index;
     const days = collectDays(index, this.stops);
-    for (const time of [...days.keys()].sort((first, second) => first - second)) {
+    for (const time of [...days.keys()].toSorted((first, second) => first - second)) {
       const day = days.get(time)!;
       this.addIdentitySteps(time, day.identities);
       this.addOpenSteps(time, day.opens);
@@ -303,7 +303,7 @@ export class Timeline {
    */
   private addStep(draft: StepDraft): number {
     const index = this.steps.length;
-    this.steps.push({ ...draft, index, planned: draft.time === Infinity } as Step);
+    this.steps.push({ ...draft, index, planned: draft.time === Infinity });
     return index;
   }
 
@@ -356,7 +356,7 @@ export class Timeline {
     const coordOf = (station: string) => this.index.coordOf(station);
     const byLine = new Map<string, LineSegment[]>();
     for (const lineSegment of opens) pushTo(byLine, this.identityOn(lineSegment.line, time), lineSegment);
-    for (const line of [...byLine.keys()].sort(this.index.compareLines)) {
+    for (const line of [...byLine.keys()].toSorted(this.index.compareLines)) {
       for (const stretch of connectedStretches(byLine.get(line)!, coordOf, this.index.centre)) {
         const onMap = this.stationsOnMap(this.steps.length);
         for (const part of forkedParts(stretch, onMap, coordOf, this.index.centre, this.stationsOnLine(line, time, this.steps.length))) {
@@ -384,7 +384,7 @@ export class Timeline {
         const staying = this.stationsOnMap(this.steps.length, closing);
         // Split as the stretch would open from the network that stays, played backwards: its last branch first.
         const stayingOnLine = this.stationsOnLine(line, time, this.steps.length, closing);
-        for (const part of forkedParts(stretch, staying, coordOf, this.index.centre, stayingOnLine).reverse()) {
+        for (const part of forkedParts(stretch, staying, coordOf, this.index.centre, stayingOnLine).toReversed()) {
           const step = this.addStep({ kind: 'close', time, line, lineSegments: part });
           for (const lineSegment of part) this.closeStep.set(lineSegment, step);
         }
@@ -401,15 +401,13 @@ export class Timeline {
    */
   private addInfillSteps(time: number, infills: DayChanges['infills']): void {
     for (const reopening of [false, true]) {
-      const byStation = new Map<string, string[]>();
-      for (const infill of infills) if (infill.reopening === reopening) pushTo(byStation, infill.station, infill.line);
-      for (const [station, lines] of byStation) {
-        const step = this.addStep({ kind: 'infill', time, station, lines, ...(reopening ? { reopening: true as const } : {}) });
+      for (const [station, lines] of linesByStation(infills.filter(infill => infill.reopening === reopening))) {
+        const step = this.addStep({ kind: 'infill', time, station, lines, ...(reopening && { reopening: true as const }) });
         for (const line of lines) {
           const stop = this.stops.stopOf(station, line);
-          if (!reopening) stop.opens = step;
-          // The spell it ends: the last one closed, in date order.
-          else required(stop.spells.at(-1), `${station}'s spell closed on ${line}`).reopens = step;
+          // Reopening ends a spell: the last one closed, in date order.
+          if (reopening) required(stop.spells.at(-1), `${station}'s spell closed on ${line}`).reopens = step;
+          else stop.opens = step;
         }
       }
     }
@@ -424,10 +422,8 @@ export class Timeline {
    */
   private addStationCloseSteps(time: number, closes: DayChanges['stationCloses']): void {
     for (const temporary of [false, true]) {
-      const byStation = new Map<string, string[]>();
-      for (const close of closes) if (close.temporary === temporary) pushTo(byStation, close.station, close.line);
-      for (const [station, lines] of byStation) {
-        const step = this.addStep({ kind: 'stationClose', time, station, lines, ...(temporary ? { temporary: true as const } : {}) });
+      for (const [station, lines] of linesByStation(closes.filter(close => close.temporary === temporary))) {
+        const step = this.addStep({ kind: 'stationClose', time, station, lines, ...(temporary && { temporary: true as const }) });
         for (const line of lines) {
           const stop = this.stops.stopOf(station, line);
           if (temporary) stop.spells.push({ closes: step, reopens: Infinity });

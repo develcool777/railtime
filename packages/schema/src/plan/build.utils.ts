@@ -1,6 +1,6 @@
-import type { Network } from '../format/network.types';
 import type { BuiltPlan } from './build.types';
 import { PlanBuilder } from './builder.service.ts';
+import type { Network } from '../format/network.types';
 
 /**
  * Builds one of a network's plans on it, section by section.
@@ -19,7 +19,7 @@ export const buildPlan = (network: Network, planId: string): BuiltPlan => {
       lines: { ...today.lines, ...plan.lines },
       stations: { ...today.stations, ...plan.stations },
       segments: [...today.segments],
-      ...(today.transfers || plan.transfers ? { transfers: [...(today.transfers ?? []), ...(plan.transfers ?? [])] } : {}),
+      ...((today.transfers ?? plan.transfers) && { transfers: [...(today.transfers ?? []), ...(plan.transfers ?? [])] }),
     },
     plan.track,
   );

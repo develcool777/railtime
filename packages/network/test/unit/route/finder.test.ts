@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { NetworkIndex } from '../../../src/engine/index.service';
-import { PriorityQueue, RouteFinder } from '../../../src/route/finder.service';
-import { CHANGE_MINUTES, RIDE_KMH, WALK_MINUTES } from '../../../src/route/finder.constants';
-import type { Route } from '../../../src/route/finder.types';
 import { Timeline } from '../../../src/engine/timeline.service';
+import { CHANGE_MINUTES, RIDE_KMH, WALK_MINUTES } from '../../../src/route/finder.constants';
+import { PriorityQueue, RouteFinder } from '../../../src/route/finder.service';
+import type { Route } from '../../../src/route/finder.types';
 import { routeNetwork } from '../../support/factories/routeNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
@@ -32,8 +32,8 @@ const routeOf = (from: string, to: string): Route | null => optionsOf(from, to)[
 /** Each leg, as its line or `walk`. */
 const legsOf = (route: Route | null) => route?.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk'));
 
-/** Minutes to ride so many km. */
-const ride = (km: number) => (km / RIDE_KMH) * 60;
+/** Minutes to ride the 3 km between the stops these tests ride between. */
+const THREE_KM_MINUTES = (3 / RIDE_KMH) * 60;
 
 describe('RouteFinder', () => {
   describe('options', () => {
@@ -42,7 +42,7 @@ describe('RouteFinder', () => {
       expect(route?.legs).toMatchObject([{ kind: 'ride', line: 'red', stops: ['a', 'b', 'c', 'd'] }]);
       expect(route).toMatchObject({ changes: 0 });
       expect(route?.km).toBeCloseTo(3, 1);
-      expect(route?.minutes).toBeCloseTo(ride(3), 0);
+      expect(route?.minutes).toBeCloseTo(THREE_KM_MINUTES, 0);
     });
 
     test('changes line, and counts the change and its minutes', () => {
@@ -50,7 +50,7 @@ describe('RouteFinder', () => {
       expect(legsOf(route)).toEqual(['red', 'blue']);
       expect(route?.legs[1]).toMatchObject({ stops: ['c', 'e'] });
       expect(route?.changes).toBe(1);
-      expect(route?.minutes).toBeCloseTo(ride(3) + CHANGE_MINUTES, 0);
+      expect(route?.minutes).toBeCloseTo(THREE_KM_MINUTES + CHANGE_MINUTES, 0);
     });
 
     test('walks a transfer when that is quicker than riding round', () => {
@@ -62,7 +62,7 @@ describe('RouteFinder', () => {
     test('offers the fastest, the way that changes least, and the fastest round a line the others ride: fastest first', () => {
       const options = optionsOf('a', 'e');
       expect(options.map(legsOf)).toEqual([['red', 'blue'], ['red', 'walk', 'green'], ['yellow']]);
-      expect(options.map(route => route.minutes)).toEqual([...options.map(route => route.minutes)].sort((first, second) => first - second));
+      expect(options.map(route => route.minutes)).toEqual(options.map(route => route.minutes).toSorted((first, second) => first - second));
     });
 
     test('offers no way off a line and back on it: a detour, not a way', () => {
@@ -94,12 +94,12 @@ describe('RouteFinder', () => {
       const finder = new RouteFinder(index, timeline);
       const reach = finder.reach('a', timeline.steps.length);
       expect(reach.get('a')).toBe(0);
-      expect(reach.get('d')).toBeCloseTo(ride(3), 0);
+      expect(reach.get('d')).toBeCloseTo(THREE_KM_MINUTES, 0);
       for (const station of ['b', 'c', 'd', 'e', 'g', 'h']) {
-        expect(reach.get(station)).toBeCloseTo(finder.options('a', station, timeline.steps.length)[0]?.minutes ?? Number.NaN, 5);
+        expect(reach.get(station)).toBeCloseTo(finder.options('a', station, timeline.steps.length)[0]?.minutes ?? NaN, 5);
       }
       const times = [...reach.values()];
-      expect(times).toEqual([...times].sort((first, second) => first - second));
+      expect(times).toEqual([...times].toSorted((first, second) => first - second));
     });
 
     test('reaches nothing from a station no line calls at on the date', () => {
@@ -119,7 +119,7 @@ describe('PriorityQueue', () => {
     expect(queue.size).toBe(costs.length);
     const out: number[] = [];
     for (let next = queue.pop(); next; next = queue.pop()) out.push(next.cost);
-    expect(out).toEqual([...costs].sort((first, second) => first - second));
+    expect(out).toEqual([...costs].toSorted((first, second) => first - second));
   });
 
   test('is empty once every item is out', () => {
@@ -139,8 +139,8 @@ describe('PriorityQueue', () => {
     for (let taken = 0; taken < 50; taken++) out.push(queue.pop()!.cost);
     for (const cost of costs.slice(100)) queue.push(cost, cost);
     for (let next = queue.pop(); next; next = queue.pop()) out.push(next.cost);
-    const firstHalf = [...costs.slice(0, 100)].sort((first, second) => first - second);
+    const firstHalf = costs.slice(0, 100).toSorted((first, second) => first - second);
     expect(out.slice(0, 50)).toEqual(firstHalf.slice(0, 50));
-    expect(out.slice(50)).toEqual([...firstHalf.slice(50), ...costs.slice(100)].sort((first, second) => first - second));
+    expect(out.slice(50)).toEqual([...firstHalf.slice(50), ...costs.slice(100)].toSorted((first, second) => first - second));
   });
 });

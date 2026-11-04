@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
+import { describe, expect, test } from 'vitest';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 
@@ -83,7 +83,7 @@ describe('Playheads', () => {
     const planned = factsOf(tinyNetwork(), 'extension').playheads;
     expect(history.rest()).toEqual(history.today());
     expect(planned.rest()).toEqual(planned.end());
-    expect(history.isRest({ ...history.today(), time: TODAY + 3600_000 })).toBe(true);
+    expect(history.isRest({ ...history.today(), time: TODAY + 3_600_000 })).toBe(true);
     expect(history.isRest(history.on(toTimestamp('2025-06-01')))).toBe(false);
     expect([planned.isToday(planned.today()), planned.isRest(planned.today())]).toEqual([true, false]);
     expect(history.isToday({ ...history.today(), progress: 0.5 })).toBe(false);

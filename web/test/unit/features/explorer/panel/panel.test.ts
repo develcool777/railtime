@@ -1,8 +1,7 @@
 import type { ChangeInfo, LineDetails, LineInfo, PlanInfo, StationInfo } from '@railtime/network/facts.types';
+import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { timeAt } from '@test/support/factories/timeState.utils';
-import { describe, expect, test } from 'vitest';
-
 import { usePanelStore } from '~/features/explorer/panel/panel.store';
 import type { SectionTopInput } from '~/features/explorer/panel/panel.types';
 import { lineTop, marksOf, planLegendOf, planSummaryOf, sectionLabelOf, sectionTop, sectionsOf, stationTop } from '~/features/explorer/panel/panel.utils';
@@ -203,7 +202,7 @@ describe('PanelUtils', () => {
       name: 'Extension',
       status: 'planned',
       facts: { stations: 2, km: 1.6, lines: [{ id: 'red', name: 'Red', color: { light: '#ff0000', dark: '#ff6666' } }] },
-    } as PlanInfo;
+    };
 
     test('sums the plan shown up for the time control: its name, its status, what it adds', () => {
       expect(planSummaryOf(plan)).toEqual({ name: 'Extension', status: 'Planned', facts: 'adds 2 stations · 2 km' });

@@ -27,8 +27,8 @@
 <script setup lang="ts" generic="Row extends { key: string }">
   import { useVirtualizer } from '@tanstack/vue-virtual';
   import { computed, onMounted, ref, shallowRef, useTemplateRef } from 'vue';
-
   import { PANEL_LIST_OVERSCAN } from '~/features/explorer/panel/panel.constants';
+  import type { PanelListHandle } from '~/features/explorer/panel/panel.types';
 
   const props = defineProps<{
     /** What the list is, for a screen reader: "Changes". */
@@ -103,20 +103,19 @@
     return virtualizer.value.getVirtualItemForOffset(offset)?.index ?? null;
   });
 
-  defineExpose({
-    /**
-     * Scrolls a row into the middle of what shows.
-     *
-     * @param index - The row.
-     * @param behavior - At once, or smoothly.
-     */
-    centre: (index: number, behavior: 'auto' | 'smooth') => {
+  /** What its section may do with it. */
+  const handle: PanelListHandle = {
+    centre: (index, behavior) => {
       // The virtualizer's own smooth scroll corrects its target as rows are measured on the way, and
       // starts again with each call, so a list followed while playing jerks back and forth: smoothly,
       // the browser scrolls once to where the row stands now.
-      if (behavior === 'auto') return virtualizer.value.scrollToIndex(index, { align: 'center' });
+      if (behavior === 'auto') {
+        virtualizer.value.scrollToIndex(index, { align: 'center' });
+        return;
+      }
       const [offset] = virtualizer.value.getOffsetForIndex(index, 'center') ?? [];
       if (offset !== undefined) scroller.value?.scrollTo({ top: offset, behavior: 'smooth' });
     },
-  });
+  };
+  defineExpose(handle);
 </script>

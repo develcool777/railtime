@@ -13,7 +13,7 @@ const scopeOf = (): RecordingScope => ({
   performance: { now: () => 1000 },
   Date: { now: () => 5000 },
   requestAnimationFrame: () => 0,
-  cancelAnimationFrame: () => undefined,
+  cancelAnimationFrame: () => {},
 });
 
 describe('RecorderUtils', () => {

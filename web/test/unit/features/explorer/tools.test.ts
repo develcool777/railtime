@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'vitest';
-
 import { openExplorer } from '@test/support/factories/explorer.utils';
-
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
 import {

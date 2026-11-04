@@ -1,9 +1,9 @@
-import type { NetworkEngine } from '@railtime/network/engine.service';
 import { YEAR_MS } from '@railtime/core/date.utils';
-import type { Step } from '@railtime/network/engine.types';
 import { clamp } from '@railtime/core/number.utils';
-import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
+import type { NetworkEngine } from '@railtime/network/engine.service';
+import type { Step } from '@railtime/network/engine.types';
 import type { Playhead } from '@railtime/network/facts.types';
+import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
 import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './player.types';
 
 /**

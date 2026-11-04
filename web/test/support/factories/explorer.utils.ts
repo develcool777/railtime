@@ -1,7 +1,6 @@
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import type { Network } from '@railtime/schema/network.types';
 import { createPinia, setActivePinia } from 'pinia';
-
 import type { ExplorerQuery } from '~/features/explorer/address/address.types';
 import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
 import { useExplorerStore } from '~/features/explorer/explorer.store';

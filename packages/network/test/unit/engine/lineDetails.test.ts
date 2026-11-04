@@ -1,10 +1,10 @@
-import type { LineDetails } from '../../../src/facts/facts.types';
-import { describe, expect, test } from 'vitest';
-import { lineBranches, lineLengthKm, stepChangesLine, directionsAt } from '../../../src/engine/lineDetails.utils';
-import { NetworkIndex } from '../../../src/engine/index.service';
-import { Timeline } from '../../../src/engine/timeline.service';
-import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import type { Network } from '@railtime/schema/network.types';
+import { describe, expect, test } from 'vitest';
+import { NetworkIndex } from '../../../src/engine/index.service';
+import { lineBranches, lineLengthKm, stepChangesLine, directionsAt } from '../../../src/engine/lineDetails.utils';
+import { Timeline } from '../../../src/engine/timeline.service';
+import type { LineDetails } from '../../../src/facts/facts.types';
+import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
 const index = new NetworkIndex(tinyNetwork());
 const timeline = new Timeline(index);
@@ -16,14 +16,13 @@ const on = (year: number) => timeline.cursorAt(Date.UTC(year, 6, 1));
  *
  * @param network - The network, changed in place.
  * @param from - The station the track leaves.
- * @param to - The new station's id.
  * @param position - Km east of A where X stands.
  * @param open - When red opens to it.
  */
-const addRed = (network: Network, from: string, to: string, position: number, open: string): void => {
+const addRed = (network: Network, from: string, position: number, open: string): void => {
   const coordinate: [number, number] = [position * 0.0144, 51.504];
-  network.stations[to] = { name: to.toUpperCase(), coordinate };
-  network.segments.push({ stationA: from, stationB: to, coordinates: [network.stations[from]!.coordinate, coordinate], lines: { red: { open } } });
+  network.stations.x = { name: 'X', coordinate };
+  network.segments.push({ stationA: from, stationB: 'x', coordinates: [network.stations[from]!.coordinate, coordinate], lines: { red: { open } } });
 };
 
 /**
@@ -55,19 +54,19 @@ describe('LineDetailsUtils', () => {
     });
 
     test('lists the line end to end, then a branch from the station it leaves, kept though not yet a stop', () => {
-      expect(redBranches(network => addRed(network, 'b', 'x', 1, '1900-01-01'), 1930)).toEqual([
+      expect(redBranches(network => addRed(network, 'b', 1, '1900-01-01'), 1930)).toEqual([
         ['a', 'b', 'c', 'd'],
         ['b', 'x'],
       ]);
       // In 1915 C is on red's track but not a stop: the branch still leaves from it.
-      expect(redBranches(network => addRed(network, 'c', 'x', 2, '1910-01-01'), 1915)).toEqual([
+      expect(redBranches(network => addRed(network, 'c', 2, '1910-01-01'), 1915)).toEqual([
         ['a', 'b', 'd'],
         ['c', 'x'],
       ]);
     });
 
     test('shows no branch for a second track between two stations listed, and a piece apart as a run of its own', () => {
-      const secondTrack = (network: Network) =>
+      const secondTrack = (network: Network) => {
         network.segments.push({
           stationA: 'b',
           stationB: 'c',
@@ -78,10 +77,11 @@ describe('LineDetailsUtils', () => {
           ],
           lines: { red: { open: '1910-01-01' } },
         });
+      };
       expect(redBranches(secondTrack, 1930)).toEqual([['a', 'b', 'c', 'd']]);
       const apart = (network: Network) => {
         network.stations.y = { name: 'Y', coordinate: [0, 51.51] };
-        addRed(network, 'y', 'x', 0, '1900-01-01');
+        addRed(network, 'y', 0, '1900-01-01');
       };
       expect(redBranches(apart, 1930)).toEqual([
         ['a', 'b', 'c', 'd'],

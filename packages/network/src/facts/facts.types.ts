@@ -1,7 +1,7 @@
+import type { IsoDate } from '@railtime/core/date.types';
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import type { Network, PlanStatus } from '@railtime/schema/network.types';
-import type { LngLat } from '@railtime/core/geometry.types';
-import type { IsoDate } from '@railtime/core/date.types';
 import type { LineGap, Step } from '../engine/engine.types';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';

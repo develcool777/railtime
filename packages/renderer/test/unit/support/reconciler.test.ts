@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { describe, expect, test } from 'vitest';
 import { PropsReconciler, stateChanges } from '../../../src/support/reconciler.service';
 import { DEFAULT_MAP_PROPS } from '../../../src/transitMap.constants';
 import type { MapProps } from '../../../src/transitMap.types';

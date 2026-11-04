@@ -1,5 +1,4 @@
 import { useHead, useRuntimeConfig, useSeoMeta, useSiteConfig } from '#imports';
-
 import type { PageSeo } from './seo.types';
 import { pageUrl } from './seo.utils';
 
@@ -21,21 +20,19 @@ export const usePageSeo = (seo: PageSeo): void => {
     ogDescription: seo.description,
     ogUrl: canonical,
     ogType: 'website',
-    twitterTitle: seo.title,
-    twitterDescription: seo.description,
-    ...(image && seo.image
-      ? {
-          ogImage: image,
-          ogImageWidth: seo.image.width,
-          ogImageHeight: seo.image.height,
-          ogImageAlt: seo.image.alt,
-          twitterImage: image,
-          twitterCard: 'summary_large_image',
-        }
-      : { twitterCard: 'summary' }),
+    ...(image &&
+      seo.image && {
+        ogImage: image,
+        ogImageWidth: seo.image.width,
+        ogImageHeight: seo.image.height,
+        ogImageAlt: seo.image.alt,
+      }),
   });
   useHead({
+    // X reads the title, the description and the picture from Open Graph; only how large to show the
+    // picture is its own.
+    meta: [{ name: 'twitter:card', content: image ? 'summary_large_image' : 'summary' }],
     link: [{ rel: 'canonical', href: canonical }],
-    ...(seo.jsonLd ? { script: [{ type: 'application/ld+json', innerHTML: JSON.stringify({ ...seo.jsonLd, url: canonical }) }] } : {}),
+    ...(seo.jsonLd && { script: [{ type: 'application/ld+json', innerHTML: JSON.stringify({ ...seo.jsonLd, url: canonical }) }] }),
   });
 };

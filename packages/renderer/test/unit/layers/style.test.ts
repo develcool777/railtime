@@ -1,7 +1,7 @@
-import { describe, expect, test } from 'vitest';
-import { byZoom, highlightedOpacity, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { describe, expect, test } from 'vitest';
+import { byZoom, highlightedOpacity, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('LayerStyleUtils', () => {

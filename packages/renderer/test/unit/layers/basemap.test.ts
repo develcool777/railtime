@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import type { LayerSpecification } from 'maplibre-gl';
+import { describe, expect, test } from 'vitest';
 import { basemapFont, guardMissingNumbers, recolorBasemap, showBasemapLabels } from '../../../src/layers/basemap.utils';
 import { FALLBACK_FONT, MISSING_NUMBER, PALETTES } from '../../../src/layers/theme.constants';
 import { fakeMap } from '../../support/factories/fakeMap.utils';

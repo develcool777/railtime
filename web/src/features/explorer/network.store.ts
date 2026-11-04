@@ -2,7 +2,6 @@ import { NetworkFacts } from '@railtime/network/facts.service';
 import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, shallowRef } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 
 /**
@@ -50,7 +49,7 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
    */
   const MAKE = (shownPlan: string | undefined, hiddenLines: readonly string[]) => {
     if (!stored.value) return;
-    facts.value = markRaw(NetworkFacts.create(stored.value, { ...(shownPlan ? { plan: shownPlan } : {}), hidden: hiddenLines }));
+    facts.value = markRaw(NetworkFacts.create(stored.value, { ...(shownPlan && { plan: shownPlan }), hidden: hiddenLines }));
   };
   /**
    * Opens a city's network, with the plan asked for: a network never built shows its first plan

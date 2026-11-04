@@ -1,12 +1,11 @@
 import { TransitMap } from '@railtime/renderer/transitMap.service';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, watch } from 'vue';
-
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import { useMapStore } from '~/features/explorer/map/map.store';
+import type { TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
 import { useTimeStore } from '~/features/explorer/time/time.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
-import type { TransitMapMount } from '~/features/explorer/map/transitMap.composable.types';
 
 /**
  * Makes the map and takes it down: an effect, and nothing else. On mount it makes the map with the
@@ -31,7 +30,7 @@ export const useTransitMap = (mount: TransitMapMount): void => {
       container: mount.container.value!,
       minimapContainer: mount.minimapContainer.value ?? undefined,
       props,
-      ...(mapStore.view ? { view: mapStore.view } : {}),
+      ...(mapStore.view && { view: mapStore.view }),
       // The page shows the credits itself, in a corner of the map.
       attributionControl: false,
       workerUrl,

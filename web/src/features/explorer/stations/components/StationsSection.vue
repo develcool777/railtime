@@ -30,7 +30,6 @@
 <script setup lang="ts">
   import type { StationSummary } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
-
   import { PANEL_SEARCH_HEIGHT } from '~/features/explorer/panel/panel.constants';
   import { LETTER_HEADING_ESTIMATE, STATION_ROW_ESTIMATE } from '~/features/explorer/stations/station.constants';
   import type { StationGroup, StationRow } from '~/features/explorer/stations/station.types';

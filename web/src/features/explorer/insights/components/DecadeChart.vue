@@ -15,7 +15,6 @@
 <script setup lang="ts">
   import type { DecadeOpenings } from '@railtime/network/facts.types';
   import { computed } from 'vue';
-
   import { formatNumber } from '~/utils/format.utils';
 
   const props = defineProps<{
@@ -27,11 +26,15 @@
   const bars = computed(() => props.decades.map(entry => ({ label: `${entry.decade}s`, decade: entry.decade, stations: entry.stations })));
 
   const summary = computed(() => {
-    const busiest = [...props.decades].sort((first, second) => second.stations - first.stations)[0];
+    const busiest = [...props.decades].toSorted((first, second) => second.stations - first.stations)[0];
     return busiest ? `Stations opened by decade; the most, ${busiest.stations}, in the ${busiest.decade}s` : '';
   });
 
-  /** Shows the map at the end of the decade picked. */
+  /**
+   * Shows the map at the end of the decade picked.
+   *
+   * @param label - The decade's bar, by its label.
+   */
   const pick = (label: string) => {
     const decade = bars.value.find(bar => bar.label === label)?.decade;
     if (decade !== undefined) emit('pick', decade + 9);

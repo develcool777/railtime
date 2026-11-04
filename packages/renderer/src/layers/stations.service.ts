@@ -1,14 +1,14 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { ExpressionSpecification, Map as MapLibreMap, PointLike, SymbolLayerSpecification } from 'maplibre-gl';
 import { clamp } from '@railtime/core/number.utils';
-import { easeOutBack } from '../support/drawing.utils';
-import type { PointFeature, PulseLook, PulseProperties, StationLook, StationProperties } from './snapshot.types';
-import { emptyCollection, pointFeature } from './snapshot.utils';
-import { byZoom } from './style.utils';
+import type { ExpressionSpecification, Map as MapLibreMap, PointLike, SymbolLayerSpecification } from 'maplibre-gl';
 import { BACKDROP_STATION_OPACITY, LABEL_MIN_ZOOM, LAYERS, POP_IN_MS, PULSE_GROWTH, PULSE_MS, SOURCES } from './ids.constants';
 import { MapLayer } from './layer.service';
+import type { PointFeature, PulseLook, PulseProperties, StationLines, StationLook, StationProperties } from './snapshot.types';
+import { emptyCollection, pointFeature } from './snapshot.utils';
 import type { StationFrame } from './stations.types';
+import { byZoom } from './style.utils';
 import type { Palette } from './theme.types';
+import { easeOutBack } from '../support/drawing.utils';
 
 /** A birth time far in the past: the station is shown fully, with no pop-in. */
 const ALREADY_SHOWN = -1e9;
@@ -278,7 +278,7 @@ export class StationLayer extends MapLayer {
    */
   public stationAt(point: PointLike): string | null {
     const [hit] = this.map.queryRenderedFeatures(point, { layers: [LAYERS.stations] });
-    return (hit?.properties?.id as string | undefined) ?? null;
+    return (hit?.properties.id as string | undefined) ?? null;
   }
 
   /** Forgets running pulses: after a jump in time they would belong to nothing. */
@@ -303,14 +303,12 @@ export class StationLayer extends MapLayer {
       this.startRing(frame, station, highlighted, closing);
       const age = (frame.now - this.appearedAt.get(station)!) / POP_IN_MS;
       const opacity = clamp(age * 3, 0, 1) * (frame.fading.get(station) ?? 1);
-      let firstLine = '';
-      for (const line of lines.keys()) if (!firstLine || this.compareLines(line, firstLine) < 0) firstLine = line;
       features.push({
         feature: pointFeature(this.coordOf(station), {
           id: station,
           name: this.nameOf(station),
           interchange: lines.size > 1 || frame.linked.has(station),
-          color: lines.get(firstLine) ?? '#ffffff',
+          color: lines.get(this.firstLineOf(lines)) ?? '#ffffff',
           highlighted,
           former: frame.renamed.get(station) ?? '',
           closing,
@@ -324,8 +322,20 @@ export class StationLayer extends MapLayer {
         },
       });
     }
-    for (const station of [...this.appearedAt.keys()]) if (!frame.stations.get(station)?.size) this.appearedAt.delete(station);
+    for (const station of this.appearedAt.keys()) if (!frame.stations.get(station)?.size) this.appearedAt.delete(station);
     return features;
+  }
+
+  /**
+   * A station's first line in side-by-side order, whose colour its dot takes.
+   *
+   * @param lines - The lines serving it, and their colours.
+   * @returns The line id; `''` for none.
+   */
+  private firstLineOf(lines: StationLines): string {
+    let firstLine = '';
+    for (const line of lines.keys()) if (!firstLine || this.compareLines(line, firstLine) < 0) firstLine = line;
+    return firstLine;
   }
 
   /**

@@ -1,10 +1,10 @@
-import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { LngLat } from '@railtime/core/geometry.types';
-import { describe, expect, test } from 'vitest';
-import { distanceKm, latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
-import { CoverageGrid, CoverageMeasure } from '../../../src/coverage/coverage.service';
 import { toTimestamp } from '@railtime/core/date.utils';
+import type { LngLat } from '@railtime/core/geometry.types';
+import { distanceKm, latitudeOf, mercatorY } from '@railtime/core/geometry.utils';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
+import { describe, expect, test } from 'vitest';
 import { COVERAGE_BANDS, COVERAGE_DEFAULT_METRES } from '../../../src/coverage/coverage.constants';
+import { CoverageGrid, CoverageMeasure } from '../../../src/coverage/coverage.service';
 import { bandAt, bandsWithin, cellBands, coverageHistory, coverageOf, servedStations } from '../../../src/coverage/coverage.utils';
 import { AROUND_TINY, HOLED, KM_EAST, KM_NORTH, MIDDLE, SQUARE, TINY_WITH_HOLE as CITY } from '../../support/factories/boundaries.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -72,12 +72,15 @@ const middlesOf = (grid: CoverageGrid): LngLat[] => {
  * @param point - The point.
  * @returns True if it does.
  */
-const ringHolds = (ring: LngLat[], [longitude, latitude]: LngLat): boolean =>
-  ring.slice(1).reduce((inside, [toX, toY], position) => {
+const ringHolds = (ring: LngLat[], [longitude, latitude]: LngLat): boolean => {
+  let inside = false;
+  for (const [position, [toX, toY]] of ring.slice(1).entries()) {
     // Within bounds: the point before, the first being the ring's.
     const [fromX, fromY] = ring[position]!;
-    return fromY > latitude !== toY > latitude && longitude < fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY) ? !inside : inside;
-  }, false);
+    if (fromY > latitude !== toY > latitude && longitude < fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY)) inside = !inside;
+  }
+  return inside;
+};
 
 /** A city with slanted edges all round and a slanted hole: a kite 4 km across, a triangle cut from it. */
 const KITE = cityOf([
@@ -142,19 +145,19 @@ describe('CoverageGrid', () => {
     const reach = 1200;
     const distances = grid.distances(stations, reach);
     const middles = middlesOf(grid);
-    let near = 0;
+    const far: number[] = [];
+    const near: { distance: number; nearest: number }[] = [];
     for (const [cell, middle] of middles.entries()) {
       const nearest = Math.min(...stations.map(station => distanceKm(station, middle) * 1000));
       // Within bounds: a cell of the grid.
       const distance = distances[cell]!;
-      if (!grid.inside[cell] || nearest > reach + 2) expect(distance).toBe(Infinity);
-      else if (nearest < reach - 2) {
-        expect(distance).toBeCloseTo(nearest, -0.5);
-        near++;
-      }
+      if (!grid.inside[cell] || nearest > reach + 2) far.push(distance);
+      else if (nearest < reach - 2) near.push({ distance, nearest });
     }
+    expect(far).toEqual(far.map(() => Infinity));
+    expect(near.map(({ distance }) => distance)).toEqual(near.map(({ nearest }) => expect.closeTo(nearest, -0.5)));
     // Enough cells near a station that a slip anywhere would show.
-    expect(near).toBeGreaterThan(300);
+    expect(near.length).toBeGreaterThan(300);
   });
 
   test("keeps a station's reach in its own row: one on the east edge reaching past the west one", () => {
@@ -289,7 +292,9 @@ describe('CoverageUtils', () => {
     test('shares nothing out of a city with no area', () => {
       const grid = new CoverageGrid({ ...SQUARE, polygons: [] });
       const coverage = coverageOf(grid, grid.distances([MIDDLE], 1200), COVERAGE_BANDS, 800);
-      expect([coverage.share, coverage.beyond.share, ...coverage.bands.map(band => band.share)]).toEqual(Array(2 + COVERAGE_BANDS.length).fill(0));
+      expect([coverage.share, coverage.beyond.share, ...coverage.bands.map(band => band.share)]).toEqual(
+        Array.from({ length: 2 + COVERAGE_BANDS.length }, () => 0),
+      );
     });
   });
 
@@ -324,7 +329,7 @@ describe('CoverageUtils', () => {
           const cursor = timeline.cursorAt(Date.UTC(year, 11, 31));
           return coverageOf(grid, grid.distances(servedStations(index, timeline, cursor), 1200), COVERAGE_BANDS, 800).share;
         });
-        history.forEach(({ share }, position) => expect(share).toBeCloseTo(expected[position]!, 9));
+        for (const [position, { share }] of history.entries()) expect(share).toBeCloseTo(expected[position]!, 9);
       }
     });
 

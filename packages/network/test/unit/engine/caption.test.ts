@@ -1,7 +1,7 @@
+import { toTimestamp } from '@railtime/core/date.utils';
 import type { Network } from '@railtime/schema/network.types';
 import { describe, expect, test } from 'vitest';
 import { captionOf } from '../../../src/engine/caption.utils';
-import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 

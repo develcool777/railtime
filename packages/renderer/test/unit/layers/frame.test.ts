@@ -1,12 +1,12 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
-import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../../../src/layers/snapshot.types';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { describe, expect, test } from 'vitest';
 import { FrameRenderer } from '../../../src/layers/frame.service';
 import { SOURCES } from '../../../src/layers/ids.constants';
+import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
+import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../../../src/layers/snapshot.types';
 import { StationLayer } from '../../../src/layers/stations.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { playbackOf } from '../../support/playback.utils';
 
 /**
@@ -37,7 +37,14 @@ const framesOn = (date: string, plan?: string) => {
     network,
     activeStep,
     stations,
-    minimap: { setNetwork: snapshot => minimap.networks.push(snapshot), setActive: lines => minimap.active.push(lines) },
+    minimap: {
+      setNetwork: snapshot => {
+        minimap.networks.push(snapshot);
+      },
+      setActive: lines => {
+        minimap.active.push(lines);
+      },
+    },
     baseColor: line => playback.index.lineOf(line).color,
   });
   return { frames, fake, playback, minimap };

@@ -1,8 +1,8 @@
 import type { ExpressionSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import { BASEMAP_BUILDINGS, BUILDINGS_FULL_ZOOM, BUILDINGS_OPACITY, BUILDINGS_RISE_ZOOM } from './buildings.constants';
 import { LAYERS } from './ids.constants';
 import { MapLayer } from './layer.service';
 import type { Palette } from './theme.types';
-import { BASEMAP_BUILDINGS, BUILDINGS_FULL_ZOOM, BUILDINGS_OPACITY, BUILDINGS_RISE_ZOOM } from './buildings.constants';
 
 /**
  * The basemap's own buildings standing in 3D, under the network: flat from afar, rising to their

@@ -1,7 +1,6 @@
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-
 import { END_CARD_DELAY_MS, END_MS, FADE_MS, TITLE_MS, VIDEO_SPEED } from '~/features/video/video.constants';
 import {
   fadedIn,

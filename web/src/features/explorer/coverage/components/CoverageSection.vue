@@ -27,7 +27,7 @@
 
       <ul class="flex flex-col" role="list">
         <li v-for="band in coverage.bands" :key="band.upTo">
-          <ListRow :disabled="true">
+          <ListRow disabled>
             <span class="size-2.5 flex-none rounded-full" :style="{ background: band.color }" />
             <span class="text-highlighted flex-1 text-sm font-medium">{{ band.label }}</span>
             <span class="text-muted text-xs tabular-nums">{{ formatArea(band.km2) }}</span>
@@ -35,7 +35,7 @@
           </ListRow>
         </li>
         <li>
-          <ListRow :disabled="true">
+          <ListRow disabled>
             <span class="bg-accented size-2.5 flex-none rounded-full" />
             <span class="text-highlighted flex-1 text-sm font-medium">Farther</span>
             <span class="text-muted text-xs tabular-nums">{{ formatArea(coverage.beyond.km2) }}</span>
@@ -71,10 +71,9 @@
 <script setup lang="ts">
   import type { CoverageDistance, CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
   import { computed } from 'vue';
-
-  import type { BoundaryState } from '~/features/explorer/tools.types';
   import { COVERAGE_DISTANCE_ITEMS } from '~/features/explorer/coverage/coverage.constants';
   import { coverageDistanceOf, formatArea, formatShare, formatWalk } from '~/features/explorer/coverage/coverage.utils';
+  import type { BoundaryState } from '~/features/explorer/tools.types';
 
   const props = defineProps<{
     /** Where the city's outline is. */

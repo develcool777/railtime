@@ -1,13 +1,13 @@
-import { describe, expect, test } from 'vitest';
-import type { ReachTrackFeature } from '../../../src/layers/snapshot.types';
-import { pointFeature } from '../../../src/layers/snapshot.utils';
-import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
-import { ReachLayer } from '../../../src/overlay/reach.service';
-import { PALETTES } from '../../../src/layers/theme.constants';
-import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { reachStops, reachTrack } from '../../../src/overlay/overlay.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { describe, expect, test } from 'vitest';
+import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
+import type { ReachTrackFeature } from '../../../src/layers/snapshot.types';
+import { pointFeature } from '../../../src/layers/snapshot.utils';
+import { PALETTES } from '../../../src/layers/theme.constants';
+import { reachStops, reachTrack } from '../../../src/overlay/overlay.utils';
+import { ReachLayer } from '../../../src/overlay/reach.service';
+import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { networkNow, playbackOf } from '../../support/playback.utils';
 
 /** How far one gets from A in 1955, when red runs A–B–C–D, and the network it is found on. */

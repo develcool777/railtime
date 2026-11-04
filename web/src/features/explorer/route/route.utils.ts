@@ -1,5 +1,4 @@
 import type { RouteInfo, RouteLegInfo, RouteStrength } from '@railtime/network/facts.types';
-
 import { ROUTE_STRENGTHS } from '~/features/explorer/route/route.constants';
 import { counted } from '~/utils/format.utils';
 
@@ -31,6 +30,14 @@ export const routeVia = (route: RouteInfo): string => {
 };
 
 /**
+ * The word for a number of changes.
+ *
+ * @param count - How many.
+ * @returns `change`, or `changes`.
+ */
+const changeWord = (count: number): string => (count === 1 ? 'change' : 'changes');
+
+/**
  * How a way compares with the fastest: what it takes more or less, and how many more or fewer changes.
  *
  * @param route - The way.
@@ -40,7 +47,6 @@ export const routeVia = (route: RouteInfo): string => {
 export const routeDifference = (route: RouteInfo, fastest: RouteInfo): string => {
   const minutes = Math.round(route.minutes) - Math.round(fastest.minutes);
   const changes = route.changes - fastest.changes;
-  const changeWord = (count: number) => (count === 1 ? 'change' : 'changes');
   return [
     ...(minutes === 0 ? [] : [`${minutes > 0 ? '+' : '−'}${Math.abs(minutes)} min`]),
     ...(changes === 0 ? [] : [`${Math.abs(changes)} ${changes > 0 ? 'more' : 'fewer'} ${changeWord(Math.abs(changes))}`]),

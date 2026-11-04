@@ -1,5 +1,5 @@
-import type { ScreenBox, ScreenPoint } from './minimap.types';
 import { MINIMAP_VIEWPORT_MIN_PX } from './minimap.constants';
+import type { ScreenBox, ScreenPoint } from './minimap.types';
 
 /**
  * Where the box outlining the main camera's view goes on the minimap, from its corners as the minimap

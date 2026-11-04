@@ -9,9 +9,8 @@
 </template>
 
 <script setup lang="ts">
-  import { definePageMeta, useHead, useRoute } from '#imports';
   import { computed } from 'vue';
-
+  import { definePageMeta, useHead, useRoute } from '#imports';
   import { useCityNetwork } from '~/utils/city.composable';
   import { isCity } from '~/utils/city.utils';
 

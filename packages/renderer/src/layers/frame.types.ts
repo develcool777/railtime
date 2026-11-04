@@ -1,9 +1,9 @@
 import type { NetworkEngine } from '@railtime/network/engine.service';
-import type { Minimap } from '../minimap/minimap.service';
-import type { ChaseTarget } from '../steps/animation.types';
-import type { Player } from '../playback/player.service';
-import type { StationLayer } from './stations.service';
 import type { ActiveStepLayer, NetworkLayer } from './network.service';
+import type { StationLayer } from './stations.service';
+import type { Minimap } from '../minimap/minimap.service';
+import type { Player } from '../playback/player.service';
+import type { ChaseTarget } from '../steps/animation.types';
 
 /** What draws each frame: the network, its history and the player, and the layers drawn on. */
 export type FrameParts = {

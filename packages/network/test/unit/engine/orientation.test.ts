@@ -31,7 +31,7 @@ const track = (index: number, stationA: string, stationB: string): TrackSegment 
     stationA,
     stationB,
     coordinates,
-    reversedCoordinates: [...coordinates].reverse(),
+    reversedCoordinates: [...coordinates].toReversed(),
     distances: [0, 1],
     reversedDistances: [0, 1],
     lengthKm: 1,

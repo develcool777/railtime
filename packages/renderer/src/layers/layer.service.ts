@@ -60,6 +60,6 @@ export abstract class MapLayer {
    * @param data - A GeoJSON feature collection.
    */
   protected setData(sourceId: string, data: object): void {
-    (this.map.getSource(sourceId) as GeoJSONSource | undefined)?.setData(data as Parameters<GeoJSONSource['setData']>[0]);
+    void this.map.getSource<GeoJSONSource>(sourceId)?.setData(data as Parameters<GeoJSONSource['setData']>[0]);
   }
 }

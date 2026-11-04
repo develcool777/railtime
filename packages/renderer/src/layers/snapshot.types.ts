@@ -1,6 +1,6 @@
+import type { LngLat } from '@railtime/core/geometry.types';
 import type { NetworkStats } from '@railtime/network/facts.types';
 import type { SideBySide } from './style.types';
-import type { LngLat } from '@railtime/core/geometry.types';
 import type { RouteStopKind } from '../overlay/overlay.types';
 
 /** Everything already on the map at a cursor. Rebuilt only when the cursor or theme change. */
@@ -22,6 +22,16 @@ export type NetworkSnapshot = {
   /** Stations all of whose lines are closing in the step playing now: they fade out with it. */
   closingOnly: Set<string>;
   stats: NetworkStats;
+};
+
+/** The stations on the map as a snapshot gathers them: each with its lines, and those staying and built. */
+export type StationsFound = {
+  /** Each station on the map and the lines serving it. */
+  stations: Map<string, StationLines>;
+  /** Stations a line serves that the step playing does not close. */
+  staying: Set<string>;
+  /** Stations built track reaches, not only a plan's. */
+  built: Set<string>;
 };
 
 /** Minimal GeoJSON, so the renderer needs no @types/geojson. */

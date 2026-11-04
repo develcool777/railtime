@@ -1,5 +1,5 @@
-import type { Bounds, LngLat } from './geometry.types';
 import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from './geometry.constants.ts';
+import type { Bounds, LngLat } from './geometry.types';
 
 /**
  * How far east and north one point is of another, by an equirectangular approximation at their own
@@ -56,12 +56,16 @@ const interpolate = (from: LngLat, to: LngLat, fraction: number): LngLat => [fro
  * @param coordinates - The polyline.
  * @returns The distance from the first point to each point, in km.
  */
-export const cumulativeDistances = (coordinates: LngLat[]): number[] =>
-  coordinates.reduce<number[]>((distances, point, index) => {
+export const cumulativeDistances = (coordinates: LngLat[]): number[] => {
+  const distances: number[] = [];
+  let travelled = 0;
+  for (const [index, point] of coordinates.entries()) {
     const previous = coordinates[index - 1];
-    distances.push(previous ? (distances.at(-1) ?? 0) + distanceKm(previous, point) : 0);
-    return distances;
-  }, []);
+    if (previous) travelled += distanceKm(previous, point);
+    distances.push(travelled);
+  }
+  return distances;
+};
 
 /**
  * The first stretch of a polyline, ending on an interpolated point.

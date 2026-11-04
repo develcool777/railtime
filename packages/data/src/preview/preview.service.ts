@@ -1,14 +1,14 @@
 import type { Theme } from '@railtime/network/facts.types';
 import type { StillRequest } from '@railtime/renderer/basemapStill.types';
 import { build } from 'esbuild';
-import { type Browser, chromium, type Page } from 'playwright-core';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import { createRequire } from 'node:module';
+import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
-import { citiesNamed, readNetwork } from '../city.utils.ts';
+import { type Browser, chromium, type Page } from 'playwright-core';
 import type { City } from '../city.types.ts';
+import { citiesNamed, readNetwork } from '../city.utils.ts';
 import { PREVIEW_PAGE_SCRIPT, PREVIEW_SIZE, PREVIEW_THEMES, PREVIEW_TIMEOUT_MS, SOCIAL_SIZE, SOCIAL_THEME } from './preview.constants.ts';
 import type { PreviewOptions, PreviewWindow, Served } from './preview.types.ts';
 import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.ts';

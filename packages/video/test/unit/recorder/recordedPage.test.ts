@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { TAIL_SECONDS } from '../../../src/recorder/recorder.constants.ts';
 import { recordedPageOf } from '../../../src/recorder/recordedPage.utils.ts';
+import { TAIL_SECONDS } from '../../../src/recorder/recorder.constants.ts';
 
 describe('RecordedPageUtils', () => {
   describe('recordedPageOf', () => {

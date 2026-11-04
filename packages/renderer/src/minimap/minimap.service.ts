@@ -1,12 +1,12 @@
-import type { GeoJSONSource, LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
+import type { Bounds } from '@railtime/core/geometry.types';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from './minimap.constants';
+import type { MinimapOptions } from './minimap.types';
+import { viewportBox } from './minimap.utils';
 import { recolorBasemap } from '../layers/basemap.utils';
 import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../layers/snapshot.types';
 import { emptyCollection } from '../layers/snapshot.utils';
 import type { Palette } from '../layers/theme.types';
-import type { Bounds } from '@railtime/core/geometry.types';
-import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from './minimap.constants';
-import type { MinimapOptions } from './minimap.types';
-import { viewportBox } from './minimap.utils';
 
 /**
  * A small, fixed overview of the whole city: the network so far, the change happening now, and a
@@ -45,7 +45,7 @@ export class Minimap {
     this.map = createMap({
       container,
       style,
-      bounds: bounds as LngLatBoundsLike,
+      bounds: bounds,
       fitBoundsOptions: { padding: MINIMAP_PADDING },
       interactive: false,
       attributionControl: false,
@@ -62,7 +62,7 @@ export class Minimap {
     this.resizeObserver = new ResizeObserver(() => {
       if (container.clientWidth === 0 || container.clientHeight === 0) return;
       this.map.resize();
-      this.map.fitBounds(this.bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
+      this.map.fitBounds(this.bounds, { padding: MINIMAP_PADDING, animate: false });
     });
     this.resizeObserver.observe(container);
     this.placeViewport();
@@ -75,7 +75,7 @@ export class Minimap {
    */
   public frame(bounds: Bounds): void {
     this.bounds = bounds;
-    this.map.fitBounds(bounds as LngLatBoundsLike, { padding: MINIMAP_PADDING, animate: false });
+    this.map.fitBounds(bounds, { padding: MINIMAP_PADDING, animate: false });
   }
 
   /**
@@ -201,6 +201,6 @@ export class Minimap {
       this.pending.set(source, data);
       return;
     }
-    (this.map.getSource(source) as GeoJSONSource).setData(data as Parameters<GeoJSONSource['setData']>[0]);
+    void this.map.getSource<GeoJSONSource>(source)?.setData(data as Parameters<GeoJSONSource['setData']>[0]);
   }
 }

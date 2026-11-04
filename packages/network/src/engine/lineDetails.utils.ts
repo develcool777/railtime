@@ -1,8 +1,9 @@
 import { pushTo } from '@railtime/core/collection.utils';
-import type { LineDetails, LineDirection, StopToward } from '../facts/facts.types';
-import type { NetworkIndex } from './index.service';
+import { required } from '@railtime/core/required.utils';
 import type { LineSegment, Step } from './engine.types';
+import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';
+import type { LineDetails, LineDirection, StopToward } from '../facts/facts.types';
 
 /** A line's track at a cursor, as a graph: each station's neighbours on it, with the km between. */
 type LineGraph = Map<string, { to: string; km: number; edge: number }[]>;
@@ -40,7 +41,7 @@ const longestRun = (graph: LineGraph, start: string, used: Set<number>): { stati
   const walk = (stations: string[], edges: number[], km: number) => {
     if (km > best.km) best = { stations, edges, km };
     // Within bounds: a run is never empty.
-    const here = stations[stations.length - 1]!;
+    const here = stations.at(-1)!;
     for (const next of graph.get(here) ?? []) {
       if (used.has(next.edge) || stations.includes(next.to)) continue;
       walk([...stations, next.to], [...edges, next.edge], km + next.km);
@@ -74,10 +75,14 @@ export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: stri
     const joined = unlisted.filter(station => listed.has(station));
     const stops = unlisted.filter(serves);
     const starts = [joined, ends, stops].find(candidates => candidates.length > 0) ?? unlisted;
-    const run = starts.map(start => longestRun(graph, start, used)).reduce((best, candidate) => (candidate.km > best.km ? candidate : best));
+    // The longest run, the first of those as long.
+    const run = required(
+      starts.map(start => longestRun(graph, start, used)).toSorted((first, second) => second.km - first.km)[0],
+      'a run from a station not yet listed',
+    );
     for (const edge of run.edges) used.add(edge);
     // A loop closes where it began, or on itself (a line out to a loop and round it): the run says so.
-    const last = run.stations[run.stations.length - 1] ?? '';
+    const last = run.stations.at(-1) ?? '';
     const closing = graph.get(last)?.find(next => !used.has(next.edge) && run.stations.includes(next.to));
     if (closing) {
       used.add(closing.edge);
@@ -120,6 +125,16 @@ export const stepChangesLine = (step: Step, line: string): boolean => {
 };
 
 /**
+ * A stop beside a station, and the end of the line beyond it, unless that is the stop itself.
+ *
+ * @param stop - The stop, if there is one.
+ * @param end - The end of the line that way.
+ * @returns The stop toward its end, or `null` for none.
+ */
+const toward = (stop: { id: string; name: string } | undefined, end: { name: string } | undefined): StopToward | null =>
+  stop ? { id: stop.id, name: stop.name, towards: end && end.name !== stop.name ? end.name : null } : null;
+
+/**
  * The stop one before and one after a station on a line, each with the end of the line that way,
  * as a platform's sign gives them: once for each run it is on, so a junction has a pair for each
  * branch. A branch's first stop is the station it leaves from, so from there a branch goes one way.
@@ -130,15 +145,13 @@ export const stepChangesLine = (step: Step, line: string): boolean => {
  */
 export const directionsAt = (station: string, line: LineDetails): LineDirection[] => {
   const found: LineDirection[] = [];
-  const toward = (stop: { id: string; name: string } | undefined, end: { name: string } | undefined): StopToward | null =>
-    stop ? { id: stop.id, name: stop.name, towards: end && end.name !== stop.name ? end.name : null } : null;
   for (const run of line.branches) {
-    run.forEach((stop, place) => {
-      if (stop.id !== station) return;
+    for (const [place, stop] of run.entries()) {
+      if (stop.id !== station) continue;
       const direction = { previous: toward(run[place - 1], run[0]), next: toward(run[place + 1], run.at(-1)) };
       const known = found.some(entry => entry.previous?.id === direction.previous?.id && entry.next?.id === direction.next?.id);
       if ((direction.previous || direction.next) && !known) found.push(direction);
-    });
+    }
   }
   return found;
 };

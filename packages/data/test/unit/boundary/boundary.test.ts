@@ -1,12 +1,10 @@
+import type { LngLat } from '@railtime/core/geometry.types';
+import { required } from '@railtime/core/required.utils';
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network, Station } from '@railtime/schema/network.types';
-import type { LngLat } from '@railtime/core/geometry.types';
-import { required } from '@railtime/core/required.utils';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, test, vi } from 'vitest';
-import { cityApart } from '../../support/folders.utils.ts';
-import { cities, citiesNamed, readNetwork } from '../../../src/city.utils.ts';
 import { MIN_STATIONS_HELD, USER_AGENT } from '../../../src/boundary/boundary.constants.ts';
 import type { NominatimPlace } from '../../../src/boundary/boundary.types.ts';
 import {
@@ -20,6 +18,8 @@ import {
   relationOf,
   stationsHeld,
 } from '../../../src/boundary/boundary.utils.ts';
+import { cities, citiesNamed, readNetwork } from '../../../src/city.utils.ts';
+import { cityApart } from '../../support/folders.utils.ts';
 
 /**
  * A closed square ring.
@@ -106,7 +106,7 @@ describe('BoundaryUtils', () => {
 
   describe('lookupUrlOf', () => {
     test("asks Nominatim for a relation's outline, simplified, with its names", () => {
-      expect(lookupUrlOf(175342)).toBe(
+      expect(lookupUrlOf(175_342)).toBe(
         'https://nominatim.openstreetmap.org/lookup?osm_ids=R175342&format=json&polygon_geojson=1&polygon_threshold=0.0005&namedetails=1',
       );
     });
@@ -186,7 +186,7 @@ describe('BoundaryUtils', () => {
     test('takes every city, a city, or a city and its relation', () => {
       expect(boundaryArgsOf([])).toEqual({ city: undefined, relation: null });
       expect(boundaryArgsOf(['london'])).toEqual({ city: 'london', relation: null });
-      expect(boundaryArgsOf(['london', '175342'])).toEqual({ city: 'london', relation: 175342 });
+      expect(boundaryArgsOf(['london', '175342'])).toEqual({ city: 'london', relation: 175_342 });
     });
 
     test('refuses a relation that is not a whole number above 0, and more than two arguments, with the usage', () => {
@@ -211,7 +211,7 @@ describe('BoundaryUtils', () => {
    * @returns The stand-in `fetch`, stubbed as the global.
    */
   const nominatimAnswering = (body: unknown, status = 200) => {
-    const answer = vi.fn(async () => new Response(JSON.stringify(body), { status }));
+    const answer = vi.fn(async () => Response.json(body, { status }));
     vi.stubGlobal('fetch', answer);
     return answer;
   };
@@ -243,7 +243,7 @@ describe('BoundaryUtils', () => {
     test('writes the outline of the relation the kept one names, as the project asks, keeping the name it was given, and says so', async () => {
       const { city, written } = kyivApart({ ...KYIV_OUTLINE, name: 'Kyiv city', polygons: [[square(30, 50, 1)]] });
       const answer = nominatimAnswering([KYIV_PLACE]);
-      const said = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const said = vi.spyOn(console, 'log').mockImplementation(() => {});
       await fetchBoundary(city, null);
       expect(answer).toHaveBeenCalledExactlyOnceWith(lookupUrlOf(KYIV_PLACE.osm_id), { headers: { 'User-Agent': USER_AGENT } });
       expect(written()).toBe(formatBoundary({ ...KYIV_OUTLINE, name: 'Kyiv city' }));
@@ -255,7 +255,7 @@ describe('BoundaryUtils', () => {
     test('names a new outline as OpenStreetMap does in English, for another relation or none kept', async () => {
       const { city, written } = kyivApart();
       nominatimAnswering([KYIV_PLACE]);
-      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      vi.spyOn(console, 'log').mockImplementation(() => {});
       await fetchBoundary(city, KYIV_PLACE.osm_id);
       expect(parseBoundary(JSON.parse(written() ?? ''))).toMatchObject({ name: 'Kyiv' });
     });
@@ -301,7 +301,7 @@ describe('BoundaryUtils', () => {
 
     test('says why a city was not written, and names it', async () => {
       nominatimAnswering([], 503);
-      const said = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const said = vi.spyOn(console, 'error').mockImplementation(() => {});
       await expect(fetchBoundaries('kyiv', null)).rejects.toThrow('outlines not written: kyiv');
       expect(said).toHaveBeenCalledExactlyOnceWith(`kyiv: not written: relation ${relationOf(KYIV_OUTLINE)} not fetched: Nominatim answered 503`);
       said.mockClear();

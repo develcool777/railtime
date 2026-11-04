@@ -1,14 +1,14 @@
-import type { Network } from '@railtime/schema/network.types';
-import type { RenderState } from '../../src/layers/style.types';
-import type { NetworkSnapshot } from '../../src/layers/snapshot.types';
-import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { FactsAt } from '@railtime/network/facts.types';
-import { Player } from '../../src/playback/player.service';
-import type { StepDrawing } from '../../src/steps/animation.types';
-import { StepAnimation } from '../../src/steps/animation.service';
-import { emptyDrawing } from '../../src/steps/animation.utils';
+import type { Network } from '@railtime/schema/network.types';
 import type { Playback, PlaybackOptions } from './playback.types';
+import type { NetworkSnapshot } from '../../src/layers/snapshot.types';
+import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
+import type { RenderState } from '../../src/layers/style.types';
+import { Player } from '../../src/playback/player.service';
+import { StepAnimation } from '../../src/steps/animation.service';
+import type { StepDrawing } from '../../src/steps/animation.types';
+import { emptyDrawing } from '../../src/steps/animation.utils';
 
 /**
  * A network's facts, its index and timeline, and a player at today, 1 January 2026, wired as `TransitMap` wires them.
@@ -21,7 +21,7 @@ import type { Playback, PlaybackOptions } from './playback.types';
  * @returns The pieces.
  */
 export const playbackOf = (network: Network, { plan, hidden, view = '2d' }: PlaybackOptions = {}): Playback => {
-  const facts = NetworkFacts.create(network, { plan, ...(hidden ? { hidden } : {}), today: Date.UTC(2026, 0, 1) });
+  const facts = NetworkFacts.create(network, { plan, ...(hidden && { hidden }), today: Date.UTC(2026, 0, 1) });
   const { index, timeline } = facts.engine;
   const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
   return { facts, index, timeline, player };

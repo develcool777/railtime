@@ -1,7 +1,6 @@
 import type { LineDirection } from '@railtime/network/facts.types';
 import { defineStore } from 'pinia';
 import { computed } from 'vue';
-
 import { STORE_IDS } from '~/constants/store.constants';
 import { currentChangeIndex } from '~/features/explorer/changes/changes.utils';
 import { useExplorerStore } from '~/features/explorer/explorer.store';
@@ -33,7 +32,7 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
   const lineDetails = computed(() => (explorer.openLine && now.value ? now.value.line(explorer.openLine) : null));
   /** That line's changes. */
   const lineChanges = computed(() => {
-    const wanted = new Set(lineDetails.value?.changes ?? []);
+    const wanted = new Set(lineDetails.value?.changes);
     return network.changes.filter(change => wanted.has(change.index));
   });
   /** The station whose view is open, at the moment shown. */

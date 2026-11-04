@@ -52,13 +52,12 @@
 </template>
 
 <script setup lang="ts">
+  import { yearOf } from '@railtime/core/date.utils';
   import type { LineInfo, NetworkChoice } from '@railtime/network/facts.types';
   import { computed, ref } from 'vue';
-
-  import { yearOf } from '@railtime/core/date.utils';
-  import { lineColor } from '~/utils/format.utils';
   import type { LineGroup } from '~/features/explorer/lines/line.types';
   import { lineGroups } from '~/features/explorer/lines/line.utils';
+  import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** The lines on the map. */
@@ -74,12 +73,27 @@
 
   const groups = computed(() => lineGroups(props.lines, props.choices, query.value));
 
-  /** Whether a line had opened by the date shown. */
+  /**
+   * Whether a line had opened by the date shown.
+   *
+   * @param line - The line.
+   * @returns True once it had, or with no date shown.
+   */
   const isOpen = (line: LineInfo): boolean => props.date === null || (line.opened !== null && line.opened <= props.date);
 
-  /** Whether every line of a group shows. */
+  /**
+   * Whether every line of a group shows.
+   *
+   * @param group - The group.
+   * @returns True if none is hidden.
+   */
   const allShown = (group: LineGroup): boolean => props.choices.every(choice => choice.id !== group.network || choice.lines.every(line => line.shown));
 
-  /** What the group's eye does: hides its lines while all show, else shows them all. */
+  /**
+   * What the group's eye does: hides its lines while all show, else shows them all.
+   *
+   * @param group - The group.
+   * @returns The eye's label.
+   */
   const groupToggleLabel = (group: LineGroup): string => (allShown(group) ? `Hide all ${group.name} lines` : `Show all ${group.name} lines`);
 </script>

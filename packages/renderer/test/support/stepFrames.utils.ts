@@ -1,9 +1,9 @@
-import type { Network } from '@railtime/schema/network.types';
 import { toTimestamp } from '@railtime/core/date.utils';
-import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
-import { emptyDrawing } from '../../src/steps/animation.utils';
+import type { Network } from '@railtime/schema/network.types';
 import { playbackOf, renderStateOf } from './playback.utils';
 import type { FrameOptions, StartedStep } from './stepFrames.types';
+import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
+import { emptyDrawing } from '../../src/steps/animation.utils';
 
 /**
  * The first step after a date, started as the player starts it, and its frames drawn as the map

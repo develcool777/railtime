@@ -1,7 +1,7 @@
-import { describe, expect, test, vi } from 'vitest';
 import type { Bounds } from '@railtime/core/geometry.types';
-import { viewportBox } from '../../../src/minimap/minimap.utils';
-import { Minimap } from '../../../src/minimap/minimap.service';
+import { describe, expect, test, vi } from 'vitest';
+import type { FeatureCollection } from '../../../src/layers/snapshot.types';
+import { PALETTES } from '../../../src/layers/theme.constants';
 import {
   MINIMAP_SOURCES,
   MINIMAP_UPDATE_MS,
@@ -9,8 +9,8 @@ import {
   MINIMAP_VIEWPORT_COLOR,
   MINIMAP_VIEWPORT_MIN_PX,
 } from '../../../src/minimap/minimap.constants';
-import { PALETTES } from '../../../src/layers/theme.constants';
-import type { FeatureCollection } from '../../../src/layers/snapshot.types';
+import { Minimap } from '../../../src/minimap/minimap.service';
+import { viewportBox } from '../../../src/minimap/minimap.utils';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { LAND_LAYER } from '../../support/fakeMap.constants';
 
@@ -47,7 +47,7 @@ const linesOf = (count: number) => ({ type: 'FeatureCollection', features: Array
  * @returns The minimap, its stand-in, the main map's, its container, and what watches the container.
  */
 const minimapOf = () => {
-  const watcher = { onResize: () => undefined as void, watching: false };
+  const watcher = { onResize: (): void => {}, watching: false };
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -70,8 +70,10 @@ const minimapOf = () => {
   const main = fakeMap();
   const container = document.createElement('div');
   const size = { width: 0, height: 0 };
-  Object.defineProperty(container, 'clientWidth', { get: () => size.width });
-  Object.defineProperty(container, 'clientHeight', { get: () => size.height });
+  Object.defineProperties(container, {
+    clientWidth: { get: () => size.width },
+    clientHeight: { get: () => size.height },
+  });
   const minimap = new Minimap({ container, main: main.map, createMap: () => fake.map, style: 'style.json', bounds: BOUNDS, palette: PALETTES.dark });
   const box = () => container.querySelector<HTMLElement>(`.${MINIMAP_VIEWPORT_CLASS}`);
   return { minimap, fake, main, container, size, watcher, box };
@@ -123,8 +125,9 @@ describe('Minimap', () => {
     const outline = () =>
       viewportBox(fake.map.project([main.view.center[0] - 1, main.view.center[1] + 1]), fake.map.project([main.view.center[0] + 1, main.view.center[1] - 1]));
     const placed = () => (['left', 'top', 'width', 'height'] as const).map(side => Number.parseFloat(box()?.style[side] ?? ''));
-    const expectOver = ({ left, top, width, height }: ReturnType<typeof outline>) =>
-      [left, top, width, height].forEach((pixels, side) => expect(placed()[side]).toBeCloseTo(pixels, 3));
+    const expectOver = ({ left, top, width, height }: ReturnType<typeof outline>) => {
+      for (const [side, pixels] of [left, top, width, height].entries()) expect(placed()[side]).toBeCloseTo(pixels, 3);
+    };
     main.fire('move');
     expect(box()?.dataset.shown).toBe('');
     expectOver(outline());

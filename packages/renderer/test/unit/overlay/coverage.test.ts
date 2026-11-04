@@ -1,13 +1,13 @@
-import { describe, expect, test } from 'vitest';
 import { toTimestamp } from '@railtime/core/date.utils';
 import type { CoverageCells } from '@railtime/network/facts.types';
 import { SQUARE, TINY_WITH_HOLE as CITY } from '@railtime/network/testing/boundaries';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { COVERAGE_ALPHA, UNCOVERED_ALPHA } from '../../../src/overlay/overlay.constants';
-import { CoverageLayer } from '../../../src/overlay/coverage.service';
-import { coverageDrawing, coverageImage } from '../../../src/overlay/overlay.utils';
+import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import { PALETTES } from '../../../src/layers/theme.constants';
+import { CoverageLayer } from '../../../src/overlay/coverage.service';
+import { COVERAGE_ALPHA, UNCOVERED_ALPHA } from '../../../src/overlay/overlay.constants';
+import { coverageDrawing, coverageImage } from '../../../src/overlay/overlay.utils';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { playbackOf } from '../../support/playback.utils';
 

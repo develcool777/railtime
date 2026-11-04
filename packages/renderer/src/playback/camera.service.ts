@@ -1,11 +1,11 @@
 import type { Bounds, LngLat } from '@railtime/core/geometry.types';
-import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
-import { clamp } from '@railtime/core/number.utils';
 import { boundsOf, distanceKm } from '@railtime/core/geometry.utils';
+import { clamp } from '@railtime/core/number.utils';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { StepAnimation } from '../steps/animation.service';
 import type { ChaseTarget } from '../steps/animation.types';
-import type { Padding, ViewMode } from '../transitMap.types';
 import { NO_COVER } from '../transitMap.constants';
+import type { Padding, ViewMode } from '../transitMap.types';
 import {
   CHASE_GLIDE_KM,
   CHASE_ZOOM,
@@ -132,7 +132,7 @@ export class CameraDirector {
       bottom: this.padding.bottom + (room.bottom ?? 0),
       left: this.padding.left + (room.left ?? 0),
     };
-    this.map.fitBounds(bounds as LngLatBoundsLike, { padding, maxZoom, duration: durationMs });
+    this.map.fitBounds(bounds, { padding, maxZoom, duration: durationMs });
   }
 
   /**
@@ -194,7 +194,7 @@ export class CameraDirector {
       const { x, y } = this.map.project(point);
       return x >= left && x <= clientWidth - right && y >= top && y <= clientHeight - bottom;
     });
-    const framing = this.map.cameraForBounds(bounds as LngLatBoundsLike, { padding: this.padding, maxZoom });
+    const framing = this.map.cameraForBounds(bounds, { padding: this.padding, maxZoom });
     return inView && framing?.zoom !== undefined && Math.abs(this.map.getZoom() - framing.zoom) < ZOOM_SLACK;
   }
 

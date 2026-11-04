@@ -1,5 +1,4 @@
 import { defineShortcuts } from '#imports';
-
 import { useExplorerStore } from '~/features/explorer/explorer.store';
 import { usePanelStore } from '~/features/explorer/panel/panel.store';
 import { SHORTCUTS } from '~/features/explorer/shortcuts.constants';

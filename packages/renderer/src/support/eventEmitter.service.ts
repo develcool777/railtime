@@ -20,9 +20,9 @@ export class EventEmitter<Events extends object> {
    */
   public on<Name extends keyof Events>(event: Name, listener: EventListener<Events[Name]>): Unsubscribe {
     const forEvent = this.listeners.get(event) ?? new Set();
-    forEvent.add(listener as EventListener<never>);
+    forEvent.add(listener);
     this.listeners.set(event, forEvent);
-    return () => forEvent.delete(listener as EventListener<never>);
+    return () => forEvent.delete(listener);
   }
 
   /**

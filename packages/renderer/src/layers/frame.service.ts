@@ -1,13 +1,13 @@
-import { clamp } from '@railtime/core/number.utils';
 import { DAY_MS } from '@railtime/core/date.utils';
+import { clamp } from '@railtime/core/number.utils';
 import type { ChaseTarget, StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
 import type { TimeState } from '../transitMap.types';
-import type { NetworkSnapshot, StationLines } from './snapshot.types';
 import type { FrameOutcome, FrameParts } from './frame.types';
-import type { RenderState } from './style.types';
+import type { NetworkSnapshot, StationLines } from './snapshot.types';
 import { buildNetworkSnapshot } from './snapshot.utils';
+import type { RenderState } from './style.types';
 import { easeInOut } from '../support/drawing.utils';
 
 /**
@@ -91,7 +91,7 @@ export class FrameRenderer {
     if (refreshed || drawingStep || this.instant || stationLayer.animating) {
       const stations = new Map<string, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
       for (const [station, lines] of drawing.reached)
-        for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map()).set(lineId, color));
+        for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map<string, string>()).set(lineId, color));
       stationLayer.update({
         now,
         stations,

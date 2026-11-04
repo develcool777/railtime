@@ -1,15 +1,15 @@
+import { toTimestamp } from '@railtime/core/date.utils';
+import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { describe, expect, test } from 'vitest';
+import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import type { RouteFeature } from '../../../src/layers/snapshot.types';
 import { pointFeature } from '../../../src/layers/snapshot.utils';
-import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
-import { RouteLayer } from '../../../src/overlay/route.service';
-import { routeStopMarks, routeStops, routeTrack } from '../../../src/overlay/overlay.utils';
-import { toTimestamp } from '@railtime/core/date.utils';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { networkNow, playbackOf } from '../../support/playback.utils';
 import { PALETTES } from '../../../src/layers/theme.constants';
+import { routeStopMarks, routeStops, routeTrack } from '../../../src/overlay/overlay.utils';
+import { RouteLayer } from '../../../src/overlay/route.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import type { RouteInfo, RouteLegInfo } from '@railtime/network/facts.types';
+import { networkNow, playbackOf } from '../../support/playback.utils';
 
 describe('RouteLayer', () => {
   test('draws a route and its stops, coloured for the theme, and clears it', () => {

@@ -2,9 +2,9 @@ import type { DataDrivenPropertyValueSpecification, FilterSpecification, Map as 
 import { GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, PLANNED_DASHES, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
 import { MapLayer } from './layer.service';
 import type { NetworkSnapshot } from './snapshot.types';
+import { byZoom, highlightedOpacity, highlightedWidth, sideBySideOffset } from './style.utils';
 import type { Palette } from './theme.types';
 import type { StepDrawing } from '../steps/animation.types';
-import { byZoom, highlightedOpacity, highlightedWidth, sideBySideOffset } from './style.utils';
 
 /** How opaque each of the layer's line layers is with every line in focus; the glow's is the theme's. */
 const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned]: 0.85, [LAYERS.transferCasing]: 1, [LAYERS.transferCore]: 1 } as const;

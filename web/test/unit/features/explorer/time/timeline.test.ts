@@ -1,7 +1,7 @@
 import type { ChangeInfo } from '@railtime/network/facts.types';
 import { describe, expect, test } from 'vitest';
-import { positionOf, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 import type { TimelineScale } from '~/features/explorer/time/timeline.types';
+import { positionOf, targetAt, thumbPosition, timelineLabels, timelineTicks } from '~/features/explorer/time/timeline.utils';
 
 const START = Date.UTC(1900, 0, 1);
 const END = Date.UTC(2000, 0, 1);
