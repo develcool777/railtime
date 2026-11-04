@@ -1,6 +1,19 @@
 import { describe, expect, test } from 'vitest';
 
-import { mapOverlayOf, mapPickHint, overlayRequestOf, routeAimOf, stationPickOf } from '~/features/explorer/tools.utils';
+import { openExplorer } from '@test/support/factories/explorer.utils';
+
+import { useNetworkStore } from '~/features/explorer/network.store';
+import { useToolsStore } from '~/features/explorer/tools.store';
+import {
+  foundCoverageOf,
+  foundReachOf,
+  foundRoutesOf,
+  mapOverlayOf,
+  mapPickHint,
+  overlayRequestOf,
+  routeAimOf,
+  stationPickOf,
+} from '~/features/explorer/tools.utils';
 
 describe('ToolsUtils', () => {
   describe('mapOverlayOf', () => {
@@ -85,5 +98,59 @@ describe('ToolsUtils', () => {
       expect(mapPickHint('start', false)).toBe('Click the map for the start.');
       expect(mapPickHint('end', true)).toBe('Click the map to change the end.');
     });
+  });
+
+  describe('foundRoutesOf, foundReachOf, foundCoverageOf', () => {
+    test('take what the map found for their own overlay, and nothing for another or none', () => {
+      const route = { kind: 'route' as const, routes: [], shown: null };
+      expect(foundRoutesOf(route)).toEqual({ routes: [], shown: null });
+      expect(foundReachOf(route)).toBeNull();
+      expect(foundReachOf({ kind: 'reach', reach: null })).toBeNull();
+      expect(foundCoverageOf({ kind: 'coverage', coverage: null })).toBeNull();
+      expect(foundRoutesOf(null)).toBeNull();
+    });
+  });
+});
+
+describe('ToolsStore', () => {
+  /**
+   * An outline served as a data address, as a fetch reads one.
+   *
+   * @param body - What is served.
+   * @returns Its address.
+   */
+  const servedAt = (body: string) => `data:application/json,${encodeURIComponent(body)}`;
+
+  test('opens on the route and reach the address names, leaving out a station the network has not', () => {
+    openExplorer({ route: 'a,nowhere,1', reach: 'b', walk: '800' });
+    const tools = useToolsStore();
+    expect(tools.routeEnds).toEqual({ from: { id: 'a', name: 'A' }, to: null });
+    expect(tools.routeOption).toBe(1);
+    expect(tools.reachFrom).toEqual({ id: 'b', name: 'B' });
+    expect(tools.coverageMetres).toBe(800);
+  });
+
+  test("keeps only the ends the network made again has: a plan's station goes with the plan", () => {
+    openExplorer({ plan: 'extension', route: 'a,e' });
+    const tools = useToolsStore();
+    expect(tools.routeEnds.to?.id).toBe('e');
+    useNetworkStore().SHOW_PLAN(undefined);
+    tools.KEEP_ON();
+    expect(tools.routeEnds).toEqual({ from: { id: 'a', name: 'A' }, to: null });
+    expect(tools.routeAim).toBe('to');
+  });
+
+  test('fetches the outline once, and says so when there is none', async () => {
+    openExplorer();
+    const tools = useToolsStore();
+    const outline = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } };
+    await tools.LOAD_BOUNDARY(servedAt(JSON.stringify(outline)));
+    expect(tools.boundaryState).toBe('ready');
+    expect(tools.boundary).toEqual(outline);
+    await tools.LOAD_BOUNDARY(servedAt('not an outline'));
+    expect(tools.boundaryState).toBe('ready');
+    openExplorer();
+    await useToolsStore().LOAD_BOUNDARY(servedAt('not an outline'));
+    expect(useToolsStore().boundaryState).toBe('missing');
   });
 });

@@ -1,8 +1,11 @@
 import { toTimestamp, yearOf } from '@railtime/core/date.utils';
-import type { LineDetails, StationInfo } from '@railtime/network/facts.types';
+import type { LineDetails, PlanInfo, StationInfo } from '@railtime/network/facts.types';
 
-import { formatDay } from '~/features/explorer/format.utils';
-import type { PanelTopContent, SectionTopInput } from '~/features/explorer/panel/panel.types';
+import { SECTIONS } from '~/features/explorer/explorer.constants';
+import type { Section, SectionEntry } from '~/features/explorer/explorer.types';
+import { formatDay, formatPlanFacts } from '~/features/explorer/format.utils';
+import { PLAN_STATUSES } from '~/features/explorer/plans/plan.constants';
+import type { MarksInput, PanelTopContent, PlanLegend, PlanSummary, SectionTopInput } from '~/features/explorer/panel/panel.types';
 import { counted, lineColor } from '~/utils/format.utils';
 
 /**
@@ -63,4 +66,59 @@ export const sectionTop = (input: SectionTopInput): PanelTopContent => {
   if (section === 'reach') return { title: input.label, context: 'How far you get from a station' };
   if (section === 'coverage') return { title: input.label, context: 'How much of the city is near a station' };
   return { title: input.label, context: `${counted(input.planCount, 'plan')} drawn up` };
+};
+
+/**
+ * The rail's sections: Plans only for a city with plans.
+ *
+ * @param planCount - How many plans the city has.
+ * @returns The sections, in the rail's order.
+ */
+export const sectionsOf = (planCount: number): SectionEntry[] => SECTIONS.filter(entry => entry.id !== 'plans' || planCount > 0);
+
+/**
+ * A section's name, as the rail shows it.
+ *
+ * @param section - The section.
+ * @returns Its name.
+ */
+export const sectionLabelOf = (section: Section): string => SECTIONS.find(entry => entry.id === section)?.label ?? 'Lines';
+
+/**
+ * A dot on each section whose choice is in force while another is open: a plan shown, a route's ends
+ * both set, a reach's start set; each says what is set.
+ *
+ * @param input - Whether a plan is shown, the route's ends, the reach's start.
+ * @returns What each marked section's dot says, by section.
+ */
+export const marksOf = (input: MarksInput): Partial<Record<Section, string>> => {
+  const marks: Partial<Record<Section, string>> = {};
+  if (input.planShown) marks.plans = 'A plan is shown';
+  const { from, to } = input.routeEnds;
+  if (from && to) marks.route = `A route from ${from.name} to ${to.name} is set`;
+  if (input.reachFrom) marks.reach = `How far one gets from ${input.reachFrom.name} is set`;
+  return marks;
+};
+
+/**
+ * The plan shown, for the time control: its name, what became of it and what it adds.
+ *
+ * @param plan - The plan, if one is shown.
+ * @returns What the time control says of it, or nothing for none.
+ */
+export const planSummaryOf = (plan: PlanInfo | undefined): PlanSummary | undefined =>
+  plan ? { name: plan.name, status: PLAN_STATUSES[plan.status].label, facts: formatPlanFacts(plan.facts.stations, plan.facts.km) } : undefined;
+
+/**
+ * The legend for a plan's dashed track, while the map shows the plan and is not playing: the plan's
+ * name and its first line's colour (the page's text colour for a plan of no lines).
+ *
+ * @param plan - The plan, if one is shown.
+ * @param showsPlan - The map shows the plan, paused.
+ * @returns The legend, or `null` for none.
+ */
+export const planLegendOf = (plan: PlanInfo | undefined, showsPlan: boolean): PlanLegend | null => {
+  if (!plan || !showsPlan) return null;
+  const firstLine = plan.facts.lines[0];
+  return { name: plan.name, color: firstLine ? lineColor(firstLine.color) : 'var(--ui-text-highlighted)' };
 };

@@ -1,3 +1,5 @@
+import type { Network } from '@railtime/schema/network.types';
+
 /**
  * Where the video is: loading its map, ready to start, its title, the history playing, its end card,
  * then over.
@@ -23,3 +25,6 @@ export type VideoMoment = {
 
 /** How much of each piece over the map shows, 0 to 1. */
 export type VideoLayers = { title: number; year: number; caption: number; end: number };
+
+/** What a video opens with: the city's network, and the frame's size. */
+export type VideoOpening = { network: Network; size: VideoSize };

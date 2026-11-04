@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { formatExplorerQuery, linkedPlayheadOf, parseExplorerQuery, playheadOf, sameQuery } from '~/features/explorer/address/address.utils';
+import { explorerAddressOf, formatExplorerQuery, linkedPlayheadOf, parseExplorerQuery, playheadOf, sameQuery } from '~/features/explorer/address/address.utils';
 
 /** The tiny network's playheads, today 1 January 2026, and with its plan built. */
 const { playheads } = NetworkFacts.create(tinyNetwork(), { today: Date.UTC(2026, 0, 1) });
@@ -184,6 +184,46 @@ describe('ExplorerUrlUtils', () => {
         const linked = linkedPlayheadOf(playhead, planned);
         expect(linked && playheadOf(linked, planned)).toEqual(playhead);
       }
+    });
+  });
+
+  describe('explorerAddressOf', () => {
+    const asOpened = {
+      at: null,
+      view: null,
+      openStation: null,
+      openLine: null,
+      plan: undefined,
+      section: 'lines' as const,
+      openingSection: 'lines' as const,
+      coverageMetres: 800 as const,
+      routeEnds: { from: null, to: null },
+      routeOption: 0,
+      reachFrom: null,
+      viewMode: '2d' as const,
+      stationNames: true,
+      streetNames: true,
+      mapOnly: false,
+      panelOpen: true,
+      player: { speed: 2, camera: 'follow' as const, minimap: true },
+    };
+
+    test('says nothing of what is as a page opens', () => {
+      expect(explorerAddressOf(asOpened)).toEqual({});
+    });
+
+    test('says what differs: the section, a route by its ends and way, the names hidden, 3D, playback', () => {
+      expect(
+        explorerAddressOf({
+          ...asOpened,
+          section: 'route',
+          routeEnds: { from: { id: 'a', name: 'A' }, to: null },
+          routeOption: 2,
+          stationNames: false,
+          viewMode: '3d',
+          player: { speed: 4, camera: 'free', minimap: false },
+        }),
+      ).toEqual({ section: 'route', route: { from: 'a', option: 2 }, stationNames: false, viewMode: '3d', speed: 4, camera: 'free', minimap: false });
     });
   });
 });

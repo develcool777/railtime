@@ -1,8 +1,8 @@
-import type { CoverageDistance, Stop } from '@railtime/network/facts.types';
-import type { OverlayRequest } from '@railtime/renderer/transitMap.types';
+import type { CoverageDistance, CoverageInfo, ReachInfo, Stop } from '@railtime/network/facts.types';
+import type { OverlayRequest, OverlayResult } from '@railtime/renderer/transitMap.types';
 
 import type { Section, TimeMode } from '~/features/explorer/explorer.types';
-import type { MapOverlay, RouteEnds, StationPick } from '~/features/explorer/tools.types';
+import type { FoundRoutes, MapOverlay, RouteEnds, StationPick } from '~/features/explorer/tools.types';
 
 /**
  * What the map draws over the network for the section open. Playback hides a route and a reach, which
@@ -91,3 +91,28 @@ export const stationPickOf = (input: PickInput, stop: Stop): StationPick => {
  */
 export const mapPickHint = (end: 'start' | 'end', picked: boolean): string =>
   picked ? `Click the map to change the ${end}.` : `Click the map for the ${end}.`;
+
+/**
+ * The ways between a route's ends the map found, if the overlay it drew was a route.
+ *
+ * @param result - What the map found for the overlay drawn, if anything.
+ * @returns The ways and the one drawn, or `null` for another overlay or none.
+ */
+export const foundRoutesOf = (result: OverlayResult | null): FoundRoutes | null =>
+  result?.kind === 'route' ? { routes: result.routes, shown: result.shown } : null;
+
+/**
+ * How far one gets from a station, if the overlay the map drew was a reach.
+ *
+ * @param result - What the map found for the overlay drawn, if anything.
+ * @returns The reach, or `null` for another overlay, none, or no line calling there.
+ */
+export const foundReachOf = (result: OverlayResult | null): ReachInfo | null => (result?.kind === 'reach' ? result.reach : null);
+
+/**
+ * How much of the city is within the distance of a station, if the overlay the map drew was coverage.
+ *
+ * @param result - What the map found for the overlay drawn, if anything.
+ * @returns The coverage, or `null` for another overlay, none, or none on the date.
+ */
+export const foundCoverageOf = (result: OverlayResult | null): CoverageInfo | null => (result?.kind === 'coverage' ? result.coverage : null);

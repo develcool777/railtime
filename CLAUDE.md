@@ -32,6 +32,12 @@ landing page's pictures in Chrome).
 ## Conventions (enforced)
 
 - **Arrow functions only.** `const name = (…): Type => …`; no `function`, declaration or expression.
+- **A store is a setup store, laid out as `dataroom-ui`'s**: `defineStore(STORE_IDS.NAME, () => …)`, its
+  id in `STORE_IDS` (`web/src/constants/store.constants.ts`, where a test finds every store's); inside,
+  in this order, each under its heading comment: `// ---- State`, its refs; `// ---- Getters`, its
+  computed; `// ---- Actions`, named in capitals (`OPEN`, `SET_TIME`, `RESET` where it needs one), so a
+  call reads as one wherever it is made; then what it returns, in the same order. Its state changes
+  only by its actions: a component or composable reads it and calls them.
 - **Loops say what they loop over.** No `for (;;)` or `while (true)`.
 - **Classes live in `*.service.ts`**, helpers in `*.utils.ts`; a file may hold several classes of
   one subject (a base and its kinds). Types and constants keep files of their own, beside the code
@@ -86,7 +92,7 @@ landing page's pictures in Chrome).
   features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
                           seo, video (a city's history as a video, to record: `pnpm dev` only, the
                           built site leaves it out; its state a store, `video.store.ts`, its rules in
-                          `video.utils.ts`, the map only in `video.composable.ts`, as the explorer's;
+                          `video.utils.ts`, its map an effect, `video.composable.ts`, as the explorer's;
                           all that moves on it is worked out from the page's clock each frame, never
                           a CSS transition, which no recorder can step);
                           its components in components/, the rest flat beside them
@@ -99,16 +105,27 @@ landing page's pictures in Chrome).
   Components are used by tag, never imported (`nuxt.config.ts` scans every `components/` under
   `features/`); anything else in a feature is imported by its path
   (`~/features/explorer/time/timeline.utils`), so what one feature or part takes from another can be
-  searched for. In the explorer, a part never imports another part's composable: what parts share
-  is in the store. A composable earns a file of its own by holding effects (a fetch, a listener, the
-  map); what the panel shows, computed over the store, is `panel/panel.composable.ts`.
-  Something one surface uses goes in its feature; it moves to the top when a second needs it.
-  The explorer's state (what is open, how it is set) is a Pinia store, `explorer.store.ts`, and the
-  map's tools (a route, a reach, coverage) one of their own, `tools.store.ts`, which it reads: every
-  button calls their actions, and their rules are pure functions in `explorer.utils.ts` and
-  `tools.utils.ts`; `mapProps` is everything the map shows, and `map/transitMap.composable.ts` is the
-  only code that touches the map.
-  What is looked at and how it is set goes in the address; dark or light, the one preference, in the browser (`features/explorer/_README.md`).
+  searched for. Something one surface uses goes in its feature; it moves to the top when a second needs it.
+
+- **Stores are the one source of truth.** Every value lives in exactly one store, with all that is
+  worked out from it (its getters), and changes only by that store's actions; their rules are pure
+  functions in `*.utils.ts`, tested, and each store is tested (`test/unit/…/<name>.test.ts`, on a
+  stand-in map, `@test/support/factories/transitMap.utils`). Stores read one another one way only,
+  never in a circle. The explorer's: `network.store.ts` (the network shown, its facts, the plan and
+  the lines hidden) and `map/map.store.ts` (the map, its credits, where it looks, its camera's
+  commands) read none; `time/time.store.ts` (the time control, playback, every command through time)
+  reads those two; `tools.store.ts` (a route, a reach, coverage and the city's outline) the network;
+  `explorer.store.ts` (what is open, how the map is seen, `mapProps`, `address`, and the actions that
+  span the others: a page opening, a plan or lines shown, the map arriving, a station clicked) reads
+  them all; `panel/panel.store.ts` (getters only: what the panel shows) reads the rest, and nothing
+  reads it.
+- **A composable is an effect, and nothing else**: it ties something outside Vue to the stores (the
+  map, the browser, the keys, the address bar), reading stores and calling their actions; it holds no
+  state and works nothing out. `map/transitMap.composable.ts` makes the map and takes it down;
+  `layout.composable.ts` gives the stores the screen and the theme, and drags the panel;
+  `shortcuts.composable.ts` the keys; `address/address.composable.ts` writes the explorer's `address`
+  to the address bar, its only writer. A component lays out what stores hold and calls their actions.
+- What is looked at and how it is set goes in the address; dark or light, the one preference, in the browser (`features/explorer/_README.md`).
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, `props`/`emit` names,
   camelCase attributes and events.

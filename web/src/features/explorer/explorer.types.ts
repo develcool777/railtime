@@ -42,3 +42,6 @@ export type PlayerSettings = {
   camera: CameraMode;
   minimap: boolean;
 };
+
+/** What the screen is, as the browser says: a phone's, and one wide enough for its tabs' names. */
+export type ExplorerScreen = { phone: boolean; tabLabels: boolean };

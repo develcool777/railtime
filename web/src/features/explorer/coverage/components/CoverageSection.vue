@@ -72,7 +72,7 @@
   import type { CoverageDistance, CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
   import { computed } from 'vue';
 
-  import type { BoundaryState } from '~/features/explorer/coverage/coverage.composable.types';
+  import type { BoundaryState } from '~/features/explorer/tools.types';
   import { COVERAGE_DISTANCE_ITEMS } from '~/features/explorer/coverage/coverage.constants';
   import { coverageDistanceOf, formatArea, formatShare, formatWalk } from '~/features/explorer/coverage/coverage.utils';
 

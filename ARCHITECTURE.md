@@ -162,34 +162,36 @@ One owner per value, inside as out; data flows one way: props and commands in, e
 `TransitMap` takes its MapLibre map and frame scheduler from factories, so its contract is tested
 whole on the stand-in map (`test/unit/transitMap.spec.ts`).
 
-## `web`: one store, one adapter
+## `web`: stores, and effects
 
-- **The store** (`features/explorer/explorer.store.ts`) holds what is open and how it is set, and
-  `mapProps`, everything the map shows, worked out from it. Buttons and keys call its actions; the
-  time actions send the map its commands.
-- **One adapter** (`map/transitMap.composable.ts`) is the only code that touches the map: it makes it
-  with `mapProps` and listeners that write what it says into the store, gives it each change of
-  `mapProps`, and destroys it.
-- **The store makes the facts**: `open(network, plan, address, opening)` calls `NetworkFacts.create`;
-  `plan`, `planOnly` and `plans` are computeds over them.
-- **The panels** are computeds over `facts.asOf(store.time)`.
+- **The stores are the one source of truth** (`features/explorer/`): every value in exactly one, with
+  all worked out from it, changed only by its actions, and read one way only. `network` (the network
+  shown: `NetworkFacts.create`, the plan, the lines hidden) and `map` (the map, its camera) read
+  none; `time` (playback, every command through time) reads those; `tools` (route, reach, coverage)
+  the network; `explorer` (what is open, how the map is seen, `mapProps`, `address`, and what spans
+  them) reads all four; `panel` (what the panel shows, getters only) reads the rest. Buttons and keys
+  call their actions; time's and the map store's send the map its commands.
+- **Effects are composables, and hold nothing**: one makes the map with `mapProps` and listeners that
+  call the stores' actions, gives it each change of `mapProps`, and destroys it
+  (`map/transitMap.composable.ts`); others give the stores the screen and the theme, the keys, and
+  write `address` to the address bar.
 
 ## Ownership
 
-| Fact                                               | Owner                         | Others                                |
-| -------------------------------------------------- | ----------------------------- | ------------------------------------- |
-| The network, its plans, its history, every answer  | `NetworkFacts` (`network`)    | —                                     |
-| The clock, the cursor, playing, the step playing   | `Player` (`renderer`)         | the store: a copy from `time`, `step` |
-| How the map is set (`MapProps`)                    | the store (`web`)             | `TransitMap`: the props last applied  |
-| The camera between commands                        | MapLibre, and the user's hand | the store: a copy from `view`         |
-| What is open: tabs, panels, dialogs, the time card | the store                     | the address                           |
+| Fact                                               | Owner                         | Others                               |
+| -------------------------------------------------- | ----------------------------- | ------------------------------------ |
+| The network, its plans, its history, every answer  | `NetworkFacts` (`network`)    | —                                    |
+| The clock, the cursor, playing, the step playing   | `Player` (`renderer`)         | time's store: a copy, `time`, `step` |
+| How the map is set (`MapProps`)                    | the explorer's store (`web`)  | `TransitMap`: the props last applied |
+| The camera between commands                        | MapLibre, and the user's hand | the map store: a copy, `view`        |
+| What is open: tabs, panels, dialogs, the time card | the explorer's and time's     | the address                          |
 
 ## Adding a feature
 
 | You want                                    | Do                                                                                                                       | Never                                        |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
 | A number, a list, an answer about a network | a method on `NetworkFacts` (or `asOf`), tested in `network`                                                              | working it out in `web` or `data`            |
-| A setting the user sees on the map          | a field in `MapProps`, its effect in `TransitMap`, a test; in the store's `mapPropsOf`                                   | a `setX` method; a watcher in the app        |
+| A setting the user sees on the map          | a field in `MapProps`, its effect in `TransitMap`, a test; in the explorer store's `mapPropsOf`                          | a `setX` method; a watcher in the app        |
 | A new way to move through time              | a `Player` command, then a `TransitMap` command over it, a store action                                                  | the app driving the clock                    |
 | Something drawn over the network            | a kind of `OverlayRequest`/`OverlayResult`, in `OverlayController`                                                       | a layer the app shows and hides by hand      |
 | A new kind of change in the history         | `network`: its step in the timeline and its caption; `renderer`: its times in `STEP_TIMES` and a case in `StepAnimation` | a branch in the player or the frame          |
