@@ -26,7 +26,6 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
   import { definePageMeta, navigateTo, useRoute, useRuntimeConfig } from '#imports';
   import { usePageSeo } from '~/features/seo/pageSeo.composable';
   import { citySeo } from '~/features/seo/seo.utils';
@@ -38,11 +37,11 @@
   definePageMeta({ validate: route => isCity(route.params.city), key: route => String(route.params.city) });
 
   const route = useRoute();
-  const city = computed(() => String(route.params.city));
-  const cityName = computed(() => cityNameOf(city.value));
+  const city = String(route.params.city);
+  const cityName = cityNameOf(city);
   const baseURL = useRuntimeConfig().app.baseURL;
-  const entry = citySummaryOf(city.value);
-  const seo = citySeo(city.value, entry);
+  const entry = citySummaryOf(city);
+  const seo = citySeo(city, entry);
   usePageSeo(seo);
 
   const { network, error } = useCityNetwork(city);

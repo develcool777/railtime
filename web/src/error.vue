@@ -13,7 +13,10 @@
   import type { NuxtError } from '#app';
   import { computed } from 'vue';
 
-  const props = defineProps<{ error: NuxtError }>();
+  const props = defineProps<{
+    /** What went wrong: a page not found, or an error. */
+    error: NuxtError;
+  }>();
 
   // An address with no page (a city without a dataset, a mistyped link) says so plainly; any other
   // error says what it is.

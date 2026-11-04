@@ -17,6 +17,7 @@
   import type { Credit } from '@railtime/renderer/transitMap.types';
 
   defineProps<{
+    /** What the map shows owes, each linked to its source where it has one. */
     credits: Credit[];
     /** Ends with a link to the About page, which credits the rest. */
     about?: boolean;

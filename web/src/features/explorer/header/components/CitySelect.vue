@@ -31,10 +31,13 @@
   import { cityMenu, citySummaryOf } from '~/utils/city.utils';
   import { counted } from '~/utils/format.utils';
 
-  defineProps<{ city: string }>();
+  defineProps<{
+    /** The city shown, by its id. */
+    city: string;
+  }>();
   const emit = defineEmits<{ city: [city: string] }>();
   /** Whether its menu is open: Esc closes it before anything else on the page. */
-  const open = defineModel<boolean>('open', { default: false });
+  const open = defineModel<boolean>('open', { required: true });
 
   // Each city under its country: what its lines run as below its name, how many on the right.
   const CITY_MENU = cityMenu().map(group =>

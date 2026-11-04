@@ -2,7 +2,7 @@ import { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { Network } from '@railtime/schema/network.types';
 import type { RecordedWindow } from '@railtime/video/videoPage.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import { onBeforeUnmount, onMounted, type ShallowRef } from 'vue';
+import { onBeforeUnmount, onMounted, toValue, type MaybeRefOrGetter, type ShallowRef } from 'vue';
 import { useVideoStore } from '~/features/video/video.store';
 
 /**
@@ -15,9 +15,9 @@ import { useVideoStore } from '~/features/video/video.store';
  * a clock no recorder moves. Client only.
  *
  * @param container - Where the map goes.
- * @param network - The city's network.
+ * @param network - The city's network, read as the map is made.
  */
-export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>, network: Network): void => {
+export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>, network: MaybeRefOrGetter<Network>): void => {
   const store = useVideoStore();
   const page = window as Window & RecordedWindow;
   let map: TransitMap | null = null;
@@ -31,7 +31,7 @@ export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>,
 
   onMounted(() => {
     const element = container.value!;
-    store.OPEN({ network, size: { width: element.clientWidth, height: element.clientHeight } });
+    store.OPEN({ network: toValue(network), size: { width: element.clientWidth, height: element.clientHeight } });
     const props = store.mapProps;
     if (!props) return;
     map = new TransitMap({

@@ -7,7 +7,7 @@
         :state="changeState(change.index, current ?? null)"
         :last="position === changes.length - 1"
         :title="titleOf?.(change)"
-        @select="emit('select', change.index)" />
+        @pick="emit('pick', change.index)" />
     </li>
   </ul>
 </template>
@@ -24,5 +24,5 @@
     /** A shorter title for each, where the context says the rest (a line's own view). */
     titleOf?: (change: ChangeInfo) => string;
   }>();
-  const emit = defineEmits<{ select: [index: number] }>();
+  const emit = defineEmits<{ pick: [index: number] }>();
 </script>

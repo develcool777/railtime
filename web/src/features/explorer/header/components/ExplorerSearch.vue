@@ -30,13 +30,14 @@
   const props = defineProps<{
     /** The stations on the map on the date shown. */
     stations: StationSummary[];
+    /** The network's lines. */
     lines: LineInfo[];
     /** The city shown, left out of the cities. */
     city: string;
   }>();
   const emit = defineEmits<{ station: [station: StationId]; line: [line: LineId]; city: [city: string] }>();
   /** Whether it is open: from the header's button, ⌘K or /. */
-  const open = defineModel<boolean>('open', { default: false });
+  const open = defineModel<boolean>('open', { required: true });
 
   const query = ref('');
 

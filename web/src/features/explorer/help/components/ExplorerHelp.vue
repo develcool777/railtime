@@ -62,6 +62,7 @@
   import { SHORTCUTS } from '~/features/explorer/shortcuts.constants';
 
   const props = defineProps<{
+    /** Whether the help is open. */
     open: boolean;
     /** The city's sections, as the rail lists them. */
     sections: SectionEntry[];

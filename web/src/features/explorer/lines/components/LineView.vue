@@ -28,7 +28,7 @@
       </section>
     </template>
 
-    <ChangeTimeline v-else :changes :titleOf="change => titleInLine(change.title, line.name)" @select="emit('change', $event)" />
+    <ChangeTimeline v-else :changes :titleOf="change => titleInLine(change.title, line.name)" @pick="emit('pickChange', $event)" />
   </div>
 </template>
 
@@ -40,13 +40,14 @@
   import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
+    /** The line: its name, colour and stops. */
     line: LineDetails;
     /** The changes that made the line. */
     changes: ChangeInfo[];
     /** Each station on the map's lines' colours, to mark the interchanges. */
     stationColors: Map<StationId, LineColor[]>;
   }>();
-  const emit = defineEmits<{ station: [station: StationId]; change: [index: number] }>();
+  const emit = defineEmits<{ station: [station: StationId]; pickChange: [index: number] }>();
 
   const shown = ref<'stops' | 'history'>('stops');
   /** The line's two lists. */

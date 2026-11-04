@@ -12,7 +12,7 @@
       </div>
       <!-- The whole change one button, so the pointer and the keyboard take all of it. -->
       <div data-slot="wrapper" :class="classes.wrapper()">
-        <ListRow class="-mt-1 mb-2 flex-col items-start gap-0 px-2 py-1" @click="emit('select')">
+        <ListRow class="-mt-1 mb-2 flex-col items-start gap-0 px-2 py-1" @click="emit('pick')">
           <span class="text-dimmed text-xs/5 tabular-nums">{{ change.time === null ? 'Plan' : yearOf(change.time) }}</span>
           <span class="text-highlighted text-sm leading-5 font-medium">{{ title ?? change.title }}</span>
           <span v-if="change.subtitle" class="text-muted text-sm leading-5">{{ change.subtitle }}</span>
@@ -34,6 +34,7 @@
   import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
+    /** The change: its date, title and lines. */
     change: ChangeInfo;
     /** Done, the current change, or still ahead (none). */
     state: ChangeState;
@@ -42,7 +43,7 @@
     /** A shorter title, where the context says the rest (a line's own view). */
     title?: string;
   }>();
-  const emit = defineEmits<{ select: [] }>();
+  const emit = defineEmits<{ pick: [] }>();
 
   const appConfig = useAppConfig();
   // As `UTimeline` makes them: its theme, extended by the app's.

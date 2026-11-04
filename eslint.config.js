@@ -37,6 +37,9 @@ export default defineConfig(
   sonarjs.configs.recommended,
 
   { ignores: ['**/dist/', '**/node_modules/', '**/.nuxt/', '**/.output/', '**/test-reports/', 'web/public/'] },
+  // A rule is turned off here, with its reason, never by a comment in the code: one is not read, and
+  // says so (a warning, which `pnpm eslint-check`, `--max-warnings 0`, fails as any other).
+  { linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: 'error' } },
 
   javascriptConfig,
   typescriptConfig,

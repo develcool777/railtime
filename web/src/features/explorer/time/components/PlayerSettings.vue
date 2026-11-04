@@ -20,7 +20,7 @@
             :content="false"
             size="sm"
             aria-label="Speed"
-            @update:modelValue="emit('change', { speed: Number($event) })" />
+            @update:modelValue="emit('settings', { speed: Number($event) })" />
         </div>
 
         <div class="flex flex-col gap-1.5">
@@ -31,7 +31,7 @@
             :content="false"
             size="sm"
             aria-label="Camera"
-            @update:modelValue="emit('change', { camera: $event as CameraMode })" />
+            @update:modelValue="emit('settings', { camera: $event as CameraMode })" />
           <p class="text-muted text-xs">{{ cameraDescription }}</p>
         </div>
 
@@ -40,7 +40,7 @@
           :modelValue="settings.minimap"
           label="Minimap"
           description="The whole city, and where the camera is"
-          @update:modelValue="emit('change', { minimap: $event })" />
+          @update:modelValue="emit('settings', { minimap: $event })" />
       </div>
     </template>
   </UPopover>
@@ -53,11 +53,12 @@
   import { CAMERA_OPTIONS, SPEED_OPTIONS } from '~/features/explorer/time/time.constants';
 
   const props = defineProps<{
+    /** How playback is set: its speed, camera and minimap. */
     settings: PlayerSettings;
     /** On a phone: no minimap. */
     phone: boolean;
   }>();
-  const emit = defineEmits<{ change: [change: Partial<PlayerSettings>] }>();
+  const emit = defineEmits<{ settings: [change: Partial<PlayerSettings>] }>();
 
   const cameraDescription = computed(() => CAMERA_OPTIONS.find(option => option.value === props.settings.camera)?.description ?? '');
 </script>

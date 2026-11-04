@@ -10,4 +10,8 @@
     /** The row picked: the change shown, the run drawn. */
     active?: boolean;
   }>();
+  defineSlots<{
+    /** What the row says, laid out by its list. */
+    default: () => unknown;
+  }>();
 </script>

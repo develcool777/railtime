@@ -1,7 +1,7 @@
 <template>
   <!-- One row: back (in a pushed view), the title and what it is of, close; the buttons sit on the title's line. -->
   <div class="border-muted flex flex-none items-start gap-1.5 border-b px-4 py-3">
-    <UTooltip v-if="backLabel" :text="`Back to ${backLabel}`">
+    <UTooltip v-if="backLabel" key="back" :text="`Back to ${backLabel}`">
       <UButton
         icon="i-lucide-arrow-left"
         color="neutral"
@@ -21,7 +21,7 @@
         <span class="truncate tabular-nums">{{ context }}</span>
       </p>
     </div>
-    <UTooltip v-if="foldable" text="Close the panel" :kbds="['[']">
+    <UTooltip v-if="foldable" key="fold" text="Close the panel" :kbds="['[']">
       <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="sm" square class="-mr-1.5" aria-label="Close the panel" @click="emit('fold')" />
     </UTooltip>
   </div>
@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
   defineProps<{
+    /** What is open: the section, or the line or station pushed over it. */
     title: string;
     /** A line under the title: the section's counts, or what the view is of. */
     context?: string;

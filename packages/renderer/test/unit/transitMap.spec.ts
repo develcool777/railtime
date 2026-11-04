@@ -489,7 +489,7 @@ describe('TransitMap', () => {
     ready();
     map.seek(playheads.before(1));
     map.play();
-    for (let tick = 0; tick < 50 && named('step').at(-1) == null; tick++) frame();
+    for (let tick = 0; tick < 50 && (named('step').at(-1) ?? null) === null; tick++) frame();
     const moves = fake.moves.length;
     map.update({ viewMode: '3d' });
     expect(fake.moves.slice(moves).filter(move => move.kind === 'ease' || move.kind === 'fit').length).toBeGreaterThan(1);

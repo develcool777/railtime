@@ -15,9 +15,9 @@
     </template>
     <template #footer>
       <span class="flex flex-wrap items-center gap-1.5">
-        <UBadge v-if="summary.planOnly" color="warning" label="Never built" />
-        <UBadge v-else color="success" label="History to play" />
-        <UBadge v-if="summary.plans > 0" color="info" :label="counted(summary.plans, 'plan')" />
+        <UBadge v-if="summary.planOnly" key="planOnly" color="warning" label="Never built" />
+        <UBadge v-else key="history" color="success" label="History to play" />
+        <UBadge v-if="summary.plans > 0" key="plans" color="info" :label="counted(summary.plans, 'plan')" />
         <span class="text-muted text-[11px] tabular-nums">
           <template v-if="!summary.planOnly">{{ summary.openedYear }} → today · </template>{{ counted(summary.lines, 'line') }} ·
           {{ counted(summary.stations, 'station') }}
@@ -34,6 +34,7 @@
   import { counted } from '~/utils/format.utils';
 
   const props = defineProps<{
+    /** The city, by its id. */
     city: string;
     /** Its entry in the index of cities. */
     summary: CityIndexEntry;

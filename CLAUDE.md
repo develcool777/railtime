@@ -30,7 +30,10 @@ on a clock only it moves, into an MP4 with ffmpeg; what a video shows stays in `
 `pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request.
 ESLint reads every file with its package's types (web's from `.nuxt/`, which `pnpm install` writes),
 so the rules that need them hold too; `pnpm eslint-fix` sorts imports and fixes what a rule can.
-Nothing is a warning: a rule is an error, or off with its reason. After adding a city or changing one's lines, stations or plans, run `pnpm data:summaries` (the landing
+Nothing is a warning: a rule is an error, or off with its reason, and `pnpm eslint-check` fails on a
+warning too (`--max-warnings 0`), so a plugin's rule left on `warn` cannot slip by. Nor is a rule turned
+off by a comment in the code (`noInlineConfig`): an exemption is a block in `eslint/`, with its reason.
+After adding a city or changing one's lines, stations or plans, run `pnpm data:summaries` (the landing
 page's list); after changing its track or lines' colours, `pnpm data:previews <city>` too (it draws the
 landing page's pictures in Chrome).
 
@@ -60,7 +63,9 @@ landing page's pictures in Chrome).
   `toReversed` (`unicorn/no-array-sort`, `no-array-reverse`), with a comparator always (`byCodeUnits` from
   `@railtime/core/text.utils` for ids and ISO dates, `localeCompare` for a name a reader sees);
   `list.at(-1)`, `replaceAll`, `Number.isSafeInteger`, `Set` methods (`difference`); a callback that does
-  nothing is `() => {}`. The rules that argue with the house style are off, each with its reason.
+  nothing is `() => {}`. Each thing said one way: `===` (`eqeqeq`), `Boolean(x)` or a comparison for
+  `!!x` (`no-implicit-coercion`), a template literal for `'a' + b` (`prefer-template`), `{ bounds }`
+  (`object-shorthand`). Nothing goes to the console but from a command (`no-console`). The rules that argue with the house style are off, each with its reason.
 - **What the types say holds** (`typescript-eslint`'s strict, type-checked rules): no condition the types
   already answer (`no-unnecessary-condition`), `??` over `||` for a value that may be missing
   (`prefer-nullish-coalescing`), no promise left floating (`no-floating-promises`: awaited, or `void`
@@ -197,7 +202,17 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   and events (`eslint-plugin-vue`). A template says a thing one way: `disabled`, not `:disabled="true"`,
   a static `class` apart from `:class`. An element's ref is `useTemplateRef<HTMLElement>('name')`; a
   child's, the type of what it exposes (`PanelListHandle`, beside its `defineExpose`). Nothing declared
-  and unused: a prop, an event, a ref.
+  and unused: a prop, an event, a ref. A component's parts are declared and typed, as a function's:
+  each prop with a JSDoc (`vue/require-prop-comment`), read as `props.name`, never destructured; its
+  slots by `defineSlots` (`vue/require-explicit-slots`); a model its parent always binds is
+  `required`, never given a default. A prop or ref read once at setup keeps the value it had
+  (`vue/no-setup-props-reactivity-loss`): what follows it is a `computed`, a `watch` or read where it is
+  used; a page mounted afresh for each city (its `key`) holds its city as a constant. An event never
+  takes a browser's name (`select`, `change`, `play`): it says what it carries (`station`, `pick`,
+  `togglePlay`) (`vue/no-shadow-native-events`). The same component in a `v-if` and its `v-else` is
+  keyed apart, so one never takes the other's state (`vue/v-if-else-key`). A template's expressions
+  are held to a script's (`vue/eqeqeq`, `vue/no-implicit-coercion`…), but for its guard clauses: the
+  empty state first, `v-if="!from"`, what it shows in `v-else`.
 
 ## Tests
 

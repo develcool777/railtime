@@ -21,7 +21,7 @@
               <span class="text-highlighted min-w-0 flex-1 truncate text-[13px] font-bold">{{ row.name }}</span>
               <span class="text-dimmed flex-none pr-2 text-[11px]">{{ row.note }}</span>
             </span>
-            <ListRow v-else class="h-7 px-0.5" @click="emit('select', row.id)">
+            <ListRow v-else class="h-7 px-0.5" @click="emit('station', row.id)">
               <span class="flex w-4 flex-none justify-center">
                 <span class="bg-default relative size-2.5 rounded-full border-2" :style="{ borderColor: lineColor(line.color) }" />
               </span>
@@ -35,7 +35,7 @@
 
     <section v-if="station.transfers.length > 0">
       <h3 class="eyebrow text-muted pb-1">Change for</h3>
-      <StationLinks :stations="station.transfers" @select="emit('select', $event)" />
+      <StationLinks :stations="station.transfers" @station="emit('station', $event)" />
     </section>
 
     <section v-if="station.formerNames.length > 0">
@@ -55,9 +55,10 @@
   import { lineColor } from '~/utils/format.utils';
 
   defineProps<{
+    /** The station: its names, lines and transfers. */
     station: StationInfo;
     /** The stops either side of it on each of its lines, on the date shown, by line. */
     directions: Map<LineId, LineDirection[]>;
   }>();
-  const emit = defineEmits<{ select: [station: StationId]; line: [line: LineId] }>();
+  const emit = defineEmits<{ station: [station: StationId]; line: [line: LineId] }>();
 </script>

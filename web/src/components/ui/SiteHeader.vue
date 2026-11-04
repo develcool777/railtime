@@ -40,4 +40,12 @@
     /** Across the whole window, as over a map; otherwise the page's column. */
     wide?: boolean;
   }>();
+  defineSlots<{
+    /** After the logo, where the page is: the city and its picker. */
+    context?: () => unknown;
+    /** The middle of the bar: the search's button. */
+    center?: () => unknown;
+    /** At the right, before the colour mode's button. */
+    default?: () => unknown;
+  }>();
 </script>

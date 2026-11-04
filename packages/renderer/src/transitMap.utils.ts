@@ -22,7 +22,7 @@ export const openingOf = (
   view
     ? { center: view.center, zoom: view.zoom }
     : {
-        bounds: bounds,
+        bounds,
         // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
         fitBoundsOptions: {
           padding: {

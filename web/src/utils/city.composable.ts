@@ -8,11 +8,11 @@ import { networkUrlOf } from '~/utils/city.utils';
  * video's. The base URL is joined here, as for the pictures: ofetch leaves a relative path as it is
  * when the base is `/`, and the browser would resolve it against the page's own address (/london/data/…).
  *
- * @param city - The city, by its id.
+ * @param city - The city, by its id: the page's, which is mounted afresh for each.
  * @returns The network once fetched, and what went wrong, if anything.
  */
-export const useCityNetwork = (city: Ref<string>): { network: Ref<Network | undefined>; error: Ref<Error | undefined> } => {
+export const useCityNetwork = (city: string): { network: Ref<Network | undefined>; error: Ref<Error | undefined> } => {
   const baseURL = useRuntimeConfig().app.baseURL;
-  const { data, error } = useFetch<Network>(() => `${baseURL}${networkUrlOf(city.value)}`, { server: false });
+  const { data, error } = useFetch<Network>(() => `${baseURL}${networkUrlOf(city)}`, { server: false });
   return { network: data, error };
 };

@@ -30,7 +30,7 @@
       </UTooltip>
     </div>
     <!-- Which end the map fills, as the ring shows; and both ends cleared at once. -->
-    <MapPickHint :end="aim === 'from' ? 'start' : 'end'" :picked="!!ends[aim]" class="-mt-2">
+    <MapPickHint :end="aim === 'from' ? 'start' : 'end'" :picked="ends[aim] !== null" class="-mt-2">
       <UButton
         v-if="ends.from || ends.to"
         label="Clear"
@@ -44,10 +44,16 @@
 
     <UEmpty
       v-if="!ends.from || !ends.to"
+      key="unpicked"
       icon="i-lucide-route"
       title="Plan a route"
       description="Pick two stations, here or on the map, for the ways between them." />
-    <UEmpty v-else-if="!found || found.shown === null" icon="i-lucide-route-off" title="No route" description="Nothing runs between them on the date shown." />
+    <UEmpty
+      v-else-if="!found || found.shown === null"
+      key="unrouted"
+      icon="i-lucide-route-off"
+      title="No route"
+      description="Nothing runs between them on the date shown." />
     <template v-else>
       <!-- The ways between them, fastest first: each its time and how it compares; the one drawn opens to where it changes and its steps. -->
       <ul class="flex flex-col gap-2" role="list" aria-label="Ways between them">
