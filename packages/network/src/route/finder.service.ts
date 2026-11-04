@@ -262,11 +262,12 @@ export class RouteFinder {
    * @returns The route.
    */
   private routeOf(end: Place, arrivals: Map<Place, { from: Place; move: Move }>, cursor: number): Route {
-    const path: { place: Place; move: Move | null }[] = [];
+    // Gathered from the end back, then turned round: an `unshift` would copy the path at every place.
+    const backwards: { place: Place; move: Move | null }[] = [];
     for (let place: Place | undefined = end; place !== undefined; place = arrivals.get(place)?.from) {
-      path.unshift({ place, move: arrivals.get(place)?.move ?? null });
+      backwards.push({ place, move: arrivals.get(place)?.move ?? null });
     }
-    const legs = this.legsOf(path, cursor);
+    const legs = this.legsOf(backwards.toReversed(), cursor);
     const rides = legs.filter((leg): leg is RideLeg => leg.kind === 'ride');
     // A change at one station is between two rides; a walk counts its own minutes.
     const changesInPlace = legs.filter((leg, position) => leg.kind === 'ride' && legs[position - 1]?.kind === 'ride').length;

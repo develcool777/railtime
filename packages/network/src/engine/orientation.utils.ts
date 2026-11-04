@@ -109,7 +109,9 @@ const continuations = (chain: Chain, travel: Travel, chainsAt: Map<string, Chain
 const alignChains = (chains: Chain[]): Map<Chain, Travel> => {
   const chainsAt = groupByStation(chains, chain => [chain.start, chain.end]);
   const direction = new Map<Chain, Travel>();
+  // Read from its head, never shifted: a shift copies what is left each time.
   const queue: Chain[] = [];
+  let head = 0;
   const visit = (chain: Chain, travel: Travel) => {
     if (direction.has(chain)) return;
     direction.set(chain, travel);
@@ -118,8 +120,10 @@ const alignChains = (chains: Chain[]): Map<Chain, Travel> => {
   for (const seed of chains) {
     // Each separate piece of network starts out heading east, so its sides read naturally.
     visit(seed, headsEast(seed) ? 1 : -1);
-    while (queue.length > 0) {
-      const chain = queue.shift()!;
+    while (head < queue.length) {
+      // Within bounds: the loop's.
+      const chain = queue[head]!;
+      head++;
       for (const [neighbour, travel] of continuations(chain, required(direction.get(chain), 'direction of a chain'), chainsAt)) visit(neighbour, travel);
     }
   }
