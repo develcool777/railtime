@@ -24,6 +24,6 @@
     "@railtime/renderer": "workspace:*",
     "esbuild": "^0.28.2",
     "playwright-core": "^1.60.0",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   }
 }
