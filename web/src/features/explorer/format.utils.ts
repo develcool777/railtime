@@ -17,20 +17,6 @@ export const formatDay = (time: number): string => {
 };
 
 /**
- * What a plan adds, in a line.
- *
- * @param stations - Its new stations.
- * @param km - Its new track, km.
- * @returns "adds 4 stations · 6 km", leaving out what it adds none of; empty if it adds neither.
- */
-export const formatPlanFacts = (stations: number, km: number): string => {
-  const facts: string[] = [];
-  if (stations > 0) facts.push(counted(stations, 'station'));
-  if (Math.round(km) > 0) facts.push(`${Math.round(km)} km`);
-  return facts.length > 0 ? `adds ${facts.join(' · ')}` : '';
-};
-
-/**
  * What is on the map, in a line.
  *
  * @param stats - Its stations, track and lines.

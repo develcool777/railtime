@@ -89,8 +89,7 @@ export class CameraDirector {
    * @param durationMs - How long the move takes.
    */
   public flyTo(center: LngLat, minZoom: number, durationMs: number): void {
-    const tilt = this.tilted === '3d' ? { pitch: VIEW_3D_PITCH } : { pitch: 0, bearing: 0 };
-    this.map.easeTo({ center, zoom: Math.max(this.map.getZoom(), minZoom), ...tilt, duration: durationMs });
+    this.map.easeTo({ center, zoom: Math.max(this.map.getZoom(), minZoom), ...this.viewTilt, duration: durationMs });
   }
 
   /**
@@ -119,7 +118,8 @@ export class CameraDirector {
   }
 
   /**
-   * Frames a bounding box, whatever the mode.
+   * Frames a bounding box, whatever the mode, keeping the view's tilt: a fit made as the view changes
+   * ends at its new tilt, never at the pitch the change had reached when the fit cut it short.
    *
    * @param bounds - What to frame.
    * @param maxZoom - The closest the camera may go.
@@ -133,7 +133,12 @@ export class CameraDirector {
       bottom: this.padding.bottom + (room.bottom ?? 0),
       left: this.padding.left + (room.left ?? 0),
     };
-    this.map.fitBounds(bounds, { padding, maxZoom, duration: durationMs });
+    this.map.fitBounds(bounds, { padding, maxZoom, ...this.viewTilt, duration: durationMs });
+  }
+
+  /** The view's tilt, which every move keeps: in 3D its pitch, facing as it does; flat, facing north. */
+  private get viewTilt(): { pitch: number; bearing?: number } {
+    return this.tilted === '3d' ? { pitch: VIEW_3D_PITCH } : { pitch: 0, bearing: 0 };
   }
 
   /**

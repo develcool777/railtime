@@ -1,5 +1,6 @@
 import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import { CITIES, CITY_SUMMARIES } from '~/constants/city.constants';
 
@@ -86,4 +87,20 @@ export const citySummaryOf = (city: string): CityIndexEntry => {
   const entry = CITY_SUMMARIES[city];
   if (!entry) throw new Error(`${city} is not in cities.json`);
   return entry;
+};
+
+/**
+ * A city's outline, fetched.
+ *
+ * @param url - Where it is served.
+ * @returns The outline, or `null` where there is none: not every city has one yet.
+ */
+export const fetchBoundary = async (url: string): Promise<CityBoundary | null> => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return (await response.json()) as CityBoundary;
+  } catch {
+    return null;
+  }
 };

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { CITIES } from '~/constants/city.constants';
-import { boundaryUrlOf, citiesByCountry, cityMenu, cityNameOf, citySummaryOf, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
+import { boundaryUrlOf, citiesByCountry, cityMenu, cityNameOf, citySummaryOf, fetchBoundary, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));
@@ -66,6 +66,15 @@ describe('CityUtils', () => {
 
     test('refuses a city not in cities.json', () => {
       expect(() => citySummaryOf('atlantis')).toThrow('atlantis is not in cities.json');
+    });
+  });
+
+  describe('fetchBoundary', () => {
+    test('gives the outline served, and none for an address that serves something else or nothing', async () => {
+      const outline = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } };
+      await expect(fetchBoundary(`data:application/json,${encodeURIComponent(JSON.stringify(outline))}`)).resolves.toEqual(outline);
+      await expect(fetchBoundary('data:application/json,not%20an%20outline')).resolves.toBeNull();
+      await expect(fetchBoundary('http://127.0.0.1:9/outline.json')).resolves.toBeNull();
     });
   });
 });
