@@ -19,6 +19,9 @@ export const typescriptConfig = [
       // The same check as typescript-eslint's, without its options.
       'sonarjs/no-unused-vars': 'off',
       'no-unused-vars': 'off',
+      // `@typescript-eslint/no-deprecated` reports a deprecated use once, with what to use instead (its
+      // `@deprecated` text); this one reports it again, without it.
+      'sonarjs/deprecation': 'off',
       // A condition is a boolean, or a value whose truth cannot mislead: an object, a string, or one that
       // may be missing (an id, a date, a name, a flag: never `''`). A number is compared, never taken
       // for true: `0` is a count, a timestamp (1 January 1970), an option.
