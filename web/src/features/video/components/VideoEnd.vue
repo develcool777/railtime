@@ -28,7 +28,7 @@
     stats: NetworkStats | null;
     /** How long its numbers have counted, ms. */
     counted: number;
-    /** Where the site is, as said (`example.org/railtime`). */
+    /** Where the site is, as said (`example.org`). */
     address: string;
     /** How much of it shows, 0 to 1. */
     shown: number;

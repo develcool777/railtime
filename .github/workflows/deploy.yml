@@ -1,0 +1,49 @@
+# Builds the explorer as a static site and publishes it on Cloudflare, at raillineage.com.
+name: Deploy
+
+on:
+  workflow_dispatch:
+  # Merging to main deploys.
+  push:
+    branches: [main]
+
+concurrency:
+  # Two merges in quick succession must not deploy in parallel and land out of order. This does NOT
+  # cancel in progress: killing a live deploy mid-flight is worse than letting it finish. A queued
+  # run supersedes any other queued run, so the newest commit still wins.
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Verify merged tree and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      # Post-merge gate. Every PR is fully checked before it can merge, so this repeats only what can
+      # fail on the merged tree while passing on each PR in isolation: one PR renames a symbol, another
+      # adds a call site, and neither branch alone is red. Type-check and the build catch that; unit
+      # tests, eslint and formatting are per-file and effectively never do.
+      - name: Run type checks
+        run: pnpm type-check
+
+      # The build itself: what the next step publishes.
+      - name: Build the static site
+        run: pnpm --filter @railtime/web generate
+
+      # Fetched for this step alone, at the version named: as a dependency, its runtime would be
+      # installed for every check that never deploys.
+      - name: Publish on Cloudflare
+        working-directory: web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm dlx wrangler@4.158.0 deploy

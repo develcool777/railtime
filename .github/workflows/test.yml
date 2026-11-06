@@ -1,7 +1,7 @@
 name: Test
 
 # Runs per pull request, not per push: a push to main re-checks a commit that already passed on its
-# branch. The pre-merge gate is the `CI` job below (the required status check), and `pages.yml` owns
+# branch. The pre-merge gate is the `CI` job below (the required status check), and `deploy.yml` owns
 # the post-merge check.
 on:
   pull_request:
@@ -66,10 +66,8 @@ jobs:
       - name: Run dead-code checks
         run: pnpm code-quality:dead-code
 
-      # The static site, as pages.yml builds it for GitHub Pages.
+      # The static site, as deploy.yml builds it.
       - name: Test Build
-        env:
-          NUXT_APP_BASE_URL: /railtime/
         run: pnpm --filter @railtime/web generate
 
   # The single required status check on `main`, and the only one that should ever be named in the

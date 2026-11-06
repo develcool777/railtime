@@ -5,7 +5,7 @@
     <UMain class="min-h-0 flex-1 pb-12">
       <UContainer class="max-w-3xl">
         <UPageHeader
-          title="About RailTime"
+          title="About RailLineage"
           description="A city's metro on the real map, on any day since it opened: its history played one opening at a time, and the plans for what it could become." />
 
         <UPageBody>

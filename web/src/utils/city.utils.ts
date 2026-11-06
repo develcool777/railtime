@@ -37,7 +37,7 @@ export const cityMenu = (): { type?: 'label'; label: string; value?: string }[][
   citiesByCountry().map(({ country, cities }) => [{ type: 'label' as const, label: country }, ...cities.map(({ label, value }) => ({ label, value }))]);
 
 /**
- * Where a city's dataset is served, under the site's base URL (`/railtime/` on GitHub Pages).
+ * Where a city's dataset is served, under the site's base URL.
  *
  * @param city - A city id.
  * @returns Its path, relative to the base URL: `data/<country>/<city>/<city>.json`.
