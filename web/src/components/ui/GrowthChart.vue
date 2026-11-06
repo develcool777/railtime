@@ -1,15 +1,5 @@
 <template>
-  <!-- A click picks the year under the crosshair. -->
-  <UChart
-    type="area"
-    :data="points"
-    index="year"
-    :categories="[{ key: 'value', label: METRIC_LABELS[metric], color: 'primary' }]"
-    :format="formatNumber"
-    :height
-    :ariaLabel="summary"
-    class="cursor-pointer"
-    @select="point => point && emit('pick', Number(point.datum.x))" />
+  <YearChart :points :label="METRIC_LABELS[metric]" :format="formatNumber" :height :summary @pick="emit('pick', $event)" />
 </template>
 
 <script setup lang="ts">

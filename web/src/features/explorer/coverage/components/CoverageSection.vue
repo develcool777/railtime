@@ -17,7 +17,7 @@
         @update:modelValue="pick" />
 
       <div class="flex flex-col gap-2">
-        <p class="text-highlighted text-2xl leading-8 font-bold tabular-nums">{{ formatShare(coverage.share) }}</p>
+        <p class="text-highlighted text-2xl leading-8 font-bold"><CountingNumber v-bind="shareNumberOf(coverage.share)" />%</p>
         <p class="text-muted text-sm">of {{ coverage.name }}'s area is within {{ formatWalk(coverage.metres) }} of a station, on the date shown</p>
         <!-- The bands side by side, each as wide as the share of the city in it, the rest of the city after them. -->
         <div class="bg-elevated flex h-1.5 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
@@ -63,6 +63,7 @@
   import { COVERAGE_DISTANCE_ITEMS } from '~/features/explorer/coverage/coverage.constants';
   import { coverageDistanceOf, formatArea } from '~/features/explorer/coverage/coverage.utils';
   import type { BoundaryState } from '~/features/explorer/tools.types';
+  import { shareNumberOf } from '~/utils/count.utils';
   import { formatShare, formatWalk } from '~/utils/format.utils';
 
   defineProps<{

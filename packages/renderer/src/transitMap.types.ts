@@ -38,6 +38,8 @@ export type MapProps = {
   stationLabels: boolean;
   /** Whether the basemap names its streets and places, or shows the city unnamed but for the stations. */
   streetLabels: boolean;
+  /** Whether planned track is drawn bold, still broken but wider and stronger: for a map that is about the plan. */
+  boldPlans: boolean;
   /** Whether trains run on the lines: an illustration, the network keeping no timetable. */
   trains: boolean;
   /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
@@ -125,6 +127,7 @@ export type TimeState = Playhead & {
   /** The map shows a plan: a planned change done, or one being drawn. `time` is then the end of the dates. */
   inPlan: boolean;
   playing: boolean;
+  /** The network's size on the map: the change being drawn counted as far as it is drawn, so a count moves as soon as its line does. */
   stats: NetworkStats;
 };
 

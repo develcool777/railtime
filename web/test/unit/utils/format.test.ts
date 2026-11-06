@@ -1,11 +1,17 @@
 import { describe, expect, test } from 'vitest';
-import { counted, formatNumber, formatPlanFacts, formatShare, formatWalk, lineColor } from '~/utils/format.utils';
+import { counted, formatNumber, formatPlanFacts, formatShare, formatWalk, lineColor, pluralOf } from '~/utils/format.utils';
 
 describe('FormatUtils', () => {
   describe('formatNumber', () => {
     test('rounds a value and marks its thousands', () => {
       expect(formatNumber(1284.4)).toBe('1,284');
       expect(formatNumber(7.6)).toBe('8');
+    });
+  });
+
+  describe('pluralOf', () => {
+    test('reads as a count rounds, for one still counting', () => {
+      expect([pluralOf(1, 'line'), pluralOf(1.2, 'line'), pluralOf(2, 'line'), pluralOf(0, 'line')]).toEqual(['line', 'line', 'lines', 'lines']);
     });
   });
 

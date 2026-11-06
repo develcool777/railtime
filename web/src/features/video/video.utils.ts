@@ -1,16 +1,17 @@
 import { yearOf } from '@railtime/core/date.utils';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
-import type { ChangeInfo, NetworkStats, PlanInfo } from '@railtime/network/facts.types';
-import type { MapProps, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
+import type { ChangeInfo, PlanInfo } from '@railtime/network/facts.types';
+import type { MapProps, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { VideoPageState } from '@railtime/video/videoPage.types';
-import { PLAN_STATUSES } from '~/constants/plan.constants';
-import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_INSIGHTS_PADDING_SHARES, VIDEO_PADDING_SHARES, VIDEO_SPEED } from '~/features/video/video.constants';
+import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_PADDING_SHARES, VIDEO_SPEED } from '~/features/video/video.constants';
 import type { VideoBeat, VideoFraming, VideoLayers, VideoMapInput, VideoMoment, VideoPadding, VideoScene, VideoSize } from '~/features/video/video.types';
+import type { CountedSizes } from '~/utils/count.types';
+import { fadedIn } from '~/utils/motion.utils';
 
 /**
  * A video's script, every beat in order: its title and history, the whole network flat, then its
  * numbers round it, which its end card comes in over. With a plan it goes on past them: the plan
- * played from today, the network with it built flat, and the end card.
+ * played from today, the network with it built flat, and the plan's end card beside it.
  *
  * @param plan - The plan it plays; `null` for none.
  * @returns The beats.
@@ -25,8 +26,8 @@ export const videoScriptOf = (plan: PlanInfo | null): VideoBeat[] => {
     asBuilt('insights', 'insights'),
   ];
   if (!plan) return [...opening, asBuilt('end', 'insights'), asBuilt('done', 'insights')];
-  const ending = (['overview', 'end', 'done'] as const).map((scene): VideoBeat => ({ scene, plan, framing: 'whole' }));
-  return [...opening, { scene: 'plan', plan, framing: 'playing' }, ...ending];
+  const ending = (['end', 'done'] as const).map((scene): VideoBeat => ({ scene, plan, framing: 'ending' }));
+  return [...opening, { scene: 'plan', plan, framing: 'playing' }, { scene: 'overview', plan, framing: 'whole' }, ...ending];
 };
 
 /**
@@ -70,23 +71,6 @@ export const pageStateOf = (scene: VideoScene, outlineSettled: boolean): VideoPa
 };
 
 /**
- * How far something shown has faded in: 0 before it starts, rising to 1 over the fade.
- *
- * @param elapsed - How long since it started to show, ms; negative before.
- * @param fadeMs - How long its fade takes.
- * @returns Its opacity, 0 to 1.
- */
-export const fadedIn = (elapsed: number, fadeMs: number): number => Math.min(1, Math.max(0, elapsed / fadeMs));
-
-/**
- * Slows something down as it arrives.
- *
- * @param share - How far it has got at an even pace, 0 to 1.
- * @returns How far it has got, 0 to 1.
- */
-export const easedOut = (share: number): number => 1 - (1 - share) ** 3;
-
-/**
  * How much of something shown for a while shows now: fading in at its start and out at its end.
  *
  * @param elapsed - How long since it started to show, ms.
@@ -110,22 +94,28 @@ const minimapShownIn = (scene: VideoScene, elapsed: number): number => {
 };
 
 /**
- * How much of the year and totals show in a scene: in with the history, and on to the video's end.
+ * How much of the year card shows in a scene: in with the history, and on to the video's end; out as
+ * a plan's end card comes, which says all it does.
  *
  * @param scene - The scene shown.
  * @param elapsed - How long it has shown, ms.
- * @returns Their opacity, 0 to 1.
+ * @param planned - Whether a plan is laid on the network.
+ * @returns Its opacity, 0 to 1.
  */
-const yearShownIn = (scene: VideoScene, elapsed: number): number => {
+const yearShownIn = (scene: VideoScene, elapsed: number, planned: boolean): number => {
   switch (scene) {
     case 'history': {
       return fadedIn(elapsed, FADE_MS);
     }
+    case 'end': {
+      return planned ? 1 - fadedIn(elapsed, FADE_MS) : 1;
+    }
+    case 'done': {
+      return planned ? 0 : 1;
+    }
     case 'insights':
     case 'plan':
-    case 'overview':
-    case 'end':
-    case 'done': {
+    case 'overview': {
       return 1;
     }
     case 'loading':
@@ -137,8 +127,24 @@ const yearShownIn = (scene: VideoScene, elapsed: number): number => {
 };
 
 /**
+ * How much of the year card's totals show, of the card: out as the panels come, which say them, and
+ * back as a plan plays; gone with the panels' end card, staying while a plan's takes the card away.
+ *
+ * @param scene - The scene shown.
+ * @param elapsed - How long it has shown, ms.
+ * @param planned - Whether a plan is laid on the network.
+ * @returns Their opacity, 0 to 1.
+ */
+const totalsShownIn = (scene: VideoScene, elapsed: number, planned: boolean): number => {
+  if (scene === 'insights') return 1 - fadedIn(elapsed, FADE_MS);
+  if (scene === 'plan') return fadedIn(elapsed, FADE_MS);
+  if (scene === 'end' || scene === 'done') return planned ? 1 : 0;
+  return 1;
+};
+
+/**
  * How much of each piece over the map shows at a moment: the title over its scene, and the plan's
- * name as it starts to play, fading in and out; the minimap (`minimapShownIn`); the year and totals (`yearShownIn`); a caption in as its change starts,
+ * name as it starts to play, fading in and out; the minimap (`minimapShownIn`); the year (`yearShownIn`) and its totals (`totalsShownIn`); a caption in as its change starts,
  * out once it goes, and never more than the year; the end card in at its scene, staying when the video
  * is over.
  *
@@ -146,17 +152,18 @@ const yearShownIn = (scene: VideoScene, elapsed: number): number => {
  * @returns Each piece's opacity, 0 to 1.
  */
 export const videoLayersOf = (moment: VideoMoment): VideoLayers => {
-  const { scene, elapsed, sinceCaption, sinceCaptionGone } = moment;
+  const { scene, planned, elapsed, sinceCaption, sinceCaptionGone } = moment;
   const title = scene === 'title' ? shownFor(elapsed, SCENE_MS.title ?? 0, FADE_MS) : 0;
   const planIntro = scene === 'plan' ? shownFor(elapsed, PLAN_INTRO_MS, FADE_MS) : 0;
   const minimap = minimapShownIn(scene, elapsed);
-  const year = yearShownIn(scene, elapsed);
+  const year = yearShownIn(scene, elapsed, planned);
+  const totals = totalsShownIn(scene, elapsed, planned);
   const captionGone = sinceCaptionGone === null ? 1 : 1 - fadedIn(sinceCaptionGone, FADE_MS);
   const caption = Math.min(fadedIn(sinceCaption, FADE_MS), captionGone, year);
   let end = 0;
   if (scene === 'done') end = 1;
   else if (scene === 'end') end = fadedIn(elapsed, FADE_MS);
-  return { title, planIntro, minimap, year, caption, end };
+  return { title, planIntro, minimap, year, totals, caption, end };
 };
 
 /**
@@ -174,49 +181,25 @@ export const historySpan = (changes: ChangeInfo[]): string => {
 };
 
 /**
- * What the year card says: the year the history is in, or, on a plan, how far it has got, which has no
- * date (its changes play at the end of the dates, today).
+ * Whether what the year card counts is the same.
  *
- * @param time - Where the history is.
- * @param plan - The plan laid on the network; `null` for none.
- * @returns "1995", or "Concept".
- */
-export const videoYearOf = (time: TimeState, plan: PlanInfo | null): string => (plan ? PLAN_STATUSES[plan.status].label : String(yearOf(time.time)));
-
-/**
- * Whether two sizes of the network are the same.
- *
- * @param first - One size.
+ * @param first - One.
  * @param second - The other.
- * @returns Whether its stations, track and lines all match.
+ * @returns Whether its stations, track, lines and year all match.
  */
-export const sameStats = (first: NetworkStats, second: NetworkStats): boolean =>
-  first.stations === second.stations && first.km === second.km && first.lines === second.lines;
-
-/**
- * The numbers shown as they count from one size of the network to another.
- *
- * @param from - What they count from.
- * @param to - What they count to.
- * @param share - How far they have got, 0 to 1.
- * @returns The numbers shown.
- */
-export const statsBetween = (from: NetworkStats, to: NetworkStats, share: number): NetworkStats => ({
-  stations: from.stations + (to.stations - from.stations) * share,
-  km: from.km + (to.km - from.km) * share,
-  lines: from.lines + (to.lines - from.lines) * share,
-});
+export const sameSizes = (first: CountedSizes, second: CountedSizes): boolean =>
+  first.stations === second.stations && first.km === second.km && first.lines === second.lines && first.year === second.year;
 
 /**
  * Room the camera keeps clear on a video of a size, so what it frames is never under what lies over
- * the map: the year and a caption, or the panels.
+ * the map: the year and a caption, the panels, or a plan's end card.
  *
  * @param size - The video's size.
  * @param framing - How the map is seen.
  * @returns The room at each edge, pixels.
  */
 export const videoPaddingOf = (size: VideoSize, framing: VideoFraming): VideoPadding => {
-  const shares = framing === 'insights' ? VIDEO_INSIGHTS_PADDING_SHARES : VIDEO_PADDING_SHARES;
+  const shares = VIDEO_PADDING_SHARES[framing];
   return {
     top: Math.round(size.height * shares.top),
     bottom: Math.round(size.height * shares.bottom),
@@ -245,7 +228,7 @@ export const videoPlanAskedOf = (plan: unknown): string | null => (typeof plan =
 /**
  * What the map shows in a video: the network, dark, at the video's pace, without the basemap's street
  * names, framing clear of what lies over it; seen as asked while it plays, otherwise flat, with the
- * panels round it the city's coverage drawn within its outline.
+ * panels round it the city's coverage drawn within its outline, and beside a plan's end card the plan bold.
  *
  * @param input - The network shown, the frame's size, how it was asked to be seen, the beat's framing, the outline.
  * @returns The map's props.
@@ -258,6 +241,7 @@ export const videoMapPropsOf = (input: VideoMapInput): Pick<MapProps, 'facts'> &
   boundary: input.boundary,
   speed: VIDEO_SPEED,
   streetLabels: false,
+  boldPlans: input.framing === 'ending',
   padding: videoPaddingOf(input.size, input.framing),
 });
 

@@ -1,5 +1,6 @@
+import { yearOf } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
-import type { NetworkStats, StepInfo } from '@railtime/network/facts.types';
+import type { StepInfo } from '@railtime/network/facts.types';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { Credit, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
@@ -7,26 +8,16 @@ import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, nextTick, ref, shallowRef } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
-import { insightsMotionOf, videoInsightsOf } from '~/features/video/insights/insights.utils';
-import { COUNT_MS, WHOLE_FIT_MS } from '~/features/video/video.constants';
+import { insightsMotionOf, planGainOf, videoInsightsOf } from '~/features/video/insights/insights.utils';
+import { WHOLE_FIT_MS } from '~/features/video/video.constants';
 import type { VideoBeat, VideoOpening, VideoSize } from '~/features/video/video.types';
-import {
-  easedOut,
-  fadedIn,
-  historySpan,
-  pageStateOf,
-  sameStats,
-  sceneEnded,
-  statsBetween,
-  videoLayersOf,
-  videoMapPropsOf,
-  videoPlanOf,
-  videoScriptOf,
-} from '~/features/video/video.utils';
+import { historySpan, pageStateOf, sameSizes, sceneEnded, videoLayersOf, videoMapPropsOf, videoPlanOf, videoScriptOf } from '~/features/video/video.utils';
 import { fetchBoundary } from '~/utils/city.utils';
+import type { CountedSizes } from '~/utils/count.types';
+import { countsOf, sizesAt } from '~/utils/count.utils';
 
-/** A network with nothing on it, where the numbers start. */
-const NO_STATS: NetworkStats = { stations: 0, km: 0, lines: 0 };
+/** A network with nothing on it, where the numbers start; the year starts at the first it is told. */
+const NO_SIZES: CountedSizes = { stations: 0, km: 0, lines: 0, year: 0 };
 
 /**
  * A video's state, and what moves it on: the city's network and how it is seen, the script it follows
@@ -65,8 +56,8 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   /** Where the history is, and the network's size there. */
   const time = shallowRef<TimeState | null>(null);
   /** What the numbers count from, and to, and when they started to. */
-  const countFrom = shallowRef<NetworkStats>(NO_STATS);
-  const countTo = shallowRef<NetworkStats>(NO_STATS);
+  const countFrom = shallowRef<CountedSizes>(NO_SIZES);
+  const countTo = shallowRef<CountedSizes>(NO_SIZES);
   const countedAt = ref(0);
   /** The change last captioned, kept while its caption fades out. */
   const caption = shallowRef<StepInfo | null>(null);
@@ -97,6 +88,7 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const layers = computed(() =>
     videoLayersOf({
       scene: scene.value,
+      planned: plan.value !== null,
       elapsed: now.value - sceneStartedAt.value,
       sinceCaption: now.value - captionShownAt.value,
       sinceCaptionGone: captionGoneAt.value === null ? null : now.value - captionGoneAt.value,
@@ -104,12 +96,18 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   );
   /** The network's numbers for the panels, while they show. */
   const insights = computed(() => (framing.value === 'insights' && facts.value ? videoInsightsOf(facts.value, boundary.value) : null));
+  /** What the plan changes, for its end card, while that shows. */
+  const planGain = computed(() =>
+    framing.value === 'ending' && facts.value && planFacts.value ? planGainOf(facts.value, planFacts.value, boundary.value) : null,
+  );
   /** How far each panel has come this frame: they go with their scene if the next beat has none. */
   const insightsMotion = computed(() =>
     insightsMotionOf(scene.value, now.value - sceneStartedAt.value, script.value[beatIndex.value + 1]?.framing !== 'insights'),
   );
-  /** The network's size as the year card shows it this frame, counting to where the history is. */
-  const stats = computed(() => statsBetween(countFrom.value, countTo.value, easedOut(fadedIn(now.value - countedAt.value, COUNT_MS))));
+  /** The year and the network's size as the year card shows them this frame, counting to where the history is. */
+  const counts = computed(() => countsOf(countFrom.value, countTo.value, now.value - countedAt.value));
+  /** How long the end card's numbers have counted, ms: rested on once its scene is over. */
+  const endCounted = computed(() => (scene.value === 'end' ? now.value - sceneStartedAt.value : Infinity));
   /** Where the video is, as the page tells a recorder. */
   const pageState = computed(() => pageStateOf(scene.value, outlineSettled.value));
   /** The years the city's history spans, for the title. */
@@ -139,7 +137,8 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
         return;
       }
       case 'insights':
-      case 'overview': {
+      case 'overview':
+      case 'end': {
         // Framed flat, once the map lies flat: its props reach it as Vue flushes, before this runs.
         void nextTick(() => map.value?.fitNetwork(WHOLE_FIT_MS));
         return;
@@ -147,7 +146,6 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
       case 'loading':
       case 'ready':
       case 'title':
-      case 'end':
       case 'done': {
         return;
       }
@@ -165,8 +163,8 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     outlineSettled.value = false;
     sceneStartedAt.value = 0;
     time.value = null;
-    countFrom.value = NO_STATS;
-    countTo.value = NO_STATS;
+    countFrom.value = NO_SIZES;
+    countTo.value = NO_SIZES;
     countedAt.value = 0;
     caption.value = null;
     captionGoneAt.value = null;
@@ -235,15 +233,18 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     if (sceneEnded(scene.value, frameTime - sceneStartedAt.value)) ADVANCE();
   };
   /**
-   * The history moved on: the numbers count on from where they are, if it changed them.
+   * The history moved on: the numbers count on from where they are, as soon as it changes a whole
+   * one, which the change being drawn does as it goes; the year, the first it is told, starts there.
    *
    * @param state - Where it is.
    */
   const SET_TIME = (state: TimeState) => {
     time.value = state;
-    if (sameStats(state.stats, countTo.value)) return;
-    countFrom.value = stats.value;
-    countTo.value = state.stats;
+    const next = { ...state.stats, km: Math.round(state.stats.km), year: yearOf(state.time) };
+    if (sameSizes(next, countTo.value)) return;
+    const reached = sizesAt(counts.value);
+    countFrom.value = countTo.value.year === 0 ? { ...reached, year: next.year } : reached;
+    countTo.value = next;
     countedAt.value = now.value;
   };
   /**
@@ -295,8 +296,10 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     mapProps,
     layers,
     insights,
+    planGain,
     insightsMotion,
-    stats,
+    counts,
+    endCounted,
     pageState,
     span,
     // Actions

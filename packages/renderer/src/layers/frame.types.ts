@@ -18,6 +18,8 @@ export type FrameParts = {
   activeStep: ActiveStepLayer;
   stations: StationLayer;
   trains: TrainLayer;
+  /** The network's size at a cursor. */
+  statsAt: NetworkEngine['statsAt'];
   /** The trains the network runs at a moment. */
   trainService: NetworkEngine['trainService'];
   /** Whether trains are to run. */

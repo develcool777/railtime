@@ -44,6 +44,7 @@ const framesOn = (date: string, plan?: PlanId) => {
     activeStep,
     stations,
     trains,
+    statsAt: cursor => playback.facts.engine.statsAt(cursor),
     trainService: cursor => playback.facts.engine.trainService(cursor),
     showTrains: () => trainsOn.shown,
     minimap: {
@@ -149,6 +150,22 @@ describe('FrameRenderer', () => {
     playback.player.seek(playback.facts.playheads.on(toTimestamp('1935-01-02')));
     expect(frames.timeState()?.time).toBe(toTimestamp('1935-01-02'));
     expect(frames.timeState()).toBeNull();
+  });
+
+  test('counts a change as it draws it, not once it is done', () => {
+    const { frames, playback } = framesOn('1905-01-01');
+    frames.draw(0, null);
+    const before = frames.timeState()?.stats;
+    const after = playback.facts.engine.statsAt(playback.player.cursor + 1);
+    playback.player.play();
+    playback.player.skip();
+    frames.stepStarted();
+    for (let tick = 0; tick < 2000 && playback.player.progress < 0.5; tick++) playback.player.tick(1 / 60);
+    frames.draw(16, null);
+    const drawing = frames.timeState()?.stats;
+    expect(drawing?.km).toBeGreaterThan(before?.km ?? 0);
+    expect(drawing?.km).toBeLessThan(after.km);
+    expect(drawing?.stations).toBe(after.stations);
   });
 
   test("blends a line's colour on every frame while its identity changes", () => {

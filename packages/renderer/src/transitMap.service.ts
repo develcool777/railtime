@@ -320,6 +320,7 @@ export class TransitMap {
       network: this.networkLayer,
       activeStep: this.activeStepLayer,
       trains: this.trainLayer,
+      statsAt: cursor => facts.engine.statsAt(cursor),
       trainService: cursor => facts.engine.trainService(cursor),
       showTrains: () => this.props.current.trains,
       stations: this.stationLayer,
@@ -366,6 +367,7 @@ export class TransitMap {
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
       streetLabels: () => showBasemapLabels(this.map, this.props.current.streetLabels),
+      boldPlans: () => this.networkLayer.boldPlans(this.props.current.boldPlans),
       // Each frame reads it: they run on the frames' clock.
       trains: () => {},
       focusedLines: () => this.applyBackdrop(),

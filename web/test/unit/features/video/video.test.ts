@@ -11,18 +11,16 @@ import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, test } from 'vitest';
 import { nextTick } from 'vue';
 import { standInMap } from '@test/support/factories/transitMap.utils';
-import { COUNT_MS, FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_SPEED, WHOLE_FIT_MS } from '~/features/video/video.constants';
+import { COUNT_MS, SETTLE_MS } from '~/constants/count.constants';
+import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_SPEED, WHOLE_FIT_MS } from '~/features/video/video.constants';
 import { useVideoStore } from '~/features/video/video.store';
 import {
-  easedOut,
-  fadedIn,
   historySpan,
   pageStateOf,
-  sameStats,
+  sameSizes,
   sceneEnded,
   shownFor,
   spokenAddress,
-  statsBetween,
   videoLayersOf,
   videoMapPropsOf,
   videoPaddingOf,
@@ -30,7 +28,6 @@ import {
   videoPlanOf,
   videoScriptOf,
   videoViewOf,
-  videoYearOf,
 } from '~/features/video/video.utils';
 
 /**
@@ -53,6 +50,9 @@ const planOf = (id: string, status: PlanStatus): PlanInfo => ({ id: planId(id), 
 /** How long each scene that moves on by itself shows, ms. */
 const { title: TITLE_MS = 0, insights: INSIGHTS_MS = 0, overview: OVERVIEW_MS = 0, end: END_MS = 0 } = SCENE_MS;
 
+/** How long after a count starts its number is sure to have landed, ms. */
+const LANDED_MS = COUNT_MS + SETTLE_MS;
+
 describe('VideoUtils', () => {
   describe('videoScriptOf', () => {
     const plan = planOf('later', 'concept');
@@ -68,7 +68,7 @@ describe('VideoUtils', () => {
       const script = videoScriptOf(plan);
       expect(script.slice(4).map(beat => beat.scene)).toEqual(['insights', 'plan', 'overview', 'end', 'done']);
       expect(script.slice(5).map(beat => beat.plan)).toEqual([plan, plan, plan, plan]);
-      expect(script.slice(-3).map(beat => beat.framing)).toEqual(['whole', 'whole', 'whole']);
+      expect(script.slice(-3).map(beat => beat.framing)).toEqual(['whole', 'ending', 'ending']);
     });
   });
 
@@ -103,22 +103,6 @@ describe('VideoUtils', () => {
     });
   });
 
-  describe('fadedIn', () => {
-    test('rises from nothing to whole over the fade, and stays', () => {
-      expect(fadedIn(-100, 600)).toBe(0);
-      expect(fadedIn(300, 600)).toBe(0.5);
-      expect(fadedIn(9000, 600)).toBe(1);
-    });
-  });
-
-  describe('easedOut', () => {
-    test('runs from nothing to whole, arriving slowly', () => {
-      expect(easedOut(0)).toBe(0);
-      expect(easedOut(1)).toBe(1);
-      expect(easedOut(0.5)).toBeGreaterThan(0.5);
-    });
-  });
-
   describe('shownFor', () => {
     test('fades in at the start, holds, and fades out at the end', () => {
       expect(shownFor(0, 4000, 500)).toBe(0);
@@ -145,6 +129,12 @@ describe('VideoUtils', () => {
       expect(videoPaddingOf({ width: 1920, height: 1080 }, 'playing')).toEqual({ top: 173, bottom: 281, left: 154, right: 154 });
       expect(videoPaddingOf({ width: 1080, height: 1920 }, 'playing').bottom).toBe(499);
     });
+
+    test("keeps a plan's end card clear down one side, the network given the rest", () => {
+      const { left, right, top } = videoPaddingOf({ width: 1920, height: 1080 }, 'ending');
+      expect(left).toBeGreaterThan(right);
+      expect(top).toBeLessThan(videoPaddingOf({ width: 1920, height: 1080 }, 'whole').top);
+    });
   });
 
   describe('pageStateOf', () => {
@@ -163,7 +153,7 @@ describe('VideoUtils', () => {
   });
 
   describe('videoLayersOf', () => {
-    const still = { elapsed: 0, sinceCaption: 0, sinceCaptionGone: null };
+    const still = { planned: false, elapsed: 0, sinceCaption: 0, sinceCaptionGone: null };
 
     test('shows the title over its scene alone, fading in and out', () => {
       expect(videoLayersOf({ ...still, scene: 'title', elapsed: TITLE_MS / 2 }).title).toBe(1);
@@ -194,12 +184,32 @@ describe('VideoUtils', () => {
       expect(videoLayersOf({ ...still, scene: 'done' }).end).toBe(1);
     });
 
+    test("takes the year card out as a plan's end card comes, which says all it does", () => {
+      const planned = { ...still, planned: true };
+      expect(videoLayersOf({ ...planned, scene: 'overview' }).year).toBe(1);
+      expect(videoLayersOf({ ...planned, scene: 'end', elapsed: FADE_MS / 2 }).year).toBe(0.5);
+      expect(videoLayersOf({ ...planned, scene: 'end', elapsed: FADE_MS }).year).toBe(0);
+      expect(videoLayersOf({ ...planned, scene: 'done' }).year).toBe(0);
+    });
+
+    test('takes the totals out as the panels come, which say them, and brings them back as a plan plays', () => {
+      expect(videoLayersOf({ ...still, scene: 'overview' }).totals).toBe(1);
+      expect(videoLayersOf({ ...still, scene: 'insights', elapsed: FADE_MS / 2 }).totals).toBe(0.5);
+      expect(videoLayersOf({ ...still, scene: 'insights', elapsed: FADE_MS }).totals).toBe(0);
+      expect(['end', 'done'].map(scene => videoLayersOf({ ...still, scene: scene as 'end' }).totals)).toEqual([0, 0]);
+      expect(videoLayersOf({ ...still, planned: true, scene: 'plan', elapsed: FADE_MS / 2 }).totals).toBe(0.5);
+    });
+
+    test("keeps the totals whole as a plan's end card comes, for the card to fade as one", () => {
+      expect(videoLayersOf({ ...still, planned: true, scene: 'end', elapsed: FADE_MS / 2 }).totals).toBe(1);
+    });
+
     test('fades a caption in as its change starts and out once it goes, never more than the year', () => {
-      const playing = { scene: 'history' as const, elapsed: 10_000 };
+      const playing = { scene: 'history' as const, planned: false, elapsed: 10_000 };
       expect(videoLayersOf({ ...playing, sinceCaption: FADE_MS / 2, sinceCaptionGone: null }).caption).toBe(0.5);
       expect(videoLayersOf({ ...playing, sinceCaption: 5000, sinceCaptionGone: null }).caption).toBe(1);
       expect(videoLayersOf({ ...playing, sinceCaption: 5000, sinceCaptionGone: FADE_MS }).caption).toBe(0);
-      expect(videoLayersOf({ scene: 'history', elapsed: FADE_MS / 4, sinceCaption: 5000, sinceCaptionGone: null }).caption).toBe(0.25);
+      expect(videoLayersOf({ ...playing, elapsed: FADE_MS / 4, sinceCaption: 5000, sinceCaptionGone: null }).caption).toBe(0.25);
     });
   });
 
@@ -217,6 +227,7 @@ describe('VideoUtils', () => {
         boundary: AROUND_TINY,
         speed: VIDEO_SPEED,
         streetLabels: false,
+        boldPlans: false,
         padding: videoPaddingOf(size, 'playing'),
       });
     });
@@ -231,42 +242,33 @@ describe('VideoUtils', () => {
     });
 
     test('lies flat for the whole network, nothing drawn over its lines', () => {
-      expect(videoMapPropsOf({ ...input, framing: 'whole' })).toMatchObject({ viewMode: '2d', overlay: null, padding: videoPaddingOf(size, 'whole') });
+      expect(videoMapPropsOf({ ...input, framing: 'whole' })).toMatchObject({
+        viewMode: '2d',
+        overlay: null,
+        boldPlans: false,
+        padding: videoPaddingOf(size, 'whole'),
+      });
+    });
+
+    test('draws a plan bold beside its end card, flat, clear of it', () => {
+      expect(videoMapPropsOf({ ...input, framing: 'ending' })).toMatchObject({
+        viewMode: '2d',
+        overlay: null,
+        boldPlans: true,
+        padding: videoPaddingOf(size, 'ending'),
+      });
     });
   });
 
-  describe('videoYearOf', () => {
-    const time = { time: Date.parse('1995-06-01') } as TimeState;
+  describe('sameSizes', () => {
+    const sizes = { stations: 3, km: 4, lines: 1, year: 1995 };
 
-    test('says the year the history is in', () => {
-      expect(videoYearOf(time, null)).toBe('1995');
-    });
-
-    test('says how far a plan has got, which has no date', () => {
-      expect(videoYearOf(time, planOf('idea', 'concept'))).toBe('Concept');
-      expect(videoYearOf(time, planOf('now', 'under-construction'))).toBe('Under construction');
-    });
-  });
-
-  describe('sameStats', () => {
-    const stats = { stations: 3, km: 4, lines: 1 };
-
-    test('tells sizes of the network apart by any of their numbers', () => {
-      expect(sameStats(stats, { ...stats })).toBe(true);
-      expect(sameStats(stats, { ...stats, stations: 4 })).toBe(false);
-      expect(sameStats(stats, { ...stats, km: 5 })).toBe(false);
-      expect(sameStats(stats, { ...stats, lines: 2 })).toBe(false);
-    });
-  });
-
-  describe('statsBetween', () => {
-    const from = { stations: 10, km: 20, lines: 1 };
-    const to = { stations: 20, km: 40, lines: 3 };
-
-    test('counts each number from one size to the other', () => {
-      expect(statsBetween(from, to, 0)).toEqual(from);
-      expect(statsBetween(from, to, 0.5)).toEqual({ stations: 15, km: 30, lines: 2 });
-      expect(statsBetween(from, to, 1)).toEqual(to);
+    test('says whether what the year card counts matches', () => {
+      expect(sameSizes(sizes, { ...sizes })).toBe(true);
+      expect(sameSizes(sizes, { ...sizes, stations: 4 })).toBe(false);
+      expect(sameSizes(sizes, { ...sizes, km: 5 })).toBe(false);
+      expect(sameSizes(sizes, { ...sizes, lines: 2 })).toBe(false);
+      expect(sameSizes(sizes, { ...sizes, year: 1996 })).toBe(false);
     });
   });
 
@@ -386,23 +388,61 @@ describe('VideoStore', () => {
     expect(store.scene).toBe('overview');
     expect(store.planFacts).toBe(laid);
     expect(store.mapProps).toMatchObject({ facts: laid, viewMode: '2d', overlay: null });
+    expect(store.planGain).toBeNull();
     store.TICK(TITLE_MS + OVERVIEW_MS + INSIGHTS_MS + OVERVIEW_MS);
     expect(store.scene).toBe('end');
+    expect(store.mapProps).toMatchObject({ boldPlans: true });
+    expect(store.planGain?.map(gain => gain.label)).toContain('Stations');
+    await nextTick();
+    expect(commands.at(-1)).toEqual({ name: 'fitNetwork', args: [WHOLE_FIT_MS] });
   });
 
   test('counts the numbers on to a change, from where they are, and rests on them', async () => {
     const { store } = await readyVideo();
-    const withStations = (stations: number) => ({ stats: { stations, km: 0, lines: 1 } }) as TimeState;
+    const withStations = (stations: number) => ({ time: Date.UTC(1995, 0, 1), stats: { stations, km: 0, lines: 1 } }) as TimeState;
     store.SET_TIME(withStations(10));
-    store.TICK(COUNT_MS);
-    expect(store.stats.stations).toBe(10);
+    store.TICK(LANDED_MS);
+    expect(store.counts.stations.now).toBe(10);
     store.SET_TIME(withStations(20));
-    expect(store.stats.stations).toBe(10);
-    store.TICK(COUNT_MS * 1.5);
-    expect(store.stats.stations).toBeGreaterThan(10);
-    expect(store.stats.stations).toBeLessThan(20);
-    store.TICK(COUNT_MS * 2);
-    expect(store.stats.stations).toBe(20);
+    expect(store.counts.stations.now).toBe(10);
+    store.TICK(LANDED_MS + COUNT_MS / 2);
+    expect(store.counts.stations.now).toBeGreaterThan(10);
+    expect(store.counts.stations.now).toBeLessThan(20);
+    store.TICK(LANDED_MS * 2);
+    expect(store.counts.stations.now).toBe(20);
+  });
+
+  test('counts on as a change is drawn, only as it changes a whole number', async () => {
+    const { store } = await readyVideo();
+    const withKm = (km: number) => ({ time: Date.UTC(1995, 0, 1), stats: { stations: 1, km, lines: 1 } }) as TimeState;
+    store.SET_TIME(withKm(7.2));
+    const started = store.countedAt;
+    store.TICK(100);
+    store.SET_TIME(withKm(7.4));
+    expect(store.countedAt).toBe(started);
+    store.SET_TIME(withKm(7.6));
+    expect(store.countedAt).toBe(100);
+  });
+
+  test('starts the year where it is first told, and counts it on from there', async () => {
+    const { store } = await readyVideo();
+    const inYear = (year: number) => ({ time: Date.UTC(year, 0, 1), stats: { stations: 1, km: 0, lines: 1 } }) as TimeState;
+    store.SET_TIME(inYear(1960));
+    expect(store.counts.year.now).toBe(1960);
+    store.SET_TIME(inYear(1970));
+    store.TICK(COUNT_MS / 2);
+    expect(store.counts.year.now).toBeGreaterThan(1960);
+    expect(store.counts.year.now).toBeLessThan(1970);
+  });
+
+  test("counts the end card's numbers from its scene's start, and rests on them after", async () => {
+    const { store } = await pastHistory();
+    expect(store.endCounted).toBe(Infinity);
+    for (let second = 0; second < 40 && store.scene !== 'end'; second++) store.TICK(store.now + 1000);
+    expect(store.scene).toBe('end');
+    expect(store.endCounted).toBeLessThan(1000);
+    store.TICK(store.now + (SCENE_MS.end ?? 0));
+    expect(store.endCounted).toBe(Infinity);
   });
 
   test('takes a plan the network does not have for none named', async () => {

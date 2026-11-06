@@ -191,7 +191,8 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   ```text
   pages/  css/            routes, styles
   components/ui/          components every surface uses (SiteHeader, MapCredits, the charts: GrowthChart,
-                          DecadeChart, CoverageChart…)
+                          DecadeChart, CoverageChart, on YearChart's round years…; a number on rolling reels: ReelNumber draws a count,
+                          CountingNumber counts to each value on the browser's clock, the video keeping its own)
   constants/  utils/      what more than one surface needs: the city catalogue (CITIES, city.utils,
                           its outline fetched), plans' statuses, how a number, a share, a walk or
                           what a plan adds is written, a measure's growth
@@ -200,7 +201,8 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
                           out up front, `videoScriptOf`: its title, the history to today, the whole
                           network flat, its numbers on `insights/` panels round it, its coverage drawn,
                           and the end card over them; with `?plan=<id>` on past them, the plan played
-                          from today, the network with it built flat, and the end card;
+                          from today, the network with it built flat, and its end card beside it, what it
+                          changes rolling on from today's figures;
                           `pnpm dev` only, the built site leaves it out; its state a store,
                           `video.store.ts`, its rules in `video.utils.ts`, its map an effect,
                           `video.composable.ts`, as the explorer's; what it moves itself is worked out
