@@ -25,7 +25,7 @@
     "@railtime/schema": "workspace:*",
     "@railtime/video": "workspace:*",
     "@tanstack/charts": "1.1.0",
-    "@tanstack/vue-virtual": "3.13.50",
+    "@tanstack/vue-virtual": "3.13.51",
     "@vueuse/core": "^14.4.0",
     "maplibre-gl": "^6.16.0",
     "nuxt": "^4.6.3",
