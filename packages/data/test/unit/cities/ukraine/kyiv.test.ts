@@ -17,6 +17,18 @@ describe('Kyiv', () => {
     expect(played.mostHighlighted).toBe(5);
   });
 
+  test("runs its trains at about the metro's published average speed, 36.11 km/h", () => {
+    const { facts } = playbackOf(cityNetwork('kyiv'));
+    let km = 0;
+    let seconds = 0;
+    for (const { run, tripSeconds } of facts.engine.trainService(facts.playheads.end().cursor).timetables) {
+      km += run.lengthKm;
+      seconds += tripSeconds;
+    }
+    expect((km / seconds) * 3600).toBeGreaterThan(36.11 * 0.95);
+    expect((km / seconds) * 3600).toBeLessThan(36.11 * 1.05);
+  });
+
   test('runs a train the whole way to each end of a fork, in the 2070 concept', () => {
     const { facts } = playbackOf(cityNetwork('kyiv'), { plan: planId('kyiv-2070') });
     const runs = facts.engine

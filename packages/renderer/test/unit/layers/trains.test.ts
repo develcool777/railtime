@@ -29,7 +29,7 @@ const SEGMENT = {
 } as unknown as TrackSegment;
 
 /** A run three km long. */
-const RUN: TrainRun = { line: lineId('red'), ends: [stationId('a'), stationId('b')], legs: [], lengthKm: 3, stopsKm: [] };
+const RUN: TrainRun = { line: lineId('red'), mode: 'metro', ends: [stationId('a'), stationId('b')], legs: [], lengthKm: 3, stopsKm: [] };
 
 describe('TrainUtils', () => {
   describe('trainStretchOf', () => {

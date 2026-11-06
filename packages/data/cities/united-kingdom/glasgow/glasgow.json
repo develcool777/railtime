@@ -4,8 +4,8 @@
     "metro": {"name":"Glasgow Subway"}
   },
   "lines": {
-    "outer": {"name":"Outer Circle","network":"metro","mode":"metro","color":"#FF6600"},
-    "inner": {"name":"Inner Circle","network":"metro","mode":"metro","color":"#3D3D3C","darkColor":"#9A9A98"}
+    "outer": {"name":"Outer Circle","network":"metro","mode":"metro","color":"#FF6600","way":"clockwise"},
+    "inner": {"name":"Inner Circle","network":"metro","mode":"metro","color":"#3D3D3C","darkColor":"#9A9A98","way":"anticlockwise"}
   },
   "stations": {
     "bridge-street": {"name":"Bridge Street","coordinate":[-4.25822,55.85198]},

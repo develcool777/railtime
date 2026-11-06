@@ -19,6 +19,6 @@ describe('TrainService', () => {
   });
 
   test("keeps a line's trains apart on the track they share", () => {
-    expect(tightestHeadway(service)).toBeGreaterThan(1);
+    expect(tightestHeadway(service)).toBeGreaterThan(60);
   });
 });

@@ -1,11 +1,11 @@
-import { placesOf, timetablesOf } from './schedule.utils.ts';
+import { placesOf, timetablesOf, trainsOn } from './schedule.utils.ts';
 import type { RouteTimetable, TrainPlace, TrainRun } from './trains.types';
 
 /**
- * The trains a network runs at a moment, worked out from it alone, whatever its size: how often a line's
- * trains come, how its routes share that, and when each starts, so trains on shared track keep apart.
- * The network keeps no timetable, so this is an illustration; it knows no map, and says only where
- * each train is.
+ * The trains a network runs at a moment, worked out as an operator works out a line's: how often its
+ * kind of railway runs, how its routes share that, how long a round takes, and so how many trains it
+ * needs. The network keeps no timetable, so this is an illustration; it knows no map, and says only
+ * where each train is, in real time: how fast to show it is the map's.
  */
 export class TrainService {
   /** Each route's timetable. */
@@ -19,13 +19,13 @@ export class TrainService {
   }
 
   /**
-   * How many trains run: those turning at a far end too.
+   * How many trains run: those turning at an end too.
    *
    * @returns The fleet.
    */
   public get fleet(): number {
     let trains = 0;
-    for (const { roundSeconds, everySeconds } of this.timetables) trains += roundSeconds / everySeconds;
+    for (const timetable of this.timetables) trains += trainsOn(timetable);
     return trains;
   }
 

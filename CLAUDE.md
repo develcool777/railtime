@@ -170,16 +170,21 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   and `draw` (`steps/animation.service.ts`): one class for every kind, its pure parts in
   `animation.utils.ts`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
-- **Trains on the map are an illustration, worked out from the network alone.** It keeps no timetable, so
-  `network`'s `trains/` makes one, the same way for any city: every way along a line from one end to
-  another (`routes.utils.ts`, a fork's branch going on past it to the far end), then how often trains come
-  (`schedule.utils.ts`: an interval from the network's own size, shared by a line's routes, so a line that
-  forks runs each no more often), and each route's start, clear of the others wherever they share track
-  or an end. Never a number tuned for a city: a test holds every city to the same rule. A train leaves each end of a route at the same moment, as on a real line, and a
-  loop's turn where it closes, so it runs both ways round. `TrainService` (`engine.trainService`) says
-  where each train is, from the clock alone, so a recorder can step them; a train turning at an end is
-  out of sight. The renderer only draws them: each a stretch of its line's
-  track, not a point, so it sits where its line is drawn on shared track. The map's `trains` prop turns
+- **Trains on the map are an illustration, run by what real lines do.** The network keeps no timetable, so
+  `network`'s `trains/` works one out as an operator does, the same way for any city, and never a number
+  tuned for one. `TRAIN_PROFILES` says how each `Mode` runs, in real units, each figure from a published source
+  (`trains.constants.ts`): a city's test holds them to its real times (Kyiv's average speed, Glasgow's lap).
+  Every way along a line from end to end (`routes.utils.ts`): a branch goes on past its fork towards the core,
+  the side more lines meet, never doubling back. A train pulls away, runs and brakes (`motion.utils.ts`).
+  `schedule.utils.ts`: a route runs at its kind's headway, branches adding up along their trunk, in turn,
+  until they would come closer than its trains may, when each runs less often. The turn at an end takes up
+  what is between a route's two ways, as a timetable's does, so a train leaves each end on its own beat, and how
+  many trains a line needs comes out of it: a round over the headway. The fleet is never aimed at. A loop has no
+  terminus: trains go on round, each way its own, or the one way a line's `way` says, where a circle's two
+  directions are two lines. `TrainService` (`engine.trainService`) says where each train is, from the clock
+  alone, so a recorder can step them; a train turning at an end is out of sight. The clock is real time: how
+  much faster to show it is the map's (`TRAIN_TIME_LAPSE`). The renderer only draws them: each a stretch of its
+  line's track, not a point, so it sits where its line is drawn on shared track. The map's `trains` prop turns
   them on, the app takes them off while history plays, and where lines are brought forward only theirs run.
 - **The web app** follows the investors site's layout, in `web/src/`:
 

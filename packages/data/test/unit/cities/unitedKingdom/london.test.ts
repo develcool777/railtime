@@ -2,6 +2,7 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import type { TrackSegment } from '@railtime/network/engine.types';
 import { NetworkFacts } from '@railtime/network/facts.service';
+import { tightestHeadway } from '@railtime/network/testing/trains';
 import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
 import type { StationId } from '@railtime/schema/network.types';
 import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
@@ -16,6 +17,21 @@ const startOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stati
 const endOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.stationB : segment.stationA);
 
 describe('London', () => {
+  test("runs the Northern line's real services: each branch through the core, none from one branch out along another", () => {
+    const { facts } = playbackOf(cityNetwork('london'));
+    const ends = facts.engine
+      .trainService(facts.playheads.end().cursor)
+      .timetables.filter(({ run }) => run.line === lineId('northern'))
+      .map(({ run }) => run.ends.toSorted(byCodeUnits).join('–'))
+      .toSorted(byCodeUnits);
+    expect(ends).toEqual(['battersea-power-station–high-barnet', 'edgware–morden', 'high-barnet–morden', 'mill-hill-east–morden']);
+  });
+
+  test('runs its branches evenly through their shared track: no two of a line closer than a line may run them', () => {
+    const { facts } = playbackOf(cityNetwork('london'));
+    expect(tightestHeadway(facts.engine.trainService(facts.playheads.end().cursor))).toBeGreaterThan(170);
+  });
+
   test('keeps each line in one piece, but where its history parts it', () => {
     expect(lineSplits(cityNetwork('london'))).toEqual([
       // Metropolitan and District trains onto the East London from 1 October 1884, the link through Aldgate East from the 6th.
