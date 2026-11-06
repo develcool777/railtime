@@ -6,7 +6,7 @@
     index="year"
     :categories="[{ key: 'value', label: METRIC_LABELS[metric], color: 'primary' }]"
     :format="formatNumber"
-    :height="150"
+    :height
     :ariaLabel="summary"
     class="cursor-pointer"
     @select="point => point && emit('pick', Number(point.datum.x))" />
@@ -14,15 +14,17 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
-  import { formatMetric } from '~/features/explorer/insights/insights.utils';
   import { formatNumber } from '~/utils/format.utils';
+  import type { GrowthMetric } from '~/utils/growth.types';
+  import { formatMetric } from '~/utils/growth.utils';
 
   const props = defineProps<{
     /** One measure of the network, year by year. */
     points: { year: number; value: number }[];
     /** Which measure it is: stations, kilometres or lines, for its label and numbers. */
     metric: GrowthMetric;
+    /** How tall it is, pixels. */
+    height: number;
   }>();
 
   const emit = defineEmits<{ pick: [year: number] }>();

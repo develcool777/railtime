@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
+import { formatMetric, growthSeries } from '~/utils/growth.utils';
 
-describe('InsightsUtils', () => {
+describe('GrowthUtils', () => {
   describe('growthSeries', () => {
     test('takes one measure, year by year', () => {
       const years = [

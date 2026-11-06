@@ -236,8 +236,8 @@ export type YearStats = { year: number; stations: number; km: number; lines: num
 /** How many stations first opened in a decade. */
 export type DecadeOpenings = { decade: number; stations: number };
 
-/** The network year by year, and how many stations opened in each decade. Plans have no date and are not in it. */
-export type NetworkGrowth = { years: YearStats[]; decades: DecadeOpenings[] };
+/** The network year by year, how many stations opened in each decade, and the decade most did; `null` for a network never built. Plans have no date and are not in it. */
+export type NetworkGrowth = { years: YearStats[]; decades: DecadeOpenings[]; busiest: DecadeOpenings | null };
 
 /** The network's records on the date shown, each list longest or oldest first. */
 export type NetworkRecords = {

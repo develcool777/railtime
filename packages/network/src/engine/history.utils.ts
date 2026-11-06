@@ -87,3 +87,12 @@ export const openingsByDecade = (firstYears: ReadonlyMap<StationId, number>): De
   for (let decade = Math.min(...decades); decade <= Math.max(...decades); decade += 10) openings.push({ decade, stations: counts.get(decade) ?? 0 });
   return openings;
 };
+
+/**
+ * The decade most stations first opened in.
+ *
+ * @param decades - How many opened in each, earliest first.
+ * @returns The busiest, the earliest of a tie; `null` for none.
+ */
+export const busiestDecade = (decades: DecadeOpenings[]): DecadeOpenings | null =>
+  decades.toSorted((first, second) => second.stations - first.stations)[0] ?? null;

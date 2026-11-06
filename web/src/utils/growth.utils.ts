@@ -1,6 +1,6 @@
 import type { YearStats } from '@railtime/network/facts.types';
-import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
 import { counted, formatNumber } from '~/utils/format.utils';
+import type { GrowthMetric } from '~/utils/growth.types';
 
 /**
  * One measure of the network, year by year.

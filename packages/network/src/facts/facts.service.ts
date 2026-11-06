@@ -34,7 +34,7 @@ import { CoverageMeasure } from '../coverage/coverage.service.ts';
 import { captionOf } from '../engine/caption.utils.ts';
 import { NetworkEngine } from '../engine/engine.service.ts';
 import type { NetworkHistory } from '../engine/history.types';
-import { networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
+import { busiestDecade, networkHistory, openingsByDecade, statsAt } from '../engine/history.utils.ts';
 import type { NetworkIndex } from '../engine/index.service';
 import { directionsAt, lineBranches, lineLengthKm, stepChangesLine } from '../engine/lineDetails.utils.ts';
 import type { Timeline } from '../engine/timeline.service';
@@ -234,13 +234,14 @@ export class NetworkFacts {
   }
 
   /**
-   * The network year by year up to this one, and how many stations opened in each decade.
+   * The network year by year up to this one, how many stations opened in each decade, and the busiest.
    *
    * @returns Its growth.
    */
   public growth(): NetworkGrowth {
     const { years, firstYears } = this.networkHistory();
-    return { years, decades: openingsByDecade(firstYears) };
+    const decades = openingsByDecade(firstYears);
+    return { years, decades, busiest: busiestDecade(decades) };
   }
 
   /**

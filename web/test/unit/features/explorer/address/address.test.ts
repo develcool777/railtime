@@ -88,6 +88,7 @@ describe('ExplorerUrlUtils', () => {
         panelOpen: false,
       });
       expect(parseExplorerQuery({ speed: '0.5' })).toEqual({ speed: 0.5 });
+      expect(parseExplorerQuery({ speed: '1.5' })).toEqual({ speed: 1.5 });
       expect(parseExplorerQuery({ speed: '2', camera: 'follow', minimap: 'on', panel: 'on' })).toEqual({});
       expect(parseExplorerQuery({ speed: '3', camera: 'drone' })).toEqual({});
     });
