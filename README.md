@@ -1,11 +1,11 @@
-# Railtime
+# RailLineage
 
 An interactive map of a city's rail network: explore it as it is today or on any day since it
 opened, play its history from the first line to today, one change at a time, or open a plan for what
 it could become.
 
-Live at **https://develcool777.github.io/railtime/**: every push to `main` is built with `nuxt generate`
-and published on GitHub Pages (`.github/workflows/pages.yml`).
+Live at **https://raillineage.com/**: every push to `main` is built with `nuxt generate` and published
+on Cloudflare (`.github/workflows/deploy.yml`, `web/wrangler.jsonc`).
 
 ## Getting started
 
@@ -55,7 +55,7 @@ railtime/
 │   └── video/       videos of the app: pnpm video:record, a page recorded frame by frame into an MP4
 ├── web/             the app: Nuxt 4 and Nuxt UI around the renderer; src/ by surface (features/explorer,
 │                    features/landing, features/seo), shared code at its top
-└── .github/         CI (checks on every pull request) and the GitHub Pages deploy
+└── .github/         CI (checks on every pull request) and the Cloudflare deploy
 ```
 
 A city's network flows one way: `data` → `schema` validates it → `renderer` draws it → `web` puts

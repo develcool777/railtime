@@ -2,15 +2,8 @@
 import { fileURLToPath } from 'node:url';
 import { CITIES } from './src/constants/city.constants';
 
-/** Where the site is published: GitHub Pages, under `/railtime/` (`NUXT_APP_BASE_URL`). */
-const siteUrl = process.env.NUXT_PUBLIC_SITE_URL ?? 'https://develcool777.github.io';
-
-/**
- * The folder GitHub Pages publishes the site in: what the workflows build it under
- * (`NUXT_APP_BASE_URL`, `.github/workflows/`), and a page run anywhere else (under `pnpm dev`, a video
- * recorded) names it by.
- */
-const PUBLISHED_BASE = '/railtime/';
+/** Where the site is published, on Cloudflare (`wrangler.jsonc`): what a page run anywhere else (under `pnpm dev`, a video recorded) names it by. */
+const SITE_URL = 'https://raillineage.com';
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
@@ -60,33 +53,30 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'RailTime',
-      // The logo mark, served from public/ under the base URL (/railtime/ on GitHub Pages).
+      title: 'RailLineage',
+      // The logo mark, served from public/ under the base URL.
       link: [{ rel: 'icon', type: 'image/svg+xml', href: `${process.env.NUXT_APP_BASE_URL ?? '/'}favicon.svg` }],
       meta: [
         {
           name: 'description',
           content: 'Metro networks on the real map, on any day since they opened: play their history, or open a plan for what they could become.',
         },
-        { property: 'og:site_name', content: 'RailTime' },
+        { property: 'og:site_name', content: 'RailLineage' },
         { property: 'og:type', content: 'website' },
       ],
     },
   },
   // The site's address as published, whatever the app runs under: a video names it (`publishedUrl`).
-  runtimeConfig: { public: { publishedUrl: `${siteUrl}${PUBLISHED_BASE}` } },
-  // Every page's canonical address and the sitemap start here; the base URL is added to it. GitHub
-  // Pages serves a page's folder at its address with a slash (it redirects /railtime/kyiv to /kyiv/).
-  site: { url: siteUrl, name: 'RailTime', trailingSlash: true },
+  runtimeConfig: { public: { publishedUrl: SITE_URL } },
+  // Every page's canonical address and the sitemap start here; the base URL is added to it. Cloudflare
+  // serves a page's folder at its address with a slash (it redirects /kyiv to /kyiv/).
+  site: { url: SITE_URL, name: 'RailLineage', trailingSlash: true },
   // Written at build time from the prerendered pages: no runtime endpoint. Its images would lose the
   // base URL, and add nothing a page's own social card does not.
   sitemap: { zeroRuntime: true, discoverImages: false },
-  // A robots.txt is read at a domain's root only, and on GitHub Pages under /railtime/ that is not
-  // ours: the module keeps to each page's robots meta tag.
-  robots: { robotsTxt: false },
   // Each city's dataset, packages/data/cities/<country>/<city>/<city>.json, served as it is kept
   // (/data/united-kingdom/london/london.json), with its pictures beside it.
-  // `nuxt generate` (GitHub Pages) prerenders the landing page, About and every city's page.
+  // `nuxt generate` prerenders the landing page, About and every city's page.
   nitro: {
     publicAssets: [{ dir: fileURLToPath(new URL('../packages/data/cities', import.meta.url)), baseURL: '/data' }],
     prerender: {

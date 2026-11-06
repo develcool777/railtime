@@ -1,0 +1,18 @@
+// The site on Cloudflare: static files, no Worker script. `.github/workflows/deploy.yml` publishes it.
+{
+  "name": "raillineage",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": ".output/public",
+    // A page is its folder, served with a slash, as `site.trailingSlash` in nuxt.config.ts writes its address.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+  },
+  // Only the site's own addresses: a workers.dev copy would be the same pages at a second address.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "raillineage.com", "custom_domain": true },
+    { "pattern": "www.raillineage.com", "custom_domain": true },
+  ],
+}

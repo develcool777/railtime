@@ -6,7 +6,7 @@ import { counted } from '~/utils/format.utils';
 import type { PageSeo } from './seo.types';
 
 /** The site's name, as titles end with it. */
-const SITE_NAME = 'RailTime';
+const SITE_NAME = 'RailLineage';
 
 /** A social card's size in the picture's own pixels, as `pnpm data:previews` draws it. */
 const SOCIAL_CARD = { width: SOCIAL_SIZE.width * STILL_PIXEL_RATIO, height: SOCIAL_SIZE.height * STILL_PIXEL_RATIO };
@@ -16,7 +16,7 @@ const SOCIAL_CARD = { width: SOCIAL_SIZE.width * STILL_PIXEL_RATIO, height: SOCI
  * folder there), a file without.
  *
  * @param siteUrl - The site's origin (`https://example.org`).
- * @param baseUrl - The site's base URL, ending with a slash (`/railtime/`).
+ * @param baseUrl - The site's base URL, ending with a slash (`/`).
  * @param path - The page's or file's path under it, no leading slash.
  * @returns The address.
  */

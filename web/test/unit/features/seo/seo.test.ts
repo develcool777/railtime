@@ -6,9 +6,9 @@ const BUILT = { name: 'Kyiv', country: 'ukraine', networks: ['Kyiv Metro'], open
 describe('SeoUtils', () => {
   describe('pageUrl', () => {
     test('puts the base URL between the origin and the path, a page with a slash, a file without', () => {
-      expect(pageUrl('https://example.org/', '/railtime/', 'kyiv')).toBe('https://example.org/railtime/kyiv/');
+      expect(pageUrl('https://example.org/', '/base/', 'kyiv')).toBe('https://example.org/base/kyiv/');
       expect(pageUrl('https://example.org', '/', '')).toBe('https://example.org/');
-      expect(pageUrl('https://example.org', '/railtime/', 'data/kyiv.social.jpg')).toBe('https://example.org/railtime/data/kyiv.social.jpg');
+      expect(pageUrl('https://example.org', '/base/', 'data/kyiv.social.jpg')).toBe('https://example.org/base/data/kyiv.social.jpg');
     });
   });
 

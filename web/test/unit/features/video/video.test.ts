@@ -285,7 +285,7 @@ describe('VideoUtils', () => {
 
   describe('spokenAddress', () => {
     test('says an address without its scheme or its last slash', () => {
-      expect(spokenAddress('https://develcool777.github.io/railtime/')).toBe('develcool777.github.io/railtime');
+      expect(spokenAddress('https://example.org/')).toBe('example.org');
       expect(spokenAddress('http://localhost:5180/')).toBe('localhost:5180');
     });
   });

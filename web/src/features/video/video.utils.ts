@@ -237,7 +237,7 @@ export const videoMapPropsOf = (input: VideoMapInput): Pick<MapProps, 'facts'> &
 /**
  * The site's address as a video says it: without its scheme or its last slash.
  *
- * @param url - The address (`https://example.org/railtime/`).
- * @returns As written (`example.org/railtime`).
+ * @param url - The address (`https://example.org/`).
+ * @returns As written (`example.org`).
  */
 export const spokenAddress = (url: string): string => url.replace(/^https?:\/\//, '').replace(/\/$/, '');

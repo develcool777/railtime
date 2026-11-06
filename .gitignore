@@ -17,3 +17,5 @@ packages/*/test-reports/
 # records in, which caches the map's tiles.
 packages/video/videos/
 packages/video/.cache/
+# What Wrangler keeps as it runs.
+.wrangler/
