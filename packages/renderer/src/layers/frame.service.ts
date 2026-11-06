@@ -1,24 +1,27 @@
 import { DAY_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
-import type { NetworkStats, Playhead } from '@railtime/network/facts.types';
+import { required } from '@railtime/core/required.utils';
 import type { TrainService } from '@railtime/network/trains.service';
 import type { LineId, StationId } from '@railtime/schema/network.types';
-import type { ChaseTarget, StepDrawing } from '../steps/animation.types';
-import { emptyDrawing } from '../steps/animation.utils';
+import { UNTOUCHED_BASE } from '../steps/animation.constants';
+import type { BaseNetwork, ChaseTarget, StepDrawing } from '../steps/animation.types';
+import { emptyDrawing, sameBase } from '../steps/animation.utils';
 import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
 import type { TimeState } from '../transitMap.types';
+import { timeStateOf } from '../transitMap.utils';
 import type { FrameOutcome, FrameParts } from './frame.types';
 import type { NetworkSnapshot, StationLines } from './snapshot.types';
-import { buildNetworkSnapshot, emptyCollection, statsDrawn } from './snapshot.utils';
+import { buildNetworkSnapshot } from './snapshot.utils';
 import type { RenderState } from './style.types';
-import { TRAIN_TIME_LAPSE, TRAIN_UPDATE_MS } from './trains.constants';
+import { linesAsDrawn } from './style.utils';
+import { TRAIN_TIME_LAPSE } from './trains.constants';
 import { trainsAt } from './trains.utils';
-import { easeInOut } from '../support/drawing.utils';
 
 /**
- * Draws each frame on the layers: the network snapshot when it is stale, then the playing step and
- * the stations. A frame with nothing playing, nothing popping in and the same snapshot sends the map
- * nothing, so MapLibre is left to pan and zoom. Knows no map, only the layers.
+ * Draws each frame on the layers: the network snapshot when it is stale or the step playing asks
+ * something else of it, then the playing step and the stations. A frame on which none of them moved
+ * sends the map nothing, so MapLibre is left to pan and zoom. Knows no map, only the layers; what
+ * outlasts a network (what the layers and the minimap hold) stays with them.
  */
 export class FrameRenderer {
   /** The network, its history, the player and the layers. */
@@ -27,20 +30,20 @@ export class FrameRenderer {
   private snapshot: NetworkSnapshot | null = null;
   /** The snapshot needs rebuilding: the cursor or theme changed. */
   private stale = true;
+  /** What the step playing asked of the network when the snapshot was built. */
+  private base: BaseNetwork = UNTOUCHED_BASE;
+  /** The step playing, as last drawn: drawn again only once it moves. */
+  private drawing = emptyDrawing();
+  /** Where the step playing stood when last drawn: its phase and how far through it. */
+  private stepDrawnAt = '';
   /** The next frame shows stations without their pop-in. */
   private instant = true;
   /** How many of the playing step's new stations have appeared. */
   private revealedCount = 0;
-  /** The minimap was last sent a non-empty active drawing. */
-  private minimapShowsActive = false;
   /** The trains the network runs at the cursor, until it moves; `null` to ask again. */
   private service: TrainService | null = null;
-  /** When trains were last drawn; `null` while none are. */
-  private trainsDrawnAt: number | null = null;
   /** Clock day, cursor, progress to a hundredth and playing state at the last time state, to give one only on change. */
   private lastTimeKey = '';
-  /** The network's size once the change after a cursor is done: asked once a change. */
-  private arriving: { cursor: number; stats: NetworkStats } | null = null;
 
   public constructor(parts: FrameParts) {
     this.parts = parts;
@@ -56,9 +59,8 @@ export class FrameRenderer {
     this.instant ||= instant;
   }
 
-  /** A step started: rebuild, and count its stations from none. */
+  /** A step started: count its stations from none. */
   public stepStarted(): void {
-    this.stale = true;
     this.revealedCount = 0;
   }
 
@@ -69,15 +71,17 @@ export class FrameRenderer {
    */
   public renderState(): RenderState {
     const { index, timeline, player, baseColor } = this.parts;
-    const active = player.active;
-    const identityPlaying = active?.animation.changesIdentity === true && player.phase !== 'pre';
-    return {
-      index,
-      timeline,
-      cursor: player.cursor,
-      identityProgress: identityPlaying ? easeInOut(player.progress) : null,
-      baseColor,
-    };
+    return { index, timeline, cursor: player.cursor, base: player.base, baseColor };
+  }
+
+  /**
+   * Lines as this frame draws them, by the rule the network's features were drawn by.
+   *
+   * @param lines - The line ids.
+   * @returns The ids drawn.
+   */
+  public asDrawn(lines: readonly LineId[]): LineId[] {
+    return linesAsDrawn(this.renderState(), lines);
   }
 
   /**
@@ -88,19 +92,17 @@ export class FrameRenderer {
    * @returns What the app is told.
    */
   public draw(now: number, selected: StationId | null): FrameOutcome {
-    const { player, activeStep, stations: stationLayer } = this.parts;
+    const { player, stations: stationLayer, minimap } = this.parts;
     const state = this.renderState();
-    const active = player.active;
-    const refreshed = this.stale || state.identityProgress !== null;
+    const refreshed = this.stale || !sameBase(state.base, this.base);
     if (refreshed) this.refreshSnapshot(state);
-    const snapshot = this.snapshot!;
-    const drawing = this.drawActive(state, snapshot);
-    const drawingStep = active !== null && player.phase !== 'pre';
-    activeStep.update(drawing);
-    this.updateMinimapActive(drawing);
+    const snapshot = required(this.snapshot ?? undefined, 'the snapshot the first frame builds');
+    const stepMoved = this.drawStep(state, snapshot, refreshed);
+    const { drawing } = this;
     this.drawTrains(now, state, snapshot);
+    minimap?.flush(now);
 
-    if (refreshed || drawingStep || this.instant || stationLayer.animating) {
+    if (refreshed || stepMoved || this.instant || stationLayer.animating) {
       const stations = new Map<StationId, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
       for (const [station, lines] of drawing.reached)
         for (const [lineId, color] of lines) stations.set(station, (stations.get(station) ?? new Map<LineId, string>()).set(lineId, color));
@@ -115,7 +117,7 @@ export class FrameRenderer {
         spells: drawing.spells,
         newLabelOpacity: clamp((1 - player.holdProgress) / NEW_LABEL_FADE_FRACTION, 0, 1),
         instant: this.instant,
-        stepPlaying: active !== null,
+        stepPlaying: player.active !== null,
       });
       this.instant = false;
     }
@@ -126,6 +128,7 @@ export class FrameRenderer {
       revealed,
       selectionGone: selected !== null && !snapshot.stations.has(selected) && !drawing.reached.has(selected),
       chase: drawing.chase,
+      refreshed,
     };
   }
 
@@ -141,37 +144,37 @@ export class FrameRenderer {
 
   /**
    * The playhead and the network's size, when the day, the cursor, the change's progress (to a
-   * hundredth), the playing state or the snapshot changed since last asked.
+   * hundredth) or the playing state changed since last asked.
    *
    * @returns The time state, or `null` when nothing changed.
    */
   public timeState(): TimeState | null {
-    const { player, playheads } = this.parts;
+    const { player, facts } = this.parts;
     const { playhead, playing } = player;
-    const key = `${Math.floor(playhead.time / DAY_MS)}|${playhead.cursor}|${Math.round(playhead.progress * 100)}|${playing}|${player.inPlan}`;
+    const key = `${Math.floor(playhead.time / DAY_MS)}|${playhead.cursor}|${facts.playheads.hundredths(playhead.progress)}|${playing}|${player.inPlan}`;
     if (key === this.lastTimeKey) return null;
     this.lastTimeKey = key;
-    return {
-      ...playhead,
-      atToday: playheads.isToday(playhead),
-      atRest: playheads.isRest(playhead),
-      inPlan: player.inPlan,
-      playing,
-      stats: this.statsOnMap(playhead),
-    };
+    return timeStateOf(facts, playhead, { inPlan: player.inPlan, playing });
   }
 
   /**
-   * The network's size on the map: the changes done, and as much of the next as is drawn.
+   * Draws the step playing again on the map and the minimap, if it moved since last drawn or the
+   * network under it did: paused, it stands as it is and costs nothing.
    *
-   * @param playhead - Where the player is.
-   * @returns Its size.
+   * @param state - The render state.
+   * @param snapshot - The network on the map.
+   * @param refreshed - The network under it was built again this frame.
+   * @returns Whether it was drawn.
    */
-  private statsOnMap({ cursor, progress }: Playhead): NetworkStats {
-    const done = this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 };
-    if (progress === 0) return done;
-    if (this.arriving?.cursor !== cursor) this.arriving = { cursor, stats: this.parts.statsAt(cursor + 1) };
-    return statsDrawn(done, this.arriving.stats, progress);
+  private drawStep(state: RenderState, snapshot: NetworkSnapshot, refreshed: boolean): boolean {
+    const { player, activeStep, minimap } = this.parts;
+    const drawnAt = `${player.phase}|${player.progress}|${player.holdProgress}`;
+    if (!refreshed && drawnAt === this.stepDrawnAt) return false;
+    this.stepDrawnAt = drawnAt;
+    this.drawing = this.drawActive(state, snapshot);
+    activeStep.update(this.drawing);
+    minimap?.setActive({ type: 'FeatureCollection', features: [...this.drawing.lines.features, ...this.drawing.growing.features] });
+    return true;
   }
 
   /**
@@ -195,12 +198,12 @@ export class FrameRenderer {
    * @param state - The render state.
    */
   private refreshSnapshot(state: RenderState): void {
-    this.snapshot = buildNetworkSnapshot(state, this.parts.player.active !== null);
+    this.snapshot = buildNetworkSnapshot(state);
+    this.base = state.base;
     this.parts.network.update(this.snapshot);
     this.parts.minimap?.setNetwork(this.snapshot);
     this.service = null;
     this.stale = false;
-    this.lastTimeKey = '';
   }
 
   /**
@@ -213,26 +216,11 @@ export class FrameRenderer {
   private drawTrains(now: number, state: RenderState, snapshot: NetworkSnapshot): void {
     const { trains, trainService, showTrains } = this.parts;
     if (!showTrains()) {
-      if (this.trainsDrawnAt !== null) trains.update(emptyCollection());
-      this.trainsDrawnAt = null;
+      trains.clear();
       return;
     }
-    if (this.trainsDrawnAt !== null && now - this.trainsDrawnAt < TRAIN_UPDATE_MS) return;
+    if (!trains.dueAt(now)) return;
     this.service ??= trainService(state.cursor);
-    trains.update(trainsAt(this.service.placesAt((now / 1000) * TRAIN_TIME_LAPSE), state, snapshot.sideBySide));
-    this.trainsDrawnAt = now;
-  }
-
-  /**
-   * Sends the playing step to the minimap, and clears it once after the step ends.
-   *
-   * @param drawing - What the step draws now.
-   */
-  private updateMinimapActive(drawing: StepDrawing): void {
-    const lines = { type: 'FeatureCollection' as const, features: [...drawing.lines.features, ...drawing.growing.features] };
-    const hasActive = lines.features.length > 0;
-    if (!this.parts.minimap || (!hasActive && !this.minimapShowsActive)) return;
-    this.parts.minimap.setActive(lines);
-    this.minimapShowsActive = hasActive;
+    trains.update(trainsAt(this.service.placesAt((now / 1000) * TRAIN_TIME_LAPSE), state, snapshot.sideBySide), now);
   }
 }

@@ -6,12 +6,12 @@
     :height
     :ariaLabel="summary"
     class="cursor-pointer"
-    @select="point => point && emit('pick', Number(point.datum.x))">
-    <template #tooltip="{ title, rows }">
+    @select="point => point && emit('pick', point.datum.x)">
+    <template #tooltip="{ title, primaryPoint }">
       <p class="font-medium">{{ title }}</p>
-      <p v-for="row in rows" :key="row.label" class="flex justify-between gap-3">
+      <p class="flex justify-between gap-3">
         <span class="text-muted">{{ label }}</span>
-        <span class="font-medium">{{ format(Number(row.value)) }}</span>
+        <span class="font-medium">{{ format(primaryPoint.datum.value) }}</span>
       </p>
     </template>
   </UChart>

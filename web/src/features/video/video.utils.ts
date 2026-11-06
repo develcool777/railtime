@@ -5,7 +5,6 @@ import type { MapProps, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { VideoPageState } from '@railtime/video/videoPage.types';
 import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_PADDING_SHARES, VIDEO_SPEED } from '~/features/video/video.constants';
 import type { VideoBeat, VideoFraming, VideoLayers, VideoMapInput, VideoMoment, VideoPadding, VideoScene, VideoSize } from '~/features/video/video.types';
-import type { CountedSizes } from '~/utils/count.types';
 import { fadedIn } from '~/utils/motion.utils';
 
 /**
@@ -58,7 +57,7 @@ export const videoPlanOf = (plans: PlanInfo[], planOnly: boolean, asked: string 
 
 /**
  * Where the video is, as the page tells a recorder (`VideoPageHandle`): ready only once the city's
- * outline has come, or is known to be missing, so the overview's coverage is never left out of a take.
+ * outline has come, or is known to be missing, so the panels' coverage is never left out of a take.
  *
  * @param scene - The scene shown.
  * @param outlineSettled - Whether the outline has come, or is known to be missing.
@@ -179,16 +178,6 @@ export const historySpan = (changes: ChangeInfo[]): string => {
   if (first === undefined || last === undefined) return '';
   return first === last ? String(first) : `${first} – ${last}`;
 };
-
-/**
- * Whether what the year card counts is the same.
- *
- * @param first - One.
- * @param second - The other.
- * @returns Whether its stations, track, lines and year all match.
- */
-export const sameSizes = (first: CountedSizes, second: CountedSizes): boolean =>
-  first.stations === second.stations && first.km === second.km && first.lines === second.lines && first.year === second.year;
 
 /**
  * Room the camera keeps clear on a video of a size, so what it frames is never under what lies over

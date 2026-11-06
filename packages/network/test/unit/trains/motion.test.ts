@@ -11,6 +11,10 @@ describe('MotionUtils', () => {
       expect(rideSeconds(PROFILE, 1)).toBeCloseTo(10 + 90 + 10);
     });
 
+    test('takes no time over no track', () => {
+      expect(rideSeconds(PROFILE, 0)).toBe(0);
+    });
+
     test('brakes before reaching it, on a short one', () => {
       expect(rideSeconds(PROFILE, 0.025)).toBeCloseTo(2 * 5);
     });

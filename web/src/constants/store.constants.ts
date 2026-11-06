@@ -8,6 +8,7 @@ export const STORE_IDS = {
   EXPLORER: 'explorer',
   EXPLORER_NETWORK: 'explorerNetwork',
   EXPLORER_MAP: 'explorerMap',
+  EXPLORER_LAYOUT: 'explorerLayout',
   EXPLORER_TIME: 'explorerTime',
   EXPLORER_TOOLS: 'explorerTools',
   EXPLORER_PANEL: 'explorerPanel',

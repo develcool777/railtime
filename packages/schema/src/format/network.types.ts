@@ -3,8 +3,7 @@ import type { IsoDate } from '@railtime/core/date.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 
 /**
- * The normalized network format: what importers produce and the renderer reads.
- * The renderer never sees OSM, Wikidata or GTFS, only this.
+ * The network format: what a city's file holds, curated by hand, and everything else reads.
  *
  * Dates are ISO `YYYY-MM-DD` strings. Coordinates are `[longitude, latitude]`.
  */
@@ -58,15 +57,16 @@ export type LineAlias = {
 export type Line = {
   /** Its English name, short: the line's own, which the app shows followed by "line". */
   name: string;
-  /** Its name as people say it, where "<name> line" is not: "DLR". */
+  /** Its name as people say it, where "<name> line" is not: an acronym, a brand. */
   fullName?: string;
-  /** Its name in other languages, in full as people say it there: "Святошинсько-Броварська лінія". */
+  /** Its name in other languages, in full as people say it there, "line" and all. */
   names?: Names;
   network: NetworkId;
   mode: Mode;
   color: string;
   /** Used on dark backgrounds where `color` would disappear (a black line). */
   darkColor?: string;
+  /** What it was drawn as, in the order they ended (the schema checks). */
   aliases?: LineAlias[];
   /** Exists only as an alias target: never toggled or listed on its own. */
   pseudo?: boolean;
@@ -127,7 +127,7 @@ export type Segment = {
   lines: Record<LineId, SegmentLine>;
 };
 
-/** Two stations, each its own stop with its own name, that passengers change between (Bank and Monument). */
+/** Two stations, each its own stop with its own name, that passengers change between. */
 export type Transfer = {
   stationA: StationId;
   stationB: StationId;

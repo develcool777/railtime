@@ -34,8 +34,8 @@ export type TrainRun = {
   lengthKm: number;
   /** How far along the run each stop is, km, in order. */
   stopsKm: number[];
-  /** The one way a loop's trains go, for a line that is one direction of a circle; left out, it runs both. */
-  oneWay?: Heading;
+  /** A loop's trains go only out along it, for a line that is one direction of a circle; left out, it runs both ways. */
+  oneWay?: true;
 };
 
 /** How trains run along a route: at each time, seconds, as far along it, km, one way; riding between two places, standing where they are the same. */

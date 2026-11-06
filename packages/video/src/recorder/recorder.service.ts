@@ -5,18 +5,18 @@ import { dirname } from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { type BrowserContext, chromium, type Page } from 'playwright-core';
-import { recordedPageOf } from './recordedPage.utils.ts';
-import { BROWSER_PROFILE, FRAME_QUALITY, OPEN_TIMEOUT_MS, QUIET_MS, SETTLE_POLL_MS, SETTLE_TIMEOUT_MS, WARM_UP_SECONDS } from './recorder.constants.ts';
+import { BROWSER_PROFILE, DRAWN_POLL_MS, DRAWN_TIMEOUT_MS, FRAME_QUALITY, OPEN_TIMEOUT_MS, WARM_UP_SECONDS } from './recorder.constants.ts';
 import type { RecorderOptions, Recording } from './recorder.types.ts';
-import { awaitedByFrame, ffmpegArgsOf, ffmpegPathOf, installRecordingClock, pageUrlOf } from './recorder.utils.ts';
-import type { RecordedWindow } from './videoPage.types.ts';
+import { drawnOnceHeld, ffmpegArgsOf, ffmpegPathOf, installRecordingClock, launchOptionsOf, pageUrlOf, untilDrawn } from './recorder.utils.ts';
+import type { RecordedWindow, VideoPageState } from './videoPage.types.ts';
 
 /**
  * Records a city's page playing its history as a video: the page, in the Chrome installed on this
  * machine, runs on a clock only the recorder moves (`installRecordingClock`); each frame it is moved
- * on by one frame's time, waits until the tiles it asked for are drawn, and is taken as a picture,
- * which ffmpeg encodes. A slow frame makes the recording slower, never the video uneven. It records
- * from the app as it is served (`pnpm dev`), from playback's start until it ends.
+ * on by one frame's time, held until the page says it is drawn, and taken as a picture, which ffmpeg
+ * encodes. A slow frame makes the recording slower, never the video uneven. It records from the app as
+ * it is served, and knows a page only by its handle (`VideoPageHandle`): from when it
+ * starts it until the page says it is over.
  *
  * Before the take it rehearses: the page plays through once, no frame taken, so every tile the
  * camera will look at is fetched. The clock moves the same way both times, so the camera takes the
@@ -26,6 +26,10 @@ import type { RecordedWindow } from './videoPage.types.ts';
 export class VideoRecorder {
   /** Starts the browser. */
   private readonly launch: (recording: Recording) => Promise<BrowserContext>;
+  /** Finds ffmpeg, or says how to install it. */
+  private readonly ffmpegPath: () => string;
+  /** What it says as it goes. */
+  private readonly report: RecorderOptions['report'];
   /** The browser, once started: Chrome on its own profile, which keeps its cache. */
   private context: BrowserContext | null = null;
   /** ffmpeg, while it encodes. */
@@ -34,20 +38,11 @@ export class VideoRecorder {
   private encoded: Promise<number | Error | null> = Promise.resolve(null);
   /** What ffmpeg said went wrong. */
   private encoderSaid: string[] = [];
-  /** The page's requests not yet answered. */
-  private pending = 0;
-  /** When the page last asked for or got something, real milliseconds. */
-  private lastActivity = 0;
 
-  public constructor(options: RecorderOptions = {}) {
-    this.launch =
-      options.launch ??
-      (recording =>
-        chromium.launchPersistentContext(BROWSER_PROFILE, {
-          channel: 'chrome',
-          viewport: { width: recording.width, height: recording.height },
-          deviceScaleFactor: 1,
-        }));
+  public constructor(options: RecorderOptions) {
+    this.report = options.report;
+    this.launch = options.launch ?? (recording => chromium.launchPersistentContext(BROWSER_PROFILE, launchOptionsOf(recording)));
+    this.ffmpegPath = () => options.ffmpeg ?? ffmpegPathOf(existsSync);
   }
 
   /**
@@ -58,14 +53,14 @@ export class VideoRecorder {
    */
   public async record(recording: Recording): Promise<void> {
     await this.checkServed(recording.origin);
-    const ffmpeg = ffmpegPathOf(existsSync);
+    const ffmpeg = this.ffmpegPath();
     try {
       const page = await this.open(recording);
       if (recording.rehearse) {
-        console.log('rehearsing, to fetch the tiles the camera will look at');
+        this.report('rehearsing, to fetch the tiles the camera will look at');
         await this.load(page, recording);
         const rehearsed = await this.play(page, recording, null);
-        console.log(`rehearsed ${(rehearsed / recording.fps).toFixed(0)} s; recording`);
+        this.report(`rehearsed ${(rehearsed / recording.fps).toFixed(0)} s; recording`);
       }
       await this.load(page, recording);
       const encoder = this.startEncoder(recording, ffmpeg);
@@ -76,7 +71,7 @@ export class VideoRecorder {
         return true;
       });
       await this.finish();
-      console.log(`${recording.out}: ${frames} frames, ${(frames / recording.fps).toFixed(1)} s`);
+      this.report(`${recording.out}: ${frames} frames, ${(frames / recording.fps).toFixed(1)} s`);
     } finally {
       // Whatever started is closed, or the command would never end.
       this.encoder?.kill();
@@ -96,12 +91,12 @@ export class VideoRecorder {
     try {
       await fetch(origin, { method: 'HEAD' });
     } catch (error) {
-      throw new Error(`nothing serves the app at ${origin}: start it with pnpm dev, or give --origin`, { cause: error });
+      throw new Error(`nothing serves the app at ${origin}: start it, or give another origin`, { cause: error });
     }
   }
 
   /**
-   * Starts Chrome, with a page that runs on the recording clock and whose requests are counted.
+   * Starts Chrome, with a page that runs on the recording clock.
    *
    * @param recording - The recording.
    * @returns The page.
@@ -110,17 +105,7 @@ export class VideoRecorder {
     this.context = await this.launch(recording);
     const page = this.context.pages()[0] ?? (await this.context.newPage());
     page.setDefaultTimeout(OPEN_TIMEOUT_MS);
-    page.on('pageerror', error => console.error(`recorded page: ${error.message}`));
-    // What a frame waits for: every request but a stream, which stays open as long as the page.
-    page.on('request', request => {
-      if (awaitedByFrame(request.resourceType())) this.touched(1);
-    });
-    page.on('requestfinished', request => {
-      if (awaitedByFrame(request.resourceType())) this.touched(-1);
-    });
-    page.on('requestfailed', request => {
-      if (awaitedByFrame(request.resourceType())) this.touched(-1);
-    });
+    page.on('pageerror', error => this.report(`recorded page: ${error.message}`));
     // Run in the page as written, on its own `window`, before any of its scripts, each time it loads.
     await page.addInitScript({ content: `(${installRecordingClock.toString()})(window);` });
     return page;
@@ -134,13 +119,11 @@ export class VideoRecorder {
    * @throws {Error} For a page that never gets ready.
    */
   private async load(page: Page, recording: Recording): Promise<void> {
-    this.pending = 0;
     await page.goto(pageUrlOf(recording), { waitUntil: 'domcontentloaded' });
     // Its frames run only as the clock moves: moved on until it is ready, then a little more.
     const frameMs = 1000 / recording.fps;
     const deadline = Date.now() + OPEN_TIMEOUT_MS;
-    const recorded = recordedPageOf(recording.page);
-    while (!(await recorded.ready(page))) {
+    while ((await this.stateOf(page)) !== 'ready') {
       if (Date.now() > deadline) throw new Error(`the page never got ready to play: ${pageUrlOf(recording)}`);
       await this.step(page, frameMs);
     }
@@ -148,9 +131,8 @@ export class VideoRecorder {
   }
 
   /**
-   * Plays the page a frame at each step of the clock, until it ends (and, for the explorer, the camera
-   * has moved back to the whole network), or the longest the recording runs: each frame taken, or,
-   * rehearsing, only drawn.
+   * Plays the page a frame at each step of the clock, until it says it is over, or the longest the
+   * recording runs: each frame taken, or, rehearsing, only drawn.
    *
    * @param page - The page, ready to play.
    * @param recording - The recording.
@@ -159,18 +141,15 @@ export class VideoRecorder {
    */
   private async play(page: Page, recording: Recording, take: ((frame: Buffer) => Promise<boolean>) | null): Promise<number> {
     const frameMs = 1000 / recording.fps;
-    const recorded = recordedPageOf(recording.page);
-    await recorded.start(page);
+    await page.evaluate(() => (window as RecordedWindow).railtimeVideo?.start());
     let played = 0;
-    let tail: number | null = null;
-    while (played < recording.seconds * recording.fps && (tail === null || tail > 0)) {
+    while (played < recording.seconds * recording.fps) {
       await this.step(page, frameMs);
       if (take && !(await take(await page.screenshot({ type: 'jpeg', quality: FRAME_QUALITY })))) break;
       played++;
-      if (tail !== null) tail--;
-      // Once a second, whether it still plays: once it ends, its tail.
-      else if (played % recording.fps === 0 && (await recorded.ended(page))) tail = recorded.tailSeconds * recording.fps;
-      if (played % (recording.fps * 10) === 0) console.log(`${(played / recording.fps).toFixed(0)} s ${take ? 'recorded' : 'rehearsed'}`);
+      // Once a second, whether it still plays.
+      if (played % recording.fps === 0 && (await this.stateOf(page)) === 'done') break;
+      if (played % (recording.fps * 10) === 0) this.report(`${(played / recording.fps).toFixed(0)} s ${take ? 'recorded' : 'rehearsed'}`);
     }
     return played;
   }
@@ -214,39 +193,30 @@ export class VideoRecorder {
   }
 
   /**
-   * Moves the page's clock on by one frame, then waits, its time held, until the tiles it asked for
-   * have come and been drawn.
+   * Where the page is, as its handle says.
+   *
+   * @param page - The page.
+   * @returns Where it is, or `null` before it has a handle.
+   */
+  private stateOf(page: Page): Promise<VideoPageState | null> {
+    return page.evaluate(() => (window as RecordedWindow).railtimeVideo?.state() ?? null);
+  }
+
+  /**
+   * Moves the page's clock on by one frame, then holds it there until the page says all of it is drawn:
+   * asked with the clock held, so what the page waits on is what comes by itself, its tiles, never what
+   * only the clock can finish.
    *
    * @param page - The page.
    * @param milliseconds - The frame's time.
    */
   private async step(page: Page, milliseconds: number): Promise<void> {
-    await this.advance(page, milliseconds);
-    const deadline = Date.now() + SETTLE_TIMEOUT_MS;
-    while (Date.now() < deadline && (this.pending > 0 || Date.now() - this.lastActivity < QUIET_MS)) {
-      await sleep(SETTLE_POLL_MS);
-      // What came meanwhile is drawn at the same moment.
-      await this.advance(page, 0);
-    }
-  }
-
-  /**
-   * Moves the page's clock on and runs its frames.
-   *
-   * @param page - The page.
-   * @param milliseconds - How far.
-   */
-  private async advance(page: Page, milliseconds: number): Promise<void> {
     await page.evaluate(time => (window as RecordedWindow).railtimeRecorder?.advance(time), milliseconds);
-  }
-
-  /**
-   * Counts a request asked for or answered.
-   *
-   * @param change - 1 for asked, -1 for answered or failed.
-   */
-  private touched(change: number): void {
-    this.pending = Math.max(0, this.pending + change);
-    this.lastActivity = Date.now();
+    const deadline = Date.now() + DRAWN_TIMEOUT_MS;
+    await untilDrawn(
+      () => page.evaluate(`(${drawnOnceHeld.toString()})(window)`),
+      () => sleep(DRAWN_POLL_MS),
+      () => Date.now() > deadline,
+    );
   }
 }

@@ -17,6 +17,8 @@
     "./network.types": "./src/format/network.types.ts",
     "./plan.types": "./src/plan/build.types.ts",
     "./plan.utils": "./src/plan/build.utils.ts",
+    "./served.utils": "./src/validation/served.utils.ts",
+    "./track.utils": "./src/plan/track.utils.ts",
     "./testing/ids": "./test/support/ids.utils.ts"
   },
   "dependencies": {

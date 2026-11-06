@@ -158,8 +158,8 @@ export class NetworkLayer extends MapLayer {
  * each growing tip, and the transfers it links as it reaches them, drawn as the network's are.
  */
 export class ActiveStepLayer extends MapLayer {
-  /** What each source was sent last: a source whose data is the same is not sent again, so MapLibre cuts none of its tiles. */
-  private readonly sent = new Map<string, string>();
+  /** What each source was sent last, as it starts empty: a source whose data is the same is not sent again, so MapLibre cuts none of its tiles. */
+  private readonly sent = new Map<string, string>([SOURCES.active, SOURCES.growing, SOURCES.activeTransfers].map(source => [source, '[]']));
   /** The highlight's fade the layers were last set to, to a hundredth. */
   private fade = -1;
 
@@ -172,9 +172,6 @@ export class ActiveStepLayer extends MapLayer {
     this.addSource(SOURCES.active);
     this.addSource(SOURCES.growing, { maxzoom: GROWING_SOURCE_MAX_ZOOM });
     this.addSource(SOURCES.activeTransfers);
-    // New sources are empty: what is sent next is anything but nothing; the fade is set afresh.
-    for (const source of [SOURCES.active, SOURCES.growing, SOURCES.activeTransfers]) this.sent.set(source, '[]');
-    this.fade = -1;
     // Built track glows; a plan's is drawn as the network draws it, broken, with no glow.
     const built: FilterSpecification = ['all', ['==', ['geometry-type'], 'LineString'], ['!', ['get', 'planned']]];
     const planned: FilterSpecification = ['all', ['==', ['geometry-type'], 'LineString'], ['get', 'planned']];

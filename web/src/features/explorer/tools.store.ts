@@ -1,22 +1,25 @@
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
-import type { CoverageDistance, Stop } from '@railtime/network/facts.types';
+import type { CoverageDistance } from '@railtime/network/facts.types';
 import type { OverlayResult } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
+import type { StationId } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed, markRaw, ref, shallowRef } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
 import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import type { BoundaryState, RouteEnds } from '~/features/explorer/tools.types';
-import { foundCoverageOf, foundReachOf, foundRoutesOf, routeAimOf } from '~/features/explorer/tools.utils';
-import { fetchBoundary } from '~/utils/city.utils';
+import { foundCoverageOf, foundReachOf, foundRoutesOf, routeAimOf, stationIn, stationLinked } from '~/features/explorer/tools.utils';
+import { fetchAskedBoundary } from '~/utils/city.utils';
 
 /**
  * The map's tools, and what changes them: a route's ends and the way between them drawn, a reach's
  * start, how far coverage counts and the city's outline it is measured in (fetched the first time it
- * is wanted, and where that stands), and what the map found for the one drawn. It reads the network
- * shown; the explorer's store reads it for `mapProps`, acts on a station clicked on the map with it
- * (`stationPickOf`), and writes it in the address.
+ * is wanted, and where that stands), and what the map found for the one drawn. A station is kept by
+ * its id, through a network made again without it, as a plan picked is: its name is the facts' (the
+ * panel's store asks them), and what the map draws is what the network shown has (`routeEndsShown`,
+ * `reachFromShown`). It reads the network shown; the explorer's store reads it for `mapProps`, acts on
+ * a station clicked on the map with it (`stationPickOf`), and writes it in the address.
  */
 export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
   const network = useNetworkStore();
@@ -25,20 +28,26 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
   const routeEnds = ref<RouteEnds>({ from: null, to: null });
   /** The way between the route's ends drawn, fastest first. */
   const routeOption = ref(0);
-  /** The end of the route a station clicked on the map fills: shown on its field. */
-  const routeAim = ref<keyof RouteEnds>('from');
-  const reachFrom = ref<Stop | null>(null);
+  /** The end of the route chosen for a station clicked on the map to fill, until the ends change. */
+  const routeAimChosen = ref<keyof RouteEnds | null>(null);
+  const reachFrom = ref<StationId | null>(null);
   const coverageMetres = ref<CoverageDistance>(COVERAGE_DEFAULT_METRES);
+  /** Where the city's outline is served. */
+  const boundaryUrl = ref('');
   /** The city's outline, coverage's, once fetched. */
   const boundary = shallowRef<CityBoundary | null>(null);
   /** Where the outline is: not asked for yet, coming, here, or there is none. */
   const boundaryState = ref<BoundaryState>('idle');
-  /** Where the outline coming is served: an answer from anywhere else, asked before the city changed, is dropped. */
-  const boundaryAsked = ref<string | null>(null);
   /** What the map found for the overlay drawn, as it tells it. */
   const overlayResult = shallowRef<OverlayResult | null>(null);
 
   // ---- Getters
+  /** The route's ends the network shown has. */
+  const routeEndsShown = computed(() => ({ from: stationIn(network.facts, routeEnds.value.from), to: stationIn(network.facts, routeEnds.value.to) }));
+  /** The reach's start, if the network shown has it. */
+  const reachFromShown = computed(() => stationIn(network.facts, reachFrom.value));
+  /** The end of the route a station clicked on the map fills, shown on its field: the one chosen, else the next to fill. */
+  const routeAim = computed(() => routeAimChosen.value ?? routeAimOf(routeEndsShown.value));
   /** The ways between the route's ends on the date shown, and the one drawn; `null` while none is drawn. */
   const foundRoutes = computed(() => foundRoutesOf(overlayResult.value));
   /** Every station reached from the reach's start on the date shown; `null` while none is drawn. */
@@ -50,45 +59,22 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
 
   // ---- Actions
   /**
-   * A station of the network shown, by its id: one it does not have is a stale link.
-   *
-   * @param id - The station's id, if one is given.
-   * @returns The station, or `null`.
-   */
-  const stopOf = (id: string | undefined) => (id && network.facts ? network.facts.findStation(id) : null);
-  /**
-   * A station kept on a network made again: `null` if it has it no more.
-   *
-   * @param kept - The station, or `null`.
-   * @returns It, or `null`.
-   */
-  const keep = (kept: Stop | null) => (kept && network.facts?.findStation(kept.id) ? kept : null);
-
-  /**
-   * Sets the tools as a page opens, from its address: a station the network does not have is a stale
-   * link, left out.
+   * Sets the tools as a page opens, from its address: a station the city does not have is a stale
+   * link, left out; one on a line hidden at first is kept, as any is through a network without it.
    *
    * @param address - What the address asks for.
+   * @param outline - Where the city's outline is served.
    */
-  const OPEN = (address: ExplorerUrlState) => {
-    routeEnds.value = { from: stopOf(address.route?.from), to: stopOf(address.route?.to) };
+  const OPEN = (address: ExplorerUrlState, outline: string) => {
+    routeEnds.value = { from: stationLinked(network.facts, address.route?.from), to: stationLinked(network.facts, address.route?.to) };
     routeOption.value = address.route?.option ?? 0;
-    routeAim.value = routeAimOf(routeEnds.value);
-    reachFrom.value = stopOf(address.reach);
-    coverageMetres.value = address.walk ?? COVERAGE_DEFAULT_METRES;
+    routeAimChosen.value = null;
+    reachFrom.value = stationLinked(network.facts, address.reach);
+    coverageMetres.value = address.walk;
+    boundaryUrl.value = outline;
     boundary.value = null;
     boundaryState.value = 'idle';
-    boundaryAsked.value = null;
     overlayResult.value = null;
-  };
-
-  /**
-   * Keeps the ends on the network made again of the same city (a plan shown, lines hidden): those it has.
-   */
-  const KEEP_ON = () => {
-    routeEnds.value = { from: keep(routeEnds.value.from), to: keep(routeEnds.value.to) };
-    routeAim.value = routeAimOf(routeEnds.value);
-    reachFrom.value = keep(reachFrom.value);
   };
 
   /**
@@ -100,16 +86,16 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
   const SET_ROUTE_ENDS = (ends: RouteEnds) => {
     routeEnds.value = ends;
     routeOption.value = 0;
-    routeAim.value = routeAimOf(ends);
+    routeAimChosen.value = null;
   };
   /**
    * Sets one end of the route, or clears it.
    *
    * @param end - Where it starts, or where it ends.
-   * @param stop - The station, or `null`.
+   * @param station - The station, or `null`.
    */
-  const SET_ROUTE_END = (end: keyof RouteEnds, stop: Stop | null) => {
-    SET_ROUTE_ENDS({ ...routeEnds.value, [end]: stop });
+  const SET_ROUTE_END = (end: keyof RouteEnds, station: StationId | null) => {
+    SET_ROUTE_ENDS({ ...routeEnds.value, [end]: station });
   };
   /**
    * Aims the map at one end of the route: the next station clicked on it is that end.
@@ -117,7 +103,7 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
    * @param end - Where it starts, or where it ends.
    */
   const AIM_ROUTE = (end: keyof RouteEnds) => {
-    routeAim.value = end;
+    routeAimChosen.value = end;
   };
   /** Clears both ends of the route, to start again. */
   const CLEAR_ROUTE = () => {
@@ -138,10 +124,10 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
   /**
    * Sets where the reach starts, or clears it.
    *
-   * @param stop - The station, or `null`.
+   * @param station - The station, or `null`.
    */
-  const SET_REACH_FROM = (stop: Stop | null) => {
-    reachFrom.value = stop;
+  const SET_REACH_FROM = (station: StationId | null) => {
+    reachFrom.value = station;
   };
   /**
    * Coverage measured within another distance of a station: the panel's figures and the map's shading.
@@ -152,20 +138,18 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
     coverageMetres.value = metres;
   };
 
-  /**
-   * Fetches the city's outline the first time it is wanted; a city without one is said to have none.
-   * One that comes once another city is open is dropped: that city fetches its own.
-   *
-   * @param url - Where it is served.
-   */
-  const LOAD_BOUNDARY = async (url: string) => {
+  /** Fetches the city's outline the first time it is wanted; a city without one is said to have none. One that comes once another city is open is dropped: that city fetches its own. */
+  const LOAD_BOUNDARY = async () => {
     if (boundaryState.value !== 'idle') return;
     boundaryState.value = 'loading';
-    boundaryAsked.value = url;
-    const outline = await fetchBoundary(url);
-    if (boundaryAsked.value !== url) return;
-    boundary.value = outline && markRaw(outline);
-    boundaryState.value = outline ? 'ready' : 'missing';
+    await fetchAskedBoundary(
+      boundaryUrl.value,
+      () => boundaryUrl.value,
+      outline => {
+        boundary.value = outline && markRaw(outline);
+        boundaryState.value = outline ? 'ready' : 'missing';
+      },
+    );
   };
   /**
    * What the map found for the overlay drawn, as it tells it.
@@ -180,21 +164,23 @@ export const useToolsStore = defineStore(STORE_IDS.EXPLORER_TOOLS, () => {
     // State
     routeEnds,
     routeOption,
-    routeAim,
+    routeAimChosen,
     reachFrom,
     coverageMetres,
+    boundaryUrl,
     boundary,
     boundaryState,
-    boundaryAsked,
     overlayResult,
     // Getters
+    routeEndsShown,
+    reachFromShown,
+    routeAim,
     foundRoutes,
     foundReach,
     coverage,
     coverageHistory,
     // Actions
     OPEN,
-    KEEP_ON,
     SET_ROUTE_ENDS,
     SET_ROUTE_END,
     AIM_ROUTE,

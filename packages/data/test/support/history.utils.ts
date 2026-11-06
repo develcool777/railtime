@@ -1,5 +1,4 @@
 import { toIsoDate } from '@railtime/core/date.utils';
-import type { LineSegment } from '@railtime/network/engine.types';
 import { drawnStep, playbackOf } from '@railtime/renderer/testing/playback';
 import type { Network, PlanId } from '@railtime/schema/network.types';
 import { globSync, readFileSync } from 'node:fs';
@@ -20,6 +19,9 @@ export const cityNetwork = (city: string): Network => {
   return JSON.parse(readFileSync(`${DATA}${path}`, 'utf8'));
 };
 
+/** The stations either end of a stretch of a line's track. */
+type TrackStretch = { segment: { stationA: string; stationB: string } };
+
 /** What playing a whole history at 1× did. */
 export type PlayedHistory = {
   steps: number;
@@ -39,7 +41,7 @@ export type PlayedHistory = {
  * @returns How it went.
  */
 const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): PlayedHistory => {
-  const { timeline, player } = playback;
+  const { facts, player } = playback;
   player.play();
   const frameSeconds = 1 / 20;
   let seconds = 0;
@@ -53,7 +55,7 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
     if (frame % 5 !== 0 || player.phase === 'pre') continue;
     mostHighlighted = Math.max(mostHighlighted, drawnStep(playback)?.highlighted.size ?? 0);
   }
-  return { steps: timeline.steps.length - skipped, started, cursor: player.cursor - skipped, mostHighlighted, seconds };
+  return { steps: facts.changes().length - skipped, started, cursor: player.cursor - skipped, mostHighlighted, seconds };
 };
 
 /**
@@ -67,7 +69,7 @@ const playOut = (playback: ReturnType<typeof playbackOf>, skipped: number): Play
  */
 export const playWholeHistory = (network: Network, shown: { plan?: PlanId; hidden?: readonly string[] } = {}): PlayedHistory => {
   const playback = playbackOf(network, shown);
-  playback.player.seek(playback.facts.playheads.on(playback.timeline.start));
+  playback.player.seek(playback.facts.playheads.on(playback.facts.range.start));
   return playOut(playback, 0);
 };
 
@@ -91,7 +93,7 @@ export const playPlan = (network: Network, plan: PlanId, hidden?: readonly strin
  * @param lineSegments - The line segments.
  * @returns The count.
  */
-const piecesOf = (lineSegments: LineSegment[]): number => {
+const piecesOf = (lineSegments: TrackStretch[]): number => {
   const parent = new Map<string, string>();
   const root = (station: string): string => {
     const above = parent.get(station) ?? station;
@@ -105,6 +107,8 @@ const piecesOf = (lineSegments: LineSegment[]): number => {
  * Where a network's history leaves a line in more pieces than before: each date a line, as it is
  * drawn then, comes apart. A line opening as a stretch of its own, or a works closure in its middle,
  * is history; a segment dated wrong is a bug that looks just the same, so a city lists each one.
+ * Worked out on the raw track, the exception to the engine's fence (`CLAUDE.md`): a line's stops, all
+ * the facts say of it, part where its track holds together through a junction its trains pass.
  *
  * @param network - The network.
  * @param hidden - Its lines hidden, by line or network; without them, as the app opens it.
@@ -119,7 +123,7 @@ export const lineSplits = (network: Network, hidden?: readonly string[]): string
     // Counted once a day's steps have all played.
     if (dated[position + 1]?.time === step.time) continue;
     const cursor = position + 1;
-    const byLine = new Map<string, LineSegment[]>();
+    const byLine = new Map<string, TrackStretch[]>();
     for (const lineSegment of index.lineSegments) {
       if (!timeline.isOpen(lineSegment, cursor)) continue;
       const line = timeline.identityOf(lineSegment.line, cursor).id;

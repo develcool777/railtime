@@ -1,5 +1,7 @@
 import { endOfYear } from '@railtime/core/date.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
+import { required } from '@railtime/core/required.utils';
+import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { CoverageGrid } from './coverage.service';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
@@ -16,9 +18,7 @@ import type { CoverageBand, CoverageDistance, CoverageInfo, CoverageYear } from 
  */
 export const servedStations = (index: NetworkIndex, timeline: Timeline, cursor: number): LngLat[] =>
   [...timeline.stationsOnMap(cursor)]
-    .filter(station =>
-      index.lineSegmentsAt(station).some(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.servesStation(station, lineSegment.line, cursor)),
-    )
+    .filter(station => index.lineSegmentsAt(station).some(lineSegment => timeline.callsAt(lineSegment, station, cursor)))
     .map(station => index.coordOf(station));
 
 /**
@@ -74,8 +74,8 @@ export const coverageOf = (
   let beyond = 0;
   for (const [cell, distance] of distances.entries()) {
     if (grid.inside[cell] !== 1) continue;
-    // Within bounds: the loop's.
     const band = bandAt(distance, bands);
+    // Within bounds: a band's own place.
     if (band === -1) beyond += grid.cellKm2(cell);
     else km2[band]! += grid.cellKm2(cell);
   }
@@ -87,9 +87,44 @@ export const coverageOf = (
     km2: grid.km2,
     metres,
     share: share(within),
-    bands: bands.map((band, position) => ({ ...band, km2: km2[position]!, share: share(km2[position]!) })),
+    bands: bands.map((band, position) => {
+      const area = required(km2[position], "a band's area");
+      return { ...band, km2: area, share: share(area) };
+    }),
     beyond: { km2: beyond, share: share(beyond) },
   };
+};
+
+/**
+ * Where a ring's edges cross a latitude: the one walk round it, for what a row of cells holds and
+ * whether a point is inside.
+ *
+ * @param ring - The ring, closed: its last point its first.
+ * @param latitude - The latitude.
+ * @returns The longitudes of each crossing, in the ring's order.
+ */
+export const crossingsOf = (ring: readonly LngLat[], latitude: number): number[] => {
+  const crossings: number[] = [];
+  // Within bounds: the loop stops at the last point, which has none after it.
+  for (let position = 0; position + 1 < ring.length; position++) {
+    const [fromX, fromY] = ring[position]!;
+    const [toX, toY] = ring[position + 1]!;
+    if (fromY > latitude !== toY > latitude) crossings.push(fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY));
+  }
+  return crossings;
+};
+
+/**
+ * Whether an outline holds a point: inside one of its polygons' outer rings and none of their holes.
+ *
+ * @param boundary - The outline.
+ * @param point - The point.
+ * @returns True if it does.
+ */
+export const holds = (boundary: CityBoundary, point: LngLat): boolean => {
+  const [longitude, latitude] = point;
+  const inRing = (ring: LngLat[]) => crossingsOf(ring, latitude).filter(crossing => longitude < crossing).length % 2 === 1;
+  return boundary.polygons.some(([outer = [], ...holes]) => inRing(outer) && !holes.some(inRing));
 };
 
 /**
@@ -118,6 +153,7 @@ export const coverageHistory = (
     if (cursor !== lastCursor) {
       const distances = grid.distances(servedStations(index, timeline, cursor), metres);
       let within = 0;
+      // Within bounds: the loop's.
       for (let cell = 0; cell < distances.length; cell++) if (grid.inside[cell] === 1 && distances[cell]! <= metres) within += grid.cellKm2(cell);
       share = grid.km2 > 0 ? within / grid.km2 : 0;
       lastCursor = cursor;

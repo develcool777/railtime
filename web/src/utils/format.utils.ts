@@ -1,4 +1,5 @@
 import type { LineColor } from '@railtime/network/facts.types';
+import { shareNumberOf } from '~/utils/count.utils';
 
 /**
  * A number as the site writes it: whole, with thousands marked.
@@ -42,11 +43,8 @@ export const lineColor = (color: LineColor): string => `light-dark(${color.light
  * @returns "34%", "4.2%", "0%"; "10%" for 9.96%.
  */
 export const formatShare = (share: number): string => {
-  const percent = share * 100;
-  if (percent === 0) return '0%';
-  // Rounded first, so 9.96% reads as 10%, not 10.0%.
-  const tenths = Math.round(percent * 10) / 10;
-  return tenths < 10 ? `${tenths.toFixed(1)}%` : `${Math.round(percent)}%`;
+  const { value, decimals } = shareNumberOf(share);
+  return `${(value / 10 ** decimals).toFixed(decimals)}%`;
 };
 
 /**

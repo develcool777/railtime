@@ -1,6 +1,6 @@
 import type { Network, PlanId } from '@railtime/schema/network.types';
 import { NetworkFacts } from '../../src/facts/facts.service';
-import type { FactsAt } from '../../src/facts/facts.types';
+import type { FactsAt } from '../../src/facts/moment.service';
 
 /** Today, for every network in the tests: 1 January 2026. */
 const TEST_TODAY = Date.UTC(2026, 0, 1);

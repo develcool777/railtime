@@ -20,8 +20,8 @@ export const MINIMAP_LINE_WIDTH = 1.2;
 export const MINIMAP_PADDING = 8;
 
 /**
- * The least time between two updates of the line growing, ms: thirty a second, smooth enough in a small
- * inset, each a whole map redrawn.
+ * The least time between two updates, ms, by the frames' clock: thirty a second, smooth enough in a
+ * small inset, each a whole map redrawn.
  */
 export const MINIMAP_UPDATE_MS = 33;
 

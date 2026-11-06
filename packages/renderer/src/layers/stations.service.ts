@@ -53,10 +53,6 @@ export class StationLayer extends MapLayer {
   private readonly closedAt = new Map<StationId, number>();
   /** The colour a note under a label is in ("closed", a former name): the basemap's own labels'. */
   private noteColor = '#888888';
-  /** Whether stations are named on the map: kept, so a layer installed later starts the same. */
-  private labelsShown = true;
-  /** Whether the stations are a backdrop, faded and unnamed, behind a route. */
-  private faded = false;
   /** Some dot was still popping in, or some pulse running, when last drawn: the next frame differs. */
   private moving = false;
   /**
@@ -87,8 +83,6 @@ export class StationLayer extends MapLayer {
     this.addSource(SOURCES.pulses, { promoteId: 'id' });
     this.addSource(SOURCES.selection);
     this.addSource(SOURCES.stations, { promoteId: 'id' });
-    // New sources are empty, and their features have no state: whatever comes next is sent.
-    this.sent = { stations: '', pulses: '', looks: new Map() };
     this.map.addLayer({
       id: LAYERS.pulses,
       type: 'circle',
@@ -124,7 +118,6 @@ export class StationLayer extends MapLayer {
       'text-field': this.labelText(),
       'text-font': font,
       'text-anchor': 'left',
-      visibility: this.labelsShown ? 'visible' : 'none',
     };
     this.map.addLayer({
       id: LAYERS.labels,
@@ -143,7 +136,7 @@ export class StationLayer extends MapLayer {
       layout: { ...label, 'text-size': byZoom(13, 16), 'text-offset': [1, 0], 'text-allow-overlap': true, 'text-ignore-placement': true },
       paint: { 'text-halo-width': 2 },
     });
-    this.applyFade();
+    this.fade(false);
   }
 
   /**
@@ -173,17 +166,12 @@ export class StationLayer extends MapLayer {
    * @param faded - Whether they are a backdrop.
    */
   public fade(faded: boolean): void {
-    this.faded = faded;
-    if (this.map.getLayer(LAYERS.stations)) this.applyFade();
-  }
-
-  /** Sets the dots' and names' opacities, each frame's own times the backdrop's, if faded. */
-  private applyFade(): void {
-    const dots = this.faded ? BACKDROP_STATION_OPACITY : 1;
+    // Each frame's own opacities, times the backdrop's.
+    const dots = faded ? BACKDROP_STATION_OPACITY : 1;
     // A planned station is a ring: its fill all but gone.
     this.map.setPaintProperty(LAYERS.stations, 'circle-opacity', ['*', dots, lookOf('opacity'), ['case', ['get', 'planned'], 0.2, 1]]);
     this.map.setPaintProperty(LAYERS.stations, 'circle-stroke-opacity', ['*', dots, lookOf('opacity')]);
-    for (const layer of [LAYERS.labels, LAYERS.newLabels]) this.map.setPaintProperty(layer, 'text-opacity', ['*', this.faded ? 0 : 1, lookOf('labelOpacity')]);
+    for (const layer of [LAYERS.labels, LAYERS.newLabels]) this.map.setPaintProperty(layer, 'text-opacity', ['*', faded ? 0 : 1, lookOf('labelOpacity')]);
   }
 
   /**
@@ -192,10 +180,7 @@ export class StationLayer extends MapLayer {
    * @param shown - Whether to name them.
    */
   public showLabels(shown: boolean): void {
-    this.labelsShown = shown;
-    for (const layer of [LAYERS.labels, LAYERS.newLabels]) {
-      if (this.map.getLayer(layer)) this.map.setLayoutProperty(layer, 'visibility', shown ? 'visible' : 'none');
-    }
+    for (const layer of [LAYERS.labels, LAYERS.newLabels]) this.map.setLayoutProperty(layer, 'visibility', shown ? 'visible' : 'none');
   }
 
   /**
@@ -240,7 +225,7 @@ export class StationLayer extends MapLayer {
   public update(frame: StationFrame): void {
     const stations = this.stationFeatures(frame);
     const pulses = this.pulseFeatures(frame);
-    this.moving = pulses.length > 0 || this.pulsedAt.size > 0 || this.closedAt.size > 0 || stations.some(({ look }) => look.scale !== 1 || look.opacity < 1);
+    this.moving = pulses.length > 0 || stations.some(({ look }) => look.scale !== 1 || look.opacity < 1);
     const sent = {
       stations: stations.map(({ feature }) => keyOf(feature.properties)).join('\n'),
       pulses: pulses.map(({ feature }) => keyOf(feature.properties)).join('\n'),
@@ -301,11 +286,12 @@ export class StationLayer extends MapLayer {
     const features: { feature: PointFeature<StationProperties>; look: StationLook }[] = [];
     for (const [station, lines] of frame.stations) {
       if (lines.size === 0) continue;
-      if (!this.appearedAt.has(station)) this.appearedAt.set(station, frame.instant ? ALREADY_SHOWN : frame.now);
+      const appeared = this.appearedAt.get(station) ?? (frame.instant ? ALREADY_SHOWN : frame.now);
+      this.appearedAt.set(station, appeared);
       const highlighted = frame.highlighted.has(station);
       const closing = frame.fading.has(station);
       this.startRing(frame, station, highlighted, closing);
-      const age = (frame.now - this.appearedAt.get(station)!) / POP_IN_MS;
+      const age = (frame.now - appeared) / POP_IN_MS;
       const opacity = clamp(age * 3, 0, 1) * (frame.fading.get(station) ?? 1);
       features.push({
         feature: pointFeature(this.coordOf(station), {

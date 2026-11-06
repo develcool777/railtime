@@ -2,8 +2,9 @@ import { keysOf } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
 import { lineId, networkId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from '../../../src/facts/networks.utils';
+import { firstPlanOf, isPlanOnly, linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from '../../../src/facts/networks.utils';
 import { hiddenNetwork } from '../../support/factories/hiddenNetwork.utils';
+import { planOnlyNetwork } from '../../support/factories/planOnlyNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
 /**
@@ -21,6 +22,24 @@ const withSpells = (network: ReturnType<typeof hiddenNetwork>) => {
 };
 
 describe('NetworksUtils', () => {
+  describe('isPlanOnly', () => {
+    test('says a network with no track of its own but plans was never built', () => {
+      expect(isPlanOnly(planOnlyNetwork())).toBe(true);
+      expect(isPlanOnly(tinyNetwork())).toBe(false);
+      expect(isPlanOnly({ ...tinyNetwork(), segments: [], plans: {} })).toBe(false);
+      const { plans: _plans, ...withoutPlans } = tinyNetwork();
+      expect(isPlanOnly({ ...withoutPlans, segments: [] })).toBe(false);
+    });
+  });
+
+  describe('firstPlanOf', () => {
+    test('takes the first of its plans, or none', () => {
+      expect(firstPlanOf(planOnlyNetwork())).toBe('first');
+      const { plans: _plans, ...withoutPlans } = tinyNetwork();
+      expect(firstPlanOf(withoutPlans)).toBeUndefined();
+    });
+  });
+
   describe('withLinesHidden', () => {
     test('leaves a line hidden out as if it were not there: its own track and stations, its changes and plans, and a network with none left', () => {
       const shown = withLinesHidden(hiddenNetwork(), [lineId('grey')]).network;

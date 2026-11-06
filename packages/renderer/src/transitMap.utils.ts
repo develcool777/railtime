@@ -1,36 +1,44 @@
-import type { Bounds } from '@railtime/core/geometry.types';
-import type { MapOptions } from 'maplibre-gl';
-import { OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from './transitMap.constants';
-import type { MapView, Padding } from './transitMap.types';
+import type { NetworkFacts } from '@railtime/network/facts.service';
+import type { Playhead } from '@railtime/network/facts.types';
+import type { MapProps, TimeState } from './transitMap.types';
 
 /**
- * Where the map opens: a view the app linked to, or the whole network, fitted clear of the title, the
- * playback bar and the panels laid over the map.
+ * Where a network's map stands as it is given the network.
  *
- * @param view - The view linked to, if any.
- * @param bounds - The network's bounds.
- * @param padding - The room the app's panels take up.
- * @param cover - The panels laid over the map's edges.
- * @returns The map's opening camera.
+ * @param playheads - The network's playheads.
+ * @param arrival - The `arrival` prop.
+ * @returns The playhead: the moment asked for on this network, or where it rests.
  */
-export const openingOf = (
-  view: MapView | undefined,
-  bounds: Bounds,
-  padding: Padding,
-  cover: Padding,
-): Pick<MapOptions, 'center' | 'zoom' | 'bounds' | 'fitBoundsOptions'> =>
-  view
-    ? { center: view.center, zoom: view.zoom }
-    : {
-        bounds,
-        // Clear of the title and playback bar; the sides stay narrow, as their panels are small until playback.
-        fitBoundsOptions: {
-          padding: {
-            top: padding.top + cover.top,
-            bottom: padding.bottom + cover.bottom,
-            left: OPENING_SIDE_PADDING + cover.left,
-            right: OPENING_SIDE_PADDING + cover.right,
-          },
-          maxZoom: OPENING_MAX_ZOOM,
-        },
-      };
+export const arrivalPlayhead = (playheads: NetworkFacts['playheads'], arrival: MapProps['arrival']): Playhead =>
+  arrival ? playheads.atMoment(arrival) : playheads.rest();
+
+/**
+ * What the `time` event says of a playhead, the one way it is said.
+ *
+ * @param facts - The network.
+ * @param playhead - Where the map is.
+ * @param motion - How the map stands there.
+ * @param motion.inPlan - It shows a plan.
+ * @param motion.playing - It plays.
+ * @returns The time state: the network's size there as the facts count it.
+ */
+export const timeStateOf = (facts: NetworkFacts, playhead: Playhead, motion: Pick<TimeState, 'inPlan' | 'playing'>): TimeState => ({
+  ...playhead,
+  atToday: facts.playheads.isToday(playhead),
+  atRest: facts.playheads.isRest(playhead),
+  ...motion,
+  stats: facts.asOf(playhead).stats(),
+});
+
+/**
+ * What a map given a network will say of it on its next frame: for an app to read the new network from
+ * the moment it gives it, never the old one's cursor against the new one's facts.
+ *
+ * @param facts - The network.
+ * @param arrival - The `arrival` prop given with it.
+ * @returns Its time state, paused, as a map given a network is.
+ */
+export const arrivalTimeOf = (facts: NetworkFacts, arrival: MapProps['arrival']): TimeState => {
+  const playhead = arrivalPlayhead(facts.playheads, arrival);
+  return timeStateOf(facts, playhead, { inPlan: facts.playheads.inPlan(playhead), playing: false });
+};

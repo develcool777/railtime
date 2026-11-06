@@ -1,13 +1,22 @@
 import { describe, expect, test, vi } from 'vitest';
 import { PALETTES } from '../../../src/layers/theme.constants';
-import { STILL_CREDITS, STILL_FORMAT, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from '../../../src/still/basemap.constants';
+import { STILL_FORMAT, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from '../../../src/still/basemap.constants';
 import { BasemapStill } from '../../../src/still/basemap.service';
 import type { StillRequest } from '../../../src/still/basemap.types';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { LAND_LAYER } from '../../support/fakeMap.constants';
 
-/** A still of a small view. */
-const REQUEST: StillRequest = { view: { center: [0.5, 51.5], zoom: 11 }, width: 400, height: 225 };
+/** A still of a small view: two points either side of its middle. */
+const REQUEST: StillRequest = {
+  points: [
+    [0.4, 51.4],
+    [0.6, 51.6],
+  ],
+  padding: 18,
+  maxZoom: 11,
+  width: 400,
+  height: 225,
+};
 
 /**
  * A still-taker on a stand-in, its basemap one background layer.
@@ -16,15 +25,12 @@ const REQUEST: StillRequest = { view: { center: [0.5, 51.5], zoom: 11 }, width: 
  */
 const stillOf = () => {
   const fake = fakeMap([LAND_LAYER]);
+  Object.assign(fake.view, { width: REQUEST.width, height: REQUEST.height });
   const still = new BasemapStill({ theme: 'light', createMap: () => fake.map });
   return { still, fake, land: () => fake.layers.get(LAND_LAYER.id)?.paint['background-color'] };
 };
 
 describe('BasemapStill', () => {
-  test('owes credit to the basemap and to OpenStreetMap', () => {
-    expect(BasemapStill.credits).toEqual(STILL_CREDITS);
-  });
-
   test("takes a still once the basemap has loaded, in the theme's colours: the view, the size and the track asked for", async () => {
     const { still, fake, land } = stillOf();
     const picture = still.take({
@@ -54,13 +60,27 @@ describe('BasemapStill', () => {
     fake.fire('style.load');
     await expect(picture).resolves.toBe(`data:${STILL_FORMAT};quality=${STILL_QUALITY}`);
     expect(land()).toBe(PALETTES.light.background);
-    expect(fake.moves.at(-1)).toMatchObject({ kind: 'jump', target: REQUEST.view.center, options: { zoom: REQUEST.view.zoom } });
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'jump', target: [expect.closeTo(0.5), expect.closeTo(51.5)] });
     expect(fake.resizes()).toBe(1);
     expect(fake.featuresIn(STILL_TRACK.source).map(feature => feature.properties)).toEqual([
       { color: '#ff0000', dashed: false },
       { color: '#0000ff', dashed: true },
     ]);
     expect([...fake.layers.keys()]).toEqual([LAND_LAYER.id, STILL_TRACK.solid, STILL_TRACK.dashed]);
+  });
+
+  test('frames its points inside the padding asked for, no closer than its `maxZoom`', async () => {
+    const zoomOf = async (request: Partial<StillRequest>) => {
+      const { still, fake } = stillOf();
+      fake.fire('style.load');
+      await still.take({ ...REQUEST, ...request });
+      return Number(fake.moves.at(-1)?.options.zoom);
+    };
+    const room = (padding: number) => (REQUEST.height - padding * 2) / (0.2 * 1.6);
+    const padded = await zoomOf({ maxZoom: 20 });
+    expect(padded).toBeCloseTo(Math.log2(room(18) / (512 / 360)));
+    await expect(zoomOf({ maxZoom: 20, padding: 60 })).resolves.toBeCloseTo(Math.log2(room(60) / (512 / 360)));
+    await expect(zoomOf({ maxZoom: 7 })).resolves.toBe(7);
   });
 
   test('takes each still in turn, each with only its own track, and in the format asked for', async () => {
@@ -80,9 +100,12 @@ describe('BasemapStill', () => {
         },
       ],
     });
-    const second = still.take({ ...REQUEST, view: { center: [0.2, 51.2], zoom: 9 }, format: 'image/jpeg' });
+    const second = still.take({ ...REQUEST, points: [[0.2, 51.2]], format: 'image/jpeg' });
     await expect(Promise.all([first, second])).resolves.toEqual([`data:${STILL_FORMAT};quality=${STILL_QUALITY}`, `data:image/jpeg;quality=${STILL_QUALITY}`]);
-    expect(fake.moves.map(move => move.target)).toEqual([REQUEST.view.center, [0.2, 51.2]]);
+    expect(fake.moves.map(move => move.target)).toEqual([
+      [expect.closeTo(0.5), expect.closeTo(51.5)],
+      [0.2, 51.2],
+    ]);
     expect(fake.featuresIn(STILL_TRACK.source)).toEqual([]);
   });
 
@@ -117,22 +140,6 @@ describe('BasemapStill', () => {
     await picture;
     expect(taken).toBe(true);
     vi.useRealTimers();
-  });
-
-  test('a new theme colours the stills asked for after it, never one asked for before', async () => {
-    const { still, fake, land } = stillOf();
-    const colours: unknown[] = [];
-    const picture = fake.canvas.toDataURL;
-    fake.canvas.toDataURL = (format, quality) => {
-      colours.push(land());
-      return picture(format, quality);
-    };
-    const before = still.take(REQUEST);
-    still.setTheme('dark');
-    const after = still.take(REQUEST);
-    fake.fire('style.load');
-    await Promise.all([before, after]);
-    expect(colours).toEqual([PALETTES.light.background, PALETTES.dark.background]);
   });
 
   test('takes itself down: the hidden map removed, and its container off the page', () => {

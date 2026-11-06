@@ -4,17 +4,8 @@ import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { planId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { INSIGHTS_CHART_SHARES, INSIGHTS_DRAW_MS, INSIGHTS_LINES, INSIGHTS_STAGGER_MS, INSIGHTS_START_MS } from '~/features/video/insights/insights.constants';
-import {
-  countUp,
-  coverageChartShareOf,
-  coverageTitleOf,
-  insightsMotionOf,
-  linesTitleOf,
-  planGainOf,
-  sharesOf,
-  videoInsightsOf,
-} from '~/features/video/insights/insights.utils';
+import { INSIGHTS_DRAW_MS, INSIGHTS_STAGGER_MS, INSIGHTS_START_MS } from '~/features/video/insights/insights.constants';
+import { countUp, coverageTitleOf, insightsMotionOf, linesTitleOf, planGainOf, sharesOf, videoInsightsOf } from '~/features/video/insights/insights.utils';
 import { FADE_MS, SCENE_MS } from '~/features/video/video.constants';
 
 describe('InsightsUtils', () => {
@@ -24,7 +15,7 @@ describe('InsightsUtils', () => {
     test('asks the network for its size, history, lines and coverage', () => {
       const insights = videoInsightsOf(facts, AROUND_TINY);
       expect(insights.stats).toEqual(facts.today().stats());
-      expect(insights.years).toEqual(facts.growth().years);
+      expect(insights.stationYears).toEqual(facts.growth().years.map(({ year, stations }) => ({ year, value: stations })));
       expect(insights.busiest).toEqual(facts.growth().busiest);
       expect(insights.lines.length).toBeGreaterThan(0);
       expect(insights.coverage?.info.name).toBe(AROUND_TINY.name);
@@ -37,7 +28,7 @@ describe('InsightsUtils', () => {
 
     test('has no history for a network never built', () => {
       const insights = videoInsightsOf(NetworkFacts.create(planOnlyNetwork()), AROUND_TINY);
-      expect(insights).toMatchObject({ years: [], decades: [], busiest: null });
+      expect(insights).toMatchObject({ stationYears: [], decades: [], busiest: null });
       expect(insights.coverage?.years).toEqual([]);
     });
   });
@@ -53,13 +44,6 @@ describe('InsightsUtils', () => {
       const { stats, lines } = videoInsightsOf(NetworkFacts.create(tinyNetwork()), null);
       expect(linesTitleOf({ lines, stats })).toBe('Lines');
       expect(linesTitleOf({ lines, stats: { ...stats, lines: lines.length + 1 } })).toBe('Longest lines');
-    });
-  });
-
-  describe('coverageChartShareOf', () => {
-    test('is the short chart beside a full list, and taller by what a shorter one leaves', () => {
-      expect(coverageChartShareOf(INSIGHTS_LINES)).toBe(INSIGHTS_CHART_SHARES.short);
-      expect(coverageChartShareOf(3)).toBeGreaterThan(coverageChartShareOf(4));
     });
   });
 

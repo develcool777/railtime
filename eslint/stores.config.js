@@ -5,6 +5,6 @@ export const storesConfig = [
   {
     files: ['web/src/**/*.store.ts'],
     plugins: { house },
-    rules: { 'house/store-returns-state': 'error' },
+    rules: { 'house/store-returns-state': 'error', 'house/store-shape': 'error' },
   },
 ];

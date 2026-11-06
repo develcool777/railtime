@@ -115,17 +115,60 @@ describe('Minimap', () => {
     expect(widths).toEqual(Object.values(MINIMAP_LAYERS).map(() => MINIMAP_LINE_WIDTH));
   });
 
-  test('sends the change playing at most once in so long, and the latest when due', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+  test('sends what changes at most once in so long, by the clock of the frames that ask, and the latest when due', () => {
+    const { minimap, fake } = minimapOf();
+    fake.fire('style.load');
+    const sent = (source: string) => [fake.sends.get(source), fake.featuresIn(source).length];
+    minimap.setActive(linesOf(1));
+    minimap.setNetwork({ lines: linesOf(1), planned: linesOf(0) });
+    expect(sent(MINIMAP_SOURCES.active)).toEqual([undefined, 0]);
+    minimap.flush(1000);
+    expect([sent(MINIMAP_SOURCES.active), sent(MINIMAP_SOURCES.lines)]).toEqual([
+      [1, 1],
+      [1, 1],
+    ]);
+    minimap.setActive(linesOf(2));
+    minimap.setNetwork({ lines: linesOf(2), planned: linesOf(0) });
+    minimap.setActive(linesOf(3));
+    minimap.setNetwork({ lines: linesOf(3), planned: linesOf(0) });
+    minimap.flush(1000 + MINIMAP_UPDATE_MS - 1);
+    expect([sent(MINIMAP_SOURCES.active), sent(MINIMAP_SOURCES.lines)]).toEqual([
+      [1, 1],
+      [1, 1],
+    ]);
+    minimap.flush(1000 + MINIMAP_UPDATE_MS);
+    expect([sent(MINIMAP_SOURCES.active), sent(MINIMAP_SOURCES.lines)]).toEqual([
+      [2, 3],
+      [2, 3],
+    ]);
+  });
+
+  test('waits for no timer: with no frame asking, nothing is sent however long it waits', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance', 'Date'] });
     const { minimap, fake } = minimapOf();
     fake.fire('style.load');
     minimap.setActive(linesOf(1));
+    minimap.flush(0);
     minimap.setActive(linesOf(2));
-    minimap.setActive(linesOf(3));
-    expect([fake.sends.get(MINIMAP_SOURCES.active), fake.featuresIn(MINIMAP_SOURCES.active).length]).toEqual([1, 1]);
-    vi.advanceTimersByTime(MINIMAP_UPDATE_MS);
-    expect([fake.sends.get(MINIMAP_SOURCES.active), fake.featuresIn(MINIMAP_SOURCES.active).length]).toEqual([2, 3]);
+    vi.advanceTimersByTime(MINIMAP_UPDATE_MS * 10);
+    expect(fake.featuresIn(MINIMAP_SOURCES.active)).toHaveLength(1);
     vi.useRealTimers();
+  });
+
+  test('clears a change once, whatever network sent it, and sends nothing for no change', () => {
+    const { minimap, fake } = minimapOf();
+    fake.fire('style.load');
+    minimap.setActive(linesOf(0));
+    minimap.flush(0);
+    expect(fake.sends.get(MINIMAP_SOURCES.active)).toBeUndefined();
+    minimap.setActive(linesOf(2));
+    minimap.flush(100);
+    minimap.setActive(linesOf(0));
+    minimap.setActive(linesOf(0));
+    minimap.flush(200);
+    minimap.setActive(linesOf(0));
+    minimap.flush(300);
+    expect([fake.sends.get(MINIMAP_SOURCES.active), fake.featuresIn(MINIMAP_SOURCES.active).length]).toEqual([2, 0]);
   });
 
   test("outlines the main camera's view, and follows it", () => {
@@ -175,15 +218,10 @@ describe('Minimap', () => {
     expect(fake.layers.get(LAND_LAYER.id)?.paint['background-color']).toBe(PALETTES.dark.background);
   });
 
-  test('takes itself down: the box gone, the map removed, its container no longer watched, nothing left to send', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+  test('takes itself down: the box gone, the map removed, its container no longer watched', () => {
     const { minimap, fake, container, watcher } = minimapOf();
     fake.fire('style.load');
-    minimap.setActive(linesOf(1));
-    minimap.setActive(linesOf(2));
     minimap.destroy();
-    vi.advanceTimersByTime(MINIMAP_UPDATE_MS);
-    expect([container.childElementCount, fake.isRemoved(), watcher.watching, fake.featuresIn(MINIMAP_SOURCES.active).length]).toEqual([0, true, false, 1]);
-    vi.useRealTimers();
+    expect([container.childElementCount, fake.isRemoved(), watcher.watching]).toEqual([0, true, false]);
   });
 });

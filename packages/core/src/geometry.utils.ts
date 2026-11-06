@@ -77,8 +77,8 @@ export const cumulativeDistances = (coordinates: LngLat[]): number[] => {
  */
 export const sliceAlong = (coordinates: LngLat[], distances: number[], lengthKm: number): LngLat[] => {
   const kept = coordinates.slice(0, 1);
+  // Within bounds: the loop's, and `distances` has one entry per coordinate.
   for (let index = 1; index < coordinates.length; index++) {
-    // Within bounds: `distances` has one entry per coordinate.
     const point = coordinates[index]!;
     const pointKm = distances[index]!;
     if (pointKm <= lengthKm) {

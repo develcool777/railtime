@@ -32,7 +32,7 @@
   import { computed, useId } from 'vue';
   import { MARK_WIDTH_EM, REEL_HEIGHT_EM } from '~/constants/count.constants';
   import type { Count } from '~/utils/count.types';
-  import { reelsOf } from '~/utils/count.utils';
+  import { reelsOf, spokenCount } from '~/utils/count.utils';
 
   const props = withDefaults(
     defineProps<{
@@ -47,6 +47,7 @@
   );
 
   const id = useId();
-  const spoken = computed(() => (Math.round(props.count.now) / 10 ** props.decimals).toLocaleString('en-GB'));
-  const parts = computed(() => reelsOf(props.count, { decimals: props.decimals, grouped: !props.ungrouped }));
+  const shape = computed(() => ({ decimals: props.decimals, grouped: !props.ungrouped }));
+  const spoken = computed(() => spokenCount(props.count, shape.value));
+  const parts = computed(() => reelsOf(props.count, shape.value));
 </script>

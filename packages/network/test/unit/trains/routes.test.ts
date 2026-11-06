@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
 import { trainRunsAt } from '../../../src/trains/routes.utils';
+import { loopNetwork } from '../../support/factories/loopNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
 /**
@@ -133,6 +134,21 @@ describe('RouteUtils', () => {
       const route = runsIn(1930, network).filter(run => run.line === lineId('red'))[1];
       const ends = route?.legs.map(({ segment, forward }) => (forward ? [segment.stationA, segment.stationB] : [segment.stationB, segment.stationA])) ?? [];
       expect(ends.slice(1).map(([from]) => from)).toEqual(ends.slice(0, -1).map(([, to]) => to));
+    });
+
+    test("runs a one-way loop out along its line's way, and one that says none both ways", () => {
+      const runs = runsIn(1930, loopNetwork());
+      const runOf = (line: string) => runs.find(each => each.line === lineId(line));
+      expect(runOf('clockwise')?.oneWay).toBe(true);
+      expect(runOf('anticlockwise')?.oneWay).toBe(true);
+      expect(runOf('both')).not.toHaveProperty('oneWay');
+      // The first leg of each: A to C clockwise, A to B the other way.
+      const firstTo = (line: string) => {
+        const leg = runOf(line)?.legs[0];
+        return leg?.forward ? leg.segment.stationB : leg?.segment.stationA;
+      };
+      expect(firstTo('clockwise')).toBe('c');
+      expect(firstTo('anticlockwise')).toBe('b');
     });
 
     test('runs a loop between one station and itself, where it closes', () => {

@@ -1,14 +1,16 @@
 import { keysOf } from '@railtime/core/collection.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { tightestHeadway } from '@railtime/network/testing/trains';
 import type { TrainRun } from '@railtime/network/trains.types';
 import { playbackOf } from '@railtime/renderer/testing/playback';
 import type { CityIndex } from '@railtime/schema/cityIndex.types';
 import type { PlanId, StationId } from '@railtime/schema/network.types';
-import { isPlanOnly } from '@railtime/schema/plan.utils';
 import { globSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { cities, citiesNamed, SUMMARIES_PATH } from '../../src/city.utils.ts';
+import { SUMMARY_DAY } from '../../src/summary/summary.constants.ts';
 import { cityNetwork } from '../support/history.utils';
 
 /** The repository's root. */
@@ -44,7 +46,7 @@ describe('CityUtils', () => {
      */
     const trainsOf = (id: string, plan?: PlanId) => {
       const { facts } = playbackOf(cityNetwork(id), plan ? { plan } : {});
-      return facts.engine.trainService(facts.playheads.rest().cursor);
+      return facts.asOf(facts.playheads.rest()).trains();
     };
 
     /**
@@ -62,7 +64,7 @@ describe('CityUtils', () => {
     /** Every network a city shows: as built, if it was, and with each of its plans. */
     const SHOWN = cities().flatMap(({ id }) => {
       const network = cityNetwork(id);
-      return [...(isPlanOnly(network) ? [] : [{ id, plan: undefined }]), ...keysOf(network.plans ?? {}).map(plan => ({ id, plan }))];
+      return [...(NetworkFacts.create(network).planOnly ? [] : [{ id, plan: undefined }]), ...keysOf(network.plans ?? {}).map(plan => ({ id, plan }))];
     });
 
     test.each(SHOWN)(
@@ -73,6 +75,28 @@ describe('CityUtils', () => {
         expect(tightestHeadway(service)).toBeGreaterThanOrEqual(TIGHTEST_HEADWAY_SECONDS);
         expect(service.timetables.filter(({ run }) => doublesBack(run))).toEqual([]);
         expect(service.placesAt(600).length).toBeGreaterThan(0);
+      },
+    );
+  });
+
+  describe('every city, summed up', () => {
+    /** Today, for the sums: the list's own, so a date passing changes none of them. */
+    const TODAY = toTimestamp(SUMMARY_DAY);
+
+    test.each(cities().map(({ id }) => ({ id })))('$id sums up as its timeline counts it', ({ id }) => {
+      const facts = NetworkFacts.create(cityNetwork(id), { today: TODAY });
+      const planOnly = NetworkFacts.create(cityNetwork(id), { today: TODAY, ...(facts.planOnly && { plan: keysOf(cityNetwork(id).plans ?? {})[0]! }) });
+      const { lines, stations } = planOnly.asOf(facts.planOnly ? planOnly.playheads.end() : planOnly.playheads.today()).stats();
+      expect(facts.summary()).toMatchObject({ lines, stations });
+    });
+
+    test.each(cities().flatMap(({ id }) => keysOf(cityNetwork(id).plans ?? {}).map(plan => ({ id, plan }))))(
+      '$id $plan adds the stations its timeline does',
+      ({ id, plan }) => {
+        const today = NetworkFacts.create(cityNetwork(id), { today: TODAY });
+        const built = NetworkFacts.create(cityNetwork(id), { today: TODAY, plan });
+        const added = built.asOf(built.playheads.end()).stats().stations - today.today().stats().stations;
+        expect(today.plans().find(each => each.id === plan)?.facts.stations).toBe(added);
       },
     );
   });

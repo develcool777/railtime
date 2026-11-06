@@ -149,9 +149,9 @@ describe('ScheduleUtils', () => {
     });
 
     test('runs a line that is one way round a loop only that way, in the half the trains', () => {
-      const route = { ...routeOf([segmentOf(0, 20)], { ends: ['a', 'a'] }), oneWay: -1 as const };
+      const route = { ...routeOf([segmentOf(0, 20)], { ends: ['a', 'a'] }), oneWay: true as const };
       const oneWay = timetableOf(route, EVERY);
-      expect(new Set(placesOf(oneWay, 100).map(({ heading }) => heading))).toEqual(new Set([-1]));
+      expect(new Set(placesOf(oneWay, 100).map(({ heading }) => heading))).toEqual(new Set([1]));
       expect(trainsOn(oneWay)).toBe(oneWay.roundSeconds / EVERY);
     });
 

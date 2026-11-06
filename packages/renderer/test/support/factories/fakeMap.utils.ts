@@ -39,11 +39,15 @@ const PIXELS_PER_DEGREE = 512 / 360;
 /** How much taller a degree of latitude is drawn than one of longitude, about 51° north. */
 const LATITUDE_STRETCH = 1.6;
 
+/** The closest MapLibre's map goes unless told. */
+const MOST_ZOOM = 22;
+
 /**
  * A stand-in for a MapLibre map: it keeps the sources' data, the layers and their properties, and the
  * camera's moves, so a layer group or the camera can be run in node and what it sent looked at. Its
- * camera is a flat projection of a `view` in a 1000 × 600 container; a fit lands on the box's middle
- * at its `maxZoom`, as it does for a box smaller than the view.
+ * camera is a flat projection of a `view` in a 1000 × 600 container; a fit does MapLibre's sums on it:
+ * as close as puts the box inside what the map's padding and its own leave, up to its `maxZoom`, the
+ * box in the middle of that room.
  *
  * @param style - The basemap's layers, as a loaded style has them.
  * @returns The stand-in and what it keeps.
@@ -57,6 +61,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     cover: { top: 0, right: 0, bottom: 0, left: 0 },
     moving: false,
     tilesLoaded: true,
+    styleLoaded: true,
   };
   const data = new Map<string, unknown>();
   const images = new Map<string, { url: string; coordinates: unknown }>();
@@ -99,6 +104,31 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   };
   const fire = (event: string, payload?: unknown) => {
     for (const handler of handlers.get(event) ?? []) handler(payload);
+  };
+  /** What a fit is asked for: padding round the box, and the closest it may go. */
+  type FitOptions = { padding?: number | { top: number; right: number; bottom: number; left: number }; maxZoom?: number };
+  // MapLibre's sums for a fit: a padding of one number is that on every side, and adds to the map's own.
+  const fit = ([[west, south], [east, north]]: [[number, number], [number, number]], options: FitOptions) => {
+    const given =
+      typeof options.padding === 'number' ? { top: options.padding, right: options.padding, bottom: options.padding, left: options.padding } : options.padding;
+    const { cover } = view;
+    const padding = {
+      top: cover.top + (given?.top ?? 0),
+      right: cover.right + (given?.right ?? 0),
+      bottom: cover.bottom + (given?.bottom ?? 0),
+      left: cover.left + (given?.left ?? 0),
+    };
+    const across = (view.width - padding.left - padding.right) / (east - west);
+    const down = (view.height - padding.top - padding.bottom) / ((north - south) * LATITUDE_STRETCH);
+    const zoom = Math.min(options.maxZoom ?? MOST_ZOOM, Math.log2(Math.min(across, down) / PIXELS_PER_DEGREE));
+    const scale = PIXELS_PER_DEGREE * 2 ** zoom;
+    return {
+      center: [
+        (west + east) / 2 + (padding.right - padding.left) / 2 / scale,
+        (south + north) / 2 + (padding.top - padding.bottom) / 2 / (scale * LATITUDE_STRETCH),
+      ],
+      zoom,
+    };
   };
   const map = {
     addSource: (id: string, source: { type: string; data?: unknown; url?: string; coordinates?: unknown }) => {
@@ -160,8 +190,8 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
       const scale = PIXELS_PER_DEGREE * 2 ** view.zoom;
       return { x: view.width / 2 + (lng - view.center[0]) * scale, y: view.height / 2 - (lat - view.center[1]) * scale * LATITUDE_STRETCH };
     },
-    cameraForBounds: (_bounds: unknown, options: { maxZoom: number }) => ({ zoom: options.maxZoom }),
-    fitBounds: ([[west, south], [east, north]]: [[number, number], [number, number]], options: Record<string, unknown>) => {
+    cameraForBounds: fit,
+    fitBounds: ([[west, south], [east, north]]: [[number, number], [number, number]], options: FitOptions) => {
       moves.push({
         kind: 'fit',
         target: [
@@ -170,7 +200,16 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
         ],
         options,
       });
-      Object.assign(view, { center: [(west + east) / 2, (south + north) / 2], zoom: options.maxZoom });
+      Object.assign(
+        view,
+        fit(
+          [
+            [west, south],
+            [east, north],
+          ],
+          options,
+        ),
+      );
     },
     easeTo: (options: Record<string, unknown>) => {
       moves.push({ kind: 'ease', target: options.center, options });
@@ -180,6 +219,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     isMoving: () => view.moving,
     areTilesLoaded: () => view.tilesLoaded,
+    isStyleLoaded: () => view.styleLoaded,
     // What the renderer needs of a whole map: its events, its canvas, and where it looks.
     on: (event: string, ...rest: unknown[]) => {
       const handler = rest.at(-1) as (payload: unknown) => void;

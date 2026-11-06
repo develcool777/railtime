@@ -1,3 +1,4 @@
+import { required } from '@railtime/core/required.utils';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { onBeforeUnmount, onMounted, watch } from 'vue';
@@ -10,7 +11,7 @@ import type { TransitMapMount } from '~/utils/transitMap.types';
 /**
  * Makes the map and takes it down: an effect, and nothing else. On mount it makes the map with the
  * explorer's `mapProps`, where the map store says it looks, and listeners that call the stores'
- * actions with what it says; it hands the map to the explorer (`ATTACH`), gives it each change of
+ * actions with what it says; it hands the map to the map store (`ATTACH`), gives it each change of
  * `mapProps`, and takes it down on unmount. Commands reach the map through the stores' actions only.
  * Client only: call it inside `<ClientOnly>`.
  *
@@ -27,7 +28,8 @@ export const useTransitMap = (mount: TransitMapMount): void => {
     const props = explorer.mapProps;
     if (!props) return;
     map = new TransitMap({
-      container: mount.container.value!,
+      // `onMounted`: its element is in the page.
+      container: required(mount.container.value ?? undefined, "the map's element"),
       minimapContainer: mount.minimapContainer.value ?? undefined,
       props,
       ...(mapStore.view && { view: mapStore.view }),
@@ -37,18 +39,18 @@ export const useTransitMap = (mount: TransitMapMount): void => {
       on: {
         time: time => timeStore.SET_TIME(time),
         step: step => timeStore.SET_STEP(step),
+        end: () => timeStore.END_PLAYBACK(),
         overlay: result => tools.SET_OVERLAY_RESULT(result),
         view: view => mapStore.SET_VIEW(view),
         stationClick: id => explorer.CLICK_STATION(id),
         // The station open left the map on another date: its view closes.
         selectionGone: () => explorer.CLOSE_STATION(),
-        end: () => timeStore.PLAYBACK_ENDED(),
       },
     });
-    explorer.ATTACH(map);
+    mapStore.ATTACH(map);
   });
 
-  // Another plan's network is one of them: drawn on the same map.
+  // Another network is one of them, with where to stand on it: drawn on the same map.
   watch(
     () => explorer.mapProps,
     props => props && map?.update(props),

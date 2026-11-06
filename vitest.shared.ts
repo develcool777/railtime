@@ -24,11 +24,23 @@ export const SHARED_TEST_OPTIONS = {
  * (an inset over the map, a hidden container). Each is a project of its own.
  *
  * @param name - The package's project name; its specs' is `<name>-dom`.
+ * @param extra - What the package's tests run with besides: how it resolves its imports, its benchmarks.
  * @returns The two projects.
  */
-export const projectsOf = (name: string): TestProjectInlineConfiguration[] => [
-  { test: { ...SHARED_TEST_OPTIONS, name, include: ['test/unit/**/*.test.ts'] } },
-  { test: { ...SHARED_TEST_OPTIONS, name: `${name}-dom`, environment: 'happy-dom', include: ['test/unit/**/*.spec.ts'] } },
+export const projectsOf = (name: string, extra: TestProjectInlineConfiguration = {}): TestProjectInlineConfiguration[] => [
+  { ...extra, test: { ...extra.test, ...SHARED_TEST_OPTIONS, name, include: ['test/unit/**/*.test.ts'] } },
+  // A benchmark is timed in node, where the work runs: it has no elements of its own.
+  {
+    ...extra,
+    test: {
+      ...extra.test,
+      ...SHARED_TEST_OPTIONS,
+      name: `${name}-dom`,
+      environment: 'happy-dom',
+      include: ['test/unit/**/*.spec.ts'],
+      benchmark: { include: [] },
+    },
+  },
 ];
 
 /**

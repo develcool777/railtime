@@ -18,7 +18,7 @@ const map = new TransitMap({
   minimapContainer,
 });
 map.update({ viewMode: '3d', overlay: { kind: 'route', from: 'bank', to: 'oval', option: 0 } });
-map.update({ facts: NetworkFacts.create(network, { plan: 'another' }) }); // drawn on the same map, at its today
+map.update({ facts: NetworkFacts.create(network, { plan: 'another' }), arrival: null }); // drawn on the same map, where it rests: `arrival`, a moment, says otherwise
 map.seek(facts.playheads.on(Date.UTC(1950, 0, 1))); // any Playhead: .after(cursor, progress), .before(cursor), .today(), .end(), a TimeState
 map.play(); // on from here; at the end, again from history's first date (a plan's: today); or play(playhead)
 map.pause(); map.skip(); map.previousChange(); map.stepYear(-1); map.stop();
@@ -43,13 +43,20 @@ it turns before a bend, smoothly, never in it (`chaseAlong`). The minimap, a sec
 growing at most thirty times a second, and outlines the camera's view with an element over it, placed every frame. A station reached is linked to those it changes to as the front
 gets there, ringed as an interchange from then. A closed stretch plays the same way backwards
 (`retreatOf`): one front retracts from its far end to the network that stays, at the same pace,
-over the dashed ghost of what closes (a suspended stretch's ghost stays until its line is back; one closed for good goes), the 3D camera following it facing the way it runs, and each
+over the dashed ghost of what closes (a suspended stretch's ghost stays until its line is back; one closed for good goes), the stretch standing whole until the front starts on it, the 3D camera following it facing the way it runs, and each
 station it takes off the map fading while the front stops there. A plan's stretch grows dashed, as
 the map draws a plan (`planned` on its features). The player's `progress` is linear: each kind of step moves through its time its own way. A renamed station is labelled with its new name over `formerly <old>`; a closing one
 stays named, marked `closed` (`closed for now` for a spell, `reopened` as it returns), as its dot fades and a ring closes in on it.
 
-A frame draws only what changed (`FrameRenderer`): with nothing playing, nothing popping in and the same snapshot, it
-sends MapLibre nothing, so an idle map costs no script time and panning stays smooth.
+What a step does to the network under it is the step's to say, by phase (`StepAnimation.baseAt`, a `BaseNetwork`):
+what the network leaves out, what makes room, and how far lines have blended. The snapshot is built by that answer
+and knows no kind of step: a closure takes its stretch out as it starts retracting, an opening has the track make
+room from the start, an identity step gives a blend as it draws.
+
+A frame draws only what changed (`FrameRenderer`): the snapshot is built again when the cursor or the theme moved or
+when the step's answer differs (`sameBase`: a blend only as its value changes), and the step drawn again only once it
+moved. With nothing playing, or paused in a change, nothing popping in and the same snapshot, it sends MapLibre
+nothing, so an idle map costs no script time and panning stays smooth.
 
 Every `setData` has MapLibre cut that source's tiles again, in a worker, for every tile in view: at
 street level in 3D, a score of them. So while a line grows:
@@ -61,7 +68,8 @@ street level in 3D, a score of them. So while a line grows:
 - a source is sent only when what it holds changed; the highlight's fade is a paint value;
 - a station's or a ring's look (pop-in, fade, a ring growing) is feature state, never data: the
   stations are sent only when one is added, gone, or shows something new;
-- the minimap takes what changes every frame at most thirty times a second (`MINIMAP_UPDATE_MS`);
+- the minimap takes all it is given at most thirty times a second (`MINIMAP_UPDATE_MS`), by the frames' own clock
+  (`Minimap.flush(now)`), never a timer: a recorder's clock moves the frames, and the inset with them;
 - as a step's camera move ends, it waits for the tiles where it arrived (`MAX_TILE_WAIT_SECONDS`), so
   the line grows over drawn streets, not a blank filling in.
 
@@ -74,25 +82,31 @@ from one segment to the next. Lines drawn as the same line (an alias) share a sl
 ## Structure
 
 A folder per subject; inside it, files are named for what they are, not for the folder again
-(`reach/layer.service.ts` holds `ReachLayer`). What takes no map (`*.utils.ts`, the player, `steps/`)
+(`overlay/reach.service.ts` holds `ReachLayer`). What takes no map (`*.utils.ts`, the player, `steps/`)
 runs in the unit tests as it is; the layers, the minimap, `BasemapStill` and `TransitMap` whole run on a
 stand-in map (`test/support/factories/fakeMap.utils.ts`, given as their `createMap`) with frames stepped
 by hand; what adds elements of its own (the minimap, `BasemapStill`) in happy-dom, as `*.spec.ts`.
 
 ```text
 src/
-├── transitMap.service.ts      TransitMap: the facade; owns MapLibre, the props, the commands, the frame loop
-│                              and the event queue
+├── transitMap.service.ts      TransitMap: the facade; owns MapLibre, the props, the frame loop and the event queue,
+│                              and hands each command and effect to the part whose job it is
+├── transitMap.utils.ts        Where a network's map stands as it comes (`arrivalPlayhead`), what `time` says of a
+│                              playhead, and of a network just given (`arrivalTimeOf`, for the app); no map
 ├── minimap/                   Minimap: the overview inset, and the box over it following the main camera's view
 │                              (`minimap.utils.ts` places it)
 ├── playback/
-│   ├── playback.service.ts    Playback: the history played on the map, each frame and each jump: the clock moved
-│   │                          on (held for the tiles), each change framed and captioned, the moment drawn, reported
+│   ├── playback.service.ts    Playback: the history played on the map, each frame, each command and each jump: the
+│   │                          clock moved on (held for the tiles), each change framed and captioned, the moment drawn,
+│   │                          reported; another network or view taken up; it holds what one network is drawn with
 │   ├── player.service.ts      Player: the clock and each step's phases, moved by its commands; pure
-│   └── camera.service.ts      CameraDirector: framing a step; in 3D, following its line as it grows
+│   └── camera.service.ts      CameraDirector: every move of the camera: where it opens (`camera.utils.ts`), the panels
+│                              over the edges, one-off moves, framing a step; in 3D, following its line as it grows
 ├── steps/                     StepAnimation, one class for every kind of step: how long it takes, what it frames, what it
-│                              draws; how a stretch grows and the camera's path along it (`animation.utils.ts`)
-├── layers/                    MapLayer; the network's layers and the active step, the stations, the buildings;
+│                              asks of the network under it, what it draws; how a stretch grows and the camera's path
+│                              along it (`animation.utils.ts`)
+├── layers/                    MapLayers (`stack.service.ts`): the groups in their order, installed and themed together;
+│                              MapLayer; the network's layers and the active step, the stations, the buildings;
 │                              FrameRenderer, the snapshot, the line styles, the basemap
 ├── overlay/                   OverlayController, and what it draws over the network: RouteLayer, ReachLayer,
 │                              CoverageLayer, and their drawing (`overlay.utils.ts`)
@@ -101,7 +115,7 @@ src/
 ```
 
 The player and the map only ever talk to `StepAnimation`, one class for every kind of step: each kind's
-times are a row of `STEP_TIMES` (an opening's or a closure's, its stretch's), and `cameraPoints` and `draw` a case each.
+times are a row of `STEP_TIMES` (an opening's or a closure's, its stretch's), and `cameraPoints`, `baseAt` and `draw` a case each.
 
 ## Limits
 

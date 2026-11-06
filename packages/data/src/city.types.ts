@@ -1,3 +1,6 @@
+/** How a feature says what it did: the command gives it, as a feature knows nothing of the console. */
+export type Report = (line: string) => void;
+
 /** A city kept in `cities/<country>/<city>/`, and where its files are. */
 export type City = {
   /** Its country's folder in `cities/` (`united-kingdom`). */

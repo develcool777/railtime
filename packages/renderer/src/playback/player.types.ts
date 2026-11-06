@@ -1,8 +1,9 @@
 import type { Step } from '@railtime/network/engine.types';
 import type { StepAnimation } from '../steps/animation.service';
+import type { MapProps } from '../transitMap.types';
 
-/** The phases of a playing step: the camera moves, the change animates, the result stays highlighted. */
-export type Phase = 'pre' | 'draw' | 'hold';
+/** What the player reads from the map's props. */
+export type PlayerSettings = Pick<MapProps, 'speed'>;
 
 /** The step playing now. */
 export type ActivePlayback = {

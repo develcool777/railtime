@@ -1,12 +1,9 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { CoverageDistance, CoverageInfo, NetworkStats, Playhead, ReachInfo, RouteInfo, StepInfo, Theme } from '@railtime/network/facts.types';
+import type { CoverageDistance, CoverageInfo, Moment, NetworkStats, Playhead, ReachInfo, RouteInfo, StepInfo, Theme } from '@railtime/network/facts.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
-import type { FrameRenderer } from './layers/frame.service';
-import type { OverlayController } from './overlay/controller.service';
-import type { Player } from './playback/player.service';
 
 /** `follow` frames each change, `overview` the change plus the network so far, `free` leaves the camera alone. */
 export type CameraMode = 'follow' | 'overview' | 'free';
@@ -21,16 +18,23 @@ export type Padding = { top: number; bottom: number; left: number; right: number
 export type MapView = { center: LngLat; zoom: number };
 
 /**
- * How the map is set: everything the app decides and the map shows, as one object (`_ARCHITECTURE.md`,
+ * How the map is set: everything the app decides and the map shows, as one object (`ARCHITECTURE.md`,
  * Props). The app owns it and gives it whole or in part to `update`, as often as it likes; the map
  * acts on what changed and never changes it itself.
  */
 export type MapProps = {
   /**
    * The network drawn, its history and every fact about it: one instance, shared with the app. Another
-   * (the network with a plan, or without) is drawn on the same map, at its today, the camera left where it is.
+   * (the network with a plan, or without) is drawn on the same map, where `arrival` says, the camera left where it is.
    */
   facts: NetworkFacts;
+  /**
+   * Where the map stands on a network as it is given it, read then and at no other time, so the two are
+   * said together, before the map is ready as after: a moment (`Playheads.moment`), which means the same
+   * on any network, where a cursor means something only to its own; `null` for where the network rests
+   * (today, or a plan built). Moving through time after that is a command's.
+   */
+  arrival: Moment | null;
   theme: Theme;
   /** Flat from above, or tilted in 3D, the buildings standing; playback then follows from close by. */
   viewMode: ViewMode;
@@ -42,7 +46,7 @@ export type MapProps = {
   boldPlans: boolean;
   /** Whether trains run on the lines: an illustration, the network keeping no timetable. */
   trains: boolean;
-  /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
+  /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A line drawn as another at the moment is that line, as in every answer. A route or a reach fades them all. */
   focusedLines: LineId[] | null;
   /** The station ringed, flown to when it changes; `null` for none. */
   selectedStation: StationId | null;
@@ -89,8 +93,6 @@ export type TransitMapOptions = {
   view?: MapView;
   /** Where to draw the overview inset. Without one there is no minimap. */
   minimapContainer?: HTMLElement;
-  /** A MapLibre style URL using the OpenMapTiles schema. Defaults to OpenFreeMap's Positron. */
-  basemap?: string;
   /**
    * Where MapLibre's worker script is served. A bundler that moves MapLibre (Vite does) breaks the
    * path it works out itself, so the app passes the URL its bundler gives the file.
@@ -102,14 +104,6 @@ export type TransitMapOptions = {
   createMap?: CreateMap;
   /** Asks for frames: `requestAnimationFrame` unless a test steps them by hand. */
   scheduler?: FrameScheduler;
-};
-
-/** What `TransitMap` draws one network with, made again for another: its facts, its player, its overlay and its frames. */
-export type NetworkParts = {
-  facts: NetworkFacts;
-  player: Player;
-  overlay: OverlayController;
-  frames: FrameRenderer;
 };
 
 /** One credit the map owes: the basemap's or the data's. */
@@ -127,7 +121,7 @@ export type TimeState = Playhead & {
   /** The map shows a plan: a planned change done, or one being drawn. `time` is then the end of the dates. */
   inPlan: boolean;
   playing: boolean;
-  /** The network's size on the map: the change being drawn counted as far as it is drawn, so a count moves as soon as its line does. */
+  /** The network's size on the map, as the facts count it there (`FactsAt.stats`): the change being drawn as far as it is drawn, so a count moves as soon as its line does. */
   stats: NetworkStats;
 };
 

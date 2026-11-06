@@ -1,10 +1,13 @@
 import { YEAR_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
+import { required } from '@railtime/core/required.utils';
 import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { Step } from '@railtime/network/engine.types';
 import type { Playhead } from '@railtime/network/facts.types';
 import { CAMERA_PRE_SECONDS, FAST_YEARS_PER_SECOND, SLOW_YEARS_PER_SECOND } from './player.constants';
-import type { ActivePlayback, AnimationFactory, Phase, PlayerEvent } from './player.types';
+import type { ActivePlayback, AnimationFactory, PlayerEvent, PlayerSettings } from './player.types';
+import { UNTOUCHED_BASE } from '../steps/animation.constants';
+import type { BaseNetwork, Phase } from '../steps/animation.types';
 
 /**
  * Plays the timeline: the clock runs between dates, stops on a date, and plays that date's steps one
@@ -20,11 +23,9 @@ export class Player {
   private stepsDone: number;
   /** Whether the clock and steps advance on `tick`. */
   private running = false;
-  /** Playback speed multiplier. */
-  private rate = 1;
   /** The step playing now, if any. */
   private current: ActivePlayback | null = null;
-  /** Today: where the map opens. */
+  /** Today: where a player starts, until it is told otherwise. */
   public readonly today: number;
   /** Where the clock ends: today, or a dated step after it. Planned steps play here. */
   public readonly end: number;
@@ -34,14 +35,17 @@ export class Player {
   private readonly playheads: NetworkEngine['playheads'];
   /** Builds each step's animation as it starts. */
   private readonly createAnimation: AnimationFactory;
+  /** How it is set: the map's props, read each time, never kept. */
+  private readonly settings: () => PlayerSettings;
 
-  public constructor(engine: Pick<NetworkEngine, 'timeline' | 'range' | 'playheads'>, createAnimation: AnimationFactory) {
+  public constructor(engine: Pick<NetworkEngine, 'timeline' | 'range' | 'playheads'>, createAnimation: AnimationFactory, settings: () => PlayerSettings) {
     const { timeline, range, playheads } = engine;
     this.timeline = timeline;
     this.playheads = playheads;
     this.today = range.today;
     this.end = range.end;
     this.createAnimation = createAnimation;
+    this.settings = settings;
     const opening = playheads.today();
     this.time = opening.time;
     this.stepsDone = opening.cursor;
@@ -64,7 +68,7 @@ export class Player {
 
   /** Playback speed multiplier. */
   public get speed(): number {
-    return this.rate;
+    return this.settings().speed;
   }
 
   /** The step playing now, if any: read only. */
@@ -105,13 +109,10 @@ export class Player {
     return active ? clamp((active.elapsed - active.preSeconds - active.animation.drawSeconds) / active.animation.holdSeconds, 0, 1) : 0;
   }
 
-  /**
-   * Sets the playback speed.
-   *
-   * @param speed - A multiplier: 1 is normal.
-   */
-  public setSpeed(speed: number): void {
-    this.rate = speed;
+  /** What the change playing asks of the network under it, at the phase it is in; between changes, nothing. */
+  public get base(): BaseNetwork {
+    const active = this.current;
+    return active ? active.animation.baseAt(this.phase ?? 'pre', this.progress) : UNTOUCHED_BASE;
   }
 
   /**
@@ -198,7 +199,7 @@ export class Player {
     if (!this.running) return [];
     const events: PlayerEvent[] = [];
     if (this.current) {
-      this.current.elapsed += seconds * this.rate;
+      this.current.elapsed += seconds * this.speed;
       const { preSeconds, animation } = this.current;
       if (this.current.elapsed >= preSeconds + animation.drawSeconds + animation.holdSeconds) this.finishStep(events);
       return events;
@@ -235,7 +236,7 @@ export class Player {
     const target = next ? this.playheads.dateOf(next.index) : this.end;
     // As many years a second as are left, between the two speeds: it slows steadily into the date, never with a jolt.
     const yearsPerSecond = clamp((target - this.time) / YEAR_MS, SLOW_YEARS_PER_SECOND, FAST_YEARS_PER_SECOND);
-    this.time = Math.min(target, this.time + yearsPerSecond * this.rate * seconds * YEAR_MS);
+    this.time = Math.min(target, this.time + yearsPerSecond * this.speed * seconds * YEAR_MS);
     if (next && this.time >= target) {
       this.startStep(next, events);
     } else if (!next && this.time >= this.end) {
@@ -285,7 +286,7 @@ export class Player {
    * @param events - Filled with what happened.
    */
   private finishStep(events: PlayerEvent[]): void {
-    const { step } = this.current!.animation;
+    const { step } = required(this.current ?? undefined, 'the step finishing').animation;
     this.current = null;
     this.stepsDone = step.index + 1;
     events.push({ type: 'stepEnd', step });

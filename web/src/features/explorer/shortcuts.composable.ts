@@ -16,8 +16,8 @@ export const useExplorerShortcuts = (): void => {
   const panel = usePanelStore();
 
   const run: Record<ShortcutAction, () => void> = {
-    search: () => store.SET_DIALOG('search'),
-    help: () => store.SET_DIALOG('help'),
+    search: () => store.OPEN_DIALOG('search'),
+    help: () => store.OPEN_DIALOG('help'),
     panel: () => store.TOGGLE_PANEL(),
     rest: () => timeStore.LEAVE_TO('rest'),
     play: () => timeStore.TOGGLE_PLAY(),

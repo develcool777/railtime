@@ -105,12 +105,15 @@ describe('StationLayer', () => {
     layer.update(frameOf({ stations, highlighted, stepPlaying: true, now: PULSE_MS / 2, newLabelOpacity: 0.5 }));
     expect(pulses(fake)[0]?.properties).toMatchObject({ color: '#f00', opacity: 0.5 });
     expect(dots(fake)[0]?.properties.labelOpacity).toBe(0.5);
-    // Run out, but the step plays on: kept, so it does not pulse again.
+    // Run out, but the step plays on: kept, so it does not pulse again; and nothing moves on its own, paused or not.
     layer.update(frameOf({ stations, highlighted, stepPlaying: true, now: PULSE_MS * 2 }));
+    layer.update(frameOf({ stations, highlighted, stepPlaying: true, now: PULSE_MS * 2 + 1 }));
     expect(pulses(fake)).toEqual([]);
-    expect(layer.animating).toBe(true);
-    layer.update(frameOf({ stations, now: PULSE_MS * 3 }));
     expect(layer.animating).toBe(false);
+    // The step over, it is forgotten: another may pulse it.
+    layer.update(frameOf({ stations, now: PULSE_MS * 3 }));
+    layer.update(frameOf({ stations, highlighted, stepPlaying: true, now: PULSE_MS * 4 }));
+    expect(pulses(fake)).toHaveLength(1);
   });
 
   test('fades a closing station, and pops a station back in that left and returned', () => {
@@ -234,19 +237,8 @@ describe('StationLayer', () => {
     expect(fake.layers.get(LAYERS.labels)?.paint['text-color']).toBe(PALETTES.light.label);
   });
 
-  test('keeps the labels hidden and the fade for layers installed later, and finds the station drawn under a point', () => {
-    const fake = fakeMap();
-    const layer = new StationLayer(
-      fake.map,
-      () => [0, 0],
-      station => station,
-      compareLines,
-    );
-    layer.showLabels(false);
-    layer.fade(true);
-    layer.install(['Font']);
-    expect(fake.layers.get(LAYERS.labels)?.layout.visibility).toBe('none');
-    expect(fake.layers.get(LAYERS.stations)?.paint['circle-stroke-opacity']).toEqual(['*', 0.25, ['coalesce', ['feature-state', 'opacity'], 1]]);
+  test('finds the station drawn under a point', () => {
+    const { fake, layer } = installed();
     expect(layer.stationAt([0, 0])).toBeNull();
     fake.rendered.push({ properties: { id: 'a' } });
     // Only a dot it drew is a station: an id it never gave is none.

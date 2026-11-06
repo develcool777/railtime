@@ -32,6 +32,8 @@ export type FakeMap = {
     moving: boolean;
     /** Whether every tile in view has loaded, as `areTilesLoaded` answers. */
     tilesLoaded: boolean;
+    /** Whether the style and what was last sent to its sources have loaded, as `isStyleLoaded` answers. */
+    styleLoaded: boolean;
   };
   /** The map's one canvas: the cursor set on its style, and the picture `toDataURL` gives (its format and quality). Replace `toDataURL` to fail it. */
   canvas: { style: Record<string, string>; toDataURL: (format?: string, quality?: number) => string };

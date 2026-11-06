@@ -1,33 +1,31 @@
 import type { LngLat } from '@railtime/core/geometry.types';
+import { required } from '@railtime/core/required.utils';
 import type { LineSegment } from '@railtime/network/engine.types';
-import type { NetworkStats } from '@railtime/network/facts.types';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { FeatureCollection, LineFeature, NetworkSnapshot, PointFeature, StationLines, StationsFound } from './snapshot.types';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
 import { offsetFor, resolveLine } from './style.utils';
 
 /**
- * Which lines run side by side on each segment: those open, plus those the playing step is opening,
- * so the track already on the map makes room before the new line draws in.
+ * Which lines run side by side on each segment: those open, plus those the step playing has make
+ * room, so the track already on the map moves aside before the new line draws in.
  *
  * @param state - The frame's render state.
  * @param lineSegments - The line segments.
  * @param resolved - Each line as drawn.
- * @param stepPlaying - A step is playing at the cursor.
  * @returns The lines on each segment, in side-by-side order.
  */
-const buildSideBySide = (state: RenderState, lineSegments: LineSegment[], resolved: Map<LineId, ResolvedLine>, stepPlaying: boolean): SideBySide => {
+const buildSideBySide = (state: RenderState, lineSegments: LineSegment[], resolved: Map<LineId, ResolvedLine>): SideBySide => {
   const sideBySide: SideBySide = new Map();
   for (const lineSegment of lineSegments) {
-    const onMap = state.timeline.isOpen(lineSegment, state.cursor) || (stepPlaying && state.timeline.opensAt(lineSegment, state.cursor));
+    const onMap = state.timeline.isOpen(lineSegment, state.cursor) || state.base.makesRoom.has(lineSegment);
     if (!onMap) continue;
-    const lineId = resolved.get(lineSegment.line)!.id;
+    const lineId = required(resolved.get(lineSegment.line), 'a line as drawn').id;
     const onSegment = sideBySide.get(lineSegment.segment.index) ?? [];
     if (!onSegment.includes(lineId)) onSegment.push(lineId);
     sideBySide.set(lineSegment.segment.index, onSegment);
   }
-  for (const lines of sideBySide.values()) lines.sort(state.index.compareLines);
-  return sideBySide;
+  return new Map([...sideBySide].map(([segment, lines]) => [segment, lines.toSorted(state.index.compareLines)]));
 };
 
 /**
@@ -54,14 +52,14 @@ const linkTransfers = (state: RenderState, stations: Map<StationId, StationLines
  *
  * @param state - The frame's render state.
  * @param lineSegment - The line's track on a segment.
- * @param closing - The step playing closes it.
+ * @param leaving - The step playing has taken it from the network.
  * @returns Whether it is drawn as a ghost.
  */
-const leavesGhost = (state: RenderState, lineSegment: LineSegment, closing: boolean): boolean => {
+const leavesGhost = (state: RenderState, lineSegment: LineSegment, leaving: boolean): boolean => {
   const { timeline, cursor } = state;
   const suspended = lineSegment.next !== null && timeline.hasClosed(lineSegment, cursor);
   const returned = lineSegment.next !== null && (timeline.isOpen(lineSegment.next, cursor) || timeline.hasClosed(lineSegment.next, cursor));
-  return (closing || suspended) && !returned;
+  return (leaving || suspended) && !returned;
 };
 
 /**
@@ -70,33 +68,32 @@ const leavesGhost = (state: RenderState, lineSegment: LineSegment, closing: bool
  * @param state - The frame's render state.
  * @param lineSegment - The line's track on a segment, open at the cursor.
  * @param line - The line as drawn.
- * @param closing - The step playing closes it: its stations stay only by another line.
+ * @param leaving - The step playing has taken it from the network: its stations stay only by another line.
  * @param found - The stations so far, and those staying and built.
  */
-const addServedStations = (state: RenderState, lineSegment: LineSegment, line: ResolvedLine, closing: boolean, found: StationsFound): void => {
+const addServedStations = (state: RenderState, lineSegment: LineSegment, line: ResolvedLine, leaving: boolean, found: StationsFound): void => {
   const { segment } = lineSegment;
   for (const station of [segment.stationA, segment.stationB]) {
     if (!state.timeline.servesStation(station, lineSegment.line, state.cursor)) continue;
     const served = found.stations.get(station) ?? new Map<LineId, string>();
     served.set(line.id, line.color);
     found.stations.set(station, served);
-    if (!closing) found.staying.add(station);
+    if (!leaving) found.staying.add(station);
     if (lineSegment.section === null) found.built.add(station);
   }
 };
 
 /**
- * Everything already on the map at the cursor: lines, planned and closed track, stations and their lines, stats.
+ * Everything already on the map at the cursor, as the step playing has it: lines, planned and closed
+ * track, stations and their lines.
  *
  * @param state - The frame's render state.
- * @param stepPlaying - A step is playing at the cursor (its openings make room, its closures fade).
  * @returns The snapshot.
  */
-export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): NetworkSnapshot => {
-  const { timeline, cursor, index } = state;
+export const buildNetworkSnapshot = (state: RenderState): NetworkSnapshot => {
+  const { timeline, cursor, index, base } = state;
   const resolved = new Map(index.lineIds.map(line => [line, resolveLine(state, line)]));
-  const closingNow = (lineSegment: LineSegment) => stepPlaying && timeline.closesAt(lineSegment, cursor);
-  const sideBySide = buildSideBySide(state, index.lineSegments, resolved, stepPlaying);
+  const sideBySide = buildSideBySide(state, index.lineSegments, resolved);
 
   const lines: LineFeature[] = [];
   const planned: LineFeature[] = [];
@@ -105,25 +102,21 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
   const drawn = new Map<number, Set<LineId>>();
   const found: StationsFound = { stations: new Map(), staying: new Set(), built: new Set() };
   const { stations } = found;
-  const segmentsOnMap = new Set<number>();
-  const linesOnMap = new Set<LineId>();
 
   for (const lineSegment of index.lineSegments) {
     const { segment } = lineSegment;
-    const closing = closingNow(lineSegment);
-    if (leavesGhost(state, lineSegment, closing)) ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0, 0, lineSegment.line));
+    const leaving = base.leavesOut.has(lineSegment);
+    const line = required(resolved.get(lineSegment.line), 'a line as drawn');
+    if (leavesGhost(state, lineSegment, leaving)) ghosts.push(lineFeature(segment.coordinates, state.baseColor(lineSegment.line), 0, 0, line.id));
     if (!timeline.isOpen(lineSegment, cursor)) continue;
-    const line = resolved.get(lineSegment.line)!;
     const isPlanned = lineSegment.section !== null;
     const drawnHere = drawn.get(segment.index) ?? new Set<LineId>();
-    if (!closing && !drawnHere.has(line.id)) {
+    if (!leaving && !drawnHere.has(line.id)) {
       drawnHere.add(line.id);
       drawn.set(segment.index, drawnHere);
-      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id), 0, lineSegment.line, isPlanned));
+      (isPlanned ? planned : lines).push(lineFeature(segment.coordinates, line.color, offsetFor(sideBySide, segment, line.id), 0, line.id, isPlanned));
     }
-    segmentsOnMap.add(segment.index);
-    linesOnMap.add(line.id);
-    addServedStations(state, lineSegment, line, closing, found);
+    addServedStations(state, lineSegment, line, leaving, found);
   }
 
   const { transfers, linked } = linkTransfers(state, stations);
@@ -138,26 +131,7 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
     stations,
     plannedStations: new Set([...stations.keys()].filter(station => !found.built.has(station))),
     closingOnly: new Set([...stations.keys()].filter(station => !found.staying.has(station))),
-    stats: {
-      stations: stations.size,
-      km: [...segmentsOnMap].reduce((total, segmentIndex) => total + (index.segments[segmentIndex]?.lengthKm ?? 0), 0),
-      lines: linesOnMap.size,
-    },
   };
-};
-
-/**
- * The network's size as a change is drawn: its stations and lines whole, each counted as soon as the
- * change has begun to reach it, its track as far as it has got.
- *
- * @param done - Its size before the change.
- * @param after - Its size once it is done.
- * @param progress - How far the change has been drawn, 0 to 1.
- * @returns Its size on the map.
- */
-export const statsDrawn = (done: NetworkStats, after: NetworkStats, progress: number): NetworkStats => {
-  const begun = (from: number, to: number) => from + Math.sign(to - from) * Math.ceil(Math.abs(to - from) * progress);
-  return { stations: begun(done.stations, after.stations), km: done.km + (after.km - done.km) * progress, lines: begun(done.lines, after.lines) };
 };
 
 /**
@@ -174,7 +148,7 @@ export const emptyCollection = <Item>(): FeatureCollection<Item> => ({ type: 'Fe
  * @param color - Its colour.
  * @param offset - Its side-by-side slot, relative to the direction of `coordinates`.
  * @param highlight - 0 normally, up to 1 for new track.
- * @param line - The line it is drawn for; none for a transfer's link.
+ * @param line - The line as drawn (`resolveLine`), what `focusedLines` is matched against; none for a transfer's link.
  * @param planned - A plan's track, not built: drawn dashed.
  * @returns The feature.
  */

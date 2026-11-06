@@ -1,6 +1,6 @@
 import type { Step } from '@railtime/network/engine.types';
 import type { ViewMode } from '../transitMap.types';
-import type { GrowthPace, StepTimes } from './animation.types';
+import type { BaseNetwork, GrowthPace, StepTimes } from './animation.types';
 
 /**
  * How fast a stretch grows, or a closed one retracts, by how the map is seen: the same for every
@@ -11,6 +11,9 @@ export const GROWTH_PACE: Record<ViewMode, GrowthPace> = {
   '2d': { kmPerSecond: 2.5, rampSeconds: 0.3, stationSeconds: 0.3 },
   '3d': { kmPerSecond: 0.8, rampSeconds: 0.8, stationSeconds: 0.6 },
 };
+
+/** The network with no step asking anything of it, between changes or from a change that leaves it be. */
+export const UNTOUCHED_BASE: BaseNetwork = { leavesOut: new Set(), makesRoom: new Set(), blend: null };
 
 /** Time a stretch's new stations stay highlighted once it has grown, seconds at 1×. */
 export const OPEN_HOLD_SECONDS = 1.2;

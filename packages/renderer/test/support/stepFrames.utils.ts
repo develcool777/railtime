@@ -23,7 +23,8 @@ export const stepAfter = (network: Network, date: string): StartedStep => {
   const state = renderStateOf(playback);
   const draw = (progress: number, { holdProgress = 0 }: FrameOptions = {}) => {
     const drawing = emptyDrawing();
-    animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress, holdProgress }, drawing);
+    const drawn = { ...state, base: animation.baseAt('draw', progress) };
+    animation.draw({ state: drawn, snapshot: buildNetworkSnapshot(drawn), progress, holdProgress }, drawing);
     return drawing;
   };
   return { playback, animation, state, draw };

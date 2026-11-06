@@ -1,3 +1,4 @@
+import { required } from '@railtime/core/required.utils';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { OVERLAY_SOURCE_MAX_ZOOM } from './ids.constants';
 import { emptyCollection } from './snapshot.utils';
@@ -6,7 +7,8 @@ import type { Palette } from './theme.types';
 /**
  * A group of overlay layers drawn from sources it owns. Each subclass adds its sources and layers
  * once the basemap has loaded (`install`), recolours them per theme (`applyPalette`), and pushes new
- * data through `setData`.
+ * data through `setData`. Nothing reaches it before it is installed (`PropsReconciler` holds every
+ * effect until then), so it keeps nothing to draw later.
  */
 export abstract class MapLayer {
   /** The map the layers are drawn on. */
@@ -50,7 +52,7 @@ export abstract class MapLayer {
    * @param state - What it looks like.
    */
   protected setState(sourceId: string, id: string, state: Record<string, number>): void {
-    if (this.map.getSource(sourceId)) this.map.setFeatureState({ source: sourceId, id }, state);
+    this.map.setFeatureState({ source: sourceId, id }, state);
   }
 
   /**
@@ -60,6 +62,6 @@ export abstract class MapLayer {
    * @param data - A GeoJSON feature collection.
    */
   protected setData(sourceId: string, data: object): void {
-    void this.map.getSource<GeoJSONSource>(sourceId)?.setData(data as Parameters<GeoJSONSource['setData']>[0]);
+    void required(this.map.getSource<GeoJSONSource>(sourceId), `source ${sourceId}`).setData(data as Parameters<GeoJSONSource['setData']>[0]);
   }
 }

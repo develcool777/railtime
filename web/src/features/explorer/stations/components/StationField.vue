@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
   import type { Stop, StationSummary } from '@railtime/network/facts.types';
+  import type { StationId } from '@railtime/schema/network.types';
   import { computed, ref } from 'vue';
   import type { StationChoice } from '~/features/explorer/stations/station.types';
   import { stationChoices } from '~/features/explorer/stations/station.utils';
@@ -80,7 +81,7 @@
     }>(),
     { omit: null },
   );
-  const emit = defineEmits<{ pick: [stop: Stop | null]; aim: [] }>();
+  const emit = defineEmits<{ pick: [station: StationId | null]; aim: [] }>();
 
   const query = ref('');
   /** The station picked, named as the field shows it: whether the list holds it yet or not. */
@@ -98,7 +99,7 @@
    * @param item - The station, or `null` for the field cleared.
    */
   const choose = (item: StationChoice | null) => {
-    if (item) emit('pick', { id: item.id, name: item.label });
+    if (item) emit('pick', item.id);
     query.value = '';
   };
 </script>

@@ -7,7 +7,9 @@ import type { Line, LineId, Network, Segment, SegmentLine, Station, StationId } 
 import type { BuiltSection } from '@railtime/schema/plan.types';
 import type { LineGap, LineSegment, TrackSegment } from './engine.types';
 import { outsideGaps } from './gaps.utils.ts';
+import { lineColorOf } from './lineColor.utils.ts';
 import { orientSegments } from './orientation.utils.ts';
+import type { LineColor } from '../facts/facts.types';
 
 /**
  * The network, indexed for drawing: segments with their distances and direction of travel
@@ -37,6 +39,8 @@ export class NetworkIndex {
   private readonly transfersByStation = new Map<StationId, StationId[]>();
   /** Line segments touching each station. */
   private readonly lineSegmentsByStation = new Map<StationId, LineSegment[]>();
+  /** Each line's line segments, in the network's order. */
+  private readonly lineSegmentsByLine = new Map<LineId, LineSegment[]>();
   /** The stretches of time each line is left out, if any. */
   public readonly gaps: ReadonlyMap<LineId, readonly LineGap[]>;
 
@@ -125,6 +129,16 @@ export class NetworkIndex {
   }
 
   /**
+   * A line's own colour, in each theme.
+   *
+   * @param line - A line id.
+   * @returns Its colours.
+   */
+  public colorOf(line: LineId): LineColor {
+    return lineColorOf(this.lineOf(line));
+  }
+
+  /**
    * A station's name on a date: a former name until the day it changed.
    *
    * @param station - A station id.
@@ -161,14 +175,19 @@ export class NetworkIndex {
 
   /**
    * When a line first ran as itself: its first opening, or, for a line drawn as another until a
-   * date (an alias), that date, or its first opening after it where it was out then (a gap).
+   * date (an alias), that date, or its first opening after it where it was out then (a gap). A line
+   * that exists only to be drawn as first ran with the first line drawn as it.
    *
    * @param line - A line id.
    * @returns A timestamp; `Infinity` for a line only a plan builds.
    */
   public lineOpens(line: LineId): number {
+    if (this.lineOf(line).pseudo) {
+      const drawnAsIt = entriesOf(this.network.lines).filter(([, other]) => other.aliases?.some(alias => alias.as === line));
+      return Math.min(...drawnAsIt.flatMap(([id]) => this.lineSegmentsOf(id).map(lineSegment => lineSegment.opens)));
+    }
     const ownFrom = Math.max(...(this.lineOf(line).aliases ?? []).map(alias => toTimestamp(alias.until)));
-    const runsAsItself = this.lineSegments.filter(lineSegment => lineSegment.line === line && (lineSegment.closes === null || lineSegment.closes > ownFrom));
+    const runsAsItself = this.lineSegmentsOf(line).filter(lineSegment => lineSegment.closes === null || lineSegment.closes > ownFrom);
     return Math.min(...runsAsItself.map(lineSegment => Math.max(lineSegment.opens, ownFrom)));
   }
 
@@ -201,6 +220,16 @@ export class NetworkIndex {
    */
   public lineSegmentsAt(station: StationId): LineSegment[] {
     return this.lineSegmentsByStation.get(station) ?? [];
+  }
+
+  /**
+   * A line's line segments.
+   *
+   * @param line - A line id.
+   * @returns It on every segment, one entry per period.
+   */
+  public lineSegmentsOf(line: LineId): LineSegment[] {
+    return this.lineSegmentsByLine.get(line) ?? [];
   }
 
   /**
@@ -265,17 +294,14 @@ export class NetworkIndex {
   }
 
   /**
-   * Indexes one line's period on a segment, and at the stations it ends at.
+   * Indexes one line's period on a segment, by its line, and at the stations it ends at.
    *
    * @param lineSegment - The line segment.
    */
   private addLineSegment(lineSegment: LineSegment): void {
     this.lineSegments.push(lineSegment);
-    for (const station of [lineSegment.segment.stationA, lineSegment.segment.stationB]) {
-      const atStation = this.lineSegmentsByStation.get(station) ?? [];
-      atStation.push(lineSegment);
-      this.lineSegmentsByStation.set(station, atStation);
-    }
+    pushTo(this.lineSegmentsByLine, lineSegment.line, lineSegment);
+    for (const station of [lineSegment.segment.stationA, lineSegment.segment.stationB]) pushTo(this.lineSegmentsByStation, station, lineSegment);
   }
 
   /**

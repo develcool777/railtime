@@ -1,8 +1,8 @@
 # Explorer
 
 A city's page: the map, and everything at its edges: the header, the rail and panel, the time
-control, the map's tools. `docs/redesign/README.md` says how it looks and behaves; this is a map of
-the code. The reasons behind a rule sit in the comment beside the code that keeps it.
+control, the map's tools. This is a map of the code; the reasons behind a rule sit in the comment
+beside the code that keeps it.
 
 ## The parts
 
@@ -18,13 +18,13 @@ work with: its composables, utilities, types and constants, named `<thing>.<role
 | `changes/`  | The Changes section, which follows playback and is searched by line, station or year                                                                     | `ChangesSection`, `ChangeTimeline`                                              |
 | `stations/` | The Stations section, a station's view and the walk from it along its lines; finding stations by name                                                    | `StationsSection`, `StationView`, `StationLinks`, `StationField`, `MapPickHint` |
 | `route/`    | The Route section: up to three ways between two stations, picked here or on the map, and the one drawn leg by leg                                        | `RouteSection`                                                                  |
-| `insights/` | The Insights section: how the network grew, and its records on the date shown                                                                            | `InsightsSection`, `GrowthChart`, `DecadeChart`                                 |
+| `insights/` | The Insights section: how the network grew, and its records on the date shown; its charts are `~/components/ui`'s                                        | `InsightsSection`                                                               |
 | `reach/`    | The Reach section: how far you get from a station, by time                                                                                               | `ReachSection`                                                                  |
 | `coverage/` | The Coverage section: how much of the city is near a station, its outline loaded on first opening (`LOAD_BOUNDARY`)                                      | `CoverageSection`                                                               |
 | `plans/`    | The Plans section, the plan shown and its legend                                                                                                         | `PlansSection`, `PlanLegend`                                                    |
 | `header/`   | The header's city picker and search                                                                                                                      | `CitySelect`, `ExplorerSearch`                                                  |
 | `help/`     | What you can do: the map's tools, time, the sections and the keys (`?`)                                                                                  | `ExplorerHelp`                                                                  |
-| `address/`  | The address: read at opening, then written from the explorer's `address` (`useExplorerAddress`)                                                          | —                                                                               |
+| `address/`  | The address: read at opening, then written from the explorer's `address` (`useExplorerAddress`); each setting's parameter (`ADDRESS_SETTINGS`)           | —                                                                               |
 
 At the top, what every part shares or what ties them together. **The stores are the one source of
 truth**: every value in one, with all worked out from it, changed only by its actions, and read one
@@ -35,26 +35,33 @@ way only (CLAUDE.md, Architecture):
   `SHOW_LINES`): every question about it. Reads no store.
 - `map/map.store.ts` (`useMapStore`): the map, once mounted, its credits and where it looks; its
   camera's commands (`ZOOM_IN`, `FIT_NETWORK`). Reads no store.
-- `time/time.store.ts` (`useTimeStore`): the time control's mode (the timeline, or the player:
-  `playerShown`; the map moving is `time.playing`), how playback is set, where the history is and the
-  change playing, as the map tells them; every command through time (`PLAY`, `SEEK`, `PICK`,
+- `layout.store.ts` (`useLayoutStore`): how the page fits the screen. A phone's or not, the tabs' names,
+  the panel's width as dragged, the phone's sheet. No link says any of it. Reads no store.
+- `time/time.store.ts` (`useTimeStore`): how playback is set, where the history is (from a network
+  arriving, then as the map tells it) and the change playing, and from that what the time control shows (`timeMode`: the player
+  while the map plays, else the timeline); every command through time (`PLAY`, `SEEK`, `PICK`,
   `STEP_TIME`…), sent to the map. Reads the network and the map.
 - `tools.store.ts` (`useToolsStore`): the map's tools. A route's ends and the way drawn, the end a
   station clicked on the map fills (`routeAim`), a reach's start, coverage's distance, the city's
   outline and where its fetch stands (`LOAD_BOUNDARY`), and what the map found for the one drawn
-  (`foundRoutes`, `foundReach`, `coverage`). Its rules are in `tools.utils.ts`. Reads the network.
+  (`foundRoutes`, `foundReach`, `coverage`). A station is kept by its id, through a network made again
+  without it, or a link naming one on a line hidden at first (`stationLinked`); what the map draws is
+  what the network shown has (`routeEndsShown`, `reachFromShown`).
+  Its rules are in `tools.utils.ts`. Reads the network.
 - `explorer.store.ts` (`useExplorerStore`): what is open (the section and the views pushed over it,
-  the panel, the sheet, map only, the dialog) and how the map is seen (3D, names, the theme);
-  `mapProps`, everything the map shows, `address`, everything a link says, and `chrome`, what shows
-  around the map, from every store; and the actions that span them: a page opening (`OPEN`), another
-  plan or lines (`SHOW_PLAN`, `SHOW_LINES`, keeping the day shown), the map arriving (`ATTACH`), a
-  station clicked (`CLICK_STATION`). Its rules are in `explorer.utils.ts`. Reads the four above.
-- `panel/panel.store.ts` (`usePanelStore`): getters only, what the panel shows. Nothing reads it.
+  the panel, map only, the dialog) and how the map is seen (3D, names, the theme); `mapProps`,
+  everything the map shows, `address`, everything a link says, and `chrome`, what shows around the map,
+  from every store; and the actions that span them: a page opening (`OPEN`), another plan or lines
+  (`SHOW_PLAN`, `SHOW_LINES`, keeping the moment shown), a station clicked (`CLICK_STATION`). Its rules are in `explorer.utils.ts`. Reads the five above.
+- `panel/panel.store.ts` (`usePanelStore`): getters only, what the panel shows: every fact for the
+  moment shown, and what the tools' ids are called then (`routeStops`, `reachStop`). What changes only
+  with a change (`stations`) is asked at a change, never at a frame of the clock. Nothing reads it.
 - `components/ExplorerView.vue`: the frame. It opens the stores on the network and the address, starts the effects, and lays out what the stores hold; it decides nothing itself.
 - The effects, each a composable that ties something outside Vue to the stores and holds nothing:
   `layout.composable.ts` (the screen and the theme in, full screen with map only, the panel's edge
   dragged), `map/transitMap.composable.ts` (the map made and taken down), `shortcuts.composable.ts`
-  (the keys), `address/address.composable.ts` (the address bar, written from `address`).
+  (the keys), `address/address.composable.ts` (the address bar, written from `address`),
+  `recorded.composable.ts` (under `pnpm dev`, the handle a recorder knows the page by: `VideoPageHandle`).
 - `shortcuts.constants.ts`: the keys, each the action a button elsewhere does; the keys listen for
   them (`shortcuts.composable.ts`) and the help lists them, from the one list.
 - `explorer.types.ts`, `explorer.constants.ts`, `format.utils.ts`: the sections, the time control's
@@ -62,19 +69,26 @@ way only (CLAUDE.md, Architecture):
 
 ## Where state lives
 
-| What                                                          | Where                      | Kept                                                                       |
-| ------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------- |
-| What is looked at: tab, line, station, 3D, names, map only    | the explorer's store       | the address: `tab`, `line`, `station`, `view=3d`, `names=off`, `mapOnly=1` |
-| Trains running on the lines                                   | the explorer's store       | the address: `trains=on`                                                   |
-| The plan picked, the lines hidden                             | the network's store        | the visit                                                                  |
-| A route's ends and the way drawn, a reach's start             | the tools' store           | the address: `route=bank,oval` (`,1`: the second way), `reach=bank`        |
-| How far from a station coverage counts                        | the tools' store           | the address: `walk=400`, `1200`, `1600` or `2000` (800 m without)          |
-| The playhead; where the map looks                             | time's store; the map's    | the address: `at` (`202`, `202.4`, `202,1928-06-01`), `map`                |
-| How playback is set; the panel folded                         | time's; the explorer's     | the address: `speed=4`, `camera=free`, `minimap=off`, `panel=off`          |
-| The panel's width, dragged for this screen                    | the explorer's store       | the visit                                                                  |
-| Dark or light                                                 | Nuxt's colour mode → store | the browser (localStorage), the one preference kept                        |
-| The rest: the time control's mode, the sheet, the dialog open | time's; the explorer's     | the visit                                                                  |
-| Every fact about the network                                  | `NetworkFacts` (`network`) | asked, never kept                                                          |
+| What                                                       | Where                      | Kept                                                                       |
+| ---------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------- |
+| What is looked at: tab, line, station, 3D, names, map only | the explorer's store       | the address: `tab`, `line`, `station`, `view=3d`, `names=off`, `mapOnly=1` |
+| Trains running on the lines                                | the explorer's store       | the address: `trains=on`                                                   |
+| The plan picked                                            | the network's store        | the address: `plan=extension`                                              |
+| The lines hidden                                           | the network's store        | the visit: a page opens with those hidden at first                         |
+| A route's ends and the way drawn, a reach's start          | the tools' store, by id    | the address: `route=bank,oval` (`,1`: the second way), `reach=bank`        |
+| How far from a station coverage counts                     | the tools' store           | the address: `walk=400`, `1200`, `1600` or `2000` (800 m without)          |
+| The playhead; where the map looks                          | time's store; the map's    | the address: `at` (below), `map`                                           |
+| How playback is set; the panel folded                      | time's; the explorer's     | the address: `speed=4`, `camera=free`, `minimap=off`, `panel=off`          |
+| The panel's width, the sheet                               | the layout's store         | the visit                                                                  |
+| The dialog open                                            | the explorer's store       | the visit                                                                  |
+| Dark or light                                              | Nuxt's colour mode → store | the browser (localStorage), the one preference kept                        |
+| Every fact about the network                               | `NetworkFacts` (`network`) | asked, never kept                                                          |
+
+`at` names a moment, never a cursor: a cursor counts the changes of one set of facts, and an address
+says neither the lines hidden nor which edit of a city's file it was written against. `at=1935-06-01`
+is that day, its changes done; `at=1935-06-01,2.4` is that day with two of its changes done and the
+next 40% drawn; `at=plan,1.5` the same through a plan's changes, which have no date. Without one, the
+map rests: today, or the plan built. Anything else opens at rest (`Playheads.moment`, `atMoment`).
 
 ## How the parts talk
 
@@ -84,6 +98,11 @@ way only (CLAUDE.md, Architecture):
 - **The map** is made and taken down by one effect (`useTransitMap`): it gives the map `mapProps`
   and calls the stores' actions with what the map says (a station clicked: `CLICK_STATION`; the time:
   `SET_TIME`). Commands reach the map only through actions: time's, and the map store's camera.
+- **A network** comes with where to stand on it: `mapProps` says both (`facts`, `arrival`, kept by
+  time's store), so it holds before the map is ready as after, and no command follows. `ARRIVE`, a
+  page opening's too, sets `arrival` and `time` as the map's next frame will: all that is read for a
+  moment is there before the map is, and nothing reads the last network's cursor against these
+  facts. A plan arrives at rest (built); lines shown or hidden at the moment shown.
 - **Components** take props and emit; the frame hands them the stores' values and their events to
   the stores' actions.
 
@@ -97,4 +116,6 @@ way only (CLAUDE.md, Architecture):
   or action. A value goes in the one store that owns it; a composable holds none.
 - **A fact** (a count, a station's neighbours, what a plan adds): `@railtime/network`, never here.
 - **Something the map shows**: a field in the explorer store's `mapPropsOf` (and in the renderer's `MapProps`).
+- **A setting a link carries**: a line in `ADDRESS_SETTINGS` (its parameter, its values, its default),
+  in `ExplorerSettings`, and in `parseSettings` (`address.utils.ts`).
 - **A key**: a line in `SHORTCUTS` (`shortcuts.constants.ts`), and its action in `shortcuts.composable.ts`, the one the button calls; the help lists it.

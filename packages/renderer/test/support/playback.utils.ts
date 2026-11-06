@@ -1,5 +1,6 @@
+import { engineOf } from '@railtime/network/engine.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
-import type { FactsAt } from '@railtime/network/facts.types';
+import type { FactsAt } from '@railtime/network/moment.service';
 import type { TrainService } from '@railtime/network/trains.service';
 import type { Network } from '@railtime/schema/network.types';
 import type { Playback, PlaybackOptions } from './playback.types';
@@ -24,8 +25,12 @@ import { emptyDrawing } from '../../src/steps/animation.utils';
  */
 export const playbackOf = (network: Network, { plan, hidden, view = '2d' }: PlaybackOptions = {}): Playback => {
   const facts = NetworkFacts.create(network, { ...(plan && { plan }), ...(hidden && { hidden }), today: Date.UTC(2026, 0, 1) });
-  const { index, timeline } = facts.engine;
-  const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
+  const { index, timeline } = engineOf(facts);
+  const player = new Player(
+    engineOf(facts),
+    step => new StepAnimation(step, { index, timeline, view }),
+    () => ({ speed: 1 }),
+  );
   return { facts, index, timeline, player };
 };
 
@@ -38,7 +43,7 @@ export const playbackOf = (network: Network, { plan, hidden, view = '2d' }: Play
 export const networkNow = (playback: Playback): FactsAt => playback.facts.asOf(playback.player.playhead);
 
 /**
- * The render state at the player's position, in each line's own colour.
+ * The render state at the player's position, as the step playing has it, in each line's own colour.
  *
  * @param playback - The pieces from `playbackOf`.
  * @returns The render state.
@@ -47,7 +52,7 @@ export const renderStateOf = (playback: Playback): RenderState => ({
   index: playback.index,
   timeline: playback.timeline,
   cursor: playback.player.cursor,
-  identityProgress: null,
+  base: playback.player.base,
   baseColor: line => playback.index.lineOf(line).color,
 });
 
@@ -55,10 +60,9 @@ export const renderStateOf = (playback: Playback): RenderState => ({
  * What the map has on it at the player's position.
  *
  * @param playback - The pieces from `playbackOf`.
- * @param stepPlaying - A step is playing there: its openings make room, its closures fade.
  * @returns The snapshot.
  */
-export const snapshotOf = (playback: Playback, stepPlaying = false): NetworkSnapshot => buildNetworkSnapshot(renderStateOf(playback), stepPlaying);
+export const snapshotOf = (playback: Playback): NetworkSnapshot => buildNetworkSnapshot(renderStateOf(playback));
 
 /**
  * The trains on the map at the player's position, at a moment, as a frame draws them.
@@ -83,6 +87,6 @@ export const drawnStep = (playback: Playback): StepDrawing | null => {
   if (!player.active) return null;
   const state = renderStateOf(playback);
   const drawing = emptyDrawing();
-  player.active.animation.draw({ state, snapshot: buildNetworkSnapshot(state, true), progress: player.progress, holdProgress: player.holdProgress }, drawing);
+  player.active.animation.draw({ state, snapshot: buildNetworkSnapshot(state), progress: player.progress, holdProgress: player.holdProgress }, drawing);
   return drawing;
 };

@@ -16,26 +16,8 @@ export const PREVIEW_THEMES: Theme[] = ['dark', 'light'];
 /** Room kept around the track in a preview, CSS pixels. */
 export const PREVIEW_PADDING = 18;
 
-/** The basemap's tile size: a world `TILE_SIZE · 2^zoom` pixels wide, as MapLibre lays it out. */
-export const TILE_SIZE = 512;
-
 /** The deepest a preview zooms, for a network of one short line. */
 export const MAX_PREVIEW_ZOOM = 15;
 
 /** How long Chrome may take to draw one preview, ms: tiles come over the network. */
 export const PREVIEW_TIMEOUT_MS = 60_000;
-
-/**
- * The script of the page Chrome draws previews in, bundled by esbuild: one `BasemapStill` per theme,
- * and `window.takePreview` to take a picture with one. MapLibre's worker is served beside the page.
- */
-export const PREVIEW_PAGE_SCRIPT = `
-import { BasemapStill } from '@railtime/renderer/basemapStill.service';
-const workerUrl = new URL('/worker.mjs', location.href).href;
-const stills = new Map();
-window.takePreview = (theme, request) => {
-  const still = stills.get(theme) ?? new BasemapStill({ theme, workerUrl });
-  stills.set(theme, still);
-  return still.take(request);
-};
-`;

@@ -1,14 +1,16 @@
 import { DAY_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
 import { required } from '@railtime/core/required.utils';
+import { PROGRESS_STEPS } from './engine.constants.ts';
 import type { Timeline } from './timeline.service';
-import type { Playhead } from '../facts/facts.types';
+import type { Moment, Playhead } from '../facts/facts.types';
 
 /**
  * Where in its history the map can be, as a `Playhead`, and the one place its rules are: the date each
  * change plays on, the years the clock may stand in after one, where playing starts. The player seeks
  * through `hold` and runs its clock to `dateOf`; the app asks for one on a day, after or before a change,
- * today or at the end (`NetworkFacts.playheads`).
+ * today or at the end (`NetworkFacts.playheads`). A cursor means something only to the facts it came
+ * from: what outlives them, as an address does, holds a `Moment` (`moment`, `atMoment`).
  */
 export class Playheads {
   /** The network's history as steps. */
@@ -86,6 +88,57 @@ export class Playheads {
   }
 
   /**
+   * How far a change has been drawn, in hundredths: the one place its progress is rounded.
+   *
+   * @param progress - How far, 0 to 1.
+   * @returns The whole hundredths.
+   */
+  public hundredths(progress: number): number {
+    return Math.round(progress * PROGRESS_STEPS);
+  }
+
+  /**
+   * A playhead as a link says it, to the hundredth of a change: one that comes to a whole change is
+   * after it (`after`), and one with none of it drawn stays where its clock stands.
+   *
+   * @param playhead - Where the map is.
+   * @returns The playhead.
+   */
+  public toHundredth(playhead: Playhead): Playhead {
+    const progress = this.hundredths(playhead.progress) / PROGRESS_STEPS;
+    return progress > 0 ? this.after(playhead.cursor, progress) : { ...playhead, progress };
+  }
+
+  /**
+   * A playhead as a moment: its day, and how far through that day's changes (a plan's, in a plan) unless
+   * they are all done. To the day: a clock between two changes keeps no hours.
+   *
+   * @param playhead - Where the map is.
+   * @returns The moment, for `atMoment`.
+   */
+  public moment(playhead: Playhead): Moment {
+    const held = this.hold(playhead);
+    const day = this.inPlan(held) ? null : Math.floor(held.time / DAY_MS) * DAY_MS;
+    const { first, last } = this.changesOf(day);
+    return held.cursor < last ? { day, partway: { done: held.cursor - first, progress: held.progress } } : { day };
+  }
+
+  /**
+   * Where a moment is in this history: on its day, as far through its changes as it says, as many as the
+   * day has here. Past them, or on a day with none, it is the day's end, as a date is asked for; past a
+   * plan's, or with no plan, where the map rests.
+   *
+   * @param moment - The moment.
+   * @returns The playhead.
+   */
+  public atMoment(moment: Moment): Playhead {
+    const { day, partway } = moment;
+    const { first, last } = this.changesOf(day);
+    if (partway && first + partway.done < last) return this.hold({ cursor: first + partway.done, time: day ?? this.range.end, progress: partway.progress });
+    return day === null ? this.rest() : this.on(day);
+  }
+
+  /**
    * Whether a playhead is today's: the same changes done, nothing drawn, the clock on today.
    *
    * @param playhead - Where the map is.
@@ -155,6 +208,17 @@ export class Playheads {
   public dateOf(change: number): number {
     const step = required(this.timeline.steps[change], `step ${change}`);
     return step.planned ? this.range.end : clamp(step.time, this.range.start, this.range.end);
+  }
+
+  /**
+   * A day's changes, or a plan's.
+   *
+   * @param day - The day, as a timestamp at its start; `null` for the plan's.
+   * @returns The cursor before the first of them, and the one after the last.
+   */
+  private changesOf(day: number | null): { first: number; last: number } {
+    if (day === null) return { first: this.timeline.datedCount, last: this.timeline.steps.length };
+    return { first: this.timeline.cursorAt(day - 1), last: this.timeline.cursorAt(day) };
   }
 
   /**

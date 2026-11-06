@@ -28,10 +28,14 @@ const groupByStation = <Thing>(things: Thing[], stationsOf: (thing: Thing) => St
  */
 const walkPlainStations = (first: TrackSegment, station: StationId, segmentsAt: Map<StationId, TrackSegment[]>, used: Set<TrackSegment>) => {
   const steps: { segment: TrackSegment; enteredAt: StationId }[] = [];
+  const stationSegments = (stop: StationId) => required(segmentsAt.get(stop), `segments at ${stop}`);
   let previous = first;
   let current = station;
-  while (segmentsAt.get(current)!.length === 2) {
-    const next = segmentsAt.get(current)!.find(segment => segment !== previous)!;
+  for (let here = stationSegments(current); here.length === 2; here = stationSegments(current)) {
+    const next = required(
+      here.find(segment => segment !== previous),
+      `the other segment at ${current}`,
+    );
     if (used.has(next)) break;
     used.add(next);
     steps.push({ segment: next, enteredAt: current });
@@ -96,8 +100,8 @@ const headsEast = (chain: Chain): boolean => {
 const continuations = (chain: Chain, travel: Travel, chainsAt: Map<StationId, Chain[]>): [Chain, Travel][] => {
   const [start, end] = travel === 1 ? [chain.start, chain.end] : [chain.end, chain.start];
   return [
-    ...chainsAt.get(end)!.map((next): [Chain, Travel] => [next, next.start === end ? 1 : -1]),
-    ...chainsAt.get(start)!.map((previous): [Chain, Travel] => [previous, previous.end === start ? 1 : -1]),
+    ...required(chainsAt.get(end), `chains at ${end}`).map((next): [Chain, Travel] => [next, next.start === end ? 1 : -1]),
+    ...required(chainsAt.get(start), `chains at ${start}`).map((previous): [Chain, Travel] => [previous, previous.end === start ? 1 : -1]),
   ];
 };
 
@@ -154,6 +158,7 @@ export const orientSegments = (segments: TrackSegment[]): Map<TrackSegment, Trav
   );
   const chainDirection = alignChains(chains);
   const travel = new Map<TrackSegment, Travel>();
-  for (const chain of chains) for (const step of chain.segments) travel.set(step.segment, (step.travel * chainDirection.get(chain)!) as Travel);
+  for (const chain of chains)
+    for (const step of chain.segments) travel.set(step.segment, (step.travel * required(chainDirection.get(chain), 'direction of a chain')) as Travel);
   return travel;
 };

@@ -1,4 +1,5 @@
-import { keysOf } from '@railtime/core/collection.utils';
+import { cumulativeDistances } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
 import type { BuiltPlan } from './build.types';
 import { PlanBuilder } from './builder.service.ts';
 import type { Network, PlanId } from '../format/network.types';
@@ -13,7 +14,7 @@ import type { Network, PlanId } from '../format/network.types';
 export const buildPlan = (network: Network, planId: PlanId): BuiltPlan => {
   const { plans, ...today } = network;
   const plan = plans?.[planId];
-  if (!plan) return { network: today, sections: [] };
+  if (!plan) return { network: today, sections: [], laidKm: 0 };
   const works = new PlanBuilder(
     {
       ...today,
@@ -27,29 +28,15 @@ export const buildPlan = (network: Network, planId: PlanId): BuiltPlan => {
   for (const section of plan.sections) works.build(section);
   works.curve();
   const position = new Map(works.network.segments.map((segment, index) => [segment, index]));
+  let laidKm = 0;
+  for (const { coordinates } of works.laid) laidKm += cumulativeDistances(coordinates).at(-1) ?? 0;
   return {
     network: works.network,
-    // Within bounds: every section's segment is one of the network's.
+    laidKm,
     sections: works.sections.map(section => ({
       line: section.line,
       infills: section.infills,
-      segments: section.segments.map(segment => position.get(segment)!),
+      segments: section.segments.map(segment => required(position.get(segment), "a section's segment among the network's")),
     })),
   };
 };
-
-/**
- * Whether a network was never built: no track of its own, only plans.
- *
- * @param network - The network.
- * @returns True if it has plans and nothing else.
- */
-export const isPlanOnly = (network: Network): boolean => network.segments.length === 0 && keysOf(network.plans ?? {}).length > 0;
-
-/**
- * The plan a network is shown by when none is asked for and it was never built: its first.
- *
- * @param network - The network.
- * @returns Its first plan's id, or none if it has no plans.
- */
-export const firstPlanOf = (network: Network): PlanId | undefined => keysOf(network.plans ?? {})[0];

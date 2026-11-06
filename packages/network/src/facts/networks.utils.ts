@@ -1,8 +1,28 @@
-import { entriesOf, fromEntriesOf, keysOf } from '@railtime/core/collection.utils';
-import type { Line, LineId, Network, Plan, Segment, Station } from '@railtime/schema/network.types';
+import { entriesOf, fromEntriesOf, keysOf, pairsOf } from '@railtime/core/collection.utils';
+import { required } from '@railtime/core/required.utils';
+import type { Line, LineId, Network, Plan, PlanId, Segment, Station } from '@railtime/schema/network.types';
+import { samePair } from '@railtime/schema/track.utils';
 import { gapsOf, lineWithout, runsOutside, stationOutside } from './aliases.utils.ts';
-import type { NetworkChoice, ShownNetwork } from './facts.types';
+import type { NetworkChoice } from './facts.types';
+import type { ShownNetwork } from './networks.types';
 import type { LineGap } from '../engine/engine.types';
+import { lineColorOf } from '../engine/lineColor.utils.ts';
+
+/**
+ * Whether a network was never built: no track of its own, only plans.
+ *
+ * @param network - The network.
+ * @returns True if it has plans and nothing else.
+ */
+export const isPlanOnly = (network: Network): boolean => network.segments.length === 0 && keysOf(network.plans ?? {}).length > 0;
+
+/**
+ * The plan a network is shown by when none is asked for and it was never built: its first.
+ *
+ * @param network - The network.
+ * @returns Its first plan's id, or none if it has no plans.
+ */
+export const firstPlanOf = (network: Network): PlanId | undefined => keysOf(network.plans ?? {})[0];
 
 /**
  * The lines a person may show or hide: every line of the network but those that exist only to be
@@ -24,8 +44,7 @@ const toggleableOf = (network: Network): LineId[] =>
  * @returns The lines, in its order.
  */
 export const linesNamed = (network: Network, ids: readonly string[]): LineId[] =>
-  // Within bounds: each id is one of the network's lines.
-  toggleableOf(network).filter(id => ids.includes(id) || ids.includes(network.lines[id]!.network));
+  toggleableOf(network).filter(id => ids.includes(id) || ids.includes(required(network.lines[id], `line ${id}`).network));
 
 /**
  * The lines hidden when a city opens: those of its networks hidden at first.
@@ -84,16 +103,6 @@ const linesLeft = (network: Network, hidden: Set<LineId>): Record<LineId, Line> 
 };
 
 /**
- * Whether two pieces of track join the same two stations, either way round.
- *
- * @param first - One: its two stations.
- * @param second - The other.
- * @returns True if they do.
- */
-const samePair = (first: Pick<Segment, 'stationA' | 'stationB'>, second: Pick<Segment, 'stationA' | 'stationB'>): boolean =>
-  (first.stationA === second.stationA && first.stationB === second.stationB) || (first.stationA === second.stationB && first.stationB === second.stationA);
-
-/**
  * Whether one of a plan's sections links a segment's two stations, one after the other.
  *
  * @param plan - The plan.
@@ -101,9 +110,7 @@ const samePair = (first: Pick<Segment, 'stationA' | 'stationB'>, second: Pick<Se
  * @returns True if one does.
  */
 const linksStations = (plan: Plan, segment: Segment): boolean =>
-  plan.sections.some(section =>
-    section.stations.some((station, index) => index > 0 && samePair({ stationA: section.stations[index - 1]!, stationB: station }, segment)),
-  );
+  plan.sections.some(section => pairsOf(section.stations).some(([stationA, stationB]) => samePair({ stationA, stationB }, segment)));
 
 /**
  * Where the timeline starts with some lines hidden: the city's start, or an older one of a network
@@ -181,8 +188,8 @@ export const withLinesHidden = (network: Network, hidden: readonly LineId[]): Sh
       const track = trackGone.filter(segment => linksStations(plan, segment) && !plan.track?.some(given => samePair(given, segment)));
       if (own.length === 0 && track.length === 0) return [id, plan];
       const adopted = own.map(station => {
-        // Within bounds: a station is gone only if the network had it.
-        const { name, names, coordinate } = network.stations[station]!;
+        // A station is gone only if the network had it.
+        const { name, names, coordinate } = required(network.stations[station], `station ${station}`);
         return [station, { name, ...(names && { names }), coordinate }] as const;
       });
       const ownTrack = track.map(({ stationA, stationB, coordinates }) => ({ stationA, stationB, coordinates }));
@@ -228,7 +235,7 @@ export const networkChoicesOf = (network: Network, hidden: readonly LineId[]): N
       .map(([lineId, line]) => ({
         id: lineId,
         name: line.name,
-        color: { light: line.color, dark: line.darkColor ?? line.color },
+        color: lineColorOf(line),
         shown: !hidden.includes(lineId),
       }));
     return lines.length > 0 ? [{ id, name: info.name, lines }] : [];

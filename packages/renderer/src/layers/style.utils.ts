@@ -73,6 +73,25 @@ const mixColors = (from: string, to: string, fraction: number): string => {
 };
 
 /**
+ * Who a line is in this frame: the one rule for what it is drawn as, which its features and the lines
+ * in focus both go by.
+ *
+ * @param state - The frame's render state.
+ * @param line - The line id.
+ * @returns Its identity, the line it was before while it changes.
+ */
+const identityIn = (state: RenderState, line: LineId) => state.timeline.identityOf(line, state.cursor, state.base.blend !== null);
+
+/**
+ * Lines as this frame draws them: one drawn as another is that line, and two drawn as one are one.
+ *
+ * @param state - The frame's render state.
+ * @param lines - The line ids.
+ * @returns The ids their features carry.
+ */
+export const linesAsDrawn = (state: RenderState, lines: readonly LineId[]): LineId[] => [...new Set(lines.map(line => identityIn(state, line).id))];
+
+/**
  * What a line is drawn as in this frame, and in which colour (blending while its identity changes).
  *
  * @param state - The frame's render state.
@@ -80,10 +99,9 @@ const mixColors = (from: string, to: string, fraction: number): string => {
  * @returns The line as drawn.
  */
 export const resolveLine = (state: RenderState, line: LineId): ResolvedLine => {
-  const identity = state.timeline.identityOf(line, state.cursor, state.identityProgress !== null);
-  const color = identity.previousId
-    ? mixColors(state.baseColor(identity.previousId), state.baseColor(identity.id), state.identityProgress ?? 1)
-    : state.baseColor(identity.id);
+  const { blend } = state.base;
+  const identity = identityIn(state, line);
+  const color = identity.previousId ? mixColors(state.baseColor(identity.previousId), state.baseColor(identity.id), blend ?? 1) : state.baseColor(identity.id);
   return { id: identity.id, color };
 };
 

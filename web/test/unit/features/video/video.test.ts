@@ -1,23 +1,22 @@
 import { keysOf } from '@railtime/core/collection.utils';
+import { required } from '@railtime/core/required.utils';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { ChangeInfo, PlanInfo } from '@railtime/network/facts.types';
 import { AROUND_TINY } from '@railtime/network/testing/boundaries';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import type { TimeState } from '@railtime/renderer/transitMap.types';
 import type { PlanStatus } from '@railtime/schema/network.types';
 import { planId } from '@railtime/schema/testing/ids';
 import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, test } from 'vitest';
-import { nextTick } from 'vue';
-import { standInMap } from '@test/support/factories/transitMap.utils';
-import { COUNT_MS } from '~/constants/count.constants';
-import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_SPEED, WHOLE_FIT_MS } from '~/features/video/video.constants';
+import { timeAt } from '@test/support/factories/timeState.utils';
+import { mapOnStandIn, standInMap } from '@test/support/factories/transitMap.utils';
+import { INSIGHTS_COLUMN_VW } from '~/features/video/insights/insights.constants';
+import { FADE_MS, PLAN_END_VW, PLAN_INTRO_MS, SCENE_MS, VIDEO_SPEED, WHOLE_FIT_MS } from '~/features/video/video.constants';
 import { useVideoStore } from '~/features/video/video.store';
 import {
   historySpan,
   pageStateOf,
-  sameSizes,
   sceneEnded,
   shownFor,
   spokenAddress,
@@ -131,6 +130,17 @@ describe('VideoUtils', () => {
       const { left, right, top } = videoPaddingOf({ width: 1920, height: 1080 }, 'ending');
       expect(left).toBeGreaterThan(right);
       expect(top).toBeLessThan(videoPaddingOf({ width: 1920, height: 1080 }, 'whole').top);
+    });
+
+    test.each([
+      { width: 1920, height: 1080 },
+      { width: 1080, height: 1920 },
+    ])('keeps the network off the panels and the plan card as they are laid out, at $width by $height', size => {
+      // Each stands in from the frame's edge: the panels by 2.5vmin, the plan's card by 5.
+      const edge = Math.min(size.width, size.height) / 100;
+      expect(videoPaddingOf(size, 'insights').left).toBeGreaterThan((size.width * INSIGHTS_COLUMN_VW) / 100 + 2.5 * edge);
+      expect(videoPaddingOf(size, 'insights').right).toBeGreaterThan((size.width * INSIGHTS_COLUMN_VW) / 100 + 2.5 * edge);
+      expect(videoPaddingOf(size, 'ending').left).toBeGreaterThan((size.width * PLAN_END_VW) / 100 + 5 * edge);
     });
   });
 
@@ -257,18 +267,6 @@ describe('VideoUtils', () => {
     });
   });
 
-  describe('sameSizes', () => {
-    const sizes = { stations: 3, km: 4, lines: 1, year: 1995 };
-
-    test('says whether what the year card counts matches', () => {
-      expect(sameSizes(sizes, { ...sizes })).toBe(true);
-      expect(sameSizes(sizes, { ...sizes, stations: 4 })).toBe(false);
-      expect(sameSizes(sizes, { ...sizes, km: 5 })).toBe(false);
-      expect(sameSizes(sizes, { ...sizes, lines: 2 })).toBe(false);
-      expect(sameSizes(sizes, { ...sizes, year: 1996 })).toBe(false);
-    });
-  });
-
   describe('videoViewOf', () => {
     test('sees the video in 3D, unless its address asks for flat', () => {
       expect(videoViewOf(undefined)).toBe('3d');
@@ -320,7 +318,7 @@ describe('VideoStore', () => {
     expect(store.scene).toBe('ready');
     expect(store.pageState).toBe('ready');
     expect(store.boundary).toEqual(AROUND_TINY);
-    expect(commands).toEqual([{ name: 'seek', args: [store.facts?.playheads.start()] }]);
+    expect(commands.filter(command => command.name !== 'update')).toEqual([{ name: 'seek', args: [store.facts?.playheads.start()] }]);
   });
 
   /**
@@ -348,14 +346,15 @@ describe('VideoStore', () => {
     store.END_PLAYBACK();
     expect(store.scene).toBe('overview');
     expect(store.mapProps).toMatchObject({ facts: store.facts, viewMode: '2d', overlay: null });
-    await nextTick();
-    expect(commands.at(-1)).toEqual({ name: 'fitNetwork', args: [WHOLE_FIT_MS] });
+    expect(commands.slice(-2)).toEqual([
+      { name: 'update', args: [store.mapProps] },
+      { name: 'fitNetwork', args: [WHOLE_FIT_MS] },
+    ]);
 
     let clock = TITLE_MS + OVERVIEW_MS;
     store.TICK(clock);
     expect(store.scene).toBe('insights');
     expect(store.mapProps).toMatchObject({ facts: store.facts, viewMode: '2d', overlay: { kind: 'coverage' } });
-    await nextTick();
     expect(commands.at(-1)).toEqual({ name: 'fitNetwork', args: [WHOLE_FIT_MS] });
 
     clock += INSIGHTS_MS;
@@ -378,9 +377,10 @@ describe('VideoStore', () => {
     expect(store.plan?.id).toBe(named);
     expect(store.mapProps).toMatchObject({ facts: store.planFacts, viewMode: '3d', overlay: null });
     const laid = store.planFacts;
-    expect(commands.at(-1)?.name).not.toBe('play');
-    await nextTick();
-    expect(commands.at(-1)).toEqual({ name: 'play', args: [laid?.playheads.start()] });
+    expect(commands.slice(-2)).toEqual([
+      { name: 'update', args: [store.mapProps] },
+      { name: 'play', args: [laid?.playheads.start()] },
+    ]);
     store.END_PLAYBACK();
     expect(store.scene).toBe('overview');
     expect(store.planFacts).toBe(laid);
@@ -390,46 +390,63 @@ describe('VideoStore', () => {
     expect(store.scene).toBe('end');
     expect(store.mapProps).toMatchObject({ boldPlans: true });
     expect(store.planGain?.map(gain => gain.label)).toContain('Stations');
-    await nextTick();
     expect(commands.at(-1)).toEqual({ name: 'fitNetwork', args: [WHOLE_FIT_MS] });
   });
 
-  test('counts the numbers on to a change, from where they are, and rests on them', async () => {
-    const { store } = await readyVideo();
-    const withStations = (stations: number) => ({ time: Date.UTC(1995, 0, 1), stats: { stations, km: 0, lines: 1 } }) as TimeState;
-    store.SET_TIME(withStations(10));
-    store.TICK(COUNT_MS);
-    expect(store.counts.stations.now).toBe(10);
-    store.SET_TIME(withStations(20));
-    expect(store.counts.stations.now).toBe(10);
-    store.TICK(COUNT_MS + COUNT_MS / 2);
-    expect(store.counts.stations.now).toBeGreaterThan(10);
-    expect(store.counts.stations.now).toBeLessThan(20);
-    store.TICK(COUNT_MS * 2);
-    expect(store.counts.stations.now).toBe(20);
+  test("plays the plan on the plan's own network, on the map itself, as its beat starts: no flush between", async () => {
+    const network = tinyNetwork();
+    const named = keysOf(network.plans ?? {})[0] ?? null;
+    setActivePinia(createPinia());
+    const store = useVideoStore();
+    // No outline, so no coverage to paint on a canvas this test has not got.
+    store.OPEN({ network, size: { width: 1920, height: 1080 }, viewMode: '2d', outline: 'http://127.0.0.1:9/outline.json', plan: named });
+    const { map, frame, ready } = mapOnStandIn(required(store.mapProps ?? undefined, 'the props'), { time: time => store.SET_TIME(time) });
+    store.ATTACH(map);
+    ready();
+    store.MAP_READY();
+    await expect.poll(() => store.outlineSettled).toBe(true);
+    store.START();
+    store.TICK(TITLE_MS);
+    store.END_PLAYBACK();
+    store.TICK(TITLE_MS + OVERVIEW_MS);
+    store.TICK(TITLE_MS + OVERVIEW_MS + INSIGHTS_MS);
+    expect(store.scene).toBe('plan');
+    frame();
+    expect(store.time).toMatchObject({ cursor: store.planFacts?.playheads.start().cursor, playing: true, atRest: false });
   });
 
-  test('counts on as a change is drawn, only as it changes a whole number', async () => {
+  test('keeps where the history is, as the map tells it, for the year card to count to', async () => {
     const { store } = await readyVideo();
-    const withKm = (km: number) => ({ time: Date.UTC(1995, 0, 1), stats: { stations: 1, km, lines: 1 } }) as TimeState;
-    store.SET_TIME(withKm(7.2));
-    const started = store.countedAt;
-    store.TICK(100);
-    store.SET_TIME(withKm(7.4));
-    expect(store.countedAt).toBe(started);
-    store.SET_TIME(withKm(7.6));
-    expect(store.countedAt).toBe(100);
+    const state = timeAt({ stats: { stations: 3, km: 7.6, lines: 1 } });
+    store.SET_TIME(state);
+    expect(store.time).toBe(state);
   });
 
-  test('starts the year where it is first told, and counts it on from there', async () => {
-    const { store } = await readyVideo();
-    const inYear = (year: number) => ({ time: Date.UTC(year, 0, 1), stats: { stations: 1, km: 0, lines: 1 } }) as TimeState;
-    store.SET_TIME(inYear(1960));
-    expect(store.counts.year.now).toBe(1960);
-    store.SET_TIME(inYear(1970));
-    store.TICK(COUNT_MS / 2);
-    expect(store.counts.year.now).toBeGreaterThan(1960);
-    expect(store.counts.year.now).toBeLessThan(1970);
+  test('lays the plan on by the beat alone, once for the beats that share it, and takes it off with the network', async () => {
+    const network = tinyNetwork();
+    const named = keysOf(network.plans ?? {})[0] ?? null;
+    const { store } = await readyVideo(network, named);
+    const planned = store.script.findIndex(beat => beat.plan);
+    expect(store.planFacts).toBeNull();
+    store.beatIndex = planned;
+    const laid = store.planFacts;
+    expect(laid?.plan).toBe(named);
+    store.beatIndex = planned + 1;
+    expect(store.planFacts).toBe(laid);
+    store.beatIndex = planned - 1;
+    expect(store.planFacts).toBeNull();
+    store.beatIndex = planned;
+    store.RESET();
+    expect(store.planFacts).toBeNull();
+  });
+
+  test("gives the panels' charts the same numbers every frame, so none is drawn again", async () => {
+    const { store } = await pastHistory();
+    store.TICK(TITLE_MS + OVERVIEW_MS);
+    const series = store.insights?.stationYears;
+    expect(series?.length).toBeGreaterThan(0);
+    store.TICK(TITLE_MS + OVERVIEW_MS + 1000);
+    expect(store.insights?.stationYears).toBe(series);
   });
 
   test("counts the end card's numbers from its scene's start, and rests on them after", async () => {

@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest';
+import { engineOf } from '../../../src/engine/engine.utils';
 import { NetworkFacts } from '../../../src/facts/facts.service';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { tightestHeadway } from '../../support/trains.utils';
 
 describe('TrainService', () => {
   const facts = NetworkFacts.create(tinyNetwork());
-  const service = facts.engine.trainService(facts.engine.timeline.cursorAt(Date.UTC(1935, 0, 1)));
+  const service = engineOf(facts).trainService(engineOf(facts).timeline.cursorAt(Date.UTC(1935, 0, 1)));
 
   test("runs at least a train on each of a network's routes, and counts them", () => {
     expect(service.fleet).toBeGreaterThanOrEqual(service.timetables.length);

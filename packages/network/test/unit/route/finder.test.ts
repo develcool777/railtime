@@ -1,11 +1,17 @@
-import type { StationId } from '@railtime/schema/network.types';
-import { stationId } from '@railtime/schema/testing/ids';
+import { entriesOf, fromEntriesOf } from '@railtime/core/collection.utils';
+import type { Mode, Network, StationId } from '@railtime/schema/network.types';
+import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
-import { CHANGE_MINUTES, RIDE_KMH, WALK_MINUTES } from '../../../src/route/finder.constants';
+import { CHANGE_MINUTES, WALK_MINUTES } from '../../../src/route/finder.constants';
 import { PriorityQueue, RouteFinder } from '../../../src/route/finder.service';
 import type { Route } from '../../../src/route/finder.types';
+import { rideSeconds } from '../../../src/trains/motion.utils';
+import { trainRunsAt } from '../../../src/trains/routes.utils';
+import { passSeconds, timetableOf } from '../../../src/trains/schedule.utils';
+import { TRAIN_PROFILES } from '../../../src/trains/trains.constants';
+import { loopNetwork } from '../../support/factories/loopNetwork.utils';
 import { routeNetwork } from '../../support/factories/routeNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 
@@ -34,8 +40,32 @@ const routeOf = (from: StationId, to: StationId): Route | null => optionsOf(from
 /** Each leg, as its line or `walk`. */
 const legsOf = (route: Route | null) => route?.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk'));
 
-/** Minutes to ride the 3 km between the stops these tests ride between. */
-const THREE_KM_MINUTES = (3 / RIDE_KMH) * 60;
+/** Minutes a metro takes from coming to a stop to coming to the next, a km on. */
+const STOP_MINUTES = (TRAIN_PROFILES.metro.standSeconds + rideSeconds(TRAIN_PROFILES.metro, 1)) / 60;
+
+/**
+ * A network's finder, and its cursor today.
+ *
+ * @param network - The network.
+ * @returns The finder, and every step played.
+ */
+const finderOf = (network: Network) => {
+  const index = new NetworkIndex(network);
+  const timeline = new Timeline(index);
+  return { finder: new RouteFinder(index, timeline), index, timeline, today: timeline.steps.length };
+};
+
+/**
+ * The tiny network with its lines of one mode.
+ *
+ * @param mode - What kind of railway they are.
+ * @returns The network.
+ */
+const tinyOf = (mode: Mode): Network => {
+  const network = tinyNetwork();
+  network.lines[lineId('red')] = { ...network.lines[lineId('red')]!, mode };
+  return network;
+};
 
 describe('RouteFinder', () => {
   describe('options', () => {
@@ -44,7 +74,59 @@ describe('RouteFinder', () => {
       expect(route?.legs).toMatchObject([{ kind: 'ride', line: 'red', stops: ['a', 'b', 'c', 'd'] }]);
       expect(route).toMatchObject({ changes: 0 });
       expect(route?.km).toBeCloseTo(3, 1);
-      expect(route?.minutes).toBeCloseTo(THREE_KM_MINUTES, 0);
+      expect(route?.minutes).toBeCloseTo(3 * STOP_MINUTES, 1);
+    });
+
+    test("takes a ride's minutes from the timetable its line's trains keep, stops included", () => {
+      const { finder, index, timeline, today } = finderOf(routeNetwork());
+      const run = trainRunsAt(index, timeline, today).find(each => each.line === lineId('red'))!;
+      const timetable = timetableOf(run, 300);
+      const [route] = finder.options(...run.ends, today);
+      expect(route?.minutes).toBeCloseTo((passSeconds(timetable, run.lengthKm, 1) - passSeconds(timetable, 0, 1)) / 60, 5);
+    });
+
+    test("times a ride by its own line's kind of railway", () => {
+      const minutesAs = (mode: Mode) => {
+        const { finder, today } = finderOf(tinyOf(mode));
+        return finder.options(stationId('a'), stationId('c'), today)[0]?.minutes ?? NaN;
+      };
+      const seconds = (mode: Mode) => 2 * (TRAIN_PROFILES[mode].standSeconds + rideSeconds(TRAIN_PROFILES[mode], 1));
+      expect(minutesAs('metro')).toBeCloseTo(seconds('metro') / 60, 1);
+      expect(minutesAs('tram')).toBeCloseTo(seconds('tram') / 60, 1);
+      expect(minutesAs('cable')).toBeGreaterThan(minutesAs('metro'));
+    });
+
+    test('rides past a station its line does not stop at as one run, standing nowhere there', () => {
+      // On the small network, C is on red's track from 1910 but a stop only from 1920.
+      const { finder, timeline } = finderOf(tinyNetwork());
+      const [route] = finder.options(stationId('b'), stationId('d'), timeline.cursorAt(Date.UTC(1915, 6, 1)));
+      expect(route?.minutes).toBeCloseTo((TRAIN_PROFILES.metro.standSeconds + rideSeconds(TRAIN_PROFILES.metro, 2)) / 60, 1);
+    });
+
+    test('rides a one-way line only the way it goes, round the long way if it must', () => {
+      const network = loopNetwork();
+      network.lines = fromEntriesOf(entriesOf(network.lines).filter(([line]) => line === 'clockwise'));
+      network.segments = network.segments.filter(segment => 'clockwise' in segment.lines);
+      const { finder, today } = finderOf(network);
+      // Clockwise goes A, C, B: from A to B it rides round by C; from B to A, straight.
+      expect(finder.options(stationId('a'), stationId('b'), today)[0]?.legs).toMatchObject([{ stops: ['a', 'c', 'b'] }]);
+      expect(finder.options(stationId('b'), stationId('a'), today)[0]?.legs).toMatchObject([{ stops: ['b', 'a'] }]);
+    });
+
+    test('rides lines drawn as one as one line: no change, and named as the map draws it', () => {
+      // Pink, on A – B – C, is drawn as red until 1990, its own line after; red runs A – B and C – D.
+      const network = tinyNetwork();
+      network.segments[1]!.lines = { [lineId('pink')]: { open: '1910-01-01' } };
+      network.stations[stationId('c')] = { ...network.stations[stationId('c')]!, infill: { [lineId('pink')]: '1911-01-01' } };
+      const { closed: _closed, ...open } = network.stations[stationId('d')]!;
+      network.stations[stationId('d')] = open;
+      const { finder, timeline } = finderOf(network);
+      const when = (year: number) => timeline.cursorAt(Date.UTC(year, 6, 1));
+      const [drawn] = finder.options(stationId('b'), stationId('d'), when(1935));
+      expect(drawn).toMatchObject({ changes: 0, legs: [{ kind: 'ride', line: 'red', stops: ['b', 'c', 'd'] }] });
+      const [apart] = finder.options(stationId('b'), stationId('d'), when(1995));
+      expect(apart).toMatchObject({ changes: 1, legs: [{ line: 'pink' }, { kind: 'ride' }] });
+      expect(apart?.minutes).toBeCloseTo((drawn?.minutes ?? NaN) + CHANGE_MINUTES, 5);
     });
 
     test('changes line, and counts the change and its minutes', () => {
@@ -52,7 +134,7 @@ describe('RouteFinder', () => {
       expect(legsOf(route)).toEqual(['red', 'blue']);
       expect(route?.legs[1]).toMatchObject({ stops: ['c', 'e'] });
       expect(route?.changes).toBe(1);
-      expect(route?.minutes).toBeCloseTo(THREE_KM_MINUTES + CHANGE_MINUTES, 0);
+      expect(route?.minutes).toBeCloseTo(3 * STOP_MINUTES + CHANGE_MINUTES, 1);
     });
 
     test('walks a transfer when that is quicker than riding round', () => {
@@ -96,7 +178,7 @@ describe('RouteFinder', () => {
       const finder = new RouteFinder(index, timeline);
       const reach = finder.reach(stationId('a'), timeline.steps.length);
       expect(reach.get(stationId('a'))).toBe(0);
-      expect(reach.get(stationId('d'))).toBeCloseTo(THREE_KM_MINUTES, 0);
+      expect(reach.get(stationId('d'))).toBeCloseTo(3 * STOP_MINUTES, 1);
       for (const station of ['b', 'c', 'd', 'e', 'g', 'h']) {
         expect(reach.get(stationId(station))).toBeCloseTo(finder.options(stationId('a'), stationId(station), timeline.steps.length)[0]?.minutes ?? NaN, 5);
       }

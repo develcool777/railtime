@@ -1,47 +1,12 @@
-import type { LngLat } from '@railtime/core/geometry.types';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { Network } from '@railtime/schema/network.types';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
-import type { City } from '../city.types.ts';
+import type { City, Report } from '../city.types.ts';
 import { citiesNamed, readNetwork } from '../city.utils.ts';
 import { BOUNDARY_DECIMALS, MIN_STATIONS_HELD, NOMINATIM_LOOKUP, NOMINATIM_PAUSE_MS, SIMPLIFY_DEGREES, USER_AGENT } from './boundary.constants.ts';
 import type { BoundaryArgs, NominatimPlace, OutlineGeometry } from './boundary.types.ts';
-
-/**
- * Whether an outline holds a point: inside one of its polygons' outer rings and none of their holes.
- *
- * @param boundary - The outline.
- * @param point - The point.
- * @returns True if it does.
- */
-export const holds = (boundary: CityBoundary, point: LngLat): boolean => {
-  const [longitude, latitude] = point;
-  const inRing = (ring: LngLat[]) => {
-    let inside = false;
-    for (const [position, [fromX, fromY]] of ring.slice(0, -1).entries()) {
-      // Within bounds: a ring's next point, the last being the first.
-      const [toX, toY] = ring[position + 1]!;
-      if (fromY > latitude !== toY > latitude && longitude < fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY)) inside = !inside;
-    }
-    return inside;
-  };
-  return boundary.polygons.some(([outer = [], ...holes]) => inRing(outer) && !holes.some(inRing));
-};
-
-/**
- * The share of a city's stations its outline holds: those built, or its plans' where nothing is.
- *
- * @param boundary - The outline.
- * @param network - The city's network.
- * @returns 0..1; 0 for a city with no stations at all.
- */
-export const stationsHeld = (boundary: CityBoundary, network: Network): number => {
-  const built = Object.values(network.stations);
-  const stations = built.length > 0 ? built : Object.values(network.plans ?? {}).flatMap(plan => Object.values(plan.stations ?? {}));
-  return stations.length > 0 ? stations.filter(station => holds(boundary, station.coordinate)).length / stations.length : 0;
-};
 
 /**
  * The OpenStreetMap relation an outline was taken from, as its source names it.
@@ -106,22 +71,19 @@ export const formatBoundary = (boundary: CityBoundary): string => {
   return `{\n  "name": ${JSON.stringify(boundary.name)},\n  "source": ${JSON.stringify(boundary.source)},\n  "polygons": [\n${polygons.join(',\n')}\n  ]\n}\n`;
 };
 
-/** How `pnpm data:boundary` is run, said when it is run otherwise. */
-const BOUNDARY_USAGE = 'usage: pnpm data:boundary [city [relation]], where relation is an OpenStreetMap id';
-
 /**
- * What `pnpm data:boundary [city [relation]]` was asked for.
+ * What a command was asked for: every city, a city, or a city and its relation.
  *
  * @param args - Its arguments.
  * @returns The city and relation.
- * @throws {Error} With the usage, for a relation without a city, one that is not a whole number above 0, or more than two arguments.
+ * @throws {Error} For a relation that is not a whole number above 0, or more than two arguments.
  */
 export const boundaryArgsOf = (args: string[]): BoundaryArgs => {
   const [city, relationText, ...rest] = args;
-  if (rest.length > 0) throw new Error(BOUNDARY_USAGE);
+  if (rest.length > 0) throw new Error('more arguments than a city and its relation');
   if (relationText === undefined) return { city, relation: null };
   const relation = Number(relationText);
-  if (!Number.isSafeInteger(relation) || relation <= 0) throw new Error(BOUNDARY_USAGE);
+  if (!Number.isSafeInteger(relation) || relation <= 0) throw new Error(`a relation is a whole number above 0, not ${relationText}`);
   return { city, relation };
 };
 
@@ -131,25 +93,26 @@ export const boundaryArgsOf = (args: string[]): BoundaryArgs => {
  *
  * @param city - The city.
  * @param relationGiven - The relation to fetch it from; `null` for the one its outline names.
+ * @param report - Says what became of it.
  * @throws {Error} If it is not written: no relation, Nominatim's answer, the schema, or an outline that is not the city's.
  */
-export const fetchBoundary = async (city: City, relationGiven: number | null): Promise<void> => {
+export const fetchBoundary = async (city: City, relationGiven: number | null, report: Report): Promise<void> => {
   const kept: CityBoundary | null = existsSync(city.boundaryPath) ? parseBoundary(JSON.parse(readFileSync(city.boundaryPath, 'utf8'))) : null;
   const relation = relationGiven ?? (kept ? relationOf(kept) : null);
-  if (relation === null) throw new Error(`no outline yet: give its relation, pnpm data:boundary ${city.id} <relation>`);
+  if (relation === null) throw new Error(`${city.id} has no outline yet: give its relation`);
   const response = await fetch(lookupUrlOf(relation), { headers: { 'User-Agent': USER_AGENT } });
   if (!response.ok) throw new Error(`relation ${relation} not fetched: Nominatim answered ${response.status}`);
   const [place] = (await response.json()) as NominatimPlace[];
   if (!place) throw new Error(`relation ${relation} not found on OpenStreetMap`);
   // A name chosen by hand (Greater London) stays while the relation does.
   const boundary = parseBoundary(boundaryOf(place, kept && relationOf(kept) === relation ? kept.name : undefined));
-  const held = stationsHeld(boundary, readNetwork(city));
+  const held = NetworkFacts.create(readNetwork(city)).coverage(boundary).stationsHeld();
   if (held <= MIN_STATIONS_HELD) throw new Error(`relation ${relation} holds ${Math.round(held * 100)}% of the city's stations: is it the city's own?`);
   const text = formatBoundary(boundary);
   const changed = !existsSync(city.boundaryPath) || readFileSync(city.boundaryPath, 'utf8') !== text;
   writeFileSync(city.boundaryPath, text);
   const points = boundary.polygons.flat(2 /* a polygon's rings, a ring's points */).length;
-  console.log(
+  report(
     `${city.id}: ${boundary.name}, relation ${relation}, ${points} points, ${Math.round(held * 100)}% of its stations, ${changed ? 'written' : 'unchanged'}`,
   );
 };
@@ -161,20 +124,21 @@ export const fetchBoundary = async (city: City, relationGiven: number | null): P
  *
  * @param cityId - The city's id; none for every city.
  * @param relation - The relation to fetch it from; `null` for the one each outline names.
+ * @param report - Says what became of each.
  * @throws {Error} For no such city, a relation without one, or naming the cities not written.
  */
-export const fetchBoundaries = async (cityId: string | undefined, relation: number | null): Promise<void> => {
+export const fetchBoundaries = async (cityId: string | undefined, relation: number | null, report: Report): Promise<void> => {
   const chosen = citiesNamed(cityId);
-  if (chosen.length === 0) throw new Error(`no city ${cityId}: ${BOUNDARY_USAGE}`);
-  if (relation !== null && cityId === undefined) throw new Error(BOUNDARY_USAGE);
+  if (chosen.length === 0) throw new Error(`no city ${cityId}`);
+  if (relation !== null && cityId === undefined) throw new Error('a relation is of one city: name it');
   const failed: string[] = [];
   for (const [position, city] of chosen.entries()) {
     // Nominatim's usage policy: a request a second at most.
     if (position > 0) await sleep(NOMINATIM_PAUSE_MS);
     try {
-      await fetchBoundary(city, relation);
+      await fetchBoundary(city, relation, report);
     } catch (error) {
-      console.error(`${city.id}: not written: ${error instanceof Error ? error.message : String(error)}`);
+      report(`${city.id}: not written: ${error instanceof Error ? error.message : String(error)}`);
       failed.push(city.id);
     }
   }

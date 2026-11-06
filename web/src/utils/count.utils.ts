@@ -1,5 +1,5 @@
 import { BLUR_PER_DIGIT, COUNT_MS, LEAST_BLUR, MOST_BLUR, SHUTTER_MS } from '~/constants/count.constants';
-import type { Count, CountedSizes, Reel, ReelMark, ReelNumber } from '~/utils/count.types';
+import type { Count, Counting, Reel, ReelMark, ReelNumber } from '~/utils/count.types';
 import { easedOut, fadedIn } from '~/utils/motion.utils';
 
 /**
@@ -32,40 +32,50 @@ export const countOf = (from: number, to: number, elapsed: number, lengthMs: num
 });
 
 /**
- * Everything the year card counts, this frame.
+ * A number resting on a value, as it is first told it: nothing to count from.
  *
- * @param from - What they count from.
- * @param to - What they count to.
- * @param elapsed - How long they have counted, ms.
- * @returns Each count.
+ * @param value - The value.
+ * @returns It, long landed.
  */
-export const countsOf = (from: CountedSizes, to: CountedSizes, elapsed: number): Record<keyof CountedSizes, Count> => ({
-  stations: countOf(from.stations, to.stations, elapsed),
-  km: countOf(from.km, to.km, elapsed),
-  lines: countOf(from.lines, to.lines, elapsed),
-  year: countOf(from.year, to.year, elapsed),
-});
+export const restingOn = (value: number): Counting => ({ from: Math.round(value), to: Math.round(value), startedAt: -Infinity });
 
 /**
- * Where the year card's numbers are this frame, for a count on from them.
+ * A number told a new value: it counts on from where it is, resting or partway to the last, and only
+ * as the value changes the whole number it comes to.
  *
- * @param counts - Each count.
- * @returns Where each is.
+ * @param counting - How it counts now.
+ * @param value - The new value.
+ * @param time - The page's clock, ms.
+ * @returns How it counts from now: the same, for the same whole number.
  */
-export const sizesAt = ({ stations, km, lines, year }: Record<keyof CountedSizes, Count>): CountedSizes => ({
-  stations: stations.now,
-  km: km.now,
-  lines: lines.now,
-  year: year.now,
-});
+export const countedOnTo = (counting: Counting, value: number, time: number): Counting => {
+  const to = Math.round(value);
+  if (to === counting.to) return counting;
+  return { from: countedAt(counting.from, counting.to, time - counting.startedAt, COUNT_MS), to, startedAt: time };
+};
 
 /**
- * A share as `formatShare` writes it, for reels: a whole percentage, or with one decimal under 10.
+ * A number on reels as it is read out: what it comes to, its thousands parted unless it is one, as a
+ * year is, that leaves them whole.
+ *
+ * @param count - The number, as it counts.
+ * @param shape - How it is written.
+ * @param shape.decimals - How many of its last digits follow a point.
+ * @param shape.grouped - Its thousands are parted.
+ * @returns It, in words a screen reader says.
+ */
+export const spokenCount = (count: Count, { decimals, grouped }: { decimals: number; grouped: boolean }): string =>
+  (Math.round(count.now) / 10 ** decimals).toLocaleString('en-GB', { useGrouping: grouped });
+
+/**
+ * A share as the site writes it, on reels or as text (`formatShare`): a whole percentage, or with one
+ * decimal under 10.
  *
  * @param share - 0..1.
  * @returns Its digits, and how many follow the point.
  */
 export const shareNumberOf = (share: number): ReelNumber => {
+  // Rounded first, so 9.96% reads as 10%, not 10.0%.
   const tenths = Math.round(share * 1000);
   if (share === 0 || tenths >= 100) return { value: Math.round(share * 100), decimals: 0 };
   return { value: tenths, decimals: 1 };

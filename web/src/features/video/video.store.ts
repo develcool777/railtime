@@ -1,4 +1,3 @@
-import { yearOf } from '@railtime/core/date.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { StepInfo } from '@railtime/network/facts.types';
 import type { TransitMap } from '@railtime/renderer/transitMap.service';
@@ -6,18 +5,13 @@ import type { Credit, TimeState, ViewMode } from '@railtime/renderer/transitMap.
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { Network } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
-import { computed, markRaw, nextTick, ref, shallowRef } from 'vue';
+import { computed, markRaw, ref, shallowRef } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
 import { insightsMotionOf, planGainOf, videoInsightsOf } from '~/features/video/insights/insights.utils';
 import { WHOLE_FIT_MS } from '~/features/video/video.constants';
 import type { VideoBeat, VideoOpening, VideoSize } from '~/features/video/video.types';
-import { historySpan, pageStateOf, sameSizes, sceneEnded, videoLayersOf, videoMapPropsOf, videoPlanOf, videoScriptOf } from '~/features/video/video.utils';
-import { fetchBoundary } from '~/utils/city.utils';
-import type { CountedSizes } from '~/utils/count.types';
-import { countsOf, sizesAt } from '~/utils/count.utils';
-
-/** A network with nothing on it, where the numbers start; the year starts at the first it is told. */
-const NO_SIZES: CountedSizes = { stations: 0, km: 0, lines: 0, year: 0 };
+import { historySpan, pageStateOf, sceneEnded, videoLayersOf, videoMapPropsOf, videoPlanOf, videoScriptOf } from '~/features/video/video.utils';
+import { fetchAskedBoundary } from '~/utils/city.utils';
 
 /**
  * A video's state, and what moves it on: the city's network and how it is seen, the script it follows
@@ -25,8 +19,8 @@ const NO_SIZES: CountedSizes = { stations: 0, km: 0, lines: 0, year: 0 };
  * and the page's clock, read each frame. The script says what each beat is (`videoScriptOf`); what
  * shows over the map (`layers`, `insights`) and what the map shows (`mapProps`) are worked out from the
  * beat by the rules in `video.utils.ts` and `insights/insights.utils.ts`. `video.composable.ts` makes
- * the map, gives it `mapProps` as they change, and calls these actions with what it says and with each
- * frame.
+ * the map, delivers what changes in `mapProps` between commands, and calls these actions with what the
+ * map says and with each frame; a beat's own props and commands go to the map from `ADVANCE`.
  */
 export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   // ---- State
@@ -38,8 +32,6 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const script = shallowRef<VideoBeat[]>([]);
   /** The beat it is at, by its place in the script; -1 while its map loads. */
   const beatIndex = ref(-1);
-  /** The city's network with the beat's plan laid on it; `null` while none is. */
-  const planFacts = shallowRef<NetworkFacts | null>(null);
   /** The city's outline, which coverage is measured within; `null` until it comes, or for none. */
   const boundary = shallowRef<CityBoundary | null>(null);
   /** Where the outline was asked for: an answer from anywhere else is dropped. */
@@ -55,10 +47,6 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const sceneStartedAt = ref(0);
   /** Where the history is, and the network's size there. */
   const time = shallowRef<TimeState | null>(null);
-  /** What the numbers count from, and to, and when they started to. */
-  const countFrom = shallowRef<CountedSizes>(NO_SIZES);
-  const countTo = shallowRef<CountedSizes>(NO_SIZES);
-  const countedAt = ref(0);
   /** The change last captioned, kept while its caption fades out. */
   const caption = shallowRef<StepInfo | null>(null);
   const captionShownAt = ref(0);
@@ -78,6 +66,8 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const framing = computed(() => beat.value?.framing ?? 'playing');
   /** The plan laid on the network, for the end card; `null` while none is. */
   const plan = computed(() => beat.value?.plan ?? null);
+  /** The city's network with that plan laid on it, made once for the beats that share it; `null` while none is. */
+  const planFacts = computed(() => (network.value && plan.value ? markRaw(NetworkFacts.create(network.value, { plan: plan.value.id })) : null));
   /** The network the map shows: with the beat's plan laid on it, or today's. */
   const shown = computed(() => planFacts.value ?? facts.value);
   /** What the map shows, once there is a network. */
@@ -104,8 +94,6 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const insightsMotion = computed(() =>
     insightsMotionOf(scene.value, now.value - sceneStartedAt.value, script.value[beatIndex.value + 1]?.framing !== 'insights'),
   );
-  /** The year and the network's size as the year card shows them this frame, counting to where the history is. */
-  const counts = computed(() => countsOf(countFrom.value, countTo.value, now.value - countedAt.value));
   /** How long the end card's numbers have counted, ms: rested on once its scene is over. */
   const endCounted = computed(() => (scene.value === 'end' ? now.value - sceneStartedAt.value : Infinity));
   /** Where the video is, as the page tells a recorder. */
@@ -115,32 +103,28 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
 
   // ---- Actions
   /**
-   * Moves the video on to its next beat: the plan it asks for laid on the network, or taken off; the
-   * history played from its start; the plan from its start, and the whole network framed, once the map
-   * has taken its props.
+   * Moves the video on to its next beat: the map given what the beat shows, then told what it does with
+   * it, as a command acts on the props the map has: the history played from its start, the plan from
+   * its start on the plan's network, the whole network framed flat. The effect gives the same props
+   * again as Vue flushes, which does nothing.
    */
   const ADVANCE = () => {
-    const before = plan.value;
     beatIndex.value++;
     sceneStartedAt.value = now.value;
-    if (plan.value !== before) planFacts.value = network.value && plan.value ? markRaw(NetworkFacts.create(network.value, { plan: plan.value.id })) : null;
+    if (mapProps.value) map.value?.update(mapProps.value);
     switch (scene.value) {
       case 'history': {
         if (facts.value) map.value?.play(facts.value.playheads.start());
         return;
       }
       case 'plan': {
-        // On the plan's network, once the map has it: its props reach it as Vue flushes, before this runs.
-        void nextTick(() => {
-          if (planFacts.value) map.value?.play(planFacts.value.playheads.start());
-        });
+        if (planFacts.value) map.value?.play(planFacts.value.playheads.start());
         return;
       }
       case 'insights':
       case 'overview':
       case 'end': {
-        // Framed flat, once the map lies flat: its props reach it as Vue flushes, before this runs.
-        void nextTick(() => map.value?.fitNetwork(WHOLE_FIT_MS));
+        map.value?.fitNetwork(WHOLE_FIT_MS);
         return;
       }
       case 'loading':
@@ -157,15 +141,11 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     facts.value = null;
     script.value = [];
     beatIndex.value = -1;
-    planFacts.value = null;
     boundary.value = null;
     outlineAsked.value = null;
     outlineSettled.value = false;
     sceneStartedAt.value = 0;
     time.value = null;
-    countFrom.value = NO_SIZES;
-    countTo.value = NO_SIZES;
-    countedAt.value = 0;
     caption.value = null;
     captionGoneAt.value = null;
     credits.value = [];
@@ -180,10 +160,14 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
   const LOAD_BOUNDARY = async (url: string) => {
     outlineAsked.value = url;
     outlineSettled.value = false;
-    const outline = await fetchBoundary(url);
-    if (outlineAsked.value !== url) return;
-    boundary.value = outline && markRaw(outline);
-    outlineSettled.value = true;
+    await fetchAskedBoundary(
+      url,
+      () => outlineAsked.value,
+      outline => {
+        boundary.value = outline && markRaw(outline);
+        outlineSettled.value = true;
+      },
+    );
   };
   /**
    * Opens a city's network, the video not started, and asks for its outline: its script goes on past
@@ -233,19 +217,12 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     if (sceneEnded(scene.value, frameTime - sceneStartedAt.value)) ADVANCE();
   };
   /**
-   * The history moved on: the numbers count on from where they are, as soon as it changes a whole
-   * one, which the change being drawn does as it goes; the year, the first it is told, starts there.
+   * The history moved on.
    *
    * @param state - Where it is.
    */
   const SET_TIME = (state: TimeState) => {
     time.value = state;
-    const next = { ...state.stats, km: Math.round(state.stats.km), year: yearOf(state.time) };
-    if (sameSizes(next, countTo.value)) return;
-    const reached = sizesAt(counts.value);
-    countFrom.value = countTo.value.year === 0 ? { ...reached, year: next.year } : reached;
-    countTo.value = next;
-    countedAt.value = now.value;
   };
   /**
    * A change starts, captioned; or its caption should go.
@@ -270,7 +247,6 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     facts,
     script,
     beatIndex,
-    planFacts,
     boundary,
     outlineAsked,
     outlineSettled,
@@ -279,9 +255,6 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     now,
     sceneStartedAt,
     time,
-    countFrom,
-    countTo,
-    countedAt,
     caption,
     captionShownAt,
     captionGoneAt,
@@ -292,13 +265,13 @@ export const useVideoStore = defineStore(STORE_IDS.VIDEO, () => {
     scene,
     framing,
     plan,
+    planFacts,
     shown,
     mapProps,
     layers,
     insights,
     planGain,
     insightsMotion,
-    counts,
     endCounted,
     pageState,
     span,

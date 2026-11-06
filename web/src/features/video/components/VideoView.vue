@@ -5,15 +5,19 @@
     <div class="absolute inset-0"><div ref="container" class="h-full w-full" /></div>
     <!-- MapLibre makes the minimap's element relative too. Always laid out, so it is framed before it shows. -->
     <div
-      class="absolute top-[4vmin] left-[5vmin] h-[22vmin] w-[36vmin] overflow-hidden rounded-[1.4vmin] ring-1 ring-white/20"
-      :style="{ opacity: store.layers.minimap }">
+      class="absolute left-[5vmin] w-[36vmin] overflow-hidden rounded-[1.4vmin] ring-1 ring-white/20"
+      :style="{ top: `${MINIMAP_TOP_VMIN}vmin`, height: `${MINIMAP_HEIGHT_VMIN}vmin`, opacity: store.layers.minimap }">
       <div ref="minimapContainer" class="h-full w-full" aria-label="Overview of the whole city" />
     </div>
     <VideoTitle :name="cityName" :networks="summary.networks" :span="store.span" :shown="store.layers.title" />
     <VideoPlanIntro v-if="store.plan" :plan="store.plan" :shown="store.layers.planIntro" />
-    <VideoYear v-if="store.time" :counts="store.counts" :plan="store.plan" :shown="store.layers.year" :totals="store.layers.totals" />
+    <!-- Down the right: the year, and the panels that side filling what it leaves, wherever it ends. -->
+    <div class="pointer-events-none absolute top-[4vmin] right-[2.5vmin] bottom-[4vmin] flex flex-col items-end">
+      <VideoYear v-if="store.time" :time="store.time" :plan="store.plan" :shown="store.layers.year" :totals="store.layers.totals" class="mr-[2.5vmin]" />
+      <VideoTodayPanels v-if="store.insights" :insights="store.insights" :motion="store.insightsMotion" class="min-h-0 flex-1" />
+    </div>
     <VideoCaption v-if="store.caption" :step="store.caption" :shown="store.layers.caption" />
-    <VideoInsights v-if="store.insights" :insights="store.insights" :motion="store.insightsMotion" :frameHeight="store.size.height" />
+    <VideoHistoryPanels v-if="store.insights" :insights="store.insights" :motion="store.insightsMotion" />
     <VideoPlanEnd
       v-if="store.plan && store.planGain"
       :plan="store.plan"
@@ -31,6 +35,7 @@
   import { computed, useTemplateRef } from 'vue';
   import { useRoute, useRuntimeConfig } from '#imports';
   import { useVideoMap } from '~/features/video/video.composable';
+  import { MINIMAP_HEIGHT_VMIN, MINIMAP_TOP_VMIN } from '~/features/video/video.constants';
   import { useVideoStore } from '~/features/video/video.store';
   import { spokenAddress, videoPlanAskedOf, videoViewOf } from '~/features/video/video.utils';
   import { boundaryUrlOf, cityNameOf, citySummaryOf } from '~/utils/city.utils';

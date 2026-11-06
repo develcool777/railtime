@@ -1,13 +1,34 @@
 import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { busiestDecade, networkHistory, openingsByDecade, statsAt } from '../../../src/engine/history.utils';
+import { engineOf } from '../../../src/engine/engine.utils';
+import { busiestDecade, networkHistory, openingsByDecade, statsAt, statsDrawn } from '../../../src/engine/history.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 
 describe('HistoryUtils', () => {
+  describe('statsDrawn', () => {
+    const done = { stations: 10, km: 20, lines: 2 };
+    const after = { stations: 16, km: 30, lines: 3 };
+
+    test('is the size before the change until it begins, and the size after once drawn', () => {
+      expect(statsDrawn(done, after, 0)).toEqual(done);
+      expect(statsDrawn(done, after, 1)).toEqual(after);
+    });
+
+    test('counts a station or a line as soon as the change has begun on it, whole, and track as far as it has got', () => {
+      expect(statsDrawn(done, after, 0.01)).toEqual({ stations: 11, km: 20.1, lines: 3 });
+      expect(statsDrawn(done, after, 0.5)).toEqual({ stations: 13, km: 25, lines: 3 });
+    });
+
+    test('counts down for a closure', () => {
+      const closed = { stations: 10, km: 20, lines: 2 };
+      expect(statsDrawn({ stations: 16, km: 30, lines: 3 }, closed, 0.5)).toEqual({ stations: 13, km: 25, lines: 2 });
+    });
+  });
+
   describe('networkHistory', () => {
     test('takes every year from the start, each as at its end', () => {
-      const { index, timeline } = factsOf(tinyNetwork()).engine;
+      const { index, timeline } = engineOf(factsOf(tinyNetwork()));
       const { years } = networkHistory(index, timeline, 2026);
       expect(years[0]?.year).toBe(1899);
       expect(years.at(-1)?.year).toBe(2026);
@@ -16,7 +37,7 @@ describe('HistoryUtils', () => {
     });
 
     test('keeps the year each station was first on the map, a closed one too', () => {
-      const { index, timeline } = factsOf(tinyNetwork()).engine;
+      const { index, timeline } = engineOf(factsOf(tinyNetwork()));
       const { firstYears } = networkHistory(index, timeline, 2026);
       expect(firstYears.get(stationId('a'))).toBe(1900);
       expect(firstYears.get(stationId('d'))).toBe(1910);

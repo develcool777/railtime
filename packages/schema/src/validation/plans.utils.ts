@@ -1,10 +1,11 @@
-import { entriesOf, keysOf } from '@railtime/core/collection.utils';
+import { pairsOf, entriesOf, keysOf } from '@railtime/core/collection.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import type { TrackOut } from './checks.types';
 import { checkNetwork, datedTracksOut, pushTrack, segmentTurnProblem, throughStationProblems, tracksOut } from './checks.utils.ts';
-import type { Network, Plan, StationId } from '../format/network.types';
+import type { Network, Plan, PlanTrack } from '../format/network.types';
 import type { BuiltPlan } from '../plan/build.types';
 import { buildPlan } from '../plan/build.utils.ts';
+import { samePair } from '../plan/track.utils.ts';
 
 /**
  * A plan's ids that are already the network's, and its sections' lines and stations that are no one's.
@@ -29,15 +30,6 @@ const planReferenceProblems = (network: Network, plan: Plan): string[] => [
 ];
 
 /**
- * Two stations as a pair, the same whichever way round they are given.
- *
- * @param stationA - One station.
- * @param stationB - The other.
- * @returns The pair, as `a – b`.
- */
-const pairOf = (stationA: StationId, stationB: StationId): string => [stationA, stationB].toSorted(byCodeUnits).join(' – ');
-
-/**
  * A plan's track that would never be laid: between a station no one has, two stations no section
  * links, or two the network links already; or given twice. Where it is laid, the network built is
  * checked as any other: its ends on its stations, no turn sharper than its trains can.
@@ -47,19 +39,18 @@ const pairOf = (stationA: StationId, stationB: StationId): string => [stationA, 
  * @returns A problem for each.
  */
 const planTrackProblems = (network: Network, plan: Plan): string[] => {
-  const linked = new Set(plan.sections.flatMap(section => section.stations.slice(1).map((station, position) => pairOf(section.stations[position]!, station))));
-  const built = new Set(network.segments.map(segment => pairOf(segment.stationA, segment.stationB)));
-  const seen = new Set<string>();
-  return (plan.track ?? []).flatMap(({ stationA, stationB }) => {
-    const pair = pairOf(stationA, stationB);
-    const unknown = [stationA, stationB].filter(station => !network.stations[station] && !plan.stations?.[station]);
+  const links = plan.sections.flatMap(section => pairsOf(section.stations).map(([stationA, stationB]) => ({ stationA, stationB })));
+  const seen: PlanTrack[] = [];
+  return (plan.track ?? []).flatMap(track => {
+    const pair = [track.stationA, track.stationB].toSorted(byCodeUnits).join(' – ');
+    const unknown = [track.stationA, track.stationB].filter(station => !network.stations[station] && !plan.stations?.[station]);
     const problems = [
       ...unknown.map(station => `track ${pair}: unknown station ${station}`),
-      ...(linked.has(pair) ? [] : [`track ${pair}: between stations no section links`]),
-      ...(built.has(pair) ? [`track ${pair}: between stations the network links already`] : []),
-      ...(seen.has(pair) ? [`track ${pair}: given twice`] : []),
+      ...(links.some(link => samePair(link, track)) ? [] : [`track ${pair}: between stations no section links`]),
+      ...(network.segments.some(segment => samePair(segment, track)) ? [`track ${pair}: between stations the network links already`] : []),
+      ...(seen.some(other => samePair(other, track)) ? [`track ${pair}: given twice`] : []),
     ];
-    seen.add(pair);
+    seen.push(track);
     return problems;
   });
 };

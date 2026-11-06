@@ -1,5 +1,5 @@
 import tseslint from 'typescript-eslint';
-import { ROOT, TOOL_CONFIGS } from './shared.js';
+import { house, ROOT, TOOL_CONFIGS } from './shared.js';
 
 /**
  * What the types say holds: every file read with its own package's types, and typescript-eslint's
@@ -38,7 +38,7 @@ export const typescriptConfig = [
       '@typescript-eslint/no-unsafe-type-assertion': 'off',
       // A number in a message or a URL is how one is written.
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
-      // `() => map.play()` and `(next) => (time.value = next)` are how actions and handlers are written.
+      // `() => map.play()` is how a handler is written. (An action is a block, CLAUDE.md: it returns nothing.)
       '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
       // A test may read a private member, as `animation['context']`, which TypeScript allows only so.
       '@typescript-eslint/dot-notation': ['error', { allowPrivateClassPropertyAccess: true }],
@@ -62,11 +62,14 @@ export const typescriptConfig = [
       '@typescript-eslint/no-unnecessary-qualifier': 'error',
       // A function in a type is a property, as every function here is an arrow.
       '@typescript-eslint/method-signature-style': 'error',
-      // `!` is allowed where a loop's bounds guarantee the element, with a comment saying so (CLAUDE.md,
-      // strict indexing); an id the network supplied goes through `required()`.
+      // `house/bounded-assertion` holds `!` instead, below: this rule refuses the one `!` strict indexing
+      // allows, an element a loop's bounds guarantee.
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
+  // Strict indexing: `!` only on a numeric index a loop's bounds guarantee, with a comment saying so; an
+  // id the network supplied goes through `required()`.
+  { files: ['**/*.{ts,vue}'], ignores: TOOL_CONFIGS, plugins: { house }, rules: { 'house/bounded-assertion': 'error' } },
   // Tool configs and plain JavaScript sit in no tsconfig: no rule that needs types.
   { files: ['**/*.js', ...TOOL_CONFIGS], extends: [tseslint.configs.disableTypeChecked] },
   {

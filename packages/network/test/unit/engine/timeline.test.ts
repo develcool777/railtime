@@ -4,6 +4,7 @@ import type { StationId } from '@railtime/schema/network.types';
 import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import type { LineSegment, TrackSegment } from '../../../src/engine/engine.types';
+import { engineOf } from '../../../src/engine/engine.utils';
 import { NetworkIndex } from '../../../src/engine/index.service';
 import { Timeline } from '../../../src/engine/timeline.service';
 import { forkedParts, linesByStation, planGrowth } from '../../../src/engine/timeline.utils';
@@ -117,7 +118,7 @@ describe('Timeline', () => {
   });
 
   test("follows every dated step with a plan's, undated, in the plan's order", () => {
-    const timeline = new Timeline(factsOf(tinyNetwork(), planId('extension')).engine.index);
+    const timeline = new Timeline(engineOf(factsOf(tinyNetwork(), planId('extension'))).index);
     const planned = timeline.steps.slice(timeline.datedCount);
     expect(planned.map(step => [step.kind, step.planned, step.time])).toEqual([
       ['open', true, Infinity],
@@ -134,11 +135,11 @@ describe('Timeline', () => {
       { line: lineId('red'), stations: [stationId('b'), stationId('c')] },
       { line: lineId('red'), stations: [stationId('b'), stationId('a')] },
     ];
-    const { timeline } = factsOf(network, planId('first')).engine;
+    const { timeline } = engineOf(factsOf(network, planId('first')));
     const openings = timeline.steps.filter(step => step.kind === 'open');
     expect(openings).toHaveLength(1);
     // From A or from C, whichever is nearer the centre: B, the middle, is passed on the way.
-    expect(timeline.growthOf(openings[0]!).reach.map(reached => reached.station)[1]).toBe('b');
+    expect(timeline.growths.growthOf(openings[0]!).reach.map(reached => reached.station)[1]).toBe('b');
   });
 
   test("opens a plan's line where it forks a branch at a time, its way first", () => {
@@ -147,7 +148,7 @@ describe('Timeline', () => {
     first.stations![stationId('d')] = { name: 'D', coordinate: [30.01, 50.005] };
     // A second section branching off the first at B, shorter than the way on to C.
     first.sections.push({ line: lineId('red'), stations: [stationId('b'), stationId('d')] });
-    const { timeline } = factsOf(network, planId('first')).engine;
+    const { timeline } = engineOf(factsOf(network, planId('first')));
     const openings = timeline.steps.filter(step => step.kind === 'open');
     const parts = openings.map(step => step.segments.map(segment => `${segment.stationA}-${segment.stationB}`));
     // The longest way through first, two segments; then the branch left off it at B.
@@ -156,25 +157,22 @@ describe('Timeline', () => {
   });
 
   test("keeps a plan's station off its line until its section plays", () => {
-    const timeline = new Timeline(factsOf(tinyNetwork(), planId('extension')).engine.index);
+    const timeline = new Timeline(engineOf(factsOf(tinyNetwork(), planId('extension'))).index);
     expect(timeline.servesStation(stationId('f'), lineId('red'), timeline.steps.length - 1)).toBe(false);
     expect(timeline.servesStation(stationId('f'), lineId('red'), timeline.steps.length)).toBe(true);
   });
 
-  test('tells the step a line segment opens and closes at, and that it has closed only after its closing step', () => {
+  test('says a line segment has closed only after its closing step', () => {
     const { index, timeline } = timelineOf();
     const blue = index.lineSegments.find(lineSegment => lineSegment.line === 'blue')!;
-    const opens = timeline.steps.findIndex(step => step.kind === 'open' && step.line === 'blue');
     const closes = timeline.steps.findIndex(step => step.kind === 'close' && step.line === 'blue');
-    expect(timeline.steps.map((_, cursor) => timeline.opensAt(blue, cursor))).toEqual(timeline.steps.map((_, cursor) => cursor === opens));
-    expect(timeline.steps.map((_, cursor) => timeline.closesAt(blue, cursor))).toEqual(timeline.steps.map((_, cursor) => cursor === closes));
     expect([timeline.hasClosed(blue, closes), timeline.hasClosed(blue, closes + 1)]).toEqual([false, true]);
   });
 
   test("ends its dates on the last dated step, a plan's undated ones after it", () => {
     const { timeline } = timelineOf();
     expect(timeline.lastDate).toBe(toTimestamp('1990-01-01'));
-    const planned = factsOf(tinyNetwork(), planId('extension')).engine.timeline;
+    const planned = engineOf(factsOf(tinyNetwork(), planId('extension'))).timeline;
     expect(planned.lastDate).toBe(toTimestamp('1990-01-01'));
   });
 
@@ -264,46 +262,6 @@ describe('Timeline', () => {
     expect(timeline.stationsOnMap(timeline.cursorAt(toTimestamp('1955-01-01'))).has(stationId('e'))).toBe(false);
   });
 
-  test('grows an opening out of the stations on the map before it, worked out once, new only where it opens a station', () => {
-    const { index, timeline } = timelineOf();
-    const extension = timeline.steps.find(step => step.kind === 'open' && step.segments.some(segment => segment.stationB === 'c' || segment.stationA === 'c'));
-    if (extension?.kind !== 'open') throw new Error('the tiny network extends red to C');
-    const growth = timeline.growthOf(extension);
-    const planned = planGrowth(extension.segments, timeline.stationsOnMap(extension.index), station => index.coordOf(station), index.centre);
-    expect(growth.plans).toEqual(planned.plans);
-    // B was on the map; red runs through C from 1910 but calls there only from 1920: D alone is new.
-    expect(growth.reach.map(reached => [reached.station, reached.isNew])).toEqual([
-      ['b', false],
-      ['c', false],
-      ['d', true],
-    ]);
-    expect(planned.reach.find(reached => reached.station === 'c')?.isNew).toBe(true);
-    expect(timeline.growthOf(extension)).toBe(growth);
-  });
-
-  test('retracts a closure back to the stations still on the map after it, worked out once, new where a station leaves', () => {
-    const network = tinyNetwork();
-    network.stations[stationId('e')] = { name: 'E', coordinate: [4 * 0.0144, 51.5] };
-    network.segments.push({
-      stationA: stationId('d'),
-      stationB: stationId('e'),
-      lines: { [lineId('blue')]: { open: '1930-01-01', close: '1950-01-01' } },
-      coordinates: [
-        [3 * 0.0144, 51.5],
-        [4 * 0.0144, 51.5],
-      ],
-    });
-    const { timeline } = timelineOf(network);
-    const closure = timeline.steps.find(step => step.kind === 'close' && step.lineSegments.some(({ segment }) => segment.stationB === 'e'));
-    if (closure?.kind !== 'close') throw new Error('blue closes D–E in 1950');
-    const retreat = timeline.retreatOf(closure);
-    // Played backwards, its front runs from E back to D, which stays on red.
-    const toE = retreat.plans.find(plan => plan.segment.stationB === 'e');
-    expect(toE?.fromStationA).toBe(true);
-    expect(retreat.reach.filter(reached => reached.isNew).map(reached => reached.station)).toEqual(['e']);
-    expect(timeline.retreatOf(closure)).toBe(retreat);
-  });
-
   test('closes a fork a branch at a time: the branch back to the fork, then the way it left', () => {
     const network = tinyNetwork();
     // Blue runs out of D, which stays on red, to E, forking there 2 km on to F and 1 km north to G.
@@ -359,7 +317,7 @@ describe('Timeline', () => {
     const { timeline } = timelineOf(network);
     const closure = timeline.steps.find(step => step.kind === 'close' && step.lineSegments.some(({ segment }) => segment.stationB === 'f'));
     if (closure?.kind !== 'close') throw new Error('blue closes D–F in 1950');
-    expect(timeline.retreatOf(closure).reach.map(reached => [reached.station, reached.isNew])).toEqual([
+    expect(timeline.growths.retreatOf(closure).reach.map(reached => [reached.station, reached.isNew])).toEqual([
       ['d', false],
       ['e', false],
       ['f', true],
@@ -413,7 +371,7 @@ describe('TimelineUtils', () => {
 
   describe('planGrowth', () => {
     test('grows out of stations already on the map, reaching new ones in order', () => {
-      const { index } = factsOf(tinyNetwork()).engine;
+      const { index } = engineOf(factsOf(tinyNetwork()));
       const growth = planGrowth(index.segments.slice(1), new Set([stationId('a'), stationId('b')]), station => index.coordOf(station), index.centre);
       expect(growth.reach.map(reached => [reached.station, reached.isNew])).toEqual([
         ['b', false],
@@ -489,7 +447,7 @@ describe('TimelineUtils', () => {
     });
 
     test('starts a stretch that touches nothing from its end nearest the centre', () => {
-      const { index } = factsOf(tinyNetwork()).engine;
+      const { index } = engineOf(factsOf(tinyNetwork()));
       const growth = planGrowth(index.segments, new Set(), station => index.coordOf(station), [0.05, 51.5]);
       expect(growth.reach[0]?.station).toBe('d');
     });
@@ -515,5 +473,39 @@ describe('TimelineUtils', () => {
       );
       expect(forkedParts(loop, new Set([stationId('o')]), () => [0, 0], [0, 0])).toHaveLength(1);
     });
+  });
+});
+
+describe('Timeline, what the map draws', () => {
+  const index = new NetworkIndex(tinyNetwork());
+  const timeline = new Timeline(index);
+  const on = (year: number) => timeline.cursorAt(Date.UTC(year, 6, 1));
+  /** Red on the segment from C. */
+  const redFromC = index.lineSegmentsOf(lineId('red')).find(({ segment }) => segment.stationA === 'c')!;
+
+  test('says a line calls at a station only with its track open and the station a stop on it', () => {
+    // Red's track reaches C in 1910, and C opens on it in 1920.
+    expect(timeline.callsAt(redFromC, stationId('c'), on(1905))).toBe(false);
+    expect(timeline.callsAt(redFromC, stationId('c'), on(1915))).toBe(false);
+    expect(timeline.callsAt(redFromC, stationId('c'), on(1925))).toBe(true);
+  });
+
+  test('draws a line as its alias until it ends, then as itself', () => {
+    expect(timeline.drawnAs(lineId('pink'), on(1935))).toBe('red');
+    expect(timeline.drawnAs(lineId('pink'), on(1995))).toBe('pink');
+    expect(timeline.drawnAs(lineId('red'), on(1935))).toBe('red');
+  });
+
+  test('lists the lines drawn as one: itself, and those drawn as it then', () => {
+    expect(timeline.linesDrawnAs(lineId('red'), on(1935))).toEqual(['red', 'pink']);
+    expect(timeline.linesDrawnAs(lineId('red'), on(1995))).toEqual(['red']);
+    expect(timeline.linesDrawnAs(lineId('pink'), on(1935))).toEqual([]);
+  });
+
+  test('lists the lines calling at a station as drawn, each once, in side-by-side order', () => {
+    expect(timeline.linesCallingAt(stationId('a'), on(1935))).toEqual(['red']);
+    expect(timeline.linesCallingAt(stationId('b'), on(1935))).toEqual(['red', 'blue']);
+    expect(timeline.linesCallingAt(stationId('a'), on(1995))).toEqual(['red', 'pink']);
+    expect(timeline.linesCallingAt(stationId('c'), on(1915))).toEqual([]);
   });
 });

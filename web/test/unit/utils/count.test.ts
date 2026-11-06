@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { LEAST_BLUR, MOST_BLUR, SHUTTER_MS } from '~/constants/count.constants';
-import type { Count, Reel, ReelMark } from '~/utils/count.types';
-import { countedAt, countOf, countsOf, reelsOf, shareNumberOf, sizesAt } from '~/utils/count.utils';
+import { COUNT_MS, LEAST_BLUR, MOST_BLUR, SHUTTER_MS } from '~/constants/count.constants';
+import type { Count, Counting, Reel, ReelMark } from '~/utils/count.types';
+import { countedAt, countedOnTo, countOf, reelsOf, restingOn, shareNumberOf, spokenCount } from '~/utils/count.utils';
 import { formatShare } from '~/utils/format.utils';
 
 /** How long a count takes, ms, where it makes no odds. */
@@ -31,7 +31,62 @@ const reelsIn = (parts: (Reel | ReelMark)[]): Reel[] => parts.filter((part): par
  */
 const textOf = (parts: (Reel | ReelMark)[]): string => parts.map(part => part.mark ?? part.digit).join('');
 
+/**
+ * Where a number that counts stands.
+ *
+ * @param counting - How it counts.
+ * @param time - The page's clock, ms.
+ * @returns Where it is.
+ */
+const standing = ({ from, to, startedAt }: Counting, time: number): number => countOf(from, to, time - startedAt).now;
+
 describe('CountUtils', () => {
+  describe('restingOn', () => {
+    test('stands on the first value it is told, with nothing to count, at any time', () => {
+      expect(standing(restingOn(1960), 0)).toBe(1960);
+      expect(standing(restingOn(1960), 123_456)).toBe(1960);
+    });
+
+    test('comes to a whole number', () => {
+      expect(standing(restingOn(7.6), 0)).toBe(8);
+    });
+  });
+
+  describe('countedOnTo', () => {
+    test('counts on to a change from where the number rests, and rests on it', () => {
+      const counting = countedOnTo(restingOn(10), 20, COUNT_MS);
+      expect(standing(counting, COUNT_MS)).toBe(10);
+      expect(standing(counting, COUNT_MS * 1.5)).toBeGreaterThan(10);
+      expect(standing(counting, COUNT_MS * 1.5)).toBeLessThan(20);
+      expect(standing(counting, COUNT_MS * 2)).toBe(20);
+    });
+
+    test('counts on from where it has got to, when told another value partway', () => {
+      const first = countedOnTo(restingOn(0), 100, 0);
+      const reached = standing(first, COUNT_MS / 2);
+      const second = countedOnTo(first, 200, COUNT_MS / 2);
+      expect(reached).toBeGreaterThan(0);
+      expect(second).toEqual({ from: reached, to: 200, startedAt: COUNT_MS / 2 });
+    });
+
+    test('starts afresh from where it landed, once a count is over', () => {
+      expect(countedOnTo(countedOnTo(restingOn(0), 100, 0), 150, COUNT_MS * 3)).toEqual({ from: 100, to: 150, startedAt: COUNT_MS * 3 });
+    });
+
+    test('counts on as a change is drawn, only as it changes a whole number', () => {
+      const counting = restingOn(7.2);
+      expect(countedOnTo(counting, 7.4, 100)).toBe(counting);
+      expect(countedOnTo(counting, 7.6, 100)).toEqual({ from: 7, to: 8, startedAt: 100 });
+    });
+
+    test('starts the year where it is first told, and counts it on from there', () => {
+      const counting = countedOnTo(restingOn(1960), 1970, 0);
+      expect(standing(counting, 0)).toBe(1960);
+      expect(standing(counting, COUNT_MS / 2)).toBeGreaterThan(1960);
+      expect(standing(counting, COUNT_MS / 2)).toBeLessThan(1970);
+    });
+  });
+
   describe('countedAt', () => {
     test('starts where it counts from, and lands on a whole number', () => {
       expect(countedAt(10, 20, 0, LENGTH)).toBe(10);
@@ -63,6 +118,14 @@ describe('CountUtils', () => {
     });
   });
 
+  describe('spokenCount', () => {
+    test('reads out what it comes to, its thousands parted, or left whole as a year is', () => {
+      expect(spokenCount({ now: 1960, before: 1960 }, { decimals: 0, grouped: true })).toBe('1,960');
+      expect(spokenCount({ now: 1960, before: 1960 }, { decimals: 0, grouped: false })).toBe('1960');
+      expect(spokenCount({ now: 1234.4, before: 1200 }, { decimals: 1, grouped: true })).toBe('123.4');
+    });
+  });
+
   describe('countOf', () => {
     test('says where it was as the shutter opened', () => {
       expect(countOf(0, 100, 200, LENGTH)).toEqual({ now: countedAt(0, 100, 200, LENGTH), before: countedAt(0, 100, 200 - SHUTTER_MS, LENGTH) });
@@ -71,15 +134,6 @@ describe('CountUtils', () => {
     test('has no motion at rest', () => {
       const { now, before } = countOf(0, 100, Infinity, LENGTH);
       expect(now).toBe(before);
-    });
-  });
-
-  describe('countsOf', () => {
-    test('counts each of the sizes, and `sizesAt` says where each is', () => {
-      const from = { stations: 0, km: 10, lines: 1, year: 1960 };
-      const to = { stations: 5, km: 20, lines: 2, year: 1970 };
-      expect(sizesAt(countsOf(from, to, 0))).toEqual(from);
-      expect(sizesAt(countsOf(from, to, Infinity))).toEqual(to);
     });
   });
 

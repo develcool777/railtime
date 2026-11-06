@@ -1,7 +1,8 @@
 import type { LngLat } from '@railtime/core/geometry.types';
+import { required } from '@railtime/core/required.utils';
 import type { Heading, SectionWorks } from './build.types';
-import { curveBetween, headingOf, splitTrack } from './track.utils.ts';
-import type { LineId, Network, PlanSection, PlanTrack, Segment, StationId } from '../format/network.types';
+import { curveBetween, headingOf, samePair, splitTrack } from './track.utils.ts';
+import type { LineId, Network, PlanSection, PlanTrack, Segment, Station, StationId } from '../format/network.types';
 
 /**
  * Builds plan sections on a network, keeping track of segments as objects, so splitting one never
@@ -14,6 +15,8 @@ export class PlanBuilder {
   public readonly sections: SectionWorks[] = [];
   /** Where the plan's new track runs between two stations, where it says. */
   private readonly track: PlanTrack[];
+  /** All the new track laid, each piece of what a station split on it. */
+  public readonly laid = new Set<Segment>();
   /** The new track laid where the plan says none: straight until `curve` bends it through its line's stations. */
   private readonly unsaid = new Set<Segment>();
 
@@ -55,9 +58,7 @@ export class PlanBuilder {
    * @returns It, if there is one.
    */
   private between(stationA: StationId, stationB: StationId): Segment | undefined {
-    return this.network.segments.find(
-      segment => (segment.stationA === stationA && segment.stationB === stationB) || (segment.stationA === stationB && segment.stationB === stationA),
-    );
+    return this.network.segments.find(segment => samePair(segment, { stationA, stationB }));
   }
 
   /**
@@ -72,6 +73,16 @@ export class PlanBuilder {
   }
 
   /**
+   * A station the plan stands on: the schema checks every station of a plan exists.
+   *
+   * @param station - Its id.
+   * @returns The station.
+   */
+  private stationOf(station: StationId): Station {
+    return required(this.network.stations[station], `station ${station}`);
+  }
+
+  /**
    * New track between two stations: where the plan says it runs, either way round, else straight.
    *
    * @param stationA - One end.
@@ -79,14 +90,12 @@ export class PlanBuilder {
    * @returns The new segment, with no lines yet.
    */
   private lay(stationA: StationId, stationB: StationId): Segment {
-    const given = this.track.find(
-      track => (track.stationA === stationA && track.stationB === stationB) || (track.stationA === stationB && track.stationB === stationA),
-    );
-    // Within bounds: the schema checks every station of a plan exists.
-    let coordinates: LngLat[] = [this.network.stations[stationA]!.coordinate, this.network.stations[stationB]!.coordinate];
+    const given = this.track.find(track => samePair(track, { stationA, stationB }));
+    let coordinates: LngLat[] = [this.stationOf(stationA).coordinate, this.stationOf(stationB).coordinate];
     if (given) coordinates = given.stationA === stationA ? [...given.coordinates] : given.coordinates.toReversed();
     const segment: Segment = { stationA, stationB, lines: {}, coordinates };
     this.network.segments.push(segment);
+    this.laid.add(segment);
     if (!given) this.unsaid.add(segment);
     return segment;
   }
@@ -99,8 +108,7 @@ export class PlanBuilder {
    * @param station - The station to stand on it.
    */
   private split(segment: Segment, station: StationId): void {
-    // Within bounds: the schema checks every station of a plan exists.
-    const place = this.network.stations[station]!.coordinate;
+    const place = this.stationOf(station).coordinate;
     const [first, second] = splitTrack(segment.coordinates, place);
     // The halves meet at the station itself, not beside it on the track.
     const halves: Segment[] = [
@@ -110,6 +118,7 @@ export class PlanBuilder {
     this.network.segments.splice(this.network.segments.indexOf(segment), 1, ...halves);
     for (const section of this.sections) section.segments = section.segments.flatMap(item => (item === segment ? halves : [item]));
     if (this.unsaid.delete(segment)) for (const half of halves) this.unsaid.add(half);
+    if (this.laid.delete(segment)) for (const half of halves) this.laid.add(half);
   }
 
   /**
@@ -129,7 +138,12 @@ export class PlanBuilder {
     }
     // Every heading taken from the track as laid, before any of it bends.
     for (const [segment, [leaving, arriving]] of headings)
-      segment.coordinates = curveBetween(segment.coordinates[0]!, segment.coordinates.at(-1)!, leaving, arriving);
+      segment.coordinates = curveBetween(
+        required(segment.coordinates[0], "a segment's start"),
+        required(segment.coordinates.at(-1), "a segment's end"),
+        leaving,
+        arriving,
+      );
   }
 
   /**
@@ -145,8 +159,8 @@ export class PlanBuilder {
    */
   private headingThrough(station: StationId, segment: Segment, line: LineId): Heading {
     const leaving = (track: Segment) => headingOf(track.stationA === station ? track.coordinates : track.coordinates.toReversed());
-    // Within bounds: a laid segment's ends are two stations apart.
-    const own = leaving(segment)!;
+    // A laid segment's ends are two stations apart, so it heads somewhere.
+    const own = required(leaving(segment) ?? undefined, `the heading through ${station}`);
     if (this.network.stations[station]?.reverses?.includes(line)) return own;
     let against: { heading: Heading; said: boolean } | null = null;
     for (const other of this.network.segments) {

@@ -1,12 +1,13 @@
 import { endOfYear, yearOf } from '@railtime/core/date.utils';
 import type { NetworkFacts } from '@railtime/network/facts.service';
-import type { Playhead, StepInfo } from '@railtime/network/facts.types';
+import type { Moment, Playhead, StepInfo } from '@railtime/network/facts.types';
 import type { TimeState } from '@railtime/renderer/transitMap.types';
+import { arrivalTimeOf } from '@railtime/renderer/transitMap.utils';
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
-import type { ExplorerUrlState, LinkedPlayhead } from '~/features/explorer/address/address.types';
-import { linkedPlayheadOf, playheadOf } from '~/features/explorer/address/address.utils';
+import type { ExplorerUrlState } from '~/features/explorer/address/address.types';
+import { linkedMomentOf } from '~/features/explorer/address/address.utils';
 import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';
 import { useMapStore } from '~/features/explorer/map/map.store';
 import { useNetworkStore } from '~/features/explorer/network.store';
@@ -14,53 +15,60 @@ import { DEFAULT_PLAYER } from '~/features/explorer/time/time.constants';
 import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
 
 /**
- * Time in the explorer: what the time control shows (the timeline, or the player), how playback is
- * set, where the history is and the change playing, as the map tells them; and every command that
- * moves through time, sent to the map. It reads the network shown and the map.
+ * Time in the explorer: how playback is set, where the history is and the change playing, as the map
+ * tells them, and so what the time control shows (the player while the map plays, else the timeline);
+ * where the map stands on a network given it (`arrival`, a prop: the map reads it with the network);
+ * and every command that moves through time, sent to the map. It reads the network shown and the map.
  */
 export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
   const network = useNetworkStore();
   const mapStore = useMapStore();
 
   // ---- State
-  /** What the time control shows: the timeline, or the player. */
-  const timeMode = ref<TimeMode>('timeline');
   /** How playback is set: its speed, its camera, the minimap. */
   const player = ref<PlayerSettings>({ ...DEFAULT_PLAYER });
-  /** Where the history is, as the map tells it; `null` before it has. */
+  /** Where the history is, as the map will say on arriving and tells it from then on; `null` with no network open. */
   const time = shallowRef<TimeState | null>(null);
   /** The change playing, as the map tells it. */
   const step = shallowRef<StepInfo | null>(null);
-  /** Where in the history the address opened, for the map once it is there. */
-  const openingAt = shallowRef<LinkedPlayhead | null>(null);
+  /** Where the map stands on the network shown as it is given it: the moment asked for, or `null` where it rests. */
+  const arrival = shallowRef<Moment | null>(null);
+  /** The map played to its end, and has not played since. */
+  const playedOut = ref(false);
 
   // ---- Getters
-  /** The time control shows the player (playing, or paused in it); the map moving is `time.playing`. */
+  /** What the time control shows: the player while the map plays, which only the map knows; else the timeline. */
+  const timeMode = computed((): TimeMode => (time.value?.playing ? 'playing' : 'timeline'));
+  /** The time control shows the player. */
   const playerShown = computed(() => timeMode.value === 'playing');
-  /** Where the history is, as the address names it: as it opened, until the map tells it. */
-  const linkedPlayhead = computed(() => (time.value && network.facts ? linkedPlayheadOf(time.value, network.facts.playheads) : openingAt.value));
-  /** The date shown, for what had opened by then; `null` in a plan, or before the map tells it. */
-  const shownDate = computed(() => (!time.value || time.value.inPlan ? null : time.value.time));
-  /** The year shown; `null` in a plan. */
-  const shownYear = computed(() => (shownDate.value === null ? null : yearOf(shownDate.value)));
+  /** Where the history is, as the address names it. */
+  const linkedMoment = computed(() => (time.value && network.facts ? linkedMomentOf(time.value, network.facts.playheads) : null));
+  /** The year shown; `null` in a plan, or with no network open. */
+  const shownYear = computed(() => (!time.value || time.value.inPlan ? null : yearOf(time.value.time)));
 
   // ---- Actions
   /**
-   * Sets time for a page opening: the timeline, playback set as the address says, where in the
-   * history it asks for, nothing told yet.
+   * A network is shown: where the map stands on it, said with it, and from now where the history is on
+   * it, as the map's next frame will tell. A cursor means something only to its own network, so none of
+   * the last is ever read against this one, nor the change it was playing.
+   *
+   * @param moment - The moment; `null` for where the network rests.
+   */
+  const ARRIVE = (moment: Moment | null) => {
+    arrival.value = moment;
+    time.value = network.facts && arrivalTimeOf(network.facts, moment);
+    step.value = null;
+  };
+  /**
+   * Sets time for a page opening: playback set as the address says, and arrived where in the history
+   * it asks for, so all that is read for a moment is there before the map is.
    *
    * @param address - What the address asks for.
    */
   const OPEN = (address: ExplorerUrlState) => {
-    timeMode.value = 'timeline';
-    player.value = {
-      speed: address.speed ?? DEFAULT_PLAYER.speed,
-      camera: address.camera ?? DEFAULT_PLAYER.camera,
-      minimap: address.minimap ?? DEFAULT_PLAYER.minimap,
-    };
-    time.value = null;
-    step.value = null;
-    openingAt.value = address.at ?? null;
+    player.value = { speed: address.speed, camera: address.camera, minimap: address.minimap };
+    playedOut.value = false;
+    ARRIVE(address.at ?? null);
   };
   /**
    * Moves the map to a playhead of the network shown.
@@ -69,17 +77,6 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
    */
   const SEEK = (where: (playheads: NetworkFacts['playheads']) => Playhead) => {
     if (network.facts) mapStore.map?.seek(where(network.facts.playheads));
-  };
-  /** The map has arrived: it is shown where the address opened, or with the plan built. */
-  const SEEK_OPENING = () => {
-    const opening = openingAt.value;
-    if (opening) SEEK(playheads => playheadOf(opening, playheads));
-    else if (network.plan) SEEK(playheads => playheads.end());
-  };
-  /** Back to the timeline, no change playing: the network made again, at its today. */
-  const TO_TIMELINE = () => {
-    timeMode.value = 'timeline';
-    step.value = null;
   };
   /**
    * The map moved through time.
@@ -97,10 +94,6 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
   const SET_STEP = (next: StepInfo | null) => {
     step.value = next;
   };
-  /** Playback reached its end: the timeline, at today. */
-  const PLAYBACK_ENDED = () => {
-    if (playerShown.value) timeMode.value = 'timeline';
-  };
   /**
    * Changes how playback is set.
    *
@@ -114,17 +107,20 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
    * again once at its end); the panel stays on what is open in it (Changes, open, follows along).
    */
   const PLAY = () => {
-    timeMode.value = 'playing';
+    playedOut.value = false;
     mapStore.map?.play();
+  };
+  /** The map played to its end. */
+  const END_PLAYBACK = () => {
+    playedOut.value = true;
   };
   /** Pauses where it is: the timeline, at the date reached. */
   const PAUSE = () => {
     mapStore.map?.pause();
-    timeMode.value = 'timeline';
   };
-  /** Pauses while the map moves in the player; else plays. */
+  /** Pauses while the map plays; else plays. */
   const TOGGLE_PLAY = () => {
-    if (playerShown.value && time.value?.playing) PAUSE();
+    if (playerShown.value) PAUSE();
     else PLAY();
   };
   /**
@@ -135,7 +131,6 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
    */
   const LEAVE_TO = (place: 'today' | 'rest' | 'end') => {
     if (playerShown.value) mapStore.map?.stop();
-    timeMode.value = 'timeline';
     SEEK(playheads => playheads[place]());
   };
   /** The change before the one shown; in the player, it plays again. */
@@ -187,26 +182,25 @@ export const useTimeStore = defineStore(STORE_IDS.EXPLORER_TIME, () => {
 
   return {
     // State
-    timeMode,
     player,
     time,
     step,
-    openingAt,
+    arrival,
+    playedOut,
     // Getters
+    timeMode,
     playerShown,
-    linkedPlayhead,
-    shownDate,
+    linkedMoment,
     shownYear,
     // Actions
     OPEN,
+    ARRIVE,
     SEEK,
-    SEEK_OPENING,
-    TO_TIMELINE,
     SET_TIME,
     SET_STEP,
-    PLAYBACK_ENDED,
     SET_PLAYER,
     PLAY,
+    END_PLAYBACK,
     PAUSE,
     TOGGLE_PLAY,
     LEAVE_TO,

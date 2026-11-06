@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from 'playwright-core';
+import type { BrowserContext } from 'playwright-core';
 import type { RecordedWindow } from './videoPage.types.ts';
 
 /** The page a video is made of: the one made for it, or the explorer as anyone sees it. */
@@ -38,29 +38,18 @@ export type RecordingScope = {
   cancelAnimationFrame: (handle: number) => void;
 } & Pick<RecordedWindow, 'railtimeRecorder'>;
 
+/** What the recorder reads of a page's `window` to know a frame is drawn. A stand-in in tests. */
+export type DrawnScope = Pick<RecordedWindow, 'railtimeRecorder' | 'railtimeVideo'>;
+
 /** What a `VideoRecorder` is made with. */
 export type RecorderOptions = {
+  /** What it says as it goes: how far it has got, and what goes wrong in the page. */
+  report: (line: string) => void;
   /**
    * Starts the browser the page is recorded in, at the recording's size: the Chrome installed on this
    * machine, with its own profile (`BROWSER_PROFILE`), unless a test gives a stand-in.
    */
   launch?: (recording: Recording) => Promise<BrowserContext>;
-};
-
-/** How a kind of page is recorded: where it is, when it is ready, how it starts, and when it is over. */
-export type RecordedPage = {
-  /**
-   * Its path.
-   *
-   * @param city - The city.
-   */
-  pathOf: (city: string) => string;
-  /** Whether it is ready to start: its map drawn. */
-  ready: (page: Page) => Promise<boolean>;
-  /** Starts it playing. */
-  start: (page: Page) => Promise<void>;
-  /** Whether it has played to its end. */
-  ended: (page: Page) => Promise<boolean>;
-  /** Seconds recorded after it ends. */
-  tailSeconds: number;
+  /** Where ffmpeg is: the first of `FFMPEG_LOCATIONS` that has it, unless a test gives a stand-in. */
+  ffmpeg?: string;
 };

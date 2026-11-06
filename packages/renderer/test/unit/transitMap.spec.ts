@@ -1,18 +1,23 @@
-import { toTimestamp } from '@railtime/core/date.utils';
+import { toTimestamp, YEAR_MS } from '@railtime/core/date.utils';
+import { required } from '@railtime/core/required.utils';
+import { engineOf } from '@railtime/network/engine.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
+import { TINY_WITH_HOLE } from '@railtime/network/testing/boundaries';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { planId, stationId } from '@railtime/schema/testing/ids';
+import type { LineId, Network } from '@railtime/schema/network.types';
+import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import type { LayerSpecification } from 'maplibre-gl';
 import { describe, expect, test } from 'vitest';
-import { LAYERS, SOURCES } from '../../src/layers/ids.constants';
+import { LAYERS, SOURCES, UNFOCUSED_OPACITY } from '../../src/layers/ids.constants';
+import type { LineFeature } from '../../src/layers/snapshot.types';
 import { DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from '../../src/layers/theme.constants';
-import { MINIMAP_SOURCES, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from '../../src/minimap/minimap.constants';
+import { MINIMAP_SOURCES, MINIMAP_UPDATE_MS, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from '../../src/minimap/minimap.constants';
 import { VIEW_3D_PITCH } from '../../src/playback/camera.constants';
 import { END_OVERVIEW_MS, MAX_TILE_WAIT_SECONDS } from '../../src/playback/playback.constants';
-import { FIT_NETWORK_MS, OPENING_MAX_ZOOM, OPENING_SIDE_PADDING } from '../../src/transitMap.constants';
+import { FAST_YEARS_PER_SECOND } from '../../src/playback/player.constants';
+import { FIT_NETWORK_MS } from '../../src/transitMap.constants';
 import { TransitMap } from '../../src/transitMap.service';
 import type { MapProps, MapPropsUpdate, TransitMapListeners, TransitMapOptions } from '../../src/transitMap.types';
-import { openingOf } from '../../src/transitMap.utils';
 import { fakeMap } from '../support/factories/fakeMap.utils';
 
 /**
@@ -22,7 +27,7 @@ import { fakeMap } from '../support/factories/fakeMap.utils';
  * @param on - Its listeners, besides the one recording every event.
  * @param style - The basemap's layers.
  * @param minimapContainer - Where to draw a minimap, on a stand-in of its own; none without.
- * @param options - Its other options: where it opens, its basemap, its credits.
+ * @param options - Its other options: where it opens, its credits.
  * @returns The map, the stand-ins, a frame stepper, the events delivered, in order, its network, and where its playheads are.
  */
 const mapOf = (
@@ -75,33 +80,74 @@ const mapOf = (
   return { map, fake, mini, frame, ready, events, named, pending, facts, playheads: facts.playheads };
 };
 
-describe('TransitMapUtils', () => {
-  describe('openingOf', () => {
-    const bounds: [[number, number], [number, number]] = [
-      [0, 51],
-      [1, 52],
-    ];
+describe('TransitMap', () => {
+  describe('lines in focus', () => {
+    /** The tiny network, with `green` drawn until 2000 as a line with no track of its own. */
+    const networkWithAlias = (): Network => {
+      const network = tinyNetwork();
+      const green = lineId('green');
+      const umbrella = lineId('umbrella');
+      network.lines[umbrella] = { name: 'Umbrella', network: required(network.lines[green], 'green').network, mode: 'metro', color: '#123456', pseudo: true };
+      network.lines[green] = {
+        ...required(network.lines[green], 'green'),
+        aliases: [{ until: '2000-01-01', as: umbrella, text: 'Green becomes its own line' }],
+      };
+      return network;
+    };
+    /**
+     * The map on that network in 1985, while green is drawn as the other.
+     *
+     * @param focusedLines - The lines in focus.
+     * @returns The map, what it is drawn on, and how it moves.
+     */
+    const focusedThen = (focusedLines: LineId[]) => {
+      const opened = mapOf({ facts: NetworkFacts.create(networkWithAlias(), { today: toTimestamp('2026-01-01') }), focusedLines });
+      opened.ready();
+      opened.map.seek(opened.playheads.on(toTimestamp('1985-01-01')));
+      opened.frame();
+      return opened;
+    };
+    /**
+     * What the lines' layer shows of a map brought forward.
+     *
+     * @param lines - The ids brought forward.
+     * @returns The opacity it is set to.
+     */
+    const focusOn = (...lines: string[]) => ['case', ['in', ['get', 'line'], ['literal', lines]], 1, UNFOCUSED_OPACITY];
+    /** The lines drawn on a map, by what their features say. */
+    const linesDrawn = (fake: ReturnType<typeof fakeMap>) => fake.featuresIn<LineFeature>(SOURCES.lines).map(feature => feature.properties.line);
 
-    test('opens on a linked view as it is', () => {
-      expect(openingOf({ center: [0.5, 51.5], zoom: 12 }, bounds, { top: 1, bottom: 2, left: 3, right: 4 }, { top: 0, bottom: 0, left: 0, right: 0 })).toEqual({
-        center: [0.5, 51.5],
-        zoom: 12,
-      });
+    test('matches what is drawn: the line a panel names, drawn for the line under it', () => {
+      const { fake } = focusedThen([lineId('umbrella')]);
+      expect(linesDrawn(fake)).toContain('umbrella');
+      expect(linesDrawn(fake)).not.toContain('green');
+      expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toEqual(focusOn('umbrella'));
     });
 
-    test('else fits the network clear of the padding above and below, narrow at the sides, and of every panel over the map', () => {
-      expect(openingOf(undefined, bounds, { top: 10, bottom: 20, left: 300, right: 300 }, { top: 1, bottom: 2, left: 3, right: 4 })).toEqual({
-        bounds,
-        fitBoundsOptions: {
-          padding: { top: 11, bottom: 22, left: OPENING_SIDE_PADDING + 3, right: OPENING_SIDE_PADDING + 4 },
-          maxZoom: OPENING_MAX_ZOOM,
-        },
-      });
+    test('takes a line by its own id too, while it is drawn as another', () => {
+      const { fake } = focusedThen([lineId('green')]);
+      expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toEqual(focusOn('umbrella'));
+    });
+
+    test('says two lines drawn as one once', () => {
+      const { fake } = focusedThen([lineId('green'), lineId('umbrella')]);
+      expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toEqual(focusOn('umbrella'));
+    });
+
+    test('follows the moment: a line comes forward as itself once it has parted', () => {
+      const { map, fake, frame, playheads } = focusedThen([lineId('green')]);
+      map.seek(playheads.on(toTimestamp('2005-01-01')));
+      frame();
+      expect(linesDrawn(fake)).toContain('green');
+      expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toEqual(focusOn('green'));
+    });
+
+    test('runs the trains of what is drawn', () => {
+      const { fake } = focusedThen([lineId('green')]);
+      expect(fake.layers.get(LAYERS.trains)?.filter).toEqual(['in', ['get', 'line'], ['literal', ['umbrella']]]);
     });
   });
-});
 
-describe('TransitMap', () => {
   test("credits on the map its tiles and OpenStreetMap, as their licences ask, not the network's other sources", () => {
     const { map } = mapOf();
     expect(map.credits).toEqual([...DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT]);
@@ -194,7 +240,7 @@ describe('TransitMap', () => {
     expect(JSON.stringify([...fake.sends])).toBe(sends);
   });
 
-  test("draws another network on the same map: the camera where it was, the clock at the new one's today, a plan's track once built", () => {
+  test("draws another network on the same map: the camera where it was, the clock where it rests, a plan's track built", () => {
     const { map, fake, frame, ready, named, playheads } = mapOf();
     ready();
     map.seek(playheads.on(toTimestamp('1905-01-01')));
@@ -204,11 +250,203 @@ describe('TransitMap', () => {
     map.update({ facts: planned });
     frame();
     expect(fake.moves).toHaveLength(moves);
-    expect((named('time').at(-1) as { time: number }).time).toBe(toTimestamp('2026-01-01'));
-    expect(fake.featuresIn(SOURCES.planned)).toHaveLength(0);
-    map.seek(planned.playheads.end());
-    frame();
+    expect(named('time').at(-1)).toMatchObject({ ...planned.playheads.end(), atRest: true, inPlan: true });
     expect(fake.featuresIn(SOURCES.planned).length).toBeGreaterThan(0);
+  });
+
+  test('stands on another network where its arrival says, in one update, whatever order it is given in', () => {
+    const { map, fake, frame, ready, named } = mapOf();
+    ready();
+    const planned = NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') });
+    map.update({ arrival: { day: toTimestamp('1905-01-01') }, facts: planned });
+    frame();
+    expect(named('time').at(-1)).toMatchObject({ ...planned.playheads.on(toTimestamp('1905-01-01')), atRest: false, inPlan: false });
+    expect(fake.featuresIn(SOURCES.planned)).toHaveLength(0);
+  });
+
+  test('moves nothing for an arrival alone: it is read as a network comes', () => {
+    const { map, frame, ready, named, playheads } = mapOf();
+    ready();
+    const told = named('time').length;
+    map.update({ arrival: { day: toTimestamp('1905-01-01') } });
+    frame();
+    expect(named('time')).toHaveLength(told);
+    expect(named('time').at(-1)).toMatchObject(playheads.today());
+  });
+
+  test('opens where its arrival says, a change left drawn in part captioned', () => {
+    const facts = NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01') });
+    const moment = facts.playheads.moment(facts.playheads.after(3, 0.5));
+    const { frame, ready, named } = mapOf({ facts, arrival: moment });
+    ready();
+    frame();
+    expect(named('time')[0]).toMatchObject(facts.playheads.after(3, 0.5));
+    expect(named('step').at(-1)).toEqual(facts.change(3));
+  });
+
+  test('opens a network with a plan on the plan built, as a page with no moment asked does', () => {
+    const facts = NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') });
+    const { fake, ready, named } = mapOf({ facts });
+    ready();
+    expect(named('time')[0]).toMatchObject({ ...facts.playheads.end(), atRest: true });
+    expect(fake.featuresIn(SOURCES.planned).length).toBeGreaterThan(0);
+  });
+
+  test('keeps a move made on a network given before it is ready, not only where its arrival says', () => {
+    const { map, ready, named } = mapOf();
+    const next = NetworkFacts.create(tinyNetwork(), { today: toTimestamp('2026-01-01'), plan: planId('extension') });
+    map.update({ facts: next, arrival: null });
+    const wanted = next.playheads.on(toTimestamp('1935-01-01'));
+    map.seek(wanted);
+    ready();
+    expect(named('time').at(-1)).toMatchObject({ cursor: wanted.cursor, time: wanted.time });
+  });
+
+  test('takes up a network given before it is ready where its arrival says, a plan picked as the style loads built', () => {
+    const { map, fake, ready, named } = mapOf();
+    const planned = NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') });
+    map.update({ facts: planned, arrival: null });
+    expect(map.status).toBe('loading');
+    ready();
+    expect(named('time')[0]).toMatchObject({ ...planned.playheads.end(), atRest: true, inPlan: true });
+    expect(fake.featuresIn(SOURCES.planned).length).toBeGreaterThan(0);
+
+    const dated = mapOf();
+    dated.map.update({ facts: planned, arrival: { day: toTimestamp('1905-01-01') } });
+    dated.ready();
+    expect(dated.named('time')[0]).toMatchObject(planned.playheads.on(toTimestamp('1905-01-01')));
+  });
+
+  test('leaves the camera where it is as another network comes with an overlay open, the same overlay worked out on it', () => {
+    const overlays: MapProps['overlay'][] = [
+      { kind: 'route', from: stationId('a'), to: stationId('c'), option: 0 },
+      { kind: 'reach', from: stationId('b') },
+      { kind: 'coverage', metres: 800 },
+    ];
+    const planned = NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') });
+    for (const overlay of overlays) {
+      const { map, fake, frame, ready, named } = mapOf({ overlay, boundary: TINY_WITH_HOLE });
+      ready();
+      frame();
+      const moves = fake.moves.filter(move => move.kind === 'fit').length;
+      expect(moves).toBe(1);
+      const reports = named('overlay').length;
+      map.update({ facts: planned });
+      frame();
+      expect(fake.moves.filter(move => move.kind === 'fit')).toHaveLength(moves);
+      expect(named('overlay').length).toBeGreaterThan(reports);
+      // Held across the network: a new subject on the new network frames as ever.
+      map.update({ overlay: { kind: 'reach', from: stationId('a') } });
+      expect(fake.moves.filter(move => move.kind === 'fit')).toHaveLength(moves + 1);
+    }
+  });
+
+  test('takes trains off the map as another network comes with them turned off, in one update', () => {
+    const { map, fake, frame, ready } = mapOf({ trains: true });
+    ready();
+    frame();
+    expect(fake.featuresIn(SOURCES.trains).length).toBeGreaterThan(0);
+    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') }), trains: false });
+    frame();
+    expect(fake.featuresIn(SOURCES.trains)).toEqual([]);
+  });
+
+  test('takes a change off the minimap as another network comes, however it was left drawn', () => {
+    const { map, mini, frame, ready, playheads } = mapOf({}, {}, [], document.createElement('div'));
+    ready();
+    mini.fire('style.load');
+    map.seek(playheads.after(1, 0.8));
+    frame();
+    frame();
+    frame();
+    expect(mini.featuresIn(MINIMAP_SOURCES.active).length).toBeGreaterThan(0);
+    map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') }) });
+    frame();
+    frame();
+    frame();
+    expect(mini.featuresIn(MINIMAP_SOURCES.active)).toEqual([]);
+  });
+
+  test('plays another network at the speed set, as the props have it', () => {
+    const { map, frame, ready, named } = mapOf({ speed: 3 });
+    ready();
+    const another = NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') });
+    map.update({ facts: another });
+    // Nine quiet years before green opens in 1970: the clock runs at its fastest.
+    map.seek(another.playheads.on(toTimestamp('1961-01-01')));
+    frame();
+    map.play();
+    frame();
+    frame();
+    const [before, after] = (named('time') as { time: number }[]).slice(-2);
+    expect(((after?.time ?? 0) - (before?.time ?? 0)) / YEAR_MS).toBeCloseTo(3 * FAST_YEARS_PER_SECOND * 0.016, 3);
+  });
+
+  test('sends lines blending to the minimap no oftener than it takes them, by the clock of the frames', () => {
+    const { map, fake, mini, frame, ready, facts } = mapOf({}, {}, [], document.createElement('div'));
+    ready();
+    mini.fire('style.load');
+    const identity = engineOf(facts).timeline.steps.find(step => step.kind === 'identity')!;
+    map.seek(facts.playheads.after(identity.index, 0.05));
+    map.play();
+    frame();
+    const [lines, inset] = [fake.sends.get(SOURCES.lines) ?? 0, mini.sends.get(MINIMAP_SOURCES.lines) ?? 0];
+    const frames = 30;
+    for (let tick = 0; tick < frames; tick++) frame();
+    expect((fake.sends.get(SOURCES.lines) ?? 0) - lines).toBe(frames);
+    const sent = (mini.sends.get(MINIMAP_SOURCES.lines) ?? 0) - inset;
+    expect(sent).toBeGreaterThan(0);
+    expect(sent).toBeLessThanOrEqual(Math.ceil((frames * 16) / MINIMAP_UPDATE_MS));
+  });
+
+  test('is settled once what the camera looks at is drawn and nothing moves on its own', () => {
+    const { map, fake, frame, ready, named, playheads } = mapOf();
+    expect(map.settled).toBe(false);
+    ready();
+    frame();
+    expect(map.settled).toBe(true);
+    for (const [setting, unsettled] of [
+      ['tilesLoaded', false],
+      ['styleLoaded', false],
+      ['moving', true],
+    ] as const) {
+      Object.assign(fake.view, { [setting]: unsettled });
+      expect(map.settled).toBe(false);
+      Object.assign(fake.view, { [setting]: !unsettled });
+      expect(map.settled).toBe(true);
+    }
+    // A station pulsing moves on its own; it settles as the pulse runs out, the history paused.
+    map.seek(playheads.before(1));
+    map.play();
+    for (let tick = 0; tick < 1000 && named('stepProgress').length === 0; tick++) frame();
+    map.pause();
+    frame();
+    expect(map.settled).toBe(false);
+    for (let tick = 0; tick < 500 && !map.settled; tick++) frame();
+    expect(map.settled).toBe(true);
+    map.destroy();
+    expect(map.settled).toBe(false);
+  });
+
+  test('is drawn once its own tiles are, moving or pulsing, the minimap with it: what a held frame can wait for', () => {
+    const { map, fake, mini, frame, ready } = mapOf({}, {}, [], document.createElement('div'));
+    expect(map.drawn).toBe(false);
+    ready();
+    mini.fire('style.load');
+    frame();
+    expect(map.drawn).toBe(true);
+    Object.assign(fake.view, { moving: true });
+    expect([map.drawn, map.settled]).toEqual([true, false]);
+    Object.assign(fake.view, { moving: false });
+    for (const part of [fake, mini])
+      for (const setting of ['tilesLoaded', 'styleLoaded']) {
+        Object.assign(part.view, { [setting]: false });
+        expect(map.drawn).toBe(false);
+        Object.assign(part.view, { [setting]: true });
+      }
+    expect(map.drawn).toBe(true);
+    map.destroy();
+    expect(map.drawn).toBe(false);
   });
 
   test("hides the ring of a station the moment took off the map, says so, and rings it again when it is back: the prop is the app's", () => {
@@ -325,7 +563,7 @@ describe('TransitMap', () => {
     map.stop();
     frame();
     expect(named('time').at(-1)).toMatchObject({ playing: false });
-    expect(fake.moves.at(-1)).toMatchObject({ kind: 'fit', target: facts.engine.index.bounds, options: { duration: FIT_NETWORK_MS } });
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'fit', target: engineOf(facts).index.bounds, options: { duration: FIT_NETWORK_MS } });
   });
 
   test('skips the change drawn in part to its end, then, between changes, starts the next at once', () => {
@@ -410,9 +648,9 @@ describe('TransitMap', () => {
     map.play();
     for (let tick = 0; tick < 5000 && named('end').length === 0; tick++) frame();
     const captions = named('step').map(change => (change as { index: number } | null)?.index ?? null);
-    expect(captions).toEqual([null, 8, null, 9, null, 10, null, null]);
+    expect(captions).toEqual([null, null, 8, null, 9, null, 10, null, null]);
     expect(named('end')).toHaveLength(1);
-    expect(fake.moves.at(-1)).toMatchObject({ kind: 'fit', target: facts.engine.index.bounds, options: { duration: END_OVERVIEW_MS } });
+    expect(fake.moves.at(-1)).toMatchObject({ kind: 'fit', target: engineOf(facts).index.bounds, options: { duration: END_OVERVIEW_MS } });
   });
 
   test('draws the network on a minimap, frames another network on it, colours it with the theme, and takes it down with the map', () => {
@@ -476,11 +714,6 @@ describe('TransitMap', () => {
     expect([linked.fake.view.cover, linked.fake.moves]).toEqual([cover, []]);
     const fitted = mapOf({ cover });
     expect(fitted.fake.moves).toEqual([expect.objectContaining({ kind: 'jump', options: expect.objectContaining({ padding: cover }) })]);
-  });
-
-  test('credits only OpenStreetMap on another basemap, whose credits are its own', () => {
-    const { map } = mapOf({}, {}, [], undefined, { basemap: 'https://tiles.invalid/style.json', attributionControl: false });
-    expect(map.credits).toEqual([OPENSTREETMAP_CREDIT]);
   });
 
   test('plays from a playhead given, captioning the change it starts in', () => {

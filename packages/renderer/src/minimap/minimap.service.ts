@@ -18,9 +18,10 @@ import type { Palette } from '../layers/theme.types';
 
 /**
  * A small, fixed overview of the whole city: the network so far, the change happening now, and a
- * box showing where the main map's camera is looking, following it. Updates sent before its style loads are kept and
- * applied once it has; the line growing, which changes every frame, at most thirty times a second.
- * The box is an element over the map, styled by `transitMap.css`, not its data: following the camera
+ * box showing where the main map's camera is looking, following it. What it is given is sent as the
+ * main map's frames say (`flush`), on their clock, at most thirty times a second, however often it
+ * changes: each is a whole map redrawn. Kept until its style has loaded, and sent then. It outlives
+ * the networks it shows, so it knows whether a change is on it. The box is an element over the map, styled by `transitMap.css`, not its data: following the camera
  * every frame, it costs no redraw.
  */
 export class Minimap {
@@ -32,14 +33,14 @@ export class Minimap {
   private ready = false;
   /** The theme's colours. */
   private palette: Palette;
-  /** The latest data for each source, until the style has loaded or the next update is due. */
+  /** The latest data for each source, until the style has loaded and the next update is due. */
   private readonly pending = new Map<string, object>();
   /** What it frames: the network's bounds. */
   private bounds: Bounds;
-  /** The next update of what changes every frame, if one is due. */
-  private flushTimer: ReturnType<typeof setTimeout> | null = null;
-  /** When what changes every frame was last sent, ms. */
+  /** The frame that last sent what was waiting, ms. */
   private flushedAt = -Infinity;
+  /** A change is on it, or on its way: an empty drawing then clears it. */
+  private showsActive = false;
   /** The box outlining the main camera's view. */
   private readonly box: HTMLDivElement;
   /** The map whose view the box outlines. */
@@ -76,6 +77,11 @@ export class Minimap {
     this.placeViewport();
   }
 
+  /** Whether the inset is drawn: its style, what was last sent to it and its tiles loaded. */
+  public get drawn(): boolean {
+    return this.map.isStyleLoaded() === true && this.map.areTilesLoaded();
+  }
+
   /**
    * Frames another network: the same city with a plan, or without.
    *
@@ -92,17 +98,32 @@ export class Minimap {
    * @param snapshot - The main map's network.
    */
   public setNetwork(snapshot: Pick<NetworkSnapshot, 'lines' | 'planned'>): void {
-    this.setData(MINIMAP_SOURCES.lines, snapshot.lines);
-    this.setData(MINIMAP_SOURCES.planned, snapshot.planned);
+    this.pending.set(MINIMAP_SOURCES.lines, snapshot.lines);
+    this.pending.set(MINIMAP_SOURCES.planned, snapshot.planned);
   }
 
   /**
-   * Shows the change playing now, highlighted.
+   * Shows the change playing now, highlighted; or clears it, once, whichever network it was of.
    *
-   * @param lines - The playing step's line features.
+   * @param lines - The playing step's line features; none for no change.
    */
   public setActive(lines: FeatureCollection<LineFeature>): void {
-    this.setSoon(MINIMAP_SOURCES.active, lines);
+    const shows = lines.features.length > 0;
+    if (!shows && !this.showsActive) return;
+    this.showsActive = shows;
+    this.pending.set(MINIMAP_SOURCES.active, lines);
+  }
+
+  /**
+   * Sends what is waiting, if the last send was long enough ago: called every frame, so it runs on
+   * the frames' clock and nothing else.
+   *
+   * @param now - The frame time.
+   */
+  public flush(now: number): void {
+    if (!this.ready || this.pending.size === 0 || now - this.flushedAt < MINIMAP_UPDATE_MS) return;
+    this.flushedAt = now;
+    this.sendPending();
   }
 
   /**
@@ -119,7 +140,6 @@ export class Minimap {
 
   /** Removes the minimap and stops watching its container. */
   public destroy(): void {
-    if (this.flushTimer !== null) clearTimeout(this.flushTimer);
     this.resizeObserver.disconnect();
     this.box.remove();
     this.map.remove();
@@ -165,48 +185,12 @@ export class Minimap {
       paint: { 'line-color': ['get', 'color'], 'line-width': MINIMAP_LINE_WIDTH, 'line-dasharray': [2, 1.5] },
     });
     this.ready = true;
-    for (const [source, data] of this.pending) this.setData(source, data);
+    this.sendPending();
+  }
+
+  /** Sends each source its latest data. */
+  private sendPending(): void {
+    for (const [source, data] of this.pending) void this.map.getSource<GeoJSONSource>(source)?.setData(data as Parameters<GeoJSONSource['setData']>[0]);
     this.pending.clear();
-  }
-
-  /**
-   * Replaces a source's data that changes every frame: at once if the last update was long enough
-   * ago, else, its latest, when the next is due.
-   *
-   * @param source - The source id.
-   * @param data - GeoJSON.
-   */
-  private setSoon(source: string, data: object): void {
-    if (!this.ready) {
-      this.pending.set(source, data);
-      return;
-    }
-    this.pending.set(source, data);
-    if (this.flushTimer !== null) return;
-    const wait = this.flushedAt + MINIMAP_UPDATE_MS - performance.now();
-    if (wait <= 0) this.flush();
-    else this.flushTimer = setTimeout(() => this.flush(), wait);
-  }
-
-  /** Sends what is waiting. */
-  private flush(): void {
-    this.flushTimer = null;
-    this.flushedAt = performance.now();
-    for (const [source, data] of this.pending) this.setData(source, data);
-    this.pending.clear();
-  }
-
-  /**
-   * Replaces a source's data, or keeps it until the style has loaded.
-   *
-   * @param source - The source id.
-   * @param data - GeoJSON.
-   */
-  private setData(source: string, data: object): void {
-    if (!this.ready) {
-      this.pending.set(source, data);
-      return;
-    }
-    void this.map.getSource<GeoJSONSource>(source)?.setData(data as Parameters<GeoJSONSource['setData']>[0]);
   }
 }

@@ -1,7 +1,7 @@
 import type { ChangeInfo, LineInfo, Stop } from '@railtime/network/facts.types';
 import type { TimeState } from '@railtime/renderer/transitMap.types';
 import type { Section } from '~/features/explorer/explorer.types';
-import type { RouteEnds } from '~/features/explorer/tools.types';
+import type { RouteStops } from '~/features/explorer/tools.types';
 
 /** What the panel's top says: the view's title, a line of context, and the way back from a pushed view. */
 export type PanelTopContent = {
@@ -42,7 +42,7 @@ export type PlanSummary = { name: string; status: string; facts: string };
 export type PlanLegend = { name: string; color: string };
 
 /** What a section's dot is worked out from: a plan shown, a route's ends, a reach's start. */
-export type MarksInput = { planShown: boolean; routeEnds: RouteEnds; reachFrom: Stop | null };
+export type MarksInput = { planShown: boolean; routeEnds: RouteStops; reachFrom: Stop | null };
 
 /** What a panel list lets its section do: bring a row into view. */
 export type PanelListHandle = {

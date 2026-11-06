@@ -17,7 +17,7 @@ export type CityIndexEntry = {
   planOnly: boolean;
   /** How many plans it has. */
   plans: number;
-  /** How many lines it has (or its first plan, for a network never built). */
+  /** How many lines run today, as the map counts them (or its first plan's, for a network never built). */
   lines: number;
   stations: number;
 };

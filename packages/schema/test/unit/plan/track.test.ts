@@ -1,7 +1,22 @@
 import { describe, expect, test } from 'vitest';
-import { splitTrack } from '../../../src/plan/track.utils';
+import { samePair, splitTrack } from '../../../src/plan/track.utils';
+import { stationId } from '../../support/ids.utils';
 
 describe('TrackUtils', () => {
+  describe('samePair', () => {
+    const [stationA, stationB, other] = [stationId('a'), stationId('b'), stationId('c')];
+
+    test('takes two stations for the same pair either way round', () => {
+      expect(samePair({ stationA, stationB }, { stationA, stationB })).toBe(true);
+      expect(samePair({ stationA, stationB }, { stationA: stationB, stationB: stationA })).toBe(true);
+    });
+
+    test('tells apart pairs sharing one station', () => {
+      expect(samePair({ stationA, stationB }, { stationA, stationB: other })).toBe(false);
+      expect(samePair({ stationA, stationB }, { stationA: stationB, stationB: other })).toBe(false);
+    });
+  });
+
   describe('splitTrack', () => {
     test('splits a track at its point nearest a point beside it', () => {
       expect(

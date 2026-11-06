@@ -47,19 +47,6 @@ describe('ReachLayer', () => {
     expect(fake.data.get(SOURCES.reachStops)).toEqual({ type: 'FeatureCollection', features: [] });
   });
 
-  test('draws a reach given before the basemap loaded once installed, and says whether one is shown', () => {
-    const fake = fakeMap();
-    const layer = new ReachLayer(fake.map);
-    const start = pointFeature([0, 0], { color: '#0a0', label: 'A', minutes: 0, origin: true });
-    expect(layer.shown).toBe(false);
-    layer.update([], [start]);
-    expect(layer.shown).toBe(true);
-    layer.install(['Font']);
-    expect(fake.data.get(SOURCES.reachStops)).toEqual({ type: 'FeatureCollection', features: [start] });
-    layer.update([], []);
-    expect(layer.shown).toBe(false);
-  });
-
   test('draws a reach found on a network: features the map can draw, with what its layers read', () => {
     const fake = fakeMap();
     const layer = new ReachLayer(fake.map);
@@ -67,8 +54,8 @@ describe('ReachLayer', () => {
     const { playback, reach } = reachFromA();
     const track = reachTrack(playback.index, reach);
     layer.update(track, reachStops(playback.index, reach));
-    // Once, empty, as it was installed; once with the reach, which the stand-in map checked.
-    expect(fake.sends.get(SOURCES.reachTrack)).toBe(2);
+    // The stand-in map checked what it was sent.
+    expect(fake.sends.get(SOURCES.reachTrack)).toBe(1);
   });
 });
 

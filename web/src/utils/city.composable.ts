@@ -1,4 +1,5 @@
 import type { Network } from '@railtime/schema/network.types';
+import { servedNetwork } from '@railtime/schema/served.utils';
 import type { Ref } from 'vue';
 import { useFetch, useRuntimeConfig } from '#imports';
 import { networkUrlOf } from '~/utils/city.utils';
@@ -13,6 +14,6 @@ import { networkUrlOf } from '~/utils/city.utils';
  */
 export const useCityNetwork = (city: string): { network: Ref<Network | undefined>; error: Ref<Error | undefined> } => {
   const baseURL = useRuntimeConfig().app.baseURL;
-  const { data, error } = useFetch<Network>(() => `${baseURL}${networkUrlOf(city)}`, { server: false });
+  const { data, error } = useFetch(() => `${baseURL}${networkUrlOf(city)}`, { server: false, transform: servedNetwork });
   return { network: data, error };
 };

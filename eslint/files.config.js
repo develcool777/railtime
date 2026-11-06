@@ -1,8 +1,11 @@
 import checkFile from 'eslint-plugin-check-file';
-import { TEST_FILES, TOOL_CONFIGS } from './shared.js';
+import { CLI_FILES, TEST_FILES, TOOL_CONFIGS } from './shared.js';
 
-/** What a source file may be called: `<camelName>.<role>.ts`, or `<camelName>.<role>.types.ts` for the types of one file. */
-const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store)).@(service|utils|constants|types|schema|composable|store)';
+/**
+ * What a source file may be called: `<camelName>.<role>.ts`, or `<camelName>.<role>.types.ts` for the
+ * types of one file. A `.entry.ts` is a page's script, which esbuild bundles for the browser.
+ */
+const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store)).@(service|utils|constants|types|schema|composable|store|entry)';
 /**
  * What a test file may be called: `<camelName>.test.ts`, run in node, `.spec.ts`, in happy-dom
  * (`vitest.shared.ts`), `.bench.ts`, timed (`pnpm test-bench`), or a support file's
@@ -11,14 +14,15 @@ const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store))
 const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|spec|bench|utils|types|constants)';
 /** A command's file name. */
 const SCRIPT_FILE = 'cli?(.+([a-zA-Z0-9]))';
-/**
- * Commands run with node: `src/cli.<name>.ts`, or a feature's own, `src/<feature>/cli.ts`
- * (`pnpm data:boundary`), which only hands its arguments to the feature's service.
- */
-const CLI_FILES = ['packages/*/src/cli.*.ts', 'packages/*/src/*/cli.ts'];
-
 /** What files and folders are called, and where each kind lives. */
 export const filesConfig = [
+  // No file passes 500 lines: a subject that big splits by job. Every line counts, comments too, as the
+  // convention says: a file's doc comments are what a reader has to get through. A test is exempt: it
+  // lists cases, one after another, and a long list of them reads no harder than a short one.
+  {
+    files: ['packages/*/src/**/*.ts', 'web/src/**/*.{ts,vue}'],
+    rules: { 'max-lines': ['error', { max: 500, skipBlankLines: false, skipComments: false }] },
+  },
   {
     files: ['packages/*/src/**/*.ts', 'web/src/**/*.ts'],
     ignores: [...TOOL_CONFIGS, ...CLI_FILES],

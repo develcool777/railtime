@@ -2,8 +2,8 @@
 
 Every city's files, grouped by country, their summaries, the commands that keep them, and their
 tests. Each command is a folder, `src/<feature>/`: a `cli.ts` that hands its arguments to the
-feature, a function in its utils (or a service where it holds state: the previews' Chrome), and one
-types and one constants file. A city is a folder, `cities/<country>/<city>/`: its network (`<city>.json`, its lines,
+feature and says what it reports, a function in its utils (or a service where it holds state: the
+previews' Chrome), and one types and one constants file. A city is a folder, `cities/<country>/<city>/`: its network (`<city>.json`, its lines,
 stations, track and history), its outline and its pictures.
 
 ```text
@@ -32,15 +32,18 @@ many lines, stations and plans, when it opened), so the landing page needs one s
 network: it is built into the page, which is prerendered whole. It is also the site's one list of
 cities, in the order the menu shows them: grouped by country, the countries in the order they come.
 `pnpm data:summaries` rewrites it and keeps that order, a new city after the last of its country;
-to reorder, move a line. A test fails while it is out of date.
+to reorder, move a line. It counts each city as of `SUMMARY_DAY` (`src/summary/summary.constants.ts`),
+never the clock's day, so a date passing changes nothing: to count what has opened since, move that
+day on and run it again. A test fails while it is out of date.
 
 ## The previews
 
 Each city's card shows a picture of its network: the map's own basemap in the theme's colours, with
 today's track over it (a network never built: its first plan, dashed). `pnpm data:previews [city]`
 draws them, `<city>.dark.webp` and `<city>.light.webp` beside the network, in the Chrome installed on
-the machine (Playwright drives it) with the renderer's `BasemapStill`; it needs the network for the
-basemap's tiles. Run it after changing a city's track or its lines' colours. The pictures are
+the machine (Playwright drives it) with the renderer's `BasemapStill`, in a page bundled from
+`src/preview/page.entry.ts`, which frames what it is given as the map frames a network; it needs the
+network for the basemap's tiles. Run it after changing a city's track or its lines' colours. The pictures are
 committed, as the networks are; a test fails while a city has none.
 
 ## A city's network

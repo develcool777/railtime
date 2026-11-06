@@ -6,7 +6,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { StepAnimation } from '../steps/animation.service';
 import type { ChaseTarget } from '../steps/animation.types';
 import { NO_COVER } from '../transitMap.constants';
-import type { Padding, ViewMode } from '../transitMap.types';
+import type { MapView, Padding, ViewMode } from '../transitMap.types';
 import {
   CHASE_GLIDE_KM,
   CHASE_ZOOM,
@@ -24,10 +24,11 @@ import type { CameraSettings, Chase } from './camera.types';
 import { chaseStartOf, followOf } from './camera.utils';
 
 /**
- * Moves the main map's camera for playback. `follow` frames just the change, so a single new
- * station gets a close-up; `overview` frames the change with the network already on the map;
- * `free` leaves the camera to the user. Seen in 3D, `follow` flies down to where a change starts
- * and then moves with it as it is drawn, frame by frame, as a drone following a new line.
+ * Everything the main map's camera does: where it opens, the room panels take over the map's edges,
+ * one-off moves, and playback. `follow` frames just the change, so a single new station gets a
+ * close-up; `overview` frames the change with the network already on the map; `free` leaves the
+ * camera to the user. Seen in 3D, `follow` flies down to where a change starts and then moves with it
+ * as it is drawn, frame by frame, as a drone following a new line.
  */
 export class CameraDirector {
   /** The map whose camera this moves. */
@@ -42,6 +43,12 @@ export class CameraDirector {
   public constructor(map: MapLibreMap, settings: () => CameraSettings) {
     this.map = map;
     this.settings = settings;
+  }
+
+  /** Where the map looks now: its centre and zoom. */
+  public get view(): MapView {
+    const { lng, lat } = this.map.getCenter();
+    return { center: [lng, lat], zoom: this.map.getZoom() };
   }
 
   /**
@@ -61,6 +68,50 @@ export class CameraDirector {
   /** How the camera follows playback. */
   private get mode(): CameraSettings['camera'] {
     return this.settings().camera;
+  }
+
+  /**
+   * Settles the map as it opens, under the panels over its edges. A linked view's centre was the middle
+   * of what the cover left; a fitted opening already keeps clear of them.
+   *
+   * @param linked - The view linked to, if any.
+   * @param cover - Pixels covered on each side.
+   */
+  public open(linked: MapView | undefined, cover: Padding): void {
+    if (linked) this.map.setPadding(cover);
+    else this.coverEdges(cover);
+  }
+
+  /**
+   * Lays the app's panels over the map's edges. The map's centre, where a station is flown to, moves
+   * into the middle of the rest, and every frame keeps clear of them; what is drawn stays where it is,
+   * so a panel slides over the map without moving it.
+   *
+   * @param cover - Pixels covered on each side.
+   */
+  public coverEdges(cover: Padding): void {
+    const { clientWidth, clientHeight } = this.map.getContainer();
+    const middle: [number, number] = [cover.left + (clientWidth - cover.left - cover.right) / 2, cover.top + (clientHeight - cover.top - cover.bottom) / 2];
+    this.map.jumpTo({ center: this.map.unproject(middle), padding: cover });
+  }
+
+  /** Zooms in a step, about the centre. */
+  public zoomIn(): void {
+    this.map.zoomIn();
+  }
+
+  /** Zooms out a step, about the centre. */
+  public zoomOut(): void {
+    this.map.zoomOut();
+  }
+
+  /**
+   * Moves the map to a view at once.
+   *
+   * @param view - The centre and zoom.
+   */
+  public jumpTo(view: MapView): void {
+    this.map.jumpTo({ center: view.center, zoom: view.zoom });
   }
 
   /**

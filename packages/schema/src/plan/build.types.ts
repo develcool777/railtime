@@ -18,6 +18,8 @@ export type BuiltPlan = {
    */
   network: Network;
   sections: BuiltSection[];
+  /** How much new track it lays, km: a split keeps the track it divides, so it counts for nothing. */
+  laidKm: number;
 };
 
 /** A section being built: its line, the segments it puts the line on, and its infill stations. */

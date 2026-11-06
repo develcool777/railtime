@@ -24,6 +24,8 @@ export class NetworkEngine {
   public readonly range: { start: number; end: number; today: number };
   /** Where in its history the map can be, and the rules of it: what the player seeks and runs its clock to. */
   public readonly playheads: Playheads;
+  /** The network's size at each cursor asked about: a change drawn is asked for at every hundredth of it. */
+  private readonly sizes = new Map<number, NetworkStats>();
 
   /**
    * @param network - The network: with its lines hidden left out (`withLinesHidden`).
@@ -40,13 +42,17 @@ export class NetworkEngine {
   }
 
   /**
-   * The network's size at a cursor: what the renderer counts a change towards as it draws it.
+   * The network's size at a cursor, counted once.
    *
    * @param cursor - The cursor.
    * @returns Its stations, km of track and lines.
    */
   public statsAt(cursor: number): NetworkStats {
-    return statsAt(this.index, this.timeline, cursor);
+    const known = this.sizes.get(cursor);
+    if (known) return known;
+    const size = statsAt(this.index, this.timeline, cursor);
+    this.sizes.set(cursor, size);
+    return size;
   }
 
   /**

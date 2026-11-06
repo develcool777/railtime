@@ -1,13 +1,14 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
+import type { Step } from '@railtime/network/engine.types';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import type { Network } from '@railtime/schema/network.types';
 import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
-import { CLOSE_HOLD_SECONDS, GROWTH_PACE, OPEN_HOLD_SECONDS } from '../../../src/steps/animation.constants';
+import { CLOSE_HOLD_SECONDS, GROWTH_PACE, OPEN_HOLD_SECONDS, UNTOUCHED_BASE } from '../../../src/steps/animation.constants';
 import { StepAnimation } from '../../../src/steps/animation.service';
-import { arrivalSeconds, chaseAlong, emptyDrawing, frontKmAt, growthSeconds, mainPathOf, pointAlong } from '../../../src/steps/animation.utils';
+import { arrivalSeconds, chaseAlong, emptyDrawing, frontKmAt, growthSeconds, mainPathOf, pointAlong, sameBase } from '../../../src/steps/animation.utils';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 import { stepAfter } from '../../support/stepFrames.utils';
 
@@ -25,8 +26,8 @@ describe('StepAnimation', () => {
         expect(animation.drawSeconds).toBeGreaterThan(0);
         expect(animation.holdSeconds).toBeGreaterThan(0);
         expect(animation.cameraPoints().length).toBeGreaterThan(0);
-        const state = { ...renderStateOf(playback), identityProgress: animation.changesIdentity ? 0.5 : null };
-        const snapshot = buildNetworkSnapshot(state, true);
+        const state = { ...renderStateOf(playback), base: animation.baseAt('draw', 0.5) };
+        const snapshot = buildNetworkSnapshot(state);
         for (const [progress, holdProgress] of [
           [0, 0],
           [0.5, 0],
@@ -52,7 +53,7 @@ describe('StepAnimation', () => {
         playback.player.seek(playback.facts.playheads.before(step.index));
         const drawing = emptyDrawing();
         new StepAnimation(step, { index, timeline, view: '2d' }).draw(
-          { state, snapshot: buildNetworkSnapshot(state, true), progress: 0.5, holdProgress: 0 },
+          { state, snapshot: buildNetworkSnapshot(state), progress: 0.5, holdProgress: 0 },
           drawing,
         );
         return [...drawing.lines.features, ...drawing.growing.features].map(feature => feature.properties.planned);
@@ -276,11 +277,65 @@ describe('StepAnimation, a station closed for a spell', () => {
   });
 });
 
+describe('StepAnimation, the network under it', () => {
+  /**
+   * Each kind's first step, as it plays.
+   *
+   * @param kind - The kind.
+   * @returns Its animation, and the track it opens or closes.
+   */
+  const animationOf = (kind: Step['kind']) => {
+    const { index, timeline } = playbackOf(tinyNetwork());
+    const step = timeline.steps.find(candidate => candidate.kind === kind)!;
+    return { animation: new StepAnimation(step, { index, timeline, view: '2d' }), track: new Set('lineSegments' in step ? step.lineSegments : []) };
+  };
+
+  test('an opening has what is on the map make room from the start, and takes nothing from it', () => {
+    const { animation, track } = animationOf('open');
+    expect((['pre', 'draw', 'hold'] as const).map(phase => animation.baseAt(phase, 0))).toEqual([
+      { ...UNTOUCHED_BASE, makesRoom: track },
+      { ...UNTOUCHED_BASE, makesRoom: track },
+      { ...UNTOUCHED_BASE, makesRoom: track },
+    ]);
+  });
+
+  test('a closure leaves its stretch whole while the camera gets there, and takes it from the network as it retracts', () => {
+    const { animation, track } = animationOf('close');
+    expect(animation.baseAt('pre', 0)).toBe(UNTOUCHED_BASE);
+    expect(animation.baseAt('draw', 0.5)).toEqual({ ...UNTOUCHED_BASE, leavesOut: track });
+    expect(animation.baseAt('hold', 1)).toEqual({ ...UNTOUCHED_BASE, leavesOut: track });
+  });
+
+  test('lines blend as they are drawn, eased, and stay blended as they are held; before that, none is', () => {
+    const { animation } = animationOf('identity');
+    expect(animation.baseAt('pre', 0).blend).toBeNull();
+    expect(animation.baseAt('draw', 0).blend).toBeCloseTo(0);
+    expect(animation.baseAt('draw', 0.25).blend).toBeLessThan(0.25);
+    expect(animation.baseAt('draw', 0.5).blend).toBeCloseTo(0.5);
+    expect(animation.baseAt('hold', 1).blend).toBe(1);
+  });
+
+  test("a station's change leaves the network as it is", () => {
+    for (const kind of ['infill', 'stationClose', 'rename'] as const) expect(animationOf(kind).animation.baseAt('draw', 0.5)).toBe(UNTOUCHED_BASE);
+  });
+
+  test('says the same as long as its phase and blend are the same, and only then', () => {
+    const closure = animationOf('close').animation;
+    expect(sameBase(closure.baseAt('draw', 0.2), closure.baseAt('hold', 1))).toBe(true);
+    expect(sameBase(closure.baseAt('pre', 0), closure.baseAt('draw', 0))).toBe(false);
+    const opening = animationOf('open').animation;
+    expect(sameBase(opening.baseAt('pre', 0), opening.baseAt('draw', 0.5))).toBe(true);
+    expect(sameBase(opening.baseAt('pre', 0), UNTOUCHED_BASE)).toBe(false);
+    const blending = animationOf('identity').animation;
+    expect(sameBase(blending.baseAt('draw', 0.4), blending.baseAt('draw', 0.4))).toBe(true);
+    expect(sameBase(blending.baseAt('draw', 0.4), blending.baseAt('draw', 0.5))).toBe(false);
+  });
+});
+
 describe('StepAnimation, a station renamed', () => {
   test('highlights the station renamed with the name it had, and frames it', () => {
     const { animation, draw, playback } = stepAfter(tinyNetwork(), '1924-01-01');
     expect(animation.step.kind).toBe('rename');
-    expect(animation.changesIdentity).toBe(false);
     expect([...draw(0.5).highlighted]).toEqual(['d']);
     expect(draw(0.5).renamed).toEqual(new Map([['d', 'Old D']]));
     expect(animation.cameraPoints()).toEqual([playback.index.coordOf(stationId('d'))]);
@@ -297,10 +352,9 @@ describe('StepAnimation, lines taking their own colour', () => {
     expect(animation.cameraPoints()).toEqual(playback.index.segments[0]!.coordinates);
   });
 
-  test('frames the line taking its own identity, and leaves the blend to the network layer', () => {
+  test('frames the line taking its own identity, and draws nothing of its own: the blend is in the network under it', () => {
     const { animation, draw, playback } = stepAfter(tinyNetwork(), '1989-01-01');
     expect(animation.step.kind).toBe('identity');
-    expect(animation.changesIdentity).toBe(true);
     expect(animation.cameraPoints()).toEqual(playback.index.segments[0]!.coordinates);
     const drawing = draw(0.5);
     expect([

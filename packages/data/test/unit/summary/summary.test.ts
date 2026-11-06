@@ -1,11 +1,15 @@
 import { keysOf } from '@railtime/core/collection.utils';
+import { toTimestamp } from '@railtime/core/date.utils';
 import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
+import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import type { CityIndex } from '@railtime/schema/cityIndex.types';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, onTestFinished, test, vi } from 'vitest';
 import { SUMMARIES_PATH, cities, citiesNamed, readNetwork } from '../../../src/city.utils.ts';
+import { SUMMARY_DAY } from '../../../src/summary/summary.constants.ts';
 import { formatSummaries, inListOrder, summaryOf, writeSummaries } from '../../../src/summary/summary.utils.ts';
 import { folderApart } from '../../support/folders.utils.ts';
 
@@ -32,6 +36,18 @@ describe('SummaryUtils', () => {
       expect(entry).toMatchObject({ name: 'London', country: 'United Kingdom', openedYear: 1863, planOnly: false });
       expect(entry.lines).toBeGreaterThan(10);
       expect(entry.plans).toBe(keysOf(network.plans ?? {}).length);
+    });
+
+    test('counts as of its stated day, whatever the clock says: a change dated in between moves nothing', () => {
+      const network = tinyNetwork();
+      vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(1950, 0, 1) });
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      const before = summaryOf(network);
+      vi.setSystemTime(Date.UTC(1990, 0, 1));
+      expect(summaryOf(network)).toEqual(before);
+      expect(before).toMatchObject({ lines: NetworkFacts.create(network, { today: toTimestamp(SUMMARY_DAY) }).summary().lines });
     });
 
     test('sums up a network never built by its first plan', () => {
@@ -81,22 +97,21 @@ describe('SummaryUtils', () => {
      * @returns The file's path.
      */
     const listApart = () => {
-      const folder = folderApart();
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      return join(folder, 'cities.json');
+      return join(folderApart(), 'cities.json');
     };
 
     test('writes every city summed up, in the order found, and says how many', () => {
       const path = listApart();
-      writeSummaries(FOUND, path);
+      const said = vi.fn();
+      writeSummaries(said, FOUND, path);
       expect(readFileSync(path, 'utf8')).toBe(formatSummaries({ kyiv: summaryOf(cityOf('kyiv').network), london: summaryOf(cityOf('london').network) }));
-      expect(console.log).toHaveBeenCalledWith(`${path}: 2 cities`);
+      expect(said).toHaveBeenCalledWith(`${path}: 2 cities`);
     });
 
     test('keeps the order the list had', () => {
       const path = listApart();
       writeFileSync(path, formatSummaries({ london: summaryOf(cityOf('london').network), kyiv: summaryOf(cityOf('kyiv').network) }));
-      writeSummaries(FOUND, path);
+      writeSummaries(vi.fn(), FOUND, path);
       expect(keysOf(JSON.parse(readFileSync(path, 'utf8')))).toEqual(['london', 'kyiv']);
     });
 
@@ -104,7 +119,7 @@ describe('SummaryUtils', () => {
       const path = listApart();
       const [kyiv] = FOUND;
       const astray = { ...required(kyiv, 'kyiv'), country: 'poland' };
-      expect(() => writeSummaries([astray], path)).toThrow(`${astray.networkPath}: its country, Ukraine, is not its folder's`);
+      expect(() => writeSummaries(vi.fn(), [astray], path)).toThrow(`${astray.networkPath}: its country, Ukraine, is not its folder's`);
       expect(existsSync(path)).toBe(false);
     });
   });

@@ -49,8 +49,9 @@ const collectStationDays = (index: NetworkIndex, stops: StationStops, station: S
 export const collectDays = (index: NetworkIndex, stops: StationStops): Map<number, DayChanges> => {
   const days = new Map<number, DayChanges>();
   const day = (time: number) => {
-    if (!days.has(time)) days.set(time, { opens: [], closes: [], infills: [], stationCloses: [], renames: [], identities: [] });
-    return days.get(time)!;
+    const changes = days.get(time) ?? { opens: [], closes: [], infills: [], stationCloses: [], renames: [], identities: [] };
+    days.set(time, changes);
+    return changes;
   };
   for (const lineSegment of index.lineSegments) {
     // A plan's are undated: `addPlannedSteps` takes them, section by section.
@@ -66,4 +67,24 @@ export const collectDays = (index: NetworkIndex, stops: StationStops): Map<numbe
       if (!index.goesOutAt(line, time)) day(time).identities.push({ line, text: alias.text });
     }
   return days;
+};
+
+/**
+ * Marks the lines that first reached a station after it had closed on every line it served: they pass it by.
+ *
+ * @param index - The network, indexed.
+ * @param stops - Its stations' stops, where a line that never calls at one is marked.
+ */
+export const markLinesAfterClosure = (index: NetworkIndex, stops: StationStops): void => {
+  for (const [station, info] of entriesOf(index.network.stations)) {
+    const closed = info.closed ?? {};
+    const closes = Object.values(closed).map(toTimestamp);
+    if (closes.length === 0) continue;
+    const lastClose = Math.max(...closes);
+    const atStation = index.lineSegmentsAt(station);
+    const before = new Set(atStation.filter(lineSegment => lineSegment.opens < lastClose).map(lineSegment => lineSegment.line));
+    // A line that came earlier still calls there: the station never closed for good.
+    if ([...before].some(line => !(line in closed))) continue;
+    for (const { line } of atStation) if (!before.has(line)) stops.stopOf(station, line).never = true;
+  }
 };

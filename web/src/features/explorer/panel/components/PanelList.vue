@@ -3,7 +3,7 @@
   <div ref="root" class="relative" :style="{ height: `${virtualizer.getTotalSize() - scrollMargin}px` }">
     <!-- The heading of the row at the top, stuck under what covers the panel's top, over the row's own: no room of its own, and read once, from the list. -->
     <div v-if="slots.sticky && topRow !== null" class="sticky z-1 h-0" :style="{ top: `${covered}px` }" aria-hidden="true">
-      <slot name="sticky" :row="rows[topRow]!" />
+      <slot name="sticky" :row="rowAt(topRow)" />
     </div>
     <div
       role="list"
@@ -18,13 +18,14 @@
         :aria-setsize="rows.length"
         :aria-posinset="item.index + 1"
         :data-index="item.index">
-        <slot name="row" :row="rows[item.index]!" :index="item.index" />
+        <slot name="row" :row="rowAt(item.index)" :index="item.index" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts" generic="Row extends { key: string }">
+  import { required } from '@railtime/core/required.utils';
   import { useVirtualizer } from '@tanstack/vue-virtual';
   import { computed, onMounted, ref, shallowRef, useTemplateRef } from 'vue';
   import { PANEL_LIST_OVERSCAN } from '~/features/explorer/panel/panel.constants';
@@ -53,6 +54,14 @@
   /** How far down the scroller the list starts, under what comes before it, pixels. */
   const scrollMargin = ref(0);
 
+  /**
+   * A row by its place in the list, as the virtualizer gives it, always among the rows it was told of.
+   *
+   * @param index - Its place.
+   * @returns The row.
+   */
+  const rowAt = (index: number): Row => required(props.rows[index], 'a row in the list');
+
   const virtualizer = useVirtualizer(
     // Made again once the scroller is found, so the list starts measuring it.
     computed(() => {
@@ -60,8 +69,8 @@
       return {
         count: props.rows.length,
         getScrollElement: () => element,
-        estimateSize: (index: number) => props.estimate(props.rows[index]!),
-        getItemKey: (index: number) => props.rows[index]!.key,
+        estimateSize: (index: number) => props.estimate(rowAt(index)),
+        getItemKey: (index: number) => rowAt(index).key,
         overscan: PANEL_LIST_OVERSCAN,
         scrollMargin: scrollMargin.value,
       };

@@ -2,8 +2,20 @@ import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, offsetKm, sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
+import { required } from '@railtime/core/required.utils';
 import type { Heading } from './build.types';
 import { HANDLE_SHARE, CURVE_STEP_KM, HEADING_SPAN_KM } from './track.constants.ts';
+import type { Segment } from '../format/network.types';
+
+/**
+ * Whether two pieces of track join the same two stations, either way round.
+ *
+ * @param first - One: its two stations.
+ * @param second - The other.
+ * @returns True if they do.
+ */
+export const samePair = (first: Pick<Segment, 'stationA' | 'stationB'>, second: Pick<Segment, 'stationA' | 'stationB'>): boolean =>
+  (first.stationA === second.stationA && first.stationB === second.stationB) || (first.stationA === second.stationB && first.stationB === second.stationA);
 
 /**
  * Where a point falls on a track: the nearest point on it, and the track either side of it.
@@ -52,7 +64,8 @@ const offsetBy = (from: LngLat, east: number, north: number): LngLat => [
  */
 export const headingOf = (track: LngLat[]): Heading | null => {
   const distances = cumulativeDistances(track);
-  const [east, north] = offsetKm(track[0]!, sliceAlong(track, distances, Math.min(HEADING_SPAN_KM, distances.at(-1) ?? 0)).at(-1) ?? track[0]!);
+  const span = sliceAlong(track, distances, Math.min(HEADING_SPAN_KM, distances.at(-1) ?? 0));
+  const [east, north] = offsetKm(required(track[0], "a track's start"), required(span.at(-1), 'a point along a track'));
   const length = Math.hypot(east, north);
   return length > 0 ? [east / length, north / length] : null;
 };
@@ -84,9 +97,9 @@ export const curveBetween = (from: LngLat, to: LngLat, leaving: Heading, arrivin
     if (step === steps) return to;
     const along = step / steps;
     const weights = [(1 - along) ** 3, 3 * along * (1 - along) ** 2, 3 * along ** 2 * (1 - along), along ** 3];
-    // Within bounds: four weights for the four points.
     let x = 0;
     let y = 0;
+    // Within bounds: four weights for the four points.
     for (const [index, [pointX, pointY]] of points.entries()) {
       x += pointX * weights[index]!;
       y += pointY * weights[index]!;

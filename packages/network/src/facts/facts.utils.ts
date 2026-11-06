@@ -1,110 +1,80 @@
-import { firstDifference, keysOf, pushTo } from '@railtime/core/collection.utils';
-import { toTimestamp, yearOf } from '@railtime/core/date.utils';
+import { firstDifference, pushTo } from '@railtime/core/collection.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
-import { cumulativeDistances } from '@railtime/core/geometry.utils';
 import { required } from '@railtime/core/required.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
-import type { LineId, Network, PlanId, StationId } from '@railtime/schema/network.types';
-import { buildPlan, firstPlanOf, isPlanOnly } from '@railtime/schema/plan.utils';
+import type { LineId, Plan, StationId } from '@railtime/schema/network.types';
+import type { BuiltPlan } from '@railtime/schema/plan.types';
 import { REACH_BANDS } from './facts.constants.ts';
-import type { LineSketch, NetworkRecords, NetworkSummary, Playhead, PlanFacts, ReachedSegment, RecordsSource, StationLineInfo } from './facts.types';
+import type { LineInfo, LineSketch, NetworkRecords, Playhead, PlanFacts, ReachedSegment, StationLineInfo } from './facts.types';
+import type { DatedLine, RecordsSource } from './moment.types';
 import { networkAt } from '../engine/history.utils.ts';
 import type { NetworkIndex } from '../engine/index.service';
+import { lineColorOf } from '../engine/lineColor.utils.ts';
 import { lineLengthKm } from '../engine/lineDetails.utils.ts';
 import type { Timeline } from '../engine/timeline.service';
 
 /**
- * The length of a network's track.
- *
- * @param network - A network.
- * @returns Every segment's length, summed, km.
- */
-const trackKm = (network: Network): number => network.segments.reduce((total, segment) => total + (cumulativeDistances(segment.coordinates).at(-1) ?? 0), 0);
-
-/**
  * What a plan would add to its network, for its card.
  *
- * @param network - The city's network.
- * @param planId - One of its plans.
- * @returns Its new stations and track, and the lines it builds on.
+ * @param plan - The plan.
+ * @param built - The plan built on the network: its track, and its lines.
+ * @param onMap - The stations on the map today, each with the lines calling there.
+ * @returns The stations its sections reach that no line calls at today, the track it lays, and the lines it builds on.
  */
-export const planFacts = (network: Network, planId: PlanId): PlanFacts => {
-  const built = buildPlan(network, planId);
-  const lineIds = [...new Set(built.sections.map(section => section.line))];
+export const planFacts = (plan: Plan, built: BuiltPlan, onMap: ReadonlyMap<StationId, unknown>): PlanFacts => {
+  const reached = new Set(plan.sections.flatMap(section => section.stations));
   return {
-    stations: keysOf(network.plans?.[planId]?.stations ?? {}).length,
-    // Splitting track for a new station keeps its length: what grows is the new track.
-    km: Math.max(0, trackKm(built.network) - trackKm(network)),
-    lines: lineIds.flatMap(id => {
-      const line = built.network.lines[id];
-      return line ? [{ id, name: line.name, color: { light: line.color, dark: line.darkColor ?? line.color } }] : [];
+    stations: [...reached].filter(station => !onMap.has(station)).length,
+    km: built.laidKm,
+    lines: [...new Set(built.sections.map(section => section.line))].map(id => {
+      const line = required(built.network.lines[id], `line ${id}`);
+      return { id, name: line.name, color: lineColorOf(line) };
     }),
   };
 };
 
 /**
- * A network summed up, for a list of cities: its brands, when it began, how many plans, lines and
- * stations. A network never built is summed up by its first plan.
+ * A line as a list shows it, whatever it is drawn as.
  *
- * @param network - The network.
- * @returns Its summary.
+ * @param index - The network, indexed.
+ * @param id - The line id.
+ * @returns The line.
  */
-export const networkSummary = (network: Network): NetworkSummary => {
-  const planOnly = isPlanOnly(network);
-  const first = firstPlanOf(network);
-  const shown = planOnly && first !== undefined ? buildPlan(network, first).network : network;
-  const opened = network.segments.flatMap(segment => Object.values(segment.lines).map(dates => dates.open)).toSorted(byCodeUnits)[0];
+export const lineInfoOf = (index: NetworkIndex, id: LineId): LineInfo => {
+  const line = index.lineOf(id);
+  const opens = index.lineOpens(id);
   return {
-    networks: Object.values(network.networks).map(brand => brand.name),
-    openedYear: opened ? yearOf(toTimestamp(opened)) : null,
-    planOnly,
-    plans: keysOf(network.plans ?? {}).length,
-    lines: Object.values(shown.lines).filter(line => !line.pseudo).length,
-    stations: keysOf(shown.stations).length,
+    id,
+    name: line.name,
+    network: line.network,
+    networkName: required(index.network.networks[line.network], `network ${line.network}`).name,
+    color: index.colorOf(id),
+    opened: Number.isFinite(opens) ? opens : null,
   };
 };
 
 /**
- * The track a sketch shows, each segment with its lines: what is open today, or for a network never
- * built, its first plan's.
+ * A network at a glance, as it stands at a cursor: each line's track as the map draws it (a segment
+ * shared by several, its first line's), the network's first line last, to lie on top.
  *
- * @param network - The network.
- * @returns Each segment's coordinates and line ids.
- */
-const sketchedTrack = (network: Network): { coordinates: LngLat[]; lines: LineId[] }[] => {
-  const openToday = network.segments.filter(segment => Object.values(segment.lines).some(dates => !dates.close));
-  const first = firstPlanOf(network);
-  if (openToday.length > 0 || first === undefined) return openToday.map(segment => ({ coordinates: segment.coordinates, lines: keysOf(segment.lines) }));
-  const built = buildPlan(network, first);
-  return built.sections.flatMap(section =>
-    // Within bounds: a built section's segments are the built network's.
-    section.segments.map(position => ({ coordinates: built.network.segments[position]!.coordinates, lines: [section.line] })),
-  );
-};
-
-/**
- * A network at a glance: each line's track (a segment shared by several, its first line's), the
- * network's first line last, to lie on top; dashed for a network never built.
- *
- * @param network - The network.
+ * @param index - The network, indexed.
+ * @param timeline - Its history.
+ * @param cursor - The cursor.
+ * @param dashed - Whether it is drawn dashed.
  * @returns The track by line, bottom first.
  */
-export const sketchOf = (network: Network): LineSketch[] => {
-  const first = firstPlanOf(network);
-  const lines = { ...network.lines, ...(first !== undefined && network.plans?.[first]?.lines) };
-  const lineOrder = keysOf(lines);
-  const dashed = isPlanOnly(network);
-  const byLine = new Map<LineId, LngLat[][]>();
-  for (const segment of sketchedTrack(network)) {
-    const [lowest] = [...segment.lines].toSorted((one, other) => lineOrder.indexOf(one) - lineOrder.indexOf(other));
-    if (lowest !== undefined) pushTo(byLine, lowest, segment.coordinates);
+export const sketchOf = (index: NetworkIndex, timeline: Timeline, cursor: number, dashed: boolean): LineSketch[] => {
+  const firstLines = new Map<number, LineId>();
+  for (const lineSegment of index.lineSegments) {
+    if (!timeline.isOpen(lineSegment, cursor)) continue;
+    const drawn = timeline.drawnAs(lineSegment.line, cursor);
+    const known = firstLines.get(lineSegment.segment.index);
+    if (known === undefined || index.compareLines(drawn, known) < 0) firstLines.set(lineSegment.segment.index, drawn);
   }
-  return [...byLine]
-    .toSorted(([one], [other]) => lineOrder.indexOf(other) - lineOrder.indexOf(one))
-    .map(([id, paths]) => {
-      const line = required(lines[id], `line ${id}`);
-      return { line: id, color: { light: line.color, dark: line.darkColor ?? line.color }, paths, dashed };
-    });
+  const byLine = new Map<LineId, LngLat[][]>();
+  // Within bounds: each key is a segment's index.
+  for (const [segment, line] of firstLines) pushTo(byLine, line, index.segments[segment]!.coordinates);
+  return [...byLine].toSorted(([one], [other]) => index.compareLines(other, one)).map(([line, paths]) => ({ line, color: index.colorOf(line), paths, dashed }));
 };
 
 /**
@@ -148,8 +118,8 @@ export const reachedSegments = (
  * @returns The records.
  */
 export const recordsOf = (source: RecordsSource, count: number, moment: Playhead): NetworkRecords => {
-  const { index, timeline, firstYears, colorOf } = source;
-  const { stations } = networkAt(index, timeline, moment.cursor);
+  const { index, timeline, firstYears } = source;
+  const { stations, lines: drawn } = networkAt(index, timeline, moment.cursor);
   const name = (station: StationId) => index.stationName(station, moment.time);
   const oldest = [...stations.keys()]
     .flatMap(station => {
@@ -162,13 +132,18 @@ export const recordsOf = (source: RecordsSource, count: number, moment: Playhead
     .map(([station, lines]) => ({
       id: station,
       name: name(station),
-      lines: [...lines].toSorted(index.compareLines).map(line => ({ id: line, name: index.lineName(line), color: colorOf(line) })),
+      lines: [...lines].toSorted(index.compareLines).map(line => ({ id: line, name: index.lineName(line), color: index.colorOf(line) })),
     }))
     .toSorted((first, second) => firstDifference(second.lines.length - first.lines.length, first.name.localeCompare(second.name)))
     .slice(0, count);
-  const longest = index.lineIds
-    .map(line => ({ id: line, name: index.lineName(line), color: colorOf(line), km: lineLengthKm(index, timeline, line, moment.cursor) }))
-    .filter(line => line.km > 0)
+  const longest = [...drawn]
+    .toSorted(index.compareLines)
+    .map(line => ({
+      id: line,
+      name: index.lineName(line),
+      color: index.colorOf(line),
+      km: lineLengthKm(index, timeline, timeline.linesDrawnAs(line, moment.cursor), moment.cursor),
+    }))
     .toSorted((first, second) => second.km - first.km)
     .slice(0, count);
   return { oldest, busiest, longest };
@@ -200,6 +175,26 @@ export const trackDatesAt = (
     byLine.set(lineSegment.line, dates);
   }
   return byLine;
+};
+
+/**
+ * A station's lines as the map draws them at a moment: lines drawn as one are one, opening with the
+ * first of them, and closed once all of them are, with the last.
+ *
+ * @param dated - Each line's dates there, with what it is drawn as.
+ * @returns Each line as drawn, once.
+ */
+export const linesAsDrawn = (dated: DatedLine[]): DatedLine[] => {
+  const byLine = new Map<LineId, DatedLine[]>();
+  for (const line of dated) pushTo(byLine, line.drawn, line);
+  return [...byLine].map(([drawn, lines]) => {
+    const closings = lines.flatMap(line => line.closed ?? []).toSorted(byCodeUnits);
+    return {
+      drawn,
+      opened: lines.flatMap(line => line.opened ?? []).toSorted(byCodeUnits)[0] ?? null,
+      closed: closings.length === lines.length ? closings.at(-1) : undefined,
+    };
+  });
 };
 
 /**

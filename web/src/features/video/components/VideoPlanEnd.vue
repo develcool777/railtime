@@ -2,8 +2,8 @@
   <!-- Down one side, the network given the rest: the plan, what it changes, each figure rolling on from today's, and where to see it for yourself. -->
   <section
     v-if="shown > 0"
-    class="absolute top-1/2 left-[5vmin] flex w-[30vw] flex-col gap-[2.4vmin] rounded-[1.4vmin] bg-[#0b0d10]/92 p-[3vmin] ring-1 ring-white/10"
-    :style="{ opacity: shown, transform: `translate(${(shown - 1) * 4}vmin, -50%)` }">
+    class="absolute top-1/2 left-[5vmin] flex flex-col gap-[2.4vmin] rounded-[1.4vmin] bg-[#0b0d10]/92 p-[3vmin] ring-1 ring-white/10"
+    :style="{ width: `${PLAN_END_VW}vw`, opacity: shown, transform: `translate(${(shown - 1) * 4}vmin, -50%)` }">
     <div>
       <p class="text-[2vmin] font-semibold tracking-[0.2em] text-white/70 uppercase">{{ PLAN_STATUSES[plan.status].label }}</p>
       <h2 class="mt-[0.6vmin] text-[7vmin] leading-none font-extrabold tracking-tight">{{ plan.name }}</h2>
@@ -29,6 +29,7 @@
   import { PLAN_STATUSES } from '~/constants/plan.constants';
   import { INSIGHTS_DRAW_MS } from '~/features/video/insights/insights.constants';
   import type { PlanGain } from '~/features/video/insights/insights.types';
+  import { PLAN_END_VW } from '~/features/video/video.constants';
   import { countOf } from '~/utils/count.utils';
 
   defineProps<{

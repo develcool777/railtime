@@ -2,9 +2,10 @@ import { yearOf } from '@railtime/core/date.utils';
 import { KM_PER_DEGREE_LATITUDE, KM_PER_DEGREE_LONGITUDE_AT_EQUATOR, RADIANS_PER_DEGREE } from '@railtime/core/geometry.constants';
 import type { Bounds, LngLat } from '@railtime/core/geometry.types';
 import { boundsOf, latitudeOf, mercatorY, offsetKm } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { COVERAGE_BANDS, MAX_CELLS, MIN_CELL_KM } from './coverage.constants.ts';
-import { bandsWithin, cellBands, coverageHistory, coverageOf, servedStations } from './coverage.utils.ts';
+import { bandsWithin, cellBands, coverageHistory, coverageOf, crossingsOf, holds, servedStations } from './coverage.utils.ts';
 import type { NetworkIndex } from '../engine/index.service';
 import type { Timeline } from '../engine/timeline.service';
 import type { CoverageCells, CoverageDistance, CoverageInfo, CoverageYear, GridCorners } from '../facts/facts.types';
@@ -80,8 +81,7 @@ export class CoverageGrid {
    * @returns Km².
    */
   public cellKm2(cell: number): number {
-    // Within bounds: a cell's row is one of the grid's.
-    return this.rowKm2[Math.floor(cell / this.columns)]!;
+    return required(this.rowKm2[Math.floor(cell / this.columns)], "a cell's row");
   }
 
   /**
@@ -133,17 +133,12 @@ export class CoverageGrid {
       // Within bounds: the loop's.
       const latitude = this.rowLatitude[row]!;
       const crossings: number[] = [];
-      for (const ring of rings)
-        for (const [position, [fromX, fromY]] of ring.slice(0, -1).entries()) {
-          // Within bounds: a ring's next point, the last being the first.
-          const [toX, toY] = ring[position + 1]!;
-          if (fromY > latitude !== toY > latitude) crossings.push(fromX + ((latitude - fromY) * (toX - fromX)) / (toY - fromY));
-        }
-      crossings.sort((first, second) => first - second);
-      for (let pair = 0; pair + 1 < crossings.length; pair += 2) {
-        // Within bounds: the pair's two crossings.
-        const from = Math.ceil((crossings[pair]! - this.west) / this.columnDegrees - 0.5);
-        const to = Math.floor((crossings[pair + 1]! - this.west) / this.columnDegrees - 0.5);
+      for (const ring of rings) crossings.push(...crossingsOf(ring, latitude));
+      const ordered = crossings.toSorted((first, second) => first - second);
+      // Within bounds: the pair's two crossings.
+      for (let pair = 0; pair + 1 < ordered.length; pair += 2) {
+        const from = Math.ceil((ordered[pair]! - this.west) / this.columnDegrees - 0.5);
+        const to = Math.floor((ordered[pair + 1]! - this.west) / this.columnDegrees - 0.5);
         for (let column = Math.max(0, from); column <= Math.min(this.columns - 1, to); column++) inside[row * this.columns + column] = 1;
       }
     }
@@ -203,6 +198,19 @@ export class CoverageMeasure {
     const years = coverageHistory(this.index, this.timeline, this.grid, [yearOf(this.timeline.start), yearOf(this.today)], metres);
     this.years.set(metres, years);
     return years;
+  }
+
+  /**
+   * The share of the network's stations the outline holds: those built, or its plans' where nothing is.
+   * What says an outline is the city's own: another city's would hold none.
+   *
+   * @returns 0..1; 0 for a network with no stations at all.
+   */
+  public stationsHeld(): number {
+    const { stations, plans } = this.index.network;
+    const built = Object.values(stations);
+    const counted = built.length > 0 ? built : Object.values(plans ?? {}).flatMap(plan => Object.values(plan.stations ?? {}));
+    return counted.length > 0 ? counted.filter(station => holds(this.boundary, station.coordinate)).length / counted.length : 0;
   }
 
   /**
