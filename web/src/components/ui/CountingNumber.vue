@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue';
-  import { COUNT_MS, SETTLE_MS } from '~/constants/count.constants';
+  import { COUNT_MS } from '~/constants/count.constants';
   import { countOf } from '~/utils/count.utils';
 
   const props = withDefaults(
@@ -34,13 +34,13 @@
   let frame: number | null = null;
 
   /**
-   * A frame: the clock moved on, and another asked for until the number has settled.
+   * A frame: the clock moved on, and another asked for until the number has landed.
    *
    * @param time - The browser's clock, ms.
    */
   const tick = (time: number) => {
     now.value = time;
-    if (counting.value && time - counting.value.startedAt < COUNT_MS + SETTLE_MS) {
+    if (counting.value && time - counting.value.startedAt < COUNT_MS) {
       frame = requestAnimationFrame(tick);
       return;
     }

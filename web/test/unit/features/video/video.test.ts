@@ -11,7 +11,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, test } from 'vitest';
 import { nextTick } from 'vue';
 import { standInMap } from '@test/support/factories/transitMap.utils';
-import { COUNT_MS, SETTLE_MS } from '~/constants/count.constants';
+import { COUNT_MS } from '~/constants/count.constants';
 import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_SPEED, WHOLE_FIT_MS } from '~/features/video/video.constants';
 import { useVideoStore } from '~/features/video/video.store';
 import {
@@ -49,9 +49,6 @@ const planOf = (id: string, status: PlanStatus): PlanInfo => ({ id: planId(id), 
 
 /** How long each scene that moves on by itself shows, ms. */
 const { title: TITLE_MS = 0, insights: INSIGHTS_MS = 0, overview: OVERVIEW_MS = 0, end: END_MS = 0 } = SCENE_MS;
-
-/** How long after a count starts its number is sure to have landed, ms. */
-const LANDED_MS = COUNT_MS + SETTLE_MS;
 
 describe('VideoUtils', () => {
   describe('videoScriptOf', () => {
@@ -401,14 +398,14 @@ describe('VideoStore', () => {
     const { store } = await readyVideo();
     const withStations = (stations: number) => ({ time: Date.UTC(1995, 0, 1), stats: { stations, km: 0, lines: 1 } }) as TimeState;
     store.SET_TIME(withStations(10));
-    store.TICK(LANDED_MS);
+    store.TICK(COUNT_MS);
     expect(store.counts.stations.now).toBe(10);
     store.SET_TIME(withStations(20));
     expect(store.counts.stations.now).toBe(10);
-    store.TICK(LANDED_MS + COUNT_MS / 2);
+    store.TICK(COUNT_MS + COUNT_MS / 2);
     expect(store.counts.stations.now).toBeGreaterThan(10);
     expect(store.counts.stations.now).toBeLessThan(20);
-    store.TICK(LANDED_MS * 2);
+    store.TICK(COUNT_MS * 2);
     expect(store.counts.stations.now).toBe(20);
   });
 
