@@ -1,6 +1,6 @@
 import type { LineId } from '@railtime/schema/network.types';
 import type { DataDrivenPropertyValueSpecification, FilterSpecification, Map as MapLibreMap } from 'maplibre-gl';
-import { GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, PLANNED_DASHES, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
+import { BOLD_PLANNED_DASHES, GROWING_SOURCE_MAX_ZOOM, LAYERS, LINE_LAYOUT, PLANNED_DASHES, SOURCES, UNFOCUSED_OPACITY } from './ids.constants';
 import { MapLayer } from './layer.service';
 import type { NetworkSnapshot } from './snapshot.types';
 import { byZoom, highlightedOpacity, highlightedWidth, sideBySideOffset } from './style.utils';
@@ -9,6 +9,9 @@ import type { StepDrawing } from '../steps/animation.types';
 
 /** How opaque each of the layer's line layers is with every line in focus; the glow's is the theme's. */
 const FULL_OPACITY = { [LAYERS.ghosts]: 0.35, [LAYERS.lines]: 1, [LAYERS.planned]: 0.85, [LAYERS.transferCasing]: 1, [LAYERS.transferCore]: 1 } as const;
+
+/** How wide planned track is, by zoom: built track's, or wider drawn bold, for what its gaps take away. */
+const PLANNED_WIDTHS = { usual: [2.2, 5.5], bold: [3.4, 8] } as const;
 
 /**
  * The network already on the map: every open line, with a soft glow beneath, closed track as dashed
@@ -19,6 +22,8 @@ export class NetworkLayer extends MapLayer {
   private focused: LineId[] | null = null;
   /** The glow's opacity in the current theme. */
   private glowOpacity = 0;
+  /** Whether planned track is drawn bold. */
+  private plansBold = false;
 
   public constructor(map: MapLibreMap) {
     super(map);
@@ -59,7 +64,7 @@ export class NetworkLayer extends MapLayer {
       layout: { 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': byZoom(2.2, 5.5),
+        'line-width': byZoom(...PLANNED_WIDTHS.usual),
         'line-offset': sideBySideOffset(),
         'line-opacity': FULL_OPACITY[LAYERS.planned],
         'line-dasharray': PLANNED_DASHES,
@@ -97,13 +102,26 @@ export class NetworkLayer extends MapLayer {
     this.applyFocus();
   }
 
+  /**
+   * Draws planned track bold, or as usual.
+   *
+   * @param bold - Whether it is bold.
+   */
+  public boldPlans(bold: boolean): void {
+    this.plansBold = bold;
+    const [atCity, atStreet] = PLANNED_WIDTHS[bold ? 'bold' : 'usual'];
+    this.map.setPaintProperty(LAYERS.planned, 'line-width', byZoom(atCity, atStreet));
+    this.map.setPaintProperty(LAYERS.planned, 'line-dasharray', bold ? BOLD_PLANNED_DASHES : PLANNED_DASHES);
+    this.applyFocus();
+  }
+
   /** Sets each line layer's opacity: full for the lines in focus, faded for the rest. */
   private applyFocus(): void {
     const opacities = [
       [LAYERS.ghosts, FULL_OPACITY[LAYERS.ghosts]],
       [LAYERS.glow, this.glowOpacity],
       [LAYERS.lines, FULL_OPACITY[LAYERS.lines]],
-      [LAYERS.planned, FULL_OPACITY[LAYERS.planned]],
+      [LAYERS.planned, FULL_OPACITY[this.plansBold ? LAYERS.lines : LAYERS.planned]],
       // A transfer's link belongs to no line: it fades whenever some lines are brought forward.
       [LAYERS.transferCasing, FULL_OPACITY[LAYERS.transferCasing]],
       [LAYERS.transferCore, FULL_OPACITY[LAYERS.transferCore]],

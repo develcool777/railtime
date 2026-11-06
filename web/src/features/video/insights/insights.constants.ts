@@ -1,7 +1,10 @@
 import type { InsightsPanel } from '~/features/video/insights/insights.types';
 
-/** The most lines a video's panel lists: as many as fit its column. */
-export const INSIGHTS_LINES = 10;
+/** The most lines a video's panel lists: as many as leave the coverage chart room in their column. */
+export const INSIGHTS_LINES = 6;
+
+/** How tall a listed line is, as a share of the frame's height: what the coverage chart gets for each fewer than the most. */
+export const INSIGHTS_LINE_SHARE = 0.046;
 
 /** The place each panel comes in at: an edge's first, the other's, then their second. */
 export const INSIGHTS_PLACES: Record<InsightsPanel, number> = { growth: 0, lines: 1, decades: 2, coverage: 3 };

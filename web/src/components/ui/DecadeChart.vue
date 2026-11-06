@@ -1,10 +1,15 @@
 <template>
-  <!-- A click on a decade shows the map at its end. -->
+  <!-- A click on a decade shows the map at its end. The busiest stands out: a series of its own, stacked in its place. -->
   <UChart
     type="bar"
     :data="bars"
     index="label"
-    :categories="[{ key: 'stations', label: 'Stations opened', color: 'primary' }]"
+    :categories="[
+      { key: 'stations', label: 'Stations opened', color: QUIET_BAR },
+      { key: 'busiest', label: 'Stations opened', color: 'primary' },
+    ]"
+    stacked
+    :legend="false"
     :format="formatNumber"
     :height
     :ariaLabel="summary"
@@ -27,7 +32,16 @@
   }>();
   const emit = defineEmits<{ pick: [year: number] }>();
 
-  const bars = computed(() => props.decades.map(entry => ({ label: `${entry.decade}s`, decade: entry.decade, stations: entry.stations })));
+  /** Every decade's bar but the busiest's. */
+  const QUIET_BAR = 'color-mix(in oklab, var(--ui-primary) 45%, transparent)';
+
+  const bars = computed(() =>
+    props.decades.map(entry => ({
+      label: `${entry.decade}s`,
+      decade: entry.decade,
+      [entry.decade === props.busiest?.decade ? 'busiest' : 'stations']: entry.stations,
+    })),
+  );
 
   const summary = computed(() => (props.busiest ? `Stations opened by decade; the most, ${props.busiest.stations}, in the ${props.busiest.decade}s` : ''));
 

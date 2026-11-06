@@ -243,12 +243,12 @@
         "m4": {"name":"Podilsko-Vyhurivska","names":{"uk":"Подільсько-Вигурівська лінія"},"network":"metro","mode":"metro","color":"#F0AB00"},
         "m5": {"name":"Livoberezhna","names":{"uk":"Лівобережна лінія"},"network":"metro","mode":"metro","color":"#58C1F9"},
         "m6": {"name":"Kurenivsko-Darnytska","names":{"uk":"Куренівсько-Дарницька лінія"},"network":"metro","mode":"metro","color":"#F5DD80"},
-        "m7": {"name":"Borshchahivska","names":{"uk":"Борщагівська лінія"},"network":"metro","mode":"metro","color":"#7231BE"},
+        "m7": {"name":"Borshchahivska","names":{"uk":"Борщагівська лінія"},"network":"metro","mode":"metro","color":"#7231BE","darkColor":"#9A63E6"},
         "m8": {"name":"Troieshchynsko-Bortnytska","names":{"uk":"Троєщинсько-Бортницька лінія"},"network":"metro","mode":"metro","color":"#E0479E"},
         "m9": {"name":"Osokorsko-Troieshchynska","names":{"uk":"Осокорсько-Троєщинська лінія"},"network":"metro","mode":"metro","color":"#8D5A3B"},
         "m10": {"name":"Bortnytsko-Novobilytska","names":{"uk":"Бортницько-Новобілицька лінія"},"network":"metro","mode":"metro","color":"#009E9E"},
         "m11": {"name":"Darnytsko-Vynohradarska","names":{"uk":"Дарницько-Виноградарська лінія"},"network":"metro","mode":"metro","color":"#9ACD32"},
-        "m12": {"name":"Zhuliansko-Pyrohivska","names":{"uk":"Жулянсько-Пирогівська лінія"},"network":"metro","mode":"metro","color":"#8E1B3A"}
+        "m12": {"name":"Zhuliansko-Pyrohivska","names":{"uk":"Жулянсько-Пирогівська лінія"},"network":"metro","mode":"metro","color":"#8E1B3A","darkColor":"#CC4F72"}
       },
       "stations": {
         "aeroport": {"name":"Aeroport Kyiv","names":{"uk":"Аеропорт «Київ»"},"coordinate":[30.442,50.413]},

@@ -142,6 +142,7 @@ export const mapPropsOf = (input: MapPropsInput): MapProps => ({
   viewMode: input.viewMode,
   stationLabels: input.stationNames,
   streetLabels: input.streetNames,
+  boldPlans: false,
   trains: input.trains && input.timeMode !== 'playing',
   focusedLines: input.timeMode === 'playing' || input.openStation || !input.openLine ? null : [input.openLine],
   selectedStation: input.openStation,

@@ -2,7 +2,7 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { lineId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { LAYERS, SOURCES, UNFOCUSED_OPACITY } from '../../../src/layers/ids.constants';
+import { BOLD_PLANNED_DASHES, LAYERS, PLANNED_DASHES, SOURCES, UNFOCUSED_OPACITY } from '../../../src/layers/ids.constants';
 import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
 import { buildNetworkSnapshot, lineFeature } from '../../../src/layers/snapshot.utils';
 import { byZoom, highlightedOpacity, highlightedWidth } from '../../../src/layers/style.utils';
@@ -52,6 +52,24 @@ describe('NetworkLayer', () => {
     ]);
     layer.focus(null);
     expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toBe(1);
+  });
+
+  test('draws planned track bold, still broken, and back as usual, keeping lines out of focus faded', () => {
+    const fake = fakeMap();
+    const layer = new NetworkLayer(fake.map);
+    layer.install();
+    const usual = fake.layers.get(LAYERS.planned)?.paint['line-width'];
+    layer.boldPlans(true);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-width']).not.toEqual(usual);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-dasharray']).toEqual(BOLD_PLANNED_DASHES);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-opacity']).toBe(1);
+    layer.focus([lineId('red')]);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-opacity']).toEqual(['case', ['in', ['get', 'line'], ['literal', ['red']]], 1, UNFOCUSED_OPACITY]);
+    layer.focus(null);
+    layer.boldPlans(false);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-width']).toEqual(usual);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-dasharray']).toEqual(PLANNED_DASHES);
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-opacity']).toBeCloseTo(0.85);
   });
 });
 

@@ -100,7 +100,7 @@ network's `NetworkFacts`. A feature picks its channel by what it is.
 
 ### Props: `update(props: Partial<MapProps>)`
 
-`padding`, `cover`, `theme`, `viewMode`, `stationLabels`, `trains`, `focusedLines`, `speed`,
+`padding`, `cover`, `theme`, `viewMode`, `stationLabels`, `boldPlans`, `trains`, `focusedLines`, `speed`,
 `camera`, `boundary`, `selectedStation`, `overlay` (a route, a reach, coverage).
 
 - **The app owns them; the map never changes one.** It acts on them and reports facts as events;

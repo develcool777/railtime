@@ -3,11 +3,26 @@ import type { CoverageInfo, CoverageYear, DecadeOpenings, NetworkRecords, Networ
 /** A panel round the map. */
 export type InsightsPanel = 'growth' | 'decades' | 'lines' | 'coverage';
 
-/** How far a panel has come this frame, each 0 to 1: in from its edge, and its chart revealed. */
-export type PanelMotion = { shown: number; drawn: number };
+/** How far a panel has come this frame: in from its edge and its chart revealed, each 0 to 1, and how long its numbers have counted, ms. */
+export type PanelMotion = { shown: number; drawn: number; counted: number };
 
 /** How much of the city the network reaches, now and year by year. */
 type InsightsCoverage = { info: CoverageInfo; years: CoverageYear[] };
+
+/** One thing a plan changes, as its end card says it. */
+export type PlanGain = {
+  /** What is measured. */
+  label: string;
+  /** What it is today, as written. */
+  before: string;
+  /** What it counts from and to, in the units of the reels. */
+  from: number;
+  to: number;
+  /** How many of those digits follow a point. */
+  decimals: number;
+  /** What follows the number. */
+  unit: string;
+};
 
 /** The network's numbers, for the panels round the map. */
 export type VideoInsights = {

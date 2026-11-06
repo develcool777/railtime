@@ -1,9 +1,11 @@
 import type { LineId, Network, PlanId } from '@railtime/schema/network.types';
 import { buildPlan } from '@railtime/schema/plan.utils';
 import type { LineGap } from './engine.types';
+import { statsAt } from './history.utils.ts';
 import { NetworkIndex } from './index.service.ts';
 import { Playheads } from './playheads.service.ts';
 import { Timeline } from './timeline.service.ts';
+import type { NetworkStats } from '../facts/facts.types';
 import { trainRunsAt } from '../trains/routes.utils.ts';
 import { TrainService } from '../trains/trains.service.ts';
 
@@ -35,6 +37,16 @@ export class NetworkEngine {
     this.timeline = new Timeline(this.index);
     this.range = { start: this.timeline.start, end: Math.max(today, this.timeline.lastDate), today };
     this.playheads = new Playheads(this.timeline, this.range);
+  }
+
+  /**
+   * The network's size at a cursor: what the renderer counts a change towards as it draws it.
+   *
+   * @param cursor - The cursor.
+   * @returns Its stations, km of track and lines.
+   */
+  public statsAt(cursor: number): NetworkStats {
+    return statsAt(this.index, this.timeline, cursor);
   }
 
   /**

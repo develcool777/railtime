@@ -1,5 +1,6 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { LineSegment } from '@railtime/network/engine.types';
+import type { NetworkStats } from '@railtime/network/facts.types';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { FeatureCollection, LineFeature, NetworkSnapshot, PointFeature, StationLines, StationsFound } from './snapshot.types';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
@@ -143,6 +144,20 @@ export const buildNetworkSnapshot = (state: RenderState, stepPlaying: boolean): 
       lines: linesOnMap.size,
     },
   };
+};
+
+/**
+ * The network's size as a change is drawn: its stations and lines whole, each counted as soon as the
+ * change has begun to reach it, its track as far as it has got.
+ *
+ * @param done - Its size before the change.
+ * @param after - Its size once it is done.
+ * @param progress - How far the change has been drawn, 0 to 1.
+ * @returns Its size on the map.
+ */
+export const statsDrawn = (done: NetworkStats, after: NetworkStats, progress: number): NetworkStats => {
+  const begun = (from: number, to: number) => from + Math.sign(to - from) * Math.ceil(Math.abs(to - from) * progress);
+  return { stations: begun(done.stations, after.stations), km: done.km + (after.km - done.km) * progress, lines: begun(done.lines, after.lines) };
 };
 
 /**

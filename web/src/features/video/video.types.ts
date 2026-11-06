@@ -10,8 +10,8 @@ import type { Network } from '@railtime/schema/network.types';
  */
 export type VideoScene = 'loading' | 'ready' | 'title' | 'history' | 'insights' | 'plan' | 'overview' | 'end' | 'done';
 
-/** How the map is seen in a beat: as asked, following what plays; flat, the whole network; or flat between the panels, its coverage drawn. */
-export type VideoFraming = 'playing' | 'whole' | 'insights';
+/** How the map is seen in a beat: as asked, following what plays; flat, the whole network; flat between the panels, its coverage drawn; or flat beside a plan's end card, the plan drawn bold. */
+export type VideoFraming = 'playing' | 'whole' | 'insights' | 'ending';
 
 /** One beat of a video's script: its scene, the plan laid on the network, and how the map is seen. */
 export type VideoBeat = { scene: VideoScene; plan: PlanInfo | null; framing: VideoFraming };
@@ -19,12 +19,14 @@ export type VideoBeat = { scene: VideoScene; plan: PlanInfo | null; framing: Vid
 /** The video's size, pixels: what the camera keeps room in. */
 export type VideoSize = { width: number; height: number };
 
-/** Room the video keeps clear at the map's edges, for what lies over it, pixels. */
+/** Room the video keeps clear at the map's edges, for what lies over it: pixels, or shares of its size. */
 export type VideoPadding = { top: number; bottom: number; left: number; right: number };
 
 /** Where the video is, as each frame shows it: what `videoLayersOf` works out what shows from. */
 export type VideoMoment = {
   scene: VideoScene;
+  /** Whether a plan is laid on the network. */
+  planned: boolean;
   /** How long the scene has shown, ms. */
   elapsed: number;
   /** How long since the change captioned was shown, ms. */
@@ -34,7 +36,7 @@ export type VideoMoment = {
 };
 
 /** How much of each piece over the map shows, 0 to 1. */
-export type VideoLayers = { title: number; planIntro: number; minimap: number; year: number; caption: number; end: number };
+export type VideoLayers = { title: number; planIntro: number; minimap: number; year: number; totals: number; caption: number; end: number };
 
 /** What a video opens with: the city's network, the frame's size, how the map is seen, where its outline is served, and the plan its address names. */
 export type VideoOpening = {

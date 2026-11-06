@@ -11,11 +11,18 @@
     </div>
     <VideoTitle :name="cityName" :networks="summary.networks" :span="store.span" :shown="store.layers.title" />
     <VideoPlanIntro v-if="store.plan" :plan="store.plan" :shown="store.layers.planIntro" />
-    <VideoYear v-if="store.time" :time="store.time" :stats="store.stats" :plan="store.plan" :shown="store.layers.year" />
+    <VideoYear v-if="store.time" :counts="store.counts" :plan="store.plan" :shown="store.layers.year" :totals="store.layers.totals" />
     <VideoCaption v-if="store.caption" :step="store.caption" :shown="store.layers.caption" />
     <VideoInsights v-if="store.insights" :insights="store.insights" :motion="store.insightsMotion" :frameHeight="store.size.height" />
-    <VideoEnd :name="cityName" :plan="store.plan?.name ?? null" :stats="store.time?.stats ?? null" :address :shown="store.layers.end" />
-    <MapCredits :credits="store.credits" class="absolute right-[2vmin] bottom-[1.2vmin] opacity-70" />
+    <VideoPlanEnd
+      v-if="store.plan && store.planGain"
+      :plan="store.plan"
+      :gains="store.planGain"
+      :counted="store.endCounted"
+      :address
+      :shown="store.layers.end" />
+    <VideoEnd v-else :name="cityName" :stats="store.time?.stats ?? null" :counted="store.endCounted" :address :shown="store.layers.end" />
+    <MapCredits :credits="store.credits" plain class="absolute right-[2vmin] bottom-[1.2vmin] opacity-70" />
   </div>
 </template>
 

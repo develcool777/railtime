@@ -1,15 +1,5 @@
 <template>
-  <!-- A click picks the year under the crosshair. -->
-  <UChart
-    type="area"
-    :data="points"
-    index="year"
-    :categories="[{ key: 'percent', label: 'Covered', color: 'primary' }]"
-    :format="(value: number) => formatShare(value / 100)"
-    :height
-    :ariaLabel="summary"
-    class="cursor-pointer"
-    @select="point => point && emit('pick', Number(point.datum.x))" />
+  <YearChart :points label="Covered" :format="(value: number) => formatShare(value / 100)" :axisFormat :height :summary @pick="emit('pick', $event)" />
 </template>
 
 <script setup lang="ts">
@@ -26,7 +16,15 @@
 
   const emit = defineEmits<{ pick: [year: number] }>();
 
-  const points = computed(() => props.history.map(entry => ({ year: entry.year, percent: entry.share * 100 })));
+  /**
+   * A round percentage as the axis writes it: no decimal it does not need, where `formatShare` keeps one under 10.
+   *
+   * @param value - The percentage.
+   * @returns "8%", "0.5%".
+   */
+  const axisFormat = (value: number): string => `${Number(value.toFixed(1))}%`;
+
+  const points = computed(() => props.history.map(entry => ({ year: entry.year, value: entry.share * 100 })));
   const summary = computed(() => {
     const first = props.history.find(entry => entry.share > 0);
     const last = props.history.at(-1);

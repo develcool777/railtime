@@ -1,5 +1,6 @@
 import { DAY_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
+import type { NetworkStats, Playhead } from '@railtime/network/facts.types';
 import type { TrainService } from '@railtime/network/trains.service';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { ChaseTarget, StepDrawing } from '../steps/animation.types';
@@ -8,7 +9,7 @@ import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
 import type { TimeState } from '../transitMap.types';
 import type { FrameOutcome, FrameParts } from './frame.types';
 import type { NetworkSnapshot, StationLines } from './snapshot.types';
-import { buildNetworkSnapshot, emptyCollection } from './snapshot.utils';
+import { buildNetworkSnapshot, emptyCollection, statsDrawn } from './snapshot.utils';
 import type { RenderState } from './style.types';
 import { TRAIN_TIME_LAPSE, TRAIN_UPDATE_MS } from './trains.constants';
 import { trainsAt } from './trains.utils';
@@ -38,6 +39,8 @@ export class FrameRenderer {
   private trainsDrawnAt: number | null = null;
   /** Clock day, cursor, progress to a hundredth and playing state at the last time state, to give one only on change. */
   private lastTimeKey = '';
+  /** The network's size once the change after a cursor is done: asked once a change. */
+  private arriving: { cursor: number; stats: NetworkStats } | null = null;
 
   public constructor(parts: FrameParts) {
     this.parts = parts;
@@ -154,8 +157,21 @@ export class FrameRenderer {
       atRest: playheads.isRest(playhead),
       inPlan: player.inPlan,
       playing,
-      stats: this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 },
+      stats: this.statsOnMap(playhead),
     };
+  }
+
+  /**
+   * The network's size on the map: the changes done, and as much of the next as is drawn.
+   *
+   * @param playhead - Where the player is.
+   * @returns Its size.
+   */
+  private statsOnMap({ cursor, progress }: Playhead): NetworkStats {
+    const done = this.snapshot?.stats ?? { stations: 0, km: 0, lines: 0 };
+    if (progress === 0) return done;
+    if (this.arriving?.cursor !== cursor) this.arriving = { cursor, stats: this.parts.statsAt(cursor + 1) };
+    return statsDrawn(done, this.arriving.stats, progress);
   }
 
   /**

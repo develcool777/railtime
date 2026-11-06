@@ -2,7 +2,7 @@
   <p class="text-muted text-[11px] leading-snug">
     <template v-for="(credit, position) in credits" :key="credit.text">
       <span v-if="position > 0"> · </span>
-      <a v-if="credit.url" :href="credit.url" target="_blank" rel="noopener" class="text-primary hover:underline">{{ credit.text }}</a>
+      <a v-if="credit.url" :href="credit.url" target="_blank" rel="noopener" :class="plain ? undefined : 'text-primary hover:underline'">{{ credit.text }}</a>
       <template v-else>{{ credit.text }}</template>
     </template>
     <!-- The rest of what the site owes, and to whom: the networks' sources, on the About page. -->
@@ -21,5 +21,7 @@
     credits: Credit[];
     /** Ends with a link to the About page, which credits the rest. */
     about?: boolean;
+    /** Leaves its links the colour of its text, for a frame nothing is clicked on. */
+    plain?: boolean;
   }>();
 </script>

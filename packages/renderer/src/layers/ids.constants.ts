@@ -75,6 +75,9 @@ export const LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } as cons
 /** A plan's track, not built: dash and gap, in line widths, on the map and while its step plays. */
 export const PLANNED_DASHES = [1.2, 1];
 
+/** A plan's track drawn bold (`boldPlans`): longer dashes, a shorter gap, on wider line. */
+export const BOLD_PLANNED_DASHES = [2.4, 0.8];
+
 /** Ordinary station labels show from this zoom; new stations are labelled at any zoom. */
 export const LABEL_MIN_ZOOM = 12;
 

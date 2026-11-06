@@ -119,6 +119,14 @@ describe('TransitMap', () => {
     expect(fake.moves.some(move => move.kind === 'ease' && move.options.pitch === VIEW_3D_PITCH)).toBe(true);
   });
 
+  test('draws planned track bold as its prop says, from the start and as it changes', () => {
+    const { map, fake, ready } = mapOf({ boldPlans: true });
+    ready();
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-opacity']).toBe(1);
+    map.update({ boldPlans: false });
+    expect(fake.layers.get(LAYERS.planned)?.paint['line-opacity']).toBeCloseTo(0.85);
+  });
+
   test("leaves the city's streets unnamed from the start, as it is set, and a theme does not name them again", () => {
     const style = [{ id: 'street-names', type: 'symbol', source: 'tiles', 'source-layer': 'transportation_name' }] as LayerSpecification[];
     const { map, fake, ready } = mapOf({ streetLabels: false }, {}, style);

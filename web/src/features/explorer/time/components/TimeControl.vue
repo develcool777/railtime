@@ -3,12 +3,22 @@
   <div class="map-card flex w-full flex-col p-3" :class="phone ? 'gap-1' : 'gap-2'">
     <div class="flex items-center" :class="phone ? 'gap-2' : 'gap-3'">
       <p class="text-highlighted flex-none font-extrabold tracking-[-0.02em] tabular-nums" :class="phone ? 'text-xl leading-6' : 'text-[28px] leading-8'">
-        {{ yearText }}
+        <CountingNumber v-if="shownYear !== null" :value="shownYear" ungrouped />
+        <template v-else>{{ yearWord }}</template>
       </p>
       <span v-if="step && mode === 'playing'" class="w-[3px] flex-none self-stretch rounded-full" :style="{ background: lineColor(step.color) }" />
       <div class="min-w-0 flex-1">
-        <p class="truncate tabular-nums" :class="headline.strong ? 'text-highlighted text-sm font-bold' : 'text-muted text-sm'">{{ headline.text }}</p>
-        <p v-if="headline.detail && !phone" class="text-muted truncate text-xs tabular-nums">{{ headline.detail }}</p>
+        <p v-if="sizes && phone" class="text-muted truncate text-sm">
+          <CountingNumber :value="sizes.stations" /> st. · <CountingNumber :value="sizes.km" /> km
+        </p>
+        <p v-else-if="sizes" class="text-muted truncate text-sm">
+          <CountingNumber :value="sizes.stations" /> {{ pluralOf(sizes.stations, 'station') }} · <CountingNumber :value="sizes.km" /> km ·
+          <CountingNumber :value="sizes.lines" /> {{ pluralOf(sizes.lines, 'line') }}
+        </p>
+        <p v-else-if="headline" class="truncate tabular-nums" :class="headline.strong ? 'text-highlighted text-sm font-bold' : 'text-muted text-sm'">
+          {{ headline.text }}
+        </p>
+        <p v-if="headline?.detail && !phone" class="text-muted truncate text-xs tabular-nums">{{ headline.detail }}</p>
       </div>
       <PlayerSettings :settings :phone @settings="emit('settings', $event)" />
     </div>
@@ -64,9 +74,9 @@
   import type { TimeState } from '@railtime/renderer/transitMap.types';
   import { computed } from 'vue';
   import type { PlayerSettings, TimeMode } from '~/features/explorer/explorer.types';
-  import { formatDay, formatStats } from '~/features/explorer/format.utils';
+  import { formatDay } from '~/features/explorer/format.utils';
   import type { TimelineTarget } from '~/features/explorer/time/timeline.types';
-  import { lineColor } from '~/utils/format.utils';
+  import { lineColor, pluralOf } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** The timeline, or the player playing the history. */
@@ -107,20 +117,20 @@
     return props.planOnly || (props.plan && (atToday.value || inPlan.value)) ? 'Play the plan' : 'Play';
   });
 
-  const yearText = computed(() => {
-    if (inPlan.value) return 'Plan';
-    if (atToday.value) return 'Today';
-    return props.time ? String(yearOf(props.time.time)) : '';
-  });
+  /** The year on the card, while it is one. */
+  const shownYear = computed(() => (props.time && !inPlan.value && !atToday.value ? yearOf(props.time.time) : null));
+  const yearWord = computed(() => (inPlan.value ? 'Plan' : 'Today'));
 
-  /** What the card says: the change playing, its line and day; else what the map shows, counted. */
-  const headline = computed<{ text: string; detail?: string; strong: boolean }>(() => {
+  /** What the card says: the change playing, its line and day; or a plan built. */
+  const headline = computed<{ text: string; detail?: string; strong: boolean } | null>(() => {
     const step = props.step;
     if (props.mode === 'playing' && step) {
       const day = step.time === null ? (props.plan?.name ?? 'Plan') : formatDay(step.time);
       return { text: step.title, detail: step.subtitle ? `${step.subtitle} · ${day}` : day, strong: true };
     }
     if (props.plan && inPlan.value) return { text: `${props.plan.name} built`, detail: `${props.plan.status} · ${props.plan.facts}`, strong: true };
-    return { text: props.time ? formatStats(props.time.stats, props.phone) : '', strong: false };
+    return null;
   });
+  /** What the map shows, counted, where the card says nothing else. */
+  const sizes = computed(() => (headline.value ? null : (props.time?.stats ?? null)));
 </script>

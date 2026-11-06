@@ -9,13 +9,22 @@ import type { LineColor } from '@railtime/network/facts.types';
 export const formatNumber = (value: number): string => Math.round(value).toLocaleString('en-GB');
 
 /**
+ * A noun as a count of it reads.
+ *
+ * @param count - The count.
+ * @param noun - The noun: "station".
+ * @returns "station", or "stations".
+ */
+export const pluralOf = (count: number, noun: string): string => `${noun}${Math.round(count) === 1 ? '' : 's'}`;
+
+/**
  * A count of something, the noun in the plural but for one.
  *
  * @param count - How many.
  * @param noun - What, in the singular.
  * @returns "1 line", "12 lines", "1,284 stations".
  */
-export const counted = (count: number, noun: string): string => `${formatNumber(count)} ${noun}${Math.round(count) === 1 ? '' : 's'}`;
+export const counted = (count: number, noun: string): string => `${formatNumber(count)} ${pluralOf(count, noun)}`;
 
 /**
  * A line's colour as CSS, in whichever theme the page is in: the browser picks by the page's

@@ -1,28 +1,29 @@
 <template>
-  <!-- The year shown, large, or how far a plan has got (`videoYearOf`), smaller for being words, and the network's size then, under it. -->
-  <div v-if="shown > 0" class="absolute top-[4vmin] right-[5vmin] flex flex-col items-end" :style="{ opacity: shown }">
-    <p class="leading-none font-extrabold tracking-tight tabular-nums" :class="plan ? 'text-[7vmin]' : 'text-[13vmin]'">{{ year }}</p>
-    <p class="mt-[1vmin] text-[2.8vmin] font-medium text-white/75 tabular-nums">{{ counted(stats.stations, 'station') }} · {{ formatNumber(stats.km) }} km</p>
+  <!-- The year shown, large, or how far a plan has got, smaller for being words, and the network's size then, under it; a soft dark behind them, so what the map draws never runs through them. -->
+  <div v-if="shown > 0" class="absolute top-[4vmin] right-[5vmin] isolate flex flex-col items-end" :style="{ opacity: shown }">
+    <div class="absolute -inset-[5vmin] -z-10 bg-[radial-gradient(closest-side,#0b0d10e6_50%,transparent)]" />
+    <p v-if="plan" class="text-[7vmin] leading-none font-extrabold tracking-tight">{{ PLAN_STATUSES[plan.status].label }}</p>
+    <p v-else class="text-[13vmin] leading-none font-extrabold tracking-tight"><ReelNumber :count="counts.year" ungrouped /></p>
+    <p class="mt-[1vmin] text-[2.8vmin] font-medium text-white/75" :style="{ opacity: totals }">
+      <ReelNumber :count="counts.stations" /> {{ pluralOf(counts.stations.now, 'station') }} · <ReelNumber :count="counts.km" /> km
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { NetworkStats, PlanInfo } from '@railtime/network/facts.types';
-  import type { TimeState } from '@railtime/renderer/transitMap.types';
-  import { computed } from 'vue';
-  import { videoYearOf } from '~/features/video/video.utils';
-  import { counted, formatNumber } from '~/utils/format.utils';
+  import type { PlanInfo } from '@railtime/network/facts.types';
+  import { PLAN_STATUSES } from '~/constants/plan.constants';
+  import type { Count, CountedSizes } from '~/utils/count.types';
+  import { pluralOf } from '~/utils/format.utils';
 
-  const props = defineProps<{
-    /** Where the history is. */
-    time: TimeState;
-    /** The network's size, as it counts to where the history is. */
-    stats: NetworkStats;
+  defineProps<{
+    /** The year and the network's size, as they count to where the history is. */
+    counts: Record<keyof CountedSizes, Count>;
     /** The plan laid on the network; `null` for none. */
     plan: PlanInfo | null;
     /** How much of it shows, 0 to 1. */
     shown: number;
+    /** How much of the network's size shows in it, 0 to 1. */
+    totals: number;
   }>();
-
-  const year = computed(() => videoYearOf(props.time, props.plan));
 </script>

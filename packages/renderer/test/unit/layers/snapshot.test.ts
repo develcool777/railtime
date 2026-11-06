@@ -3,10 +3,30 @@ import { byCodeUnits } from '@railtime/core/text.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { buildNetworkSnapshot } from '../../../src/layers/snapshot.utils';
+import { buildNetworkSnapshot, statsDrawn } from '../../../src/layers/snapshot.utils';
 import { networkNow, playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('NetworkSnapshotUtils', () => {
+  describe('statsDrawn', () => {
+    const done = { stations: 10, km: 20, lines: 2 };
+    const after = { stations: 16, km: 30, lines: 3 };
+
+    test('is the size before the change until it begins, and the size after once drawn', () => {
+      expect(statsDrawn(done, after, 0)).toEqual(done);
+      expect(statsDrawn(done, after, 1)).toEqual(after);
+    });
+
+    test('counts a station or a line as soon as the change has begun on it, whole, and track as far as it has got', () => {
+      expect(statsDrawn(done, after, 0.01)).toEqual({ stations: 11, km: 20.1, lines: 3 });
+      expect(statsDrawn(done, after, 0.5)).toEqual({ stations: 13, km: 25, lines: 3 });
+    });
+
+    test('counts down for a closure', () => {
+      const closed = { stations: 10, km: 20, lines: 2 };
+      expect(statsDrawn({ stations: 16, km: 30, lines: 3 }, closed, 0.5)).toEqual({ stations: 13, km: 25, lines: 2 });
+    });
+  });
+
   describe('buildNetworkSnapshot', () => {
     test('counts what is on the map at a date, with shared track side by side', () => {
       const playback = playbackOf(tinyNetwork());
