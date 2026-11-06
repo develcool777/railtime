@@ -13,10 +13,15 @@
           </filter>
         </svg>
         <span
-          class="block"
-          :style="{ transform: `translateY(${-part.offset * REEL_HEIGHT_EM}em)`, filter: part.blur > 0 ? `url(#${id}${part.key})` : undefined }">
+          class="relative block"
+          :style="{
+            height: `${REEL_HEIGHT_EM * 2}em`,
+            transform: `translateY(${-part.offset * REEL_HEIGHT_EM}em)`,
+            filter: part.blur > 0 ? `url(#${id}${part.key})` : undefined,
+          }">
           <span class="block">{{ part.digit }}</span>
-          <span class="block">{{ part.next }}</span>
+          <!-- Laid out where the digit is and moved down: a row of its own would round to its own pixel, and a digit landing would snap. -->
+          <span class="absolute inset-x-0 top-0" :style="{ transform: `translateY(${REEL_HEIGHT_EM}em)` }">{{ part.next }}</span>
         </span>
       </span>
     </template>

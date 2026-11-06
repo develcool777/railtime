@@ -4,21 +4,6 @@ export const COUNT_MS = 900;
 /** How long a camera's shutter stays open, ms: half a frame at 30 a second, an After Effects default. */
 export const SHUTTER_MS = 1000 / 60;
 
-/** How far into a count a number starts to settle, as a share of it: while it still moves, so it never stops dead first. */
-export const SETTLE_START_SHARE = 0.75;
-
-/** How long a number takes to settle, ms. */
-export const SETTLE_MS = 900;
-
-/** How far a number swings past where it lands, in units: under one, so it never rests on, or reads as, a wrong number. */
-export const SETTLE_SWING = 0.3;
-
-/** How many times it swings a second. */
-export const SETTLE_SWINGS_PER_SECOND = 2.2;
-
-/** How fast its swing dies away, a second. */
-export const SETTLE_DECAY_PER_SECOND = 5;
-
 /** How tall a reel's window is, in `em`: room for a digit's full height. */
 export const REEL_HEIGHT_EM = 1.15;
 

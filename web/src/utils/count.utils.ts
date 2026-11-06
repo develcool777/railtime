@@ -1,36 +1,20 @@
-import {
-  BLUR_PER_DIGIT,
-  COUNT_MS,
-  LEAST_BLUR,
-  MOST_BLUR,
-  SETTLE_DECAY_PER_SECOND,
-  SETTLE_MS,
-  SETTLE_START_SHARE,
-  SETTLE_SWING,
-  SETTLE_SWINGS_PER_SECOND,
-  SHUTTER_MS,
-} from '~/constants/count.constants';
+import { BLUR_PER_DIGIT, COUNT_MS, LEAST_BLUR, MOST_BLUR, SHUTTER_MS } from '~/constants/count.constants';
 import type { Count, CountedSizes, Reel, ReelMark, ReelNumber } from '~/utils/count.types';
 import { easedOut, fadedIn } from '~/utils/motion.utils';
 
 /**
- * Where a number is as it counts: fast at first, slowing as it arrives, then swinging past where it
- * lands and back, each swing smaller, as After Effects' inertial bounce does. It lands on a whole number.
+ * Where a number is as it counts: fast at first, slowing as it arrives, and stopping on a whole number,
+ * never past it: a digit that swung past where it lands would read as a jump.
  *
  * @param from - What it counts from.
  * @param to - What it counts to.
  * @param elapsed - How long it has counted, ms.
  * @param lengthMs - How long it takes to arrive.
- * @returns Where it is, never under 0.
+ * @returns Where it is.
  */
 export const countedAt = (from: number, to: number, elapsed: number, lengthMs: number): number => {
   const target = Math.round(to);
-  const settling = (elapsed - lengthMs * SETTLE_START_SHARE) / 1000;
-  if (from === target || (elapsed >= lengthMs && settling * 1000 >= SETTLE_MS)) return target;
-  const arriving = from + (target - from) * easedOut(fadedIn(elapsed, lengthMs));
-  if (settling <= 0) return arriving;
-  const swing = Math.min(SETTLE_SWING, Math.abs(target - from)) * Math.sign(target - from);
-  return Math.max(0, arriving + (swing * Math.sin(2 * Math.PI * SETTLE_SWINGS_PER_SECOND * settling)) / Math.exp(SETTLE_DECAY_PER_SECOND * settling));
+  return elapsed >= lengthMs ? target : from + (target - from) * easedOut(fadedIn(elapsed, lengthMs));
 };
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { LEAST_BLUR, MOST_BLUR, SETTLE_MS, SETTLE_START_SHARE, SETTLE_SWING, SHUTTER_MS } from '~/constants/count.constants';
+import { LEAST_BLUR, MOST_BLUR, SHUTTER_MS } from '~/constants/count.constants';
 import type { Count, Reel, ReelMark } from '~/utils/count.types';
 import { countedAt, countOf, countsOf, reelsOf, shareNumberOf, sizesAt } from '~/utils/count.utils';
 import { formatShare } from '~/utils/format.utils';
@@ -35,7 +35,7 @@ describe('CountUtils', () => {
   describe('countedAt', () => {
     test('starts where it counts from, and lands on a whole number', () => {
       expect(countedAt(10, 20, 0, LENGTH)).toBe(10);
-      expect(countedAt(10, 20.4, LENGTH + SETTLE_MS, LENGTH)).toBe(20);
+      expect(countedAt(10, 20.4, LENGTH, LENGTH)).toBe(20);
     });
 
     test('slows as it arrives', () => {
@@ -43,21 +43,15 @@ describe('CountUtils', () => {
       expect(firstHalf).toBeGreaterThan(50);
     });
 
-    test('swings past where it lands, then settles, by less than a digit', () => {
-      const moments = Array.from({ length: 200 }, (_, moment) => countedAt(0, 100, LENGTH * SETTLE_START_SHARE + moment * 10, LENGTH));
-      const furthest = Math.max(...moments);
-      expect(furthest).toBeGreaterThan(100);
-      expect(furthest).toBeLessThan(100 + SETTLE_SWING);
-    });
-
-    test('swings the way it was counting, on a count down too', () => {
-      const moments = Array.from({ length: 200 }, (_, moment) => countedAt(100, 50, LENGTH * SETTLE_START_SHARE + moment * 10, LENGTH));
-      expect(Math.min(...moments)).toBeLessThan(50);
-    });
-
-    test('never swings by more than the count, nor below nothing', () => {
-      const moments = Array.from({ length: 200 }, (_, moment) => countedAt(1, 0, moment * 10, LENGTH));
-      expect(Math.min(...moments)).toBe(0);
+    test.each([
+      [6, 10],
+      [1995, 1996],
+      [12, 10],
+    ])('slows all the way from %s to %s, never speeding up or going past where it lands', (from, to) => {
+      const moments = Array.from({ length: LENGTH / 10 + 1 }, (_, moment) => countedAt(from, to, moment * 10, LENGTH));
+      const steps = moments.slice(1).map((moment, place) => Math.abs(moment - (moments[place] ?? 0)));
+      expect(moments.filter(moment => (moment - to) * Math.sign(to - from) > 0)).toEqual([]);
+      expect(steps.slice(1).filter((step, place) => step > (steps[place] ?? 0) + 1e-9)).toEqual([]);
     });
 
     test('stands still where there is nothing to count', () => {
