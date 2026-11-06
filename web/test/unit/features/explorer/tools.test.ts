@@ -1,3 +1,4 @@
+import type { CoverageInfo } from '@railtime/network/facts.types';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
@@ -5,7 +6,16 @@ import { openExplorer } from '@test/support/factories/explorer.utils';
 import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
 import { useNetworkStore } from '~/features/explorer/network.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
-import { foundReachOf, foundRoutesOf, mapOverlayOf, mapPickHint, overlayRequestOf, routeAimOf, stationPickOf } from '~/features/explorer/tools.utils';
+import {
+  foundCoverageOf,
+  foundReachOf,
+  foundRoutesOf,
+  mapOverlayOf,
+  mapPickHint,
+  overlayRequestOf,
+  routeAimOf,
+  stationPickOf,
+} from '~/features/explorer/tools.utils';
 
 describe('ToolsUtils', () => {
   describe('mapOverlayOf', () => {
@@ -89,6 +99,16 @@ describe('ToolsUtils', () => {
     test('says a click on the map picks the end, or changes it once picked', () => {
       expect(mapPickHint('start', false)).toBe('Click the map for the start.');
       expect(mapPickHint('end', true)).toBe('Click the map to change the end.');
+    });
+  });
+
+  describe('foundCoverageOf', () => {
+    test('takes the coverage the map found, and nothing for another overlay or none', () => {
+      const coverage: CoverageInfo = { name: 'Test', source: 'test', km2: 4, metres: 800, share: 0.5, bands: [], beyond: { share: 0.5, km2: 2 } };
+      expect(foundCoverageOf({ kind: 'coverage', coverage })).toBe(coverage);
+      expect(foundCoverageOf({ kind: 'coverage', coverage: null })).toBeNull();
+      expect(foundCoverageOf({ kind: 'reach', reach: null })).toBeNull();
+      expect(foundCoverageOf(null)).toBeNull();
     });
   });
 

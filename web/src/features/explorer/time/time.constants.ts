@@ -3,7 +3,7 @@ import type { PlayerSettings } from '~/features/explorer/explorer.types';
 import type { TickMark } from '~/features/explorer/time/timeline.types';
 
 /** Playback speeds offered: half speed to follow a line closely, in 3D above all. */
-export const SPEED_OPTIONS = [0.5, 1, 2, 4].map(speed => ({ label: `${speed}×`, value: speed }));
+export const SPEED_OPTIONS = [0.5, 1, 1.5, 2, 4].map(speed => ({ label: `${speed}×`, value: speed }));
 
 /**
  * How playback is set without the address saying otherwise: at 2×, at which London's whole history

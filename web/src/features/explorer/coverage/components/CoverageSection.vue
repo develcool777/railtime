@@ -47,17 +47,7 @@
       <!-- A city nothing was ever built in has only a flat line at 0 to show. -->
       <div v-if="history.length > 1 && history.some(entry => entry.share > 0)" class="flex flex-col gap-1">
         <p class="text-highlighted text-sm font-medium">Within {{ formatWalk(coverage.metres) }}, year by year</p>
-        <!-- A click picks the year under the crosshair. -->
-        <UChart
-          type="area"
-          :data="points"
-          index="year"
-          :categories="[{ key: 'percent', label: 'Covered', color: 'primary' }]"
-          :format="(value: number) => formatShare(value / 100)"
-          :height="150"
-          :ariaLabel="summary"
-          class="cursor-pointer"
-          @select="point => point && emit('year', Number(point.datum.x))" />
+        <CoverageChart :history :height="150" @pick="emit('year', $event)" />
       </div>
 
       <p class="text-dimmed text-xs">
@@ -70,13 +60,12 @@
 
 <script setup lang="ts">
   import type { CoverageDistance, CoverageInfo, CoverageYear } from '@railtime/network/facts.types';
-  import { computed } from 'vue';
   import { COVERAGE_DISTANCE_ITEMS } from '~/features/explorer/coverage/coverage.constants';
   import { coverageDistanceOf, formatArea } from '~/features/explorer/coverage/coverage.utils';
   import type { BoundaryState } from '~/features/explorer/tools.types';
   import { formatShare, formatWalk } from '~/utils/format.utils';
 
-  const props = defineProps<{
+  defineProps<{
     /** Where the city's outline is. */
     state: BoundaryState;
     /** The coverage on the date shown, once the outline is in. */
@@ -97,11 +86,4 @@
     const metres = coverageDistanceOf(value);
     if (metres !== undefined) emit('distance', metres);
   };
-
-  const points = computed(() => props.history.map(entry => ({ year: entry.year, percent: entry.share * 100 })));
-  const summary = computed(() => {
-    const first = props.history.find(entry => entry.share > 0);
-    const last = props.history.at(-1);
-    return first && last ? `From ${formatShare(first.share)} in ${first.year} to ${formatShare(last.share)} in ${last.year}` : '';
-  });
 </script>

@@ -16,7 +16,7 @@ import type { VideoOpening } from '~/features/video/video.types';
  * a clock no recorder moves. Client only.
  *
  * @param container - Where the map goes.
- * @param opening - The city's network, how the map is seen and where its outline is served, read as the map is made.
+ * @param opening - The city's network, how the map is seen, where its outline is served and the plan named, read as the map is made.
  */
 export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>, opening: MaybeRefOrGetter<Omit<VideoOpening, 'size'>>): void => {
   const store = useVideoStore();
@@ -49,7 +49,6 @@ export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>,
         },
         time: time => store.SET_TIME(time),
         step: step => store.SET_STEP(step),
-        overlay: result => store.SET_OVERLAY(result),
         end: () => store.END_PLAYBACK(),
       },
     });

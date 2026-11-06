@@ -6,7 +6,7 @@
     index="label"
     :categories="[{ key: 'stations', label: 'Stations opened', color: 'primary' }]"
     :format="formatNumber"
-    :height="120"
+    :height
     :ariaLabel="summary"
     class="cursor-pointer"
     @select="point => point && pick(String(point.datum.x))" />
@@ -20,15 +20,16 @@
   const props = defineProps<{
     /** How many stations first opened in each decade. */
     decades: DecadeOpenings[];
+    /** The decade most did. */
+    busiest: DecadeOpenings | null;
+    /** How tall it is, pixels. */
+    height: number;
   }>();
   const emit = defineEmits<{ pick: [year: number] }>();
 
   const bars = computed(() => props.decades.map(entry => ({ label: `${entry.decade}s`, decade: entry.decade, stations: entry.stations })));
 
-  const summary = computed(() => {
-    const busiest = [...props.decades].toSorted((first, second) => second.stations - first.stations)[0];
-    return busiest ? `Stations opened by decade; the most, ${busiest.stations}, in the ${busiest.decade}s` : '';
-  });
+  const summary = computed(() => (props.busiest ? `Stations opened by decade; the most, ${props.busiest.stations}, in the ${props.busiest.decade}s` : ''));
 
   /**
    * Shows the map at the end of the decade picked.

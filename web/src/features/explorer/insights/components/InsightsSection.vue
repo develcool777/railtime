@@ -12,13 +12,13 @@
           <h3 class="eyebrow text-muted">Growth</h3>
           <UTabs v-model="metric" :items="METRICS" :content="false" aria-label="What the chart measures" />
         </div>
-        <GrowthChart :points :metric @pick="emit('year', $event)" />
+        <GrowthChart :points :metric :height="150" @pick="emit('year', $event)" />
         <p class="text-dimmed text-xs">Pick a year on the chart to see the map then.</p>
       </section>
 
       <section class="flex flex-col gap-2">
         <h3 class="eyebrow text-muted">Stations opened, by decade</h3>
-        <DecadeChart :decades="growth.decades" @pick="emit('year', $event)" />
+        <DecadeChart :decades="growth.decades" :busiest="growth.busiest" :height="120" @pick="emit('year', $event)" />
       </section>
 
       <template v-if="records">
@@ -63,9 +63,9 @@
   import type { NetworkGrowth, NetworkRecords } from '@railtime/network/facts.types';
   import type { LineId, StationId } from '@railtime/schema/network.types';
   import { computed, ref } from 'vue';
-  import type { GrowthMetric } from '~/features/explorer/insights/insights.types';
-  import { formatMetric, growthSeries } from '~/features/explorer/insights/insights.utils';
   import { lineColor } from '~/utils/format.utils';
+  import type { GrowthMetric } from '~/utils/growth.types';
+  import { formatMetric, growthSeries } from '~/utils/growth.utils';
 
   const props = defineProps<{
     /** The network year by year; `null` until the map is mounted. */

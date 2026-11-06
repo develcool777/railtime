@@ -1,6 +1,6 @@
 import { stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { networkHistory, openingsByDecade, statsAt } from '../../../src/engine/history.utils';
+import { busiestDecade, networkHistory, openingsByDecade, statsAt } from '../../../src/engine/history.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 
@@ -20,6 +20,21 @@ describe('HistoryUtils', () => {
       const { firstYears } = networkHistory(index, timeline, 2026);
       expect(firstYears.get(stationId('a'))).toBe(1900);
       expect(firstYears.get(stationId('d'))).toBe(1910);
+    });
+  });
+
+  describe('busiestDecade', () => {
+    test('finds the decade most stations opened in, the earliest of a tie', () => {
+      const decades = [
+        { decade: 1960, stations: 3 },
+        { decade: 1970, stations: 9 },
+        { decade: 1980, stations: 9 },
+      ];
+      expect(busiestDecade(decades)).toEqual({ decade: 1970, stations: 9 });
+    });
+
+    test('finds none in no decades', () => {
+      expect(busiestDecade([])).toBeNull();
     });
   });
 

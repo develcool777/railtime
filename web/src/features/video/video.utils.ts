@@ -1,62 +1,59 @@
 import { yearOf } from '@railtime/core/date.utils';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
-import type { ChangeInfo, PlanInfo } from '@railtime/network/facts.types';
+import type { ChangeInfo, NetworkStats, PlanInfo } from '@railtime/network/facts.types';
 import type { MapProps, TimeState, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { VideoPageState } from '@railtime/video/videoPage.types';
-import {
-  FADE_MS,
-  OVERVIEW_SCENES,
-  PLAN_TITLE_MS,
-  TIMED_SCENES,
-  TITLE_MS,
-  VIDEO_PADDING_SHARES,
-  VIDEO_PLAN_STATUSES,
-  VIDEO_SPEED,
-} from '~/features/video/video.constants';
-import type { VideoLayers, VideoMapInput, VideoMoment, VideoPadding, VideoScene, VideoSize } from '~/features/video/video.types';
+import { PLAN_STATUSES } from '~/constants/plan.constants';
+import { FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_INSIGHTS_PADDING_SHARES, VIDEO_PADDING_SHARES, VIDEO_SPEED } from '~/features/video/video.constants';
+import type { VideoBeat, VideoFraming, VideoLayers, VideoMapInput, VideoMoment, VideoPadding, VideoScene, VideoSize } from '~/features/video/video.types';
 
 /**
- * The scene a video moves on to as time passes in one (`TIMED_SCENES`): the title to the history, a
- * plan's card to the plan, the overview to the end card, the end card to over. The history and a plan
- * end when their playback does, which the map says (`end`), not the time.
+ * A video's script, every beat in order: its title and history, the whole network flat, then its
+ * numbers round it, which its end card comes in over. With a plan it goes on past them: the plan
+ * played from today, the network with it built flat, and the end card.
  *
- * @param scene - The scene shown.
- * @param elapsed - How long it has shown, ms.
- * @returns The scene to show now.
+ * @param plan - The plan it plays; `null` for none.
+ * @returns The beats.
  */
-export const sceneAfter = (scene: VideoScene, elapsed: number): VideoScene => {
-  const timed = TIMED_SCENES[scene];
-  return timed && elapsed >= timed.ms ? timed.next : scene;
+export const videoScriptOf = (plan: PlanInfo | null): VideoBeat[] => {
+  const asBuilt = (scene: VideoScene, framing: VideoFraming): VideoBeat => ({ scene, plan: null, framing });
+  const opening = [
+    asBuilt('ready', 'playing'),
+    asBuilt('title', 'playing'),
+    asBuilt('history', 'playing'),
+    asBuilt('overview', 'whole'),
+    asBuilt('insights', 'insights'),
+  ];
+  if (!plan) return [...opening, asBuilt('end', 'insights'), asBuilt('done', 'insights')];
+  const ending = (['overview', 'end', 'done'] as const).map((scene): VideoBeat => ({ scene, plan, framing: 'whole' }));
+  return [...opening, { scene: 'plan', plan, framing: 'playing' }, ...ending];
 };
 
 /**
- * The scene once the history, or a plan, has played to its end: the next plan's card, or the whole
- * network from above.
- *
- * @param planLeft - Whether a plan is still to play.
- * @returns The scene to show now.
- */
-export const sceneAfterPlayback = (planLeft: boolean): VideoScene => (planLeft ? 'planTitle' : 'overview');
-
-/**
- * Whether a scene shows the whole network from above, its coverage drawn.
+ * Whether a scene has shown as long as it shows (`SCENE_MS`). The history and the plan end when their
+ * playback does, which the map says (`end`), not the time.
  *
  * @param scene - The scene shown.
- * @returns Whether it is the overview, or the end card over it.
+ * @param elapsed - How long it has shown, ms.
+ * @returns Whether its time is up.
  */
-export const isOverview = (scene: VideoScene): boolean => OVERVIEW_SCENES.has(scene);
+export const sceneEnded = (scene: VideoScene, elapsed: number): boolean => {
+  const length = SCENE_MS[scene];
+  return length !== undefined && elapsed >= length;
+};
 
 /**
- * The plans a video plays after today, in order: what is being built, then what is committed to; the
- * rest (proposed, a concept, abandoned) stay in the explorer. A network never built plays its plan as
- * its history, and none after.
+ * The plan a video plays after its history: the one its address names, whatever its status, if the
+ * network has it. None otherwise: a video ends on today unless asked. A network never built plays its
+ * plan as its history, and none after.
  *
- * @param plans - The network's plans, as they are kept.
+ * @param plans - The network's plans.
  * @param planOnly - Whether the network was never built.
- * @returns The plans to play.
+ * @param asked - The plan its address names; `null` for none.
+ * @returns The plan, or `null` for none.
  */
-export const videoPlansOf = (plans: PlanInfo[], planOnly: boolean): PlanInfo[] =>
-  planOnly ? [] : VIDEO_PLAN_STATUSES.flatMap(status => plans.filter(plan => plan.status === status));
+export const videoPlanOf = (plans: PlanInfo[], planOnly: boolean, asked: string | null): PlanInfo | null =>
+  planOnly ? null : (plans.find(plan => plan.id === asked) ?? null);
 
 /**
  * Where the video is, as the page tells a recorder (`VideoPageHandle`): ready only once the city's
@@ -82,6 +79,14 @@ export const pageStateOf = (scene: VideoScene, outlineSettled: boolean): VideoPa
 export const fadedIn = (elapsed: number, fadeMs: number): number => Math.min(1, Math.max(0, elapsed / fadeMs));
 
 /**
+ * Slows something down as it arrives.
+ *
+ * @param share - How far it has got at an even pace, 0 to 1.
+ * @returns How far it has got, 0 to 1.
+ */
+export const easedOut = (share: number): number => 1 - (1 - share) ** 3;
+
+/**
  * How much of something shown for a while shows now: fading in at its start and out at its end.
  *
  * @param elapsed - How long since it started to show, ms.
@@ -92,8 +97,7 @@ export const fadedIn = (elapsed: number, fadeMs: number): number => Math.min(1, 
 export const shownFor = (elapsed: number, length: number, fadeMs: number): number => Math.min(fadedIn(elapsed, fadeMs), fadedIn(length - elapsed, fadeMs));
 
 /**
- * How much of the year and totals show in a scene: in with the history, on through the plans and the
- * overview, out as the end card comes.
+ * How much of the year and totals show in a scene: in with the history, and on to the video's end.
  *
  * @param scene - The scene shown.
  * @param elapsed - How long it has shown, ms.
@@ -104,43 +108,41 @@ const yearShownIn = (scene: VideoScene, elapsed: number): number => {
     case 'history': {
       return fadedIn(elapsed, FADE_MS);
     }
-    case 'planTitle':
+    case 'insights':
     case 'plan':
-    case 'overview': {
+    case 'overview':
+    case 'end':
+    case 'done': {
       return 1;
-    }
-    case 'end': {
-      return 1 - fadedIn(elapsed, FADE_MS);
     }
     case 'loading':
     case 'ready':
-    case 'title':
-    case 'done': {
+    case 'title': {
       return 0;
     }
   }
 };
 
 /**
- * How much of each piece over the map shows at a moment: the title, and a plan's card, over their
- * scenes, fading in and out; the year and totals (`yearShownIn`); a caption in as its change starts,
- * out once it goes, and never more than the year; the end card in over the overview, staying when the
- * video is over.
+ * How much of each piece over the map shows at a moment: the title over its scene, and the plan's
+ * name as it starts to play, fading in and out; the year and totals (`yearShownIn`); a caption in as its change starts,
+ * out once it goes, and never more than the year; the end card in at its scene, staying when the video
+ * is over.
  *
  * @param moment - The scene and how long it has shown, and how long since the caption came and went.
  * @returns Each piece's opacity, 0 to 1.
  */
 export const videoLayersOf = (moment: VideoMoment): VideoLayers => {
   const { scene, elapsed, sinceCaption, sinceCaptionGone } = moment;
-  const title = scene === 'title' ? shownFor(elapsed, TITLE_MS, FADE_MS) : 0;
-  const plan = scene === 'planTitle' ? shownFor(elapsed, PLAN_TITLE_MS, FADE_MS) : 0;
+  const title = scene === 'title' ? shownFor(elapsed, SCENE_MS.title ?? 0, FADE_MS) : 0;
+  const planIntro = scene === 'plan' ? shownFor(elapsed, PLAN_INTRO_MS, FADE_MS) : 0;
   const year = yearShownIn(scene, elapsed);
   const captionGone = sinceCaptionGone === null ? 1 : 1 - fadedIn(sinceCaptionGone, FADE_MS);
   const caption = Math.min(fadedIn(sinceCaption, FADE_MS), captionGone, year);
   let end = 0;
   if (scene === 'done') end = 1;
   else if (scene === 'end') end = fadedIn(elapsed, FADE_MS);
-  return { title, plan, year, caption, end };
+  return { title, planIntro, year, caption, end };
 };
 
 /**
@@ -158,28 +160,56 @@ export const historySpan = (changes: ChangeInfo[]): string => {
 };
 
 /**
- * What the year card says: the year the history is in, or, while a plan plays, that it is a plan,
- * which has no date (its changes play at the end of the dates, today), as the explorer's time control
- * says it.
+ * What the year card says: the year the history is in, or, on a plan, how far it has got, which has no
+ * date (its changes play at the end of the dates, today).
  *
  * @param time - Where the history is.
- * @returns "1995", or "Plan".
+ * @param plan - The plan laid on the network; `null` for none.
+ * @returns "1995", or "Concept".
  */
-export const videoYearOf = (time: TimeState): string => (time.inPlan ? 'Plan' : String(yearOf(time.time)));
+export const videoYearOf = (time: TimeState, plan: PlanInfo | null): string => (plan ? PLAN_STATUSES[plan.status].label : String(yearOf(time.time)));
 
 /**
- * Room the camera keeps clear on a video of a size, so what it frames is never under the title, the
- * year or a caption.
+ * Whether two sizes of the network are the same.
+ *
+ * @param first - One size.
+ * @param second - The other.
+ * @returns Whether its stations, track and lines all match.
+ */
+export const sameStats = (first: NetworkStats, second: NetworkStats): boolean =>
+  first.stations === second.stations && first.km === second.km && first.lines === second.lines;
+
+/**
+ * The numbers shown as they count from one size of the network to another.
+ *
+ * @param from - What they count from.
+ * @param to - What they count to.
+ * @param share - How far they have got, 0 to 1.
+ * @returns The numbers shown.
+ */
+export const statsBetween = (from: NetworkStats, to: NetworkStats, share: number): NetworkStats => ({
+  stations: from.stations + (to.stations - from.stations) * share,
+  km: from.km + (to.km - from.km) * share,
+  lines: from.lines + (to.lines - from.lines) * share,
+});
+
+/**
+ * Room the camera keeps clear on a video of a size, so what it frames is never under what lies over
+ * the map: the year and a caption, or the panels.
  *
  * @param size - The video's size.
+ * @param framing - How the map is seen.
  * @returns The room at each edge, pixels.
  */
-export const videoPaddingOf = (size: VideoSize): VideoPadding => ({
-  top: Math.round(size.height * VIDEO_PADDING_SHARES.top),
-  bottom: Math.round(size.height * VIDEO_PADDING_SHARES.bottom),
-  left: Math.round(size.width * VIDEO_PADDING_SHARES.left),
-  right: Math.round(size.width * VIDEO_PADDING_SHARES.right),
-});
+export const videoPaddingOf = (size: VideoSize, framing: VideoFraming): VideoPadding => {
+  const shares = framing === 'insights' ? VIDEO_INSIGHTS_PADDING_SHARES : VIDEO_PADDING_SHARES;
+  return {
+    top: Math.round(size.height * shares.top),
+    bottom: Math.round(size.height * shares.bottom),
+    left: Math.round(size.width * shares.left),
+    right: Math.round(size.width * shares.right),
+  };
+};
 
 /**
  * How a video sees the map, as its address asks: in 3D, the city's buildings standing as the camera
@@ -191,22 +221,30 @@ export const videoPaddingOf = (size: VideoSize): VideoPadding => ({
 export const videoViewOf = (view: unknown): ViewMode => (view === '2d' ? '2d' : '3d');
 
 /**
- * What the map shows in a video: the network, dark, at the video's pace, without the basemap's street
- * names, framing clear of what lies over it; seen as asked until the overview, which lies flat, the
- * city's coverage drawn within its outline.
+ * The plan a video's address names, not yet checked against the network.
  *
- * @param input - The network shown, the frame's size, how it was asked to be seen, whether it is the overview, the outline.
+ * @param plan - The address's `plan`.
+ * @returns Its id as written, or `null` for none, or one repeated.
+ */
+export const videoPlanAskedOf = (plan: unknown): string | null => (typeof plan === 'string' ? plan : null);
+
+/**
+ * What the map shows in a video: the network, dark, at the video's pace, without the basemap's street
+ * names, framing clear of what lies over it; seen as asked while it plays, otherwise flat, with the
+ * panels round it the city's coverage drawn within its outline.
+ *
+ * @param input - The network shown, the frame's size, how it was asked to be seen, the beat's framing, the outline.
  * @returns The map's props.
  */
 export const videoMapPropsOf = (input: VideoMapInput): Pick<MapProps, 'facts'> & Partial<MapProps> => ({
   facts: input.facts,
   theme: 'dark',
-  viewMode: input.overview ? '2d' : input.viewMode,
-  overlay: input.overview && input.boundary ? { kind: 'coverage', metres: COVERAGE_DEFAULT_METRES } : null,
+  viewMode: input.framing === 'playing' ? input.viewMode : '2d',
+  overlay: input.framing === 'insights' && input.boundary ? { kind: 'coverage', metres: COVERAGE_DEFAULT_METRES } : null,
   boundary: input.boundary,
   speed: VIDEO_SPEED,
   streetLabels: false,
-  padding: videoPaddingOf(input.size),
+  padding: videoPaddingOf(input.size, input.framing),
 });
 
 /**

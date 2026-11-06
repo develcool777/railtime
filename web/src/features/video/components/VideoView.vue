@@ -4,10 +4,11 @@
     <!-- MapLibre makes the map's own element relative: it fills a frame of its own. -->
     <div class="absolute inset-0"><div ref="container" class="h-full w-full" /></div>
     <VideoTitle :name="cityName" :networks="summary.networks" :span="store.span" :shown="store.layers.title" />
-    <VideoPlan v-if="store.plan" :plan="store.plan" :shown="store.layers.plan" />
-    <VideoYear v-if="store.time" :time="store.time" :shown="store.layers.year" />
+    <VideoPlanIntro v-if="store.plan" :plan="store.plan" :shown="store.layers.planIntro" />
+    <VideoYear v-if="store.time" :time="store.time" :stats="store.stats" :plan="store.plan" :shown="store.layers.year" />
     <VideoCaption v-if="store.caption" :step="store.caption" :shown="store.layers.caption" />
-    <VideoEnd :name="cityName" :stats="store.time?.stats ?? null" :coverage="store.coverage" :address :shown="store.layers.end" />
+    <VideoInsights v-if="store.insights" :insights="store.insights" :motion="store.insightsMotion" :frameHeight="store.size.height" />
+    <VideoEnd :name="cityName" :plan="store.plan?.name ?? null" :stats="store.time?.stats ?? null" :address :shown="store.layers.end" />
     <MapCredits :credits="store.credits" class="absolute right-[2vmin] bottom-[1.2vmin] opacity-70" />
   </div>
 </template>
@@ -18,7 +19,7 @@
   import { useRoute, useRuntimeConfig } from '#imports';
   import { useVideoMap } from '~/features/video/video.composable';
   import { useVideoStore } from '~/features/video/video.store';
-  import { spokenAddress, videoViewOf } from '~/features/video/video.utils';
+  import { spokenAddress, videoPlanAskedOf, videoViewOf } from '~/features/video/video.utils';
   import { boundaryUrlOf, cityNameOf, citySummaryOf } from '~/utils/city.utils';
 
   const props = defineProps<{
@@ -30,13 +31,15 @@
 
   const store = useVideoStore();
   const container = useTemplateRef<HTMLElement>('container');
-  // The video opens on the city's network, seen as its address asks: in 3D, or flat (`?view=2d`).
+  // The video opens on the city's network, as its address asks: in 3D, or flat (`?view=2d`); on past
+  // today to a plan, if it names one (`?plan=<id>`).
   const route = useRoute();
   const baseURL = useRuntimeConfig().app.baseURL;
   useVideoMap(container, () => ({
     network: props.network,
     viewMode: videoViewOf(route.query.view),
     outline: `${baseURL}${boundaryUrlOf(props.city)}`,
+    plan: videoPlanAskedOf(route.query.plan),
   }));
 
   const cityName = computed(() => cityNameOf(props.city));

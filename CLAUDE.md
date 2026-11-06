@@ -22,7 +22,8 @@ of them, `cities/cities.json`; and the commands that keep them, a folder each in
 on a clock only it moves, into an MP4 with ffmpeg, after a rehearsal that fetches every map tile the
 camera will look at into Chrome's own cache; a frame waits for what it draws, never for a stream open
 as long as the page; what a video shows stays in `web`) and `web` (the app: the Nuxt 4 + Nuxt UI
-explorer, and the video page, `/video/<city>`, in 3D or flat with `?view=2d`, under `pnpm dev` only).
+explorer, and the video page, `/video/<city>`, in 3D or flat with `?view=2d`, under `pnpm dev` only;
+`pnpm video:record <city> --query "plan=<id>"` records a plan of the city's as its ending).
 `README.md` has the commands; `ARCHITECTURE.md` the contract between the parts;
 `packages/network/_README.md` steps and cursors; `packages/renderer/_README.md` the frame model.
 
@@ -173,18 +174,22 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
 
   ```text
   pages/  css/            routes, styles
-  components/ui/          components every surface uses (SiteHeader, StatusChip, MapCredits…)
+  components/ui/          components every surface uses (SiteHeader, MapCredits, the charts: GrowthChart,
+                          DecadeChart, CoverageChart…)
   constants/  utils/      what more than one surface needs: the city catalogue (CITIES, city.utils,
-                          its outline fetched), plans' statuses, how a number, a share or a walk is
-                          written, the coverage the map found
+                          its outline fetched), plans' statuses, how a number, a share, a walk or
+                          what a plan adds is written, a measure's growth
   features/<name>/        one product surface each: explorer (a city's map), landing (the city list),
-                          seo, video (a city's history as a video, to record: its title, the history
-                          to today, each plan going ahead played from today, then the whole network
-                          flat, its coverage drawn, and the end card; `pnpm dev` only, the
-                          built site leaves it out; its state a store, `video.store.ts`, its rules in
-                          `video.utils.ts`, its map an effect, `video.composable.ts`, as the explorer's;
-                          all that moves on it is worked out from the page's clock each frame, never
-                          a CSS transition, which no recorder can step);
+                          seo, video (a city's history as a video, to record, a script of beats worked
+                          out up front, `videoScriptOf`: its title, the history to today, the whole
+                          network flat, its numbers on `insights/` panels round it, its coverage drawn,
+                          and the end card over them; with `?plan=<id>` on past them, the plan played
+                          from today, the network with it built flat, and the end card;
+                          `pnpm dev` only, the built site leaves it out; its state a store,
+                          `video.store.ts`, its rules in `video.utils.ts`, its map an effect,
+                          `video.composable.ts`, as the explorer's; what it moves itself is worked out
+                          from the page's clock each frame, never a CSS transition, which no recorder
+                          can step);
                           its components in components/, the rest flat beside them
   features/<name>/<part>/ a big feature in parts, as dataroom-ui's modules/fileRenderer: each part
                           (explorer's map/, time/, panel/, lines/…) its own components/ and files;

@@ -1,3 +1,4 @@
+import { keysOf } from '@railtime/core/collection.utils';
 import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { ChangeInfo, PlanInfo } from '@railtime/network/facts.types';
@@ -10,21 +11,24 @@ import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, test } from 'vitest';
 import { nextTick } from 'vue';
 import { standInMap } from '@test/support/factories/transitMap.utils';
-import { END_MS, FADE_MS, OVERVIEW_MS, PLAN_TITLE_MS, TITLE_MS, VIDEO_SPEED } from '~/features/video/video.constants';
+import { COUNT_MS, FADE_MS, PLAN_INTRO_MS, SCENE_MS, VIDEO_SPEED, WHOLE_FIT_MS } from '~/features/video/video.constants';
 import { useVideoStore } from '~/features/video/video.store';
 import {
+  easedOut,
   fadedIn,
   historySpan,
-  isOverview,
   pageStateOf,
-  sceneAfter,
-  sceneAfterPlayback,
+  sameStats,
+  sceneEnded,
   shownFor,
   spokenAddress,
+  statsBetween,
   videoLayersOf,
   videoMapPropsOf,
   videoPaddingOf,
-  videoPlansOf,
+  videoPlanAskedOf,
+  videoPlanOf,
+  videoScriptOf,
   videoViewOf,
   videoYearOf,
 } from '~/features/video/video.utils';
@@ -37,63 +41,65 @@ import {
  */
 const changeOn = (date: string | null) => ({ time: date === null ? null : Date.parse(date) }) as ChangeInfo;
 
+/**
+ * A plan of a status, as the network gives it.
+ *
+ * @param id - Its id.
+ * @param status - How far it has got.
+ * @returns The plan.
+ */
+const planOf = (id: string, status: PlanStatus): PlanInfo => ({ id: planId(id), name: id, status, facts: { stations: 0, km: 0, lines: [] } });
+
+/** How long each scene that moves on by itself shows, ms. */
+const { title: TITLE_MS = 0, insights: INSIGHTS_MS = 0, overview: OVERVIEW_MS = 0, end: END_MS = 0 } = SCENE_MS;
+
 describe('VideoUtils', () => {
-  describe('sceneAfter', () => {
-    test("moves the title, a plan's card, the overview and the end card on, as their time runs out", () => {
-      expect(sceneAfter('title', TITLE_MS - 1)).toBe('title');
-      expect(sceneAfter('title', TITLE_MS)).toBe('history');
-      expect(sceneAfter('planTitle', PLAN_TITLE_MS)).toBe('plan');
-      expect(sceneAfter('overview', OVERVIEW_MS - 1)).toBe('overview');
-      expect(sceneAfter('overview', OVERVIEW_MS)).toBe('end');
-      expect(sceneAfter('end', END_MS - 1)).toBe('end');
-      expect(sceneAfter('end', END_MS)).toBe('done');
+  describe('videoScriptOf', () => {
+    const plan = planOf('later', 'concept');
+
+    test('ends on today: the history, the whole network, its numbers, the end card over them', () => {
+      const script = videoScriptOf(null);
+      expect(script.map(beat => beat.scene)).toEqual(['ready', 'title', 'history', 'overview', 'insights', 'end', 'done']);
+      expect(script.slice(3).map(beat => beat.framing)).toEqual(['whole', 'insights', 'insights', 'insights']);
+      expect(script.map(beat => beat.plan)).toEqual(script.map(() => null));
+    });
+
+    test('goes on past its numbers with a plan, and ends on it built, flat', () => {
+      const script = videoScriptOf(plan);
+      expect(script.slice(4).map(beat => beat.scene)).toEqual(['insights', 'plan', 'overview', 'end', 'done']);
+      expect(script.slice(5).map(beat => beat.plan)).toEqual([plan, plan, plan, plan]);
+      expect(script.slice(-3).map(beat => beat.framing)).toEqual(['whole', 'whole', 'whole']);
+    });
+  });
+
+  describe('sceneEnded', () => {
+    test('ends the title, the numbers, the overview and the end card as their time runs out', () => {
+      expect(sceneEnded('title', TITLE_MS - 1)).toBe(false);
+      expect(sceneEnded('title', TITLE_MS)).toBe(true);
+      expect(sceneEnded('insights', INSIGHTS_MS)).toBe(true);
+      expect(sceneEnded('overview', OVERVIEW_MS)).toBe(true);
+      expect(sceneEnded('end', END_MS)).toBe(true);
     });
 
     test('leaves the history and a plan to their playback, and a video not started, or over, as it is', () => {
-      expect(sceneAfter('history', 10 * 60_000)).toBe('history');
-      expect(sceneAfter('plan', 10 * 60_000)).toBe('plan');
-      expect(sceneAfter('ready', 10 * 60_000)).toBe('ready');
-      expect(sceneAfter('done', 10 * 60_000)).toBe('done');
+      for (const scene of ['history', 'plan', 'ready', 'done'] as const) expect(sceneEnded(scene, 10 * 60_000)).toBe(false);
     });
   });
 
-  describe('sceneAfterPlayback', () => {
-    test("moves on to the next plan's card, or, with none left, the whole network from above", () => {
-      expect(sceneAfterPlayback(true)).toBe('planTitle');
-      expect(sceneAfterPlayback(false)).toBe('overview');
+  describe('videoPlanOf', () => {
+    const plans = [planOf('now', 'under-construction'), planOf('idea', 'concept')];
+
+    test('plays the plan its address names, whatever its status', () => {
+      expect(videoPlanOf(plans, false, 'idea')?.name).toBe('idea');
     });
-  });
 
-  describe('isOverview', () => {
-    test('sees the whole network from above in the overview and the end card over it, and nowhere before', () => {
-      expect(['overview', 'end', 'done'].map(scene => isOverview(scene as 'end'))).toEqual([true, true, true]);
-      expect(['title', 'history', 'planTitle', 'plan'].map(scene => isOverview(scene as 'end'))).toEqual([false, false, false, false]);
-    });
-  });
-
-  describe('videoPlansOf', () => {
-    /**
-     * A plan of a status, as the network gives it.
-     *
-     * @param id - Its id.
-     * @param status - How far it has got.
-     * @returns The plan.
-     */
-    const planOf = (id: string, status: PlanStatus): PlanInfo => ({ id: planId(id), name: id, status, facts: { stations: 0, km: 0, lines: [] } });
-
-    test('plays what is being built, then what is committed to, each in the order kept, and none of the rest', () => {
-      const plans = [
-        planOf('later', 'planned'),
-        planOf('old', 'abandoned'),
-        planOf('now', 'under-construction'),
-        planOf('idea', 'concept'),
-        planOf('next', 'planned'),
-      ];
-      expect(videoPlansOf(plans, false).map(plan => plan.name)).toEqual(['now', 'later', 'next']);
+    test('plays none unless asked, nor one the network does not have', () => {
+      expect(videoPlanOf(plans, false, null)).toBeNull();
+      expect(videoPlanOf(plans, false, 'nowhere')).toBeNull();
     });
 
     test('plays none after a network never built, whose history is its plan', () => {
-      expect(videoPlansOf([planOf('only', 'planned')], true)).toEqual([]);
+      expect(videoPlanOf(plans, true, 'idea')).toBeNull();
     });
   });
 
@@ -102,6 +108,14 @@ describe('VideoUtils', () => {
       expect(fadedIn(-100, 600)).toBe(0);
       expect(fadedIn(300, 600)).toBe(0.5);
       expect(fadedIn(9000, 600)).toBe(1);
+    });
+  });
+
+  describe('easedOut', () => {
+    test('runs from nothing to whole, arriving slowly', () => {
+      expect(easedOut(0)).toBe(0);
+      expect(easedOut(1)).toBe(1);
+      expect(easedOut(0.5)).toBeGreaterThan(0.5);
     });
   });
 
@@ -128,8 +142,8 @@ describe('VideoUtils', () => {
 
   describe('videoPaddingOf', () => {
     test('keeps room for the year above and the caption below, more below, in proportion to the size', () => {
-      expect(videoPaddingOf({ width: 1920, height: 1080 })).toEqual({ top: 173, bottom: 281, left: 154, right: 154 });
-      expect(videoPaddingOf({ width: 1080, height: 1920 }).bottom).toBe(499);
+      expect(videoPaddingOf({ width: 1920, height: 1080 }, 'playing')).toEqual({ top: 173, bottom: 281, left: 154, right: 154 });
+      expect(videoPaddingOf({ width: 1080, height: 1920 }, 'playing').bottom).toBe(499);
     });
   });
 
@@ -157,18 +171,18 @@ describe('VideoUtils', () => {
       expect(videoLayersOf({ ...still, scene: 'history', elapsed: TITLE_MS / 2 }).title).toBe(0);
     });
 
-    test("shows a plan's card over its scene alone, fading in and out", () => {
-      expect(videoLayersOf({ ...still, scene: 'planTitle', elapsed: PLAN_TITLE_MS / 2 }).plan).toBe(1);
-      expect(videoLayersOf({ ...still, scene: 'planTitle', elapsed: PLAN_TITLE_MS }).plan).toBe(0);
-      expect(videoLayersOf({ ...still, scene: 'plan', elapsed: PLAN_TITLE_MS / 2 }).plan).toBe(0);
+    test('names the plan as it starts to play, fading in and out, and not after', () => {
+      expect(videoLayersOf({ ...still, scene: 'plan', elapsed: PLAN_INTRO_MS / 2 }).planIntro).toBe(1);
+      expect(videoLayersOf({ ...still, scene: 'plan', elapsed: PLAN_INTRO_MS }).planIntro).toBe(0);
+      expect(videoLayersOf({ ...still, scene: 'overview', elapsed: PLAN_INTRO_MS / 2 }).planIntro).toBe(0);
     });
 
-    test('brings the year in with the history, keeps it through the plans and the overview, and swaps it for the end card', () => {
+    test('brings the year in with the history and keeps it to the end, the end card fading in beside it', () => {
       expect(videoLayersOf({ ...still, scene: 'history', elapsed: FADE_MS / 2 }).year).toBe(0.5);
-      expect(['planTitle', 'plan', 'overview'].map(scene => videoLayersOf({ ...still, scene: scene as 'plan' }).year)).toEqual([1, 1, 1]);
+      expect(['insights', 'plan', 'overview', 'end', 'done'].map(scene => videoLayersOf({ ...still, scene: scene as 'plan' }).year)).toEqual([1, 1, 1, 1, 1]);
       expect(videoLayersOf({ ...still, scene: 'overview' }).end).toBe(0);
-      expect(videoLayersOf({ ...still, scene: 'end', elapsed: FADE_MS / 2 })).toMatchObject({ year: 0.5, end: 0.5 });
-      expect(videoLayersOf({ ...still, scene: 'end', elapsed: FADE_MS })).toMatchObject({ year: 0, end: 1 });
+      expect(videoLayersOf({ ...still, scene: 'end', elapsed: FADE_MS / 2 }).end).toBe(0.5);
+      expect(videoLayersOf({ ...still, scene: 'end', elapsed: FADE_MS }).end).toBe(1);
       expect(videoLayersOf({ ...still, scene: 'done' }).end).toBe(1);
     });
 
@@ -184,9 +198,10 @@ describe('VideoUtils', () => {
   describe('videoMapPropsOf', () => {
     const facts = {} as NetworkFacts;
     const size = { width: 1920, height: 1080 };
+    const input = { facts, size, viewMode: '3d' as const, boundary: AROUND_TINY };
 
-    test("shows the network dark, seen as asked, at the video's pace, without street names, framing clear of what lies over it", () => {
-      expect(videoMapPropsOf({ facts, size, viewMode: '3d', overview: false, boundary: AROUND_TINY })).toEqual({
+    test("shows the network dark, seen as asked while it plays, at the video's pace, without street names, framing clear of what lies over it", () => {
+      expect(videoMapPropsOf({ ...input, framing: 'playing' })).toEqual({
         facts,
         theme: 'dark',
         viewMode: '3d',
@@ -194,24 +209,56 @@ describe('VideoUtils', () => {
         boundary: AROUND_TINY,
         speed: VIDEO_SPEED,
         streetLabels: false,
-        padding: videoPaddingOf(size),
+        padding: videoPaddingOf(size, 'playing'),
       });
     });
 
-    test("lies flat for the overview, the city's coverage drawn within its outline, where it has one", () => {
-      expect(videoMapPropsOf({ facts, size, viewMode: '3d', overview: true, boundary: AROUND_TINY })).toMatchObject({
+    test("lies flat between the panels, the city's coverage drawn within its outline, where it has one", () => {
+      expect(videoMapPropsOf({ ...input, framing: 'insights' })).toMatchObject({
         viewMode: '2d',
         overlay: { kind: 'coverage', metres: COVERAGE_DEFAULT_METRES },
+        padding: videoPaddingOf(size, 'insights'),
       });
-      expect(videoMapPropsOf({ facts, size, viewMode: '3d', overview: true, boundary: null }).overlay).toBeNull();
+      expect(videoMapPropsOf({ ...input, framing: 'insights', boundary: null }).overlay).toBeNull();
+    });
+
+    test('lies flat for the whole network, nothing drawn over its lines', () => {
+      expect(videoMapPropsOf({ ...input, framing: 'whole' })).toMatchObject({ viewMode: '2d', overlay: null, padding: videoPaddingOf(size, 'whole') });
     });
   });
 
   describe('videoYearOf', () => {
-    test('says the year the history is in, and "Plan" while a plan plays, which has no date', () => {
-      const time = { time: Date.UTC(1995, 11, 29), inPlan: false } as TimeState;
-      expect(videoYearOf(time)).toBe('1995');
-      expect(videoYearOf({ ...time, inPlan: true })).toBe('Plan');
+    const time = { time: Date.parse('1995-06-01') } as TimeState;
+
+    test('says the year the history is in', () => {
+      expect(videoYearOf(time, null)).toBe('1995');
+    });
+
+    test('says how far a plan has got, which has no date', () => {
+      expect(videoYearOf(time, planOf('idea', 'concept'))).toBe('Concept');
+      expect(videoYearOf(time, planOf('now', 'under-construction'))).toBe('Under construction');
+    });
+  });
+
+  describe('sameStats', () => {
+    const stats = { stations: 3, km: 4, lines: 1 };
+
+    test('tells sizes of the network apart by any of their numbers', () => {
+      expect(sameStats(stats, { ...stats })).toBe(true);
+      expect(sameStats(stats, { ...stats, stations: 4 })).toBe(false);
+      expect(sameStats(stats, { ...stats, km: 5 })).toBe(false);
+      expect(sameStats(stats, { ...stats, lines: 2 })).toBe(false);
+    });
+  });
+
+  describe('statsBetween', () => {
+    const from = { stations: 10, km: 20, lines: 1 };
+    const to = { stations: 20, km: 40, lines: 3 };
+
+    test('counts each number from one size to the other', () => {
+      expect(statsBetween(from, to, 0)).toEqual(from);
+      expect(statsBetween(from, to, 0.5)).toEqual({ stations: 15, km: 30, lines: 2 });
+      expect(statsBetween(from, to, 1)).toEqual(to);
     });
   });
 
@@ -220,6 +267,14 @@ describe('VideoUtils', () => {
       expect(videoViewOf(undefined)).toBe('3d');
       expect(videoViewOf('3d')).toBe('3d');
       expect(videoViewOf('2d')).toBe('2d');
+    });
+  });
+
+  describe('videoPlanAskedOf', () => {
+    test('reads the plan an address names, and none for none, or one repeated', () => {
+      expect(videoPlanAskedOf('kept')).toBe('kept');
+      expect(videoPlanAskedOf(undefined)).toBeNull();
+      expect(videoPlanAskedOf(['kept', 'other'])).toBeNull();
     });
   });
 
@@ -239,12 +294,13 @@ describe('VideoStore', () => {
    * A video opened on a network, its map made and ready, its outline come.
    *
    * @param network - The city's network.
+   * @param plan - The plan its address names; `null` for none.
    * @returns The store, and the commands its map was given.
    */
-  const readyVideo = async (network = tinyNetwork()) => {
+  const readyVideo = async (network = tinyNetwork(), plan: string | null = null) => {
     setActivePinia(createPinia());
     const store = useVideoStore();
-    store.OPEN({ network, size: { width: 1920, height: 1080 }, viewMode: '3d', outline: OUTLINE });
+    store.OPEN({ network, size: { width: 1920, height: 1080 }, viewMode: '3d', outline: OUTLINE, plan });
     const { map, commands } = standInMap();
     store.ATTACH(map);
     store.MAP_READY();
@@ -260,7 +316,22 @@ describe('VideoStore', () => {
     expect(commands).toEqual([{ name: 'seek', args: [store.facts?.playheads.start()] }]);
   });
 
-  test('plays the history, then each plan going ahead from today, then the whole network from above, its coverage drawn', async () => {
+  /**
+   * A video played up to the end of its history.
+   *
+   * @param network - The city's network.
+   * @param plan - The plan its address names; `null` for none.
+   * @returns The store, and the commands its map was given.
+   */
+  const pastHistory = async (network = tinyNetwork(), plan: string | null = null) => {
+    const video = await readyVideo(network, plan);
+    video.store.START();
+    video.store.TICK(TITLE_MS);
+    video.store.END_PLAYBACK();
+    return video;
+  };
+
+  test('plays the history, the whole network, its numbers, and ends on them, playing no plan unless asked', async () => {
     const { store, commands } = await readyVideo();
     store.START();
     store.TICK(TITLE_MS);
@@ -268,40 +339,79 @@ describe('VideoStore', () => {
     expect(commands.at(-1)).toEqual({ name: 'play', args: [store.facts?.playheads.start()] });
 
     store.END_PLAYBACK();
-    expect(store.scene).toBe('planTitle');
-    expect(store.plan?.status).toBe('planned');
-    expect(store.mapProps?.facts).toBe(store.planFacts);
-    store.TICK(TITLE_MS + PLAN_TITLE_MS);
-    expect(store.scene).toBe('plan');
-    expect(commands.at(-1)).toEqual({ name: 'play', args: [store.planFacts?.playheads.today()] });
-
-    store.END_PLAYBACK();
     expect(store.scene).toBe('overview');
+    expect(store.mapProps).toMatchObject({ facts: store.facts, viewMode: '2d', overlay: null });
+    await nextTick();
+    expect(commands.at(-1)).toEqual({ name: 'fitNetwork', args: [WHOLE_FIT_MS] });
+
+    let clock = TITLE_MS + OVERVIEW_MS;
+    store.TICK(clock);
+    expect(store.scene).toBe('insights');
     expect(store.mapProps).toMatchObject({ facts: store.facts, viewMode: '2d', overlay: { kind: 'coverage' } });
     await nextTick();
-    expect(commands.at(-1)?.name).toBe('fitNetwork');
-    store.TICK(TITLE_MS + PLAN_TITLE_MS + OVERVIEW_MS);
+    expect(commands.at(-1)).toEqual({ name: 'fitNetwork', args: [WHOLE_FIT_MS] });
+
+    clock += INSIGHTS_MS;
+    store.TICK(clock);
     expect(store.scene).toBe('end');
-    store.TICK(TITLE_MS + PLAN_TITLE_MS + OVERVIEW_MS + END_MS);
+    expect(store.insights?.stats).toEqual(store.facts?.today().stats());
+    store.TICK(clock + END_MS);
     expect(store.pageState).toBe('done');
+    expect(store.planFacts).toBeNull();
   });
 
-  test('goes from the history straight to the overview where no plan is going ahead', async () => {
+  test('goes on past its numbers to the plan its address names, whatever its status, on its own network, and ends on it built', async () => {
     const network = tinyNetwork();
-    for (const plan of Object.values(network.plans ?? {})) plan.status = 'abandoned';
-    const { store } = await readyVideo(network);
-    store.START();
-    store.TICK(TITLE_MS);
+    const named = keysOf(network.plans ?? {})[0] ?? null;
+    for (const plan of Object.values(network.plans ?? {})) plan.status = 'concept';
+    const { store, commands } = await pastHistory(network, named);
+    store.TICK(TITLE_MS + OVERVIEW_MS);
+    store.TICK(TITLE_MS + OVERVIEW_MS + INSIGHTS_MS);
+    expect(store.scene).toBe('plan');
+    expect(store.plan?.id).toBe(named);
+    expect(store.mapProps).toMatchObject({ facts: store.planFacts, viewMode: '3d', overlay: null });
+    const laid = store.planFacts;
+    expect(commands.at(-1)?.name).not.toBe('play');
+    await nextTick();
+    expect(commands.at(-1)).toEqual({ name: 'play', args: [laid?.playheads.start()] });
     store.END_PLAYBACK();
     expect(store.scene).toBe('overview');
-    expect(store.plan).toBeNull();
+    expect(store.planFacts).toBe(laid);
+    expect(store.mapProps).toMatchObject({ facts: laid, viewMode: '2d', overlay: null });
+    store.TICK(TITLE_MS + OVERVIEW_MS + INSIGHTS_MS + OVERVIEW_MS);
+    expect(store.scene).toBe('end');
   });
 
-  test('keeps the coverage the map measured for the end card, and takes no end of playback outside the history or a plan', async () => {
+  test('counts the numbers on to a change, from where they are, and rests on them', async () => {
     const { store } = await readyVideo();
-    const coverage = { name: 'Test', source: 'test', km2: 4, metres: COVERAGE_DEFAULT_METRES, share: 0.5, bands: [], beyond: { share: 0.5, km2: 2 } };
-    store.SET_OVERLAY({ kind: 'coverage', coverage });
-    expect(store.coverage).toEqual(coverage);
+    const withStations = (stations: number) => ({ stats: { stations, km: 0, lines: 1 } }) as TimeState;
+    store.SET_TIME(withStations(10));
+    store.TICK(COUNT_MS);
+    expect(store.stats.stations).toBe(10);
+    store.SET_TIME(withStations(20));
+    expect(store.stats.stations).toBe(10);
+    store.TICK(COUNT_MS * 1.5);
+    expect(store.stats.stations).toBeGreaterThan(10);
+    expect(store.stats.stations).toBeLessThan(20);
+    store.TICK(COUNT_MS * 2);
+    expect(store.stats.stations).toBe(20);
+  });
+
+  test('takes a plan the network does not have for none named', async () => {
+    const { store } = await readyVideo(tinyNetwork(), 'nowhere');
+    expect(store.script.filter(beat => beat.plan)).toEqual([]);
+  });
+
+  test('has numbers only while the panels show', async () => {
+    const { store } = await pastHistory();
+    expect(store.insights).toBeNull();
+    store.TICK(TITLE_MS + OVERVIEW_MS);
+    expect(store.insights?.stats).toEqual(store.facts?.today().stats());
+  });
+
+  test('takes the map being ready once, and no end of playback outside the history or a plan', async () => {
+    const { store } = await readyVideo();
+    store.MAP_READY();
     store.END_PLAYBACK();
     expect(store.scene).toBe('ready');
   });
