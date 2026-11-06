@@ -26,7 +26,7 @@
     "@railtime/video": "workspace:*",
     "@tanstack/charts": "1.1.0",
     "@tanstack/vue-virtual": "3.13.51",
-    "@vueuse/core": "^14.4.0",
+    "@vueuse/core": "^15.0.0",
     "maplibre-gl": "^6.16.0",
     "nuxt": "^4.6.3",
     "pinia": "^4.1.0",
