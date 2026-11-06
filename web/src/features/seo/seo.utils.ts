@@ -46,7 +46,7 @@ export const landingSeo = (cities: number): PageSeo => ({
 export const aboutSeo = (): PageSeo => ({
   path: 'about',
   title: `About ${SITE_NAME}: where its maps and data come from`,
-  description: `What ${SITE_NAME} is, and whose maps, networks and history it is drawn from.`,
+  description: `What ${SITE_NAME} is, what you can do with it, where its data comes from and what is estimated.`,
 });
 
 /**
