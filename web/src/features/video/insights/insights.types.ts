@@ -1,4 +1,5 @@
-import type { CoverageInfo, CoverageYear, DecadeOpenings, NetworkRecords, NetworkStats, YearStats } from '@railtime/network/facts.types';
+import type { CoverageInfo, CoverageYear, DecadeOpenings, NetworkRecords, NetworkStats } from '@railtime/network/facts.types';
+import type { YearPoint } from '~/utils/yearChart.types';
 
 /** A panel round the map. */
 export type InsightsPanel = 'growth' | 'decades' | 'lines' | 'coverage';
@@ -28,8 +29,8 @@ export type PlanGain = {
 export type VideoInsights = {
   /** The network's size. */
   stats: NetworkStats;
-  /** The network year by year; none for one never built. */
-  years: YearStats[];
+  /** Its stations year by year, as their chart takes them; none for a network never built. */
+  stationYears: YearPoint[];
   /** How many stations opened in each decade; none for a network never built. */
   decades: DecadeOpenings[];
   /** The decade most did; `null` for a network never built. */

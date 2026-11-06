@@ -1,12 +1,13 @@
 <template>
-  <!-- A number that counts to each new value on the browser's clock. A video's numbers go by its page's clock instead, for a recorder to step: `ReelNumber` alone. -->
+  <!-- A number that counts to each new value on the page's clock (`performance.now`, `requestAnimationFrame`), which a recorder moves a frame at a time, as it does the rest of a video. -->
   <ReelNumber :count :decimals :ungrouped />
 </template>
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue';
   import { COUNT_MS } from '~/constants/count.constants';
-  import { countOf } from '~/utils/count.utils';
+  import type { Counting } from '~/utils/count.types';
+  import { countOf, countedOnTo, restingOn } from '~/utils/count.utils';
 
   const props = withDefaults(
     defineProps<{
@@ -20,15 +21,14 @@
     { decimals: 0 },
   );
 
-  /** The whole number it comes to. */
-  const target = computed(() => Math.round(props.value));
-  /** What it counts from and when it started, by the browser's clock, ms; `null` at rest. */
-  const counting = ref<{ from: number; startedAt: number } | null>(null);
-  /** The browser's clock, ms, as of the last frame. */
+  /** How it counts, once told a new value (`countedOnTo`); `null` until then, or for whoever asks for less motion: it stands on its value. */
+  const counting = ref<Counting | null>(null);
+  /** The page's clock, ms, as of the last frame. */
   const now = ref(0);
-  const count = computed(() =>
-    counting.value ? countOf(counting.value.from, target.value, now.value - counting.value.startedAt) : { now: target.value, before: target.value },
-  );
+  const count = computed(() => {
+    const { from, to, startedAt } = counting.value ?? restingOn(props.value);
+    return countOf(from, to, now.value - startedAt);
+  });
 
   /** The frame asked for, while it counts. */
   let frame: number | null = null;
@@ -36,25 +36,27 @@
   /**
    * A frame: the clock moved on, and another asked for until the number has landed.
    *
-   * @param time - The browser's clock, ms.
+   * @param time - The page's clock, ms.
    */
   const tick = (time: number) => {
     now.value = time;
-    if (counting.value && time - counting.value.startedAt < COUNT_MS) {
-      frame = requestAnimationFrame(tick);
-      return;
-    }
-    counting.value = null;
-    frame = null;
+    frame = counting.value && time - counting.value.startedAt < COUNT_MS ? requestAnimationFrame(tick) : null;
   };
 
-  watch(target, (_next, previous) => {
-    // Whoever asks for less motion gets the number, straight away.
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    now.value = performance.now();
-    counting.value = { from: counting.value ? count.value.now : previous, startedAt: now.value };
-    frame ??= requestAnimationFrame(tick);
-  });
+  watch(
+    () => props.value,
+    (value, previous) => {
+      // Whoever asks for less motion gets the number, straight away. A recording rolls: the Chrome a
+      // recorder drives reports no preference, whatever the machine's is set to.
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        counting.value = null;
+        return;
+      }
+      now.value = performance.now();
+      counting.value = countedOnTo(counting.value ?? restingOn(previous), value, now.value);
+      frame ??= requestAnimationFrame(tick);
+    },
+  );
 
   onBeforeUnmount(() => {
     if (frame !== null) cancelAnimationFrame(frame);

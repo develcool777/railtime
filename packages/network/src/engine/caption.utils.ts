@@ -24,8 +24,8 @@ const nameOn = (context: CaptionContext, station: StationId, time: number): stri
  * @returns The line it is drawn as, and its colour.
  */
 const drawnAs = (context: CaptionContext, step: Step, line: LineId): { id: LineId; color: LineColor } => {
-  const id = context.timeline.identityOf(line, step.index).id;
-  return { id, color: context.colorOf(id) };
+  const id = context.timeline.drawnAs(line, step.index);
+  return { id, color: context.index.colorOf(id) };
 };
 
 /**
@@ -43,7 +43,7 @@ const drawnAs = (context: CaptionContext, step: Step, line: LineId): { id: LineI
 const stopNear = (context: CaptionContext, station: StationId, line: LineId, cursor: number): StationId => {
   const { index, timeline } = context;
   const onLine = (stop: StationId) =>
-    index.lineSegmentsAt(stop).filter(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.identityOf(lineSegment.line, cursor).id === line);
+    index.lineSegmentsAt(stop).filter(lineSegment => timeline.isOpen(lineSegment, cursor) && timeline.drawnAs(lineSegment.line, cursor) === line);
   const seen = new Set([station]);
   // Read from its head, never shifted: a shift copies what is left each time.
   const queue = [station];
@@ -73,9 +73,9 @@ const stopNear = (context: CaptionContext, station: StationId, line: LineId, cur
  */
 const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 'time'> => {
   const { index, timeline } = context;
-  const { reach } = timeline.growthOf(step);
+  const { reach } = timeline.growths.growthOf(step);
   const existed = index.lineSegments.some(
-    lineSegment => timeline.isOpen(lineSegment, step.index) && timeline.identityOf(lineSegment.line, step.index).id === step.line,
+    lineSegment => timeline.isOpen(lineSegment, step.index) && timeline.drawnAs(lineSegment.line, step.index) === step.line,
   );
   let verb = existed ? 'extended' : 'opens';
   if (step.lineSegments.every(lineSegment => lineSegment.previous !== null)) verb = 'reopens';
@@ -85,7 +85,7 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
     title: `${index.lineName(step.line)} ${verb}`,
     // Where it starts, on the line before it; where it ends, on the line it makes.
     subtitle: `${name(stopNear(context, required(reach[0], 'first station reached').station, step.line, step.index))} – ${name(stopNear(context, required(reach.at(-1), 'last station reached').station, step.line, step.index + 1))}`,
-    color: context.colorOf(step.line),
+    color: index.colorOf(step.line),
     stations: reach.filter(reached => reached.isNew).map(reached => name(reached.station)),
   };
 };
@@ -99,7 +99,7 @@ const openCaption = (step: OpenStep, context: CaptionContext): Omit<StepInfo, 't
  * @returns Its caption.
  */
 const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 'time'> => {
-  const { reach } = context.timeline.retreatOf(step);
+  const { reach } = context.timeline.growths.retreatOf(step);
   const name = (station: StationId) => nameOn(context, station, step.time);
   const returns = step.lineSegments.every(lineSegment => lineSegment.next !== null);
   return {
@@ -107,7 +107,7 @@ const closeCaption = (step: CloseStep, context: CaptionContext): Omit<StepInfo, 
     title: `${context.index.lineName(step.line)}: section ${returns ? 'suspended' : 'closes'}`,
     // Where it starts, on the line that stays; where it ends, on the line before it closes.
     subtitle: `${name(stopNear(context, required(reach[0], 'first station left').station, step.line, step.index + 1))} – ${name(stopNear(context, required(reach.at(-1), 'last station left').station, step.line, step.index))}`,
-    color: context.colorOf(step.line),
+    color: context.index.colorOf(step.line),
     stations: [],
   };
 };
@@ -156,7 +156,7 @@ const renameCaption = (step: RenameStep, context: CaptionContext): Omit<StepInfo
     kind: 'rename',
     title: `${nameOn(context, step.station, step.time - DAY_MS)} renamed`,
     subtitle: `now ${now}`,
-    color: first ? context.colorOf(first.line) : { light: '#ffffff', dark: '#ffffff' },
+    color: first ? context.index.colorOf(first.line) : { light: '#ffffff', dark: '#ffffff' },
     stations: [now],
   };
 };
@@ -171,7 +171,7 @@ const renameCaption = (step: RenameStep, context: CaptionContext): Omit<StepInfo
 const identityCaption = (step: IdentityStep, context: CaptionContext): Omit<StepInfo, 'time'> => ({
   kind: 'identity',
   title: step.text,
-  color: context.colorOf(required(step.lines[0], 'line of an identity step')),
+  color: context.index.colorOf(required(step.lines[0], 'line of an identity step')),
   stations: [],
 });
 
@@ -179,7 +179,7 @@ const identityCaption = (step: IdentityStep, context: CaptionContext): Omit<Step
  * A change in words, as its caption says it: what happened, where, on which date, in its line's colour.
  *
  * @param step - The change.
- * @param context - The network, and the theme's colours.
+ * @param context - The network.
  * @returns Its caption; a planned change has no date.
  */
 export const captionOf = (step: Step, context: CaptionContext): StepInfo => {

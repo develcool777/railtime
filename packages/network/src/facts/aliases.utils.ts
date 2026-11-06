@@ -17,7 +17,7 @@ export const gapsOf = (lines: Record<LineId, Line>, hidden: Set<LineId>): Map<Li
   new Map(
     entriesOf(lines).flatMap(([id, line]) => {
       if (hidden.has(id)) return [];
-      const aliases = [...(line.aliases ?? [])].toSorted((first, second) => first.until.localeCompare(second.until));
+      const aliases = line.aliases ?? [];
       const gaps = aliases.flatMap((alias, position) => {
         if (!hidden.has(alias.as)) return [];
         const before = aliases[position - 1];
@@ -62,8 +62,8 @@ const spellsOutside = (spells: Suspension[], gaps: readonly LineGap[]): Suspensi
   spells.flatMap(spell =>
     outsideGaps(toTimestamp(spell.from), toTimestamp(spell.until), gaps).map(piece => ({
       from: toIsoDate(piece.opens),
-      // Within bounds: a piece of a spell ends where the spell or a gap does.
-      until: toIsoDate(piece.closes!),
+      // A piece of a spell ends where a gap does, or where the spell does.
+      until: toIsoDate(piece.closes ?? toTimestamp(spell.until)),
     })),
   );
 

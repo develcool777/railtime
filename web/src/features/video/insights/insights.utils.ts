@@ -2,26 +2,20 @@ import { COVERAGE_DEFAULT_METRES } from '@railtime/network/coverage.constants';
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { CoverageInfo } from '@railtime/network/facts.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import {
-  INSIGHTS_CHART_SHARES,
-  INSIGHTS_DRAW_MS,
-  INSIGHTS_LINE_SHARE,
-  INSIGHTS_LINES,
-  INSIGHTS_PLACES,
-  INSIGHTS_STAGGER_MS,
-  INSIGHTS_START_MS,
-} from '~/features/video/insights/insights.constants';
+import { INSIGHTS_DRAW_MS, INSIGHTS_LINES, INSIGHTS_PLACES, INSIGHTS_STAGGER_MS, INSIGHTS_START_MS } from '~/features/video/insights/insights.constants';
 import type { InsightsPanel, PanelMotion, PlanGain, VideoInsights } from '~/features/video/insights/insights.types';
 import { FADE_MS, SCENE_MS } from '~/features/video/video.constants';
 import type { VideoScene } from '~/features/video/video.types';
 import type { Count } from '~/utils/count.types';
 import { countOf, shareNumberOf } from '~/utils/count.utils';
 import { formatNumber, formatShare, formatWalk } from '~/utils/format.utils';
+import { growthSeries } from '~/utils/growth.utils';
 import { easedOut, fadedIn } from '~/utils/motion.utils';
 
 /**
  * A network's numbers for the panels, each asked of it: its size, lines and coverage where it rests,
- * and its history, which a network never built has none of.
+ * and its history, which a network never built has none of. A panel's chart takes them as they are:
+ * made once here, each frame gives it the same ones, and it is not drawn again.
  *
  * @param facts - The network.
  * @param boundary - The city's outline; `null` for none.
@@ -35,7 +29,7 @@ export const videoInsightsOf = (facts: NetworkFacts, boundary: CityBoundary | nu
   const measure = boundary && facts.coverage(boundary);
   return {
     stats: end.stats(),
-    years: built ? years : [],
+    stationYears: built ? growthSeries(years, 'stations') : [],
     decades: built ? decades : [],
     busiest: built ? busiest : null,
     lines: end.records(INSIGHTS_LINES).longest,
@@ -58,15 +52,6 @@ export const coverageTitleOf = (info: CoverageInfo): string => `${info.name} wit
  * @returns What the panel is called.
  */
 export const linesTitleOf = ({ lines, stats }: Pick<VideoInsights, 'lines' | 'stats'>): string => (lines.length < stats.lines ? 'Longest lines' : 'Lines');
-
-/**
- * How tall the coverage chart is, as a share of the frame's height: the lines above it take only their
- * room, and it has what they leave.
- *
- * @param listed - How many lines the panel above lists.
- * @returns Its share.
- */
-export const coverageChartShareOf = (listed: number): number => INSIGHTS_CHART_SHARES.short + (INSIGHTS_LINES - listed) * INSIGHTS_LINE_SHARE;
 
 /**
  * How much of the city a network reaches, where it rests.

@@ -2,10 +2,11 @@ import { pushTo } from '@railtime/core/collection.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
+import { required } from '@railtime/core/required.utils';
 import type { Growth, LineSegment, SegmentPlan } from '@railtime/network/engine.types';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import { CHASE_AHEAD_KM, CHASE_BEHIND_KM, CHASE_SMOOTHING_KM } from './animation.constants';
-import type { ChaseTarget, GrowthMove, GrowthPace, StepDrawing, Stretch } from './animation.types';
+import type { BaseNetwork, ChaseTarget, GrowthMove, GrowthPace, StepDrawing, Stretch } from './animation.types';
 import { emptyCollection } from '../layers/snapshot.utils';
 
 /**
@@ -27,6 +28,16 @@ export const emptyDrawing = (): StepDrawing => ({
   linked: new Set(),
   chase: null,
 });
+
+/**
+ * Whether a step asks the same of the network under it: a frame then has nothing to build again.
+ *
+ * @param first - One answer.
+ * @param second - The other.
+ * @returns True if they say the same.
+ */
+export const sameBase = (first: BaseNetwork, second: BaseNetwork): boolean =>
+  first.leavesOut === second.leavesOut && first.makesRoom === second.makesRoom && first.blend === second.blend;
 
 /**
  * How long one run between stops takes, as a train runs it: speeding up to the pace, running at it,
@@ -183,7 +194,7 @@ export const pointAlong = (path: SegmentPlan[], km: number): LngLat => {
     const sliced = plan.fromStationA
       ? sliceAlong(segment.coordinates, segment.distances, clamp(along, 0, segment.lengthKm))
       : sliceAlong(segment.reversedCoordinates, segment.reversedDistances, clamp(along, 0, segment.lengthKm));
-    return sliced.at(-1) ?? segment.coordinates[0]!;
+    return required(sliced.at(-1), 'a point along a segment');
   }
   return [0, 0];
 };

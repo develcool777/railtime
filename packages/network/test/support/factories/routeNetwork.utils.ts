@@ -51,7 +51,7 @@ export const routeNetwork = (): Network =>
       d: { name: 'D', coordinate: pointAt(3, 0) },
       e: { name: 'E', coordinate: pointAt(2, 1) },
       g: { name: 'G', coordinate: pointAt(1, 1) },
-      h: { name: 'H', coordinate: pointAt(0, 3) },
+      h: { name: 'H', coordinate: pointAt(0, 6) },
       p: { name: 'P', coordinate: pointAt(10, 0) },
       q: { name: 'Q', coordinate: pointAt(11, 0) },
       r: { name: 'R', coordinate: pointAt(12, 0) },
@@ -80,10 +80,10 @@ export const routeNetwork = (): Network =>
       ]),
       segment('a', 'h', 'yellow', [
         [0, 0],
-        [0, 3],
+        [0, 6],
       ]),
       segment('h', 'e', 'yellow', [
-        [0, 3],
+        [0, 6],
         [2, 1],
       ]),
       segment('p', 'q', 'grey', [

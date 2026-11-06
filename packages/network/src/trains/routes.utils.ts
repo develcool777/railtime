@@ -1,14 +1,14 @@
 import { firstDifference } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
-import type { LineId, LoopWay, StationId } from '@railtime/schema/network.types';
-import type { Heading, TrainLeg, TrainRun } from './trains.types';
-import type { LineSegment } from '../engine/engine.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
+import type { TrainLeg, TrainRun } from './trains.types';
 import type { NetworkIndex } from '../engine/index.service';
+import type { LineRun } from '../engine/lineDetails.types';
 import { lineRuns } from '../engine/lineDetails.utils.ts';
 import type { Timeline } from '../engine/timeline.service';
 
-/** A way along a line from one end to another: its stations, and the track between each and the next. */
-type TrainRoute = { stations: StationId[]; track: LineSegment[] };
+/** A way along a line from one end to another: its stations, the track between each and the next, and whether its trains go only that way. */
+type TrainRoute = Pick<LineRun, 'stations' | 'track' | 'oneWay'>;
 
 /**
  * How many of some stations another line meets: what a city's core is thick with.
@@ -58,8 +58,12 @@ const routeOf = (index: NetworkIndex, line: LineId, run: TrainRoute, routes: Tra
   if (!trunk) return run;
   const place = trunk.stations.indexOf(station);
   if (headsBefore(index, line, run, trunk, place))
-    return { stations: [...trunk.stations.slice(0, place), ...run.stations], track: [...trunk.track.slice(0, place), ...run.track] };
-  return { stations: [...trunk.stations.slice(place + 1).toReversed(), ...run.stations], track: [...trunk.track.slice(place).toReversed(), ...run.track] };
+    return { stations: [...trunk.stations.slice(0, place), ...run.stations], track: [...trunk.track.slice(0, place), ...run.track], oneWay: false };
+  return {
+    stations: [...trunk.stations.slice(place + 1).toReversed(), ...run.stations],
+    track: [...trunk.track.slice(place).toReversed(), ...run.track],
+    oneWay: false,
+  };
 };
 
 /**
@@ -73,27 +77,8 @@ const routeOf = (index: NetworkIndex, line: LineId, run: TrainRoute, routes: Tra
  */
 const routesOf = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): TrainRoute[] => {
   const routes: TrainRoute[] = [];
-  for (const run of lineRuns(index, timeline, line, cursor)) routes.push(routeOf(index, line, run, routes));
+  for (const run of lineRuns(index, timeline, [line], cursor)) routes.push(routeOf(index, line, run, routes));
   return routes;
-};
-
-/**
- * Which way along a loop's route is the way its line goes, from how the route turns on the map: its
- * stations in order sweep an area, positive going anticlockwise.
- *
- * @param index - The network.
- * @param stations - The route's stations.
- * @param way - The way its line goes.
- * @returns The heading.
- */
-const headingOf = (index: NetworkIndex, stations: StationId[], way: LoopWay): Heading => {
-  let area = 0;
-  for (const [place, station] of stations.entries()) {
-    const [fromX, fromY] = index.coordOf(station);
-    const [toX, toY] = index.coordOf(stations[place + 1] ?? station);
-    area += fromX * toY - toX * fromY;
-  }
-  return area > 0 === (way === 'anticlockwise') ? 1 : -1;
 };
 
 /**
@@ -107,7 +92,7 @@ const headingOf = (index: NetworkIndex, stations: StationId[], way: LoopWay): He
  * @param cursor - The cursor.
  * @returns The run.
  */
-const trainRunOf = (index: NetworkIndex, timeline: Timeline, line: LineId, { stations, track }: TrainRoute, cursor: number): TrainRun => {
+const trainRunOf = (index: NetworkIndex, timeline: Timeline, line: LineId, { stations, track, oneWay }: TrainRoute, cursor: number): TrainRun => {
   const legs: TrainLeg[] = [];
   const stopsKm: number[] = [];
   let lengthKm = 0;
@@ -120,8 +105,7 @@ const trainRunOf = (index: NetworkIndex, timeline: Timeline, line: LineId, { sta
   const first = required(stations[0], 'a run is never empty');
   const last = required(stations.at(-1), 'a run is never empty');
   if (timeline.servesStation(last, line, cursor)) stopsKm.push(lengthKm);
-  const { mode, way } = index.lineOf(line);
-  return { line, mode, ends: [first, last], legs, lengthKm, stopsKm, ...(way && first === last && { oneWay: headingOf(index, stations, way) }) };
+  return { line, mode: index.lineOf(line).mode, ends: [first, last], legs, lengthKm, stopsKm, ...(oneWay && { oneWay }) };
 };
 
 /**

@@ -2,7 +2,19 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { CITIES } from '~/constants/city.constants';
-import { boundaryUrlOf, citiesByCountry, cityMenu, cityNameOf, citySummaryOf, fetchBoundary, isCity, networkUrlOf, previewUrlOf } from '~/utils/city.utils';
+import {
+  boundaryUrlOf,
+  citiesByCountry,
+  cityMenu,
+  cityNameOf,
+  citySummaryOf,
+  fetchAskedBoundary,
+  fetchBoundary,
+  isCity,
+  networkUrlOf,
+  previewUrlOf,
+  socialUrlOf,
+} from '~/utils/city.utils';
 
 /** What the site serves at `/data/`. */
 const SERVED = fileURLToPath(new URL('../../../../packages/data/cities/', import.meta.url));
@@ -59,6 +71,13 @@ describe('CityUtils', () => {
     });
   });
 
+  describe('socialUrlOf', () => {
+    test("is beside the city's dataset, and every city built has one", () => {
+      expect(socialUrlOf('kyiv')).toBe('data/ukraine/kyiv/kyiv.social.jpg');
+      expect(CITIES.filter(city => !existsSync(`${SERVED}${socialUrlOf(city.value).replace(/^data\//, '')}`))).toEqual([]);
+    });
+  });
+
   describe('citySummaryOf', () => {
     test("gives a city's entry in cities.json", () => {
       expect(citySummaryOf('kyiv')).toMatchObject({ name: 'Kyiv', country: 'Ukraine' });
@@ -75,6 +94,40 @@ describe('CityUtils', () => {
       await expect(fetchBoundary(`data:application/json,${encodeURIComponent(JSON.stringify(outline))}`)).resolves.toEqual(outline);
       await expect(fetchBoundary('data:application/json,not%20an%20outline')).resolves.toBeNull();
       await expect(fetchBoundary('http://127.0.0.1:9/outline.json')).resolves.toBeNull();
+    });
+  });
+
+  describe('fetchAskedBoundary', () => {
+    const outline = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } };
+    const url = `data:application/json,${encodeURIComponent(JSON.stringify(outline))}`;
+
+    /**
+     * What a store does with an outline, kept to look at.
+     *
+     * @returns What was taken, and how to take one.
+     */
+    const taker = () => {
+      const taken: unknown[] = [];
+      return {
+        taken,
+        take: (answer: unknown) => {
+          taken.push(answer);
+        },
+      };
+    };
+
+    test('hands over the outline while it is still the one asked for, and says so of none', async () => {
+      const { taken, take } = taker();
+      await fetchAskedBoundary(url, () => url, take);
+      await fetchAskedBoundary('data:application/json,nothing', () => 'data:application/json,nothing', take);
+      expect(taken).toEqual([outline, null]);
+    });
+
+    test('drops an answer once another is asked for, or none is', async () => {
+      const { taken, take } = taker();
+      await fetchAskedBoundary(url, () => 'elsewhere', take);
+      await fetchAskedBoundary(url, () => null, take);
+      expect(taken).toEqual([]);
     });
   });
 });

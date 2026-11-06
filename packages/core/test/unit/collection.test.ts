@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { entriesOf, firstDifference, fromEntriesOf, keysOf, pushTo } from '../../src/collection.utils';
+import { entriesOf, firstDifference, fromEntriesOf, keysOf, pairsOf, pushTo } from '../../src/collection.utils';
 
 describe('CollectionUtils', () => {
   describe('pushTo', () => {
@@ -12,6 +12,17 @@ describe('CollectionUtils', () => {
         ['a', [1, 3]],
         ['b', [2]],
       ]);
+    });
+  });
+
+  describe('pairsOf', () => {
+    test('is each item with the one after it, and none for too few', () => {
+      expect(pairsOf(['a', 'b', 'c'])).toEqual([
+        ['a', 'b'],
+        ['b', 'c'],
+      ]);
+      expect(pairsOf(['a'])).toEqual([]);
+      expect(pairsOf([])).toEqual([]);
     });
   });
 

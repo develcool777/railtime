@@ -24,7 +24,7 @@
           v-for="entry in group.entries"
           :key="entry.id"
           class="flex min-h-9 items-center"
-          :class="{ 'opacity-40': !entry.shown, 'opacity-55': entry.shown && !isOpen(entry.shown) }">
+          :class="{ 'opacity-40': !entry.shown, 'opacity-55': entry.shown && !isOpen(entry.id) }">
           <UButton
             v-if="group.toggleable.length > 0"
             :icon="entry.shown ? 'i-lucide-eye' : 'i-lucide-eye-off'"
@@ -65,8 +65,8 @@
     lines: LineInfo[];
     /** Each network with the lines that may be shown or hidden: those hidden are listed after the rest. */
     choices: NetworkChoice[];
-    /** The date shown, as a timestamp; `null` in a plan, when every line is open. */
-    date: number | null;
+    /** The lines opened by the moment shown; `null` with no network open. */
+    opened: ReadonlySet<LineId> | null;
   }>();
   const emit = defineEmits<{ show: [lines: LineId[], shown: boolean]; open: [line: LineId] }>();
 
@@ -78,9 +78,9 @@
    * Whether a line had opened by the date shown.
    *
    * @param line - The line.
-   * @returns True once it had, or with no date shown.
+   * @returns True once it had, or with no moment shown.
    */
-  const isOpen = (line: LineInfo): boolean => props.date === null || (line.opened !== null && line.opened <= props.date);
+  const isOpen = (line: LineId): boolean => props.opened === null || props.opened.has(line);
 
   /**
    * Whether every line of a group shows.

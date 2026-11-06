@@ -21,10 +21,10 @@ export const networkAt = (index: NetworkIndex, timeline: Timeline, cursor: numbe
   for (const lineSegment of index.lineSegments) {
     if (!timeline.isOpen(lineSegment, cursor)) continue;
     segments.add(lineSegment.segment.index);
-    const drawnAs = timeline.identityOf(lineSegment.line, cursor).id;
+    const drawnAs = timeline.drawnAs(lineSegment.line, cursor);
     lines.add(drawnAs);
     for (const station of [lineSegment.segment.stationA, lineSegment.segment.stationB]) {
-      if (timeline.servesStation(station, lineSegment.line, cursor)) stations.set(station, (stations.get(station) ?? new Set()).add(drawnAs));
+      if (timeline.callsAt(lineSegment, station, cursor)) stations.set(station, (stations.get(station) ?? new Set()).add(drawnAs));
     }
   }
   return { stations, segments, lines };
@@ -43,6 +43,20 @@ export const statsAt = (index: NetworkIndex, timeline: Timeline, cursor: number)
   const { stations, segments, lines } = networkAt(index, timeline, cursor);
   const km = [...segments].reduce((total, segment) => total + (index.segments[segment]?.lengthKm ?? 0), 0);
   return { stations: stations.size, km, lines: lines.size };
+};
+
+/**
+ * The network's size as a change is drawn: its stations and lines whole, each counted as soon as the
+ * change has begun to reach it, its track as far as it has got. A closure counts down the same way.
+ *
+ * @param done - Its size before the change.
+ * @param after - Its size once it is done.
+ * @param progress - How far the change has been drawn, 0 to 1.
+ * @returns Its size at that point.
+ */
+export const statsDrawn = (done: NetworkStats, after: NetworkStats, progress: number): NetworkStats => {
+  const begun = (from: number, to: number) => from + Math.sign(to - from) * Math.ceil(Math.abs(to - from) * progress);
+  return { stations: begun(done.stations, after.stations), km: done.km + (after.km - done.km) * progress, lines: begun(done.lines, after.lines) };
 };
 
 /**

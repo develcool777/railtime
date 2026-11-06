@@ -1,7 +1,28 @@
-import type { CoverageDistance, CoverageInfo, ReachInfo, Stop } from '@railtime/network/facts.types';
+import type { NetworkFacts } from '@railtime/network/facts.service';
+import type { CoverageDistance, CoverageInfo, ReachInfo } from '@railtime/network/facts.types';
 import type { OverlayRequest, OverlayResult } from '@railtime/renderer/transitMap.types';
+import type { StationId } from '@railtime/schema/network.types';
 import type { Section, TimeMode } from '~/features/explorer/explorer.types';
 import type { FoundRoutes, MapOverlay, RouteEnds, StationPick } from '~/features/explorer/tools.types';
+
+/**
+ * A station, if the network shown has it: one made again (a plan shown, lines hidden) may not.
+ *
+ * @param facts - The network shown.
+ * @param id - The station's id, or a string that may be one, if there is either.
+ * @returns Its id, or `null`.
+ */
+export const stationIn = (facts: NetworkFacts | null, id: string | null | undefined): StationId | null => (id ? (facts?.findStation(id)?.id ?? null) : null);
+
+/**
+ * A station a link names, kept by its id if the city has it, as the tools keep one through a network
+ * made again without it: shown or not (a line hidden at first), it is what the link says.
+ *
+ * @param facts - The network shown.
+ * @param id - A string that may be a station's id, if there is one.
+ * @returns Its id, or `null` for a stale link.
+ */
+export const stationLinked = (facts: NetworkFacts | null, id: string | undefined): StationId | null => (id ? (facts?.stationOfCity(id) ?? null) : null);
 
 /**
  * What the map draws over the network for the section open. Playback hides a route and a reach, which
@@ -24,7 +45,7 @@ type OverlayInput = {
   routeEnds: RouteEnds;
   /** The way between the route's ends drawn, fastest first. */
   routeOption: number;
-  reachFrom: Stop | null;
+  reachFrom: StationId | null;
   coverageMetres: CoverageDistance;
 };
 
@@ -38,8 +59,8 @@ type OverlayInput = {
 export const overlayRequestOf = (input: OverlayInput): OverlayRequest | null => {
   const { overlay, routeEnds, routeOption, reachFrom, coverageMetres } = input;
   if (overlay === 'coverage') return { kind: 'coverage', metres: coverageMetres };
-  if (overlay === 'route' && routeEnds.from && routeEnds.to) return { kind: 'route', from: routeEnds.from.id, to: routeEnds.to.id, option: routeOption };
-  if (overlay === 'reach' && reachFrom) return { kind: 'reach', from: reachFrom.id };
+  if (overlay === 'route' && routeEnds.from && routeEnds.to) return { kind: 'route', from: routeEnds.from, to: routeEnds.to, option: routeOption };
+  if (overlay === 'reach' && reachFrom) return { kind: 'reach', from: reachFrom };
   return null;
 };
 
@@ -68,17 +89,17 @@ type PickInput = {
  * station or line already open, it opens.
  *
  * @param input - The section open, whether the panel is in sight with nothing pushed over it, the route's ends and the one aimed at.
- * @param stop - The station clicked.
+ * @param station - The station clicked.
  * @returns What it does.
  */
-export const stationPickOf = (input: PickInput, stop: Stop): StationPick => {
+export const stationPickOf = (input: PickInput, station: StationId): StationPick => {
   const { section, picking, routeEnds, routeAim } = input;
   if (!picking || (section !== 'route' && section !== 'reach')) return { kind: 'open' };
-  if (section === 'reach') return { kind: 'reach', from: stop };
+  if (section === 'reach') return { kind: 'reach', from: station };
   // The route's other end again leaves it as it is: a route from a station to itself is none.
   const other = routeEnds[routeAim === 'from' ? 'to' : 'from'];
-  if (other?.id === stop.id) return { kind: 'route', ends: routeEnds };
-  return { kind: 'route', ends: { ...routeEnds, [routeAim]: stop } };
+  if (other === station) return { kind: 'route', ends: routeEnds };
+  return { kind: 'route', ends: { ...routeEnds, [routeAim]: station } };
 };
 
 /**

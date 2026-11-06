@@ -2,6 +2,7 @@ import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
+import { servedBoundary } from '@railtime/schema/served.utils';
 import { CITIES, CITY_SUMMARIES } from '~/constants/city.constants';
 
 /**
@@ -69,6 +70,15 @@ export const boundaryUrlOf = (city: string): string => networkUrlOf(city).replac
 export const previewUrlOf = (city: string, theme: 'dark' | 'light'): string => networkUrlOf(city).replace(/\.json$/, () => `.${theme}.webp`);
 
 /**
+ * Where a city's social card is served, under the site's base URL: the picture `pnpm data:previews`
+ * draws beside its dataset.
+ *
+ * @param city - A city id.
+ * @returns Its path, relative to the base URL: `data/<country>/<city>/<city>.social.jpg`.
+ */
+export const socialUrlOf = (city: string): string => networkUrlOf(city).replace(/\.json$/, '.social.jpg');
+
+/**
  * A city's name for display.
  *
  * @param city - A city id.
@@ -99,8 +109,21 @@ export const fetchBoundary = async (url: string): Promise<CityBoundary | null> =
   try {
     const response = await fetch(url);
     if (!response.ok) return null;
-    return (await response.json()) as CityBoundary;
+    return servedBoundary(await response.json());
   } catch {
     return null;
   }
+};
+
+/**
+ * A city's outline, fetched for whoever asked for it, and handed over only if that is still what they
+ * ask: one that comes once another city is open is dropped, as that city fetches its own.
+ *
+ * @param url - Where it is served.
+ * @param asked - Where the outline is wanted now, as the answer comes.
+ * @param take - What is done with the outline, or `null` where there is none.
+ */
+export const fetchAskedBoundary = async (url: string, asked: () => string | null, take: (outline: CityBoundary | null) => void): Promise<void> => {
+  const outline = await fetchBoundary(url);
+  if (asked() === url) take(outline);
 };

@@ -63,7 +63,7 @@ export const LAYERS = {
   reachOriginLabel: 'rt-reach-origin-label',
 } as const;
 
-/** How strongly lines out of focus still show (`focusLines`): a fraction of their usual opacity. */
+/** How strongly lines out of focus still show (`focusedLines`): a fraction of their usual opacity. */
 export const UNFOCUSED_OPACITY = 0.15;
 
 /** How strongly the stations still show behind a route: a fraction of their usual opacity. Their names go. */

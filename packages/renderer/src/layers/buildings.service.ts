@@ -10,15 +10,12 @@ import type { Palette } from './theme.types';
  * has none.
  */
 export class BuildingsLayer extends MapLayer {
-  /** Whether they stand. */
-  private shown = false;
-
   public constructor(map: MapLibreMap) {
     super(map);
   }
 
   /**
-   * Adds the buildings, standing if the map is already seen in 3D.
+   * Adds the buildings, lying down.
    *
    * @param _font - Unused: nothing here is labelled.
    */
@@ -46,7 +43,7 @@ export class BuildingsLayer extends MapLayer {
       source: BASEMAP_BUILDINGS.source,
       'source-layer': BASEMAP_BUILDINGS.sourceLayer,
       minzoom: BUILDINGS_RISE_ZOOM,
-      layout: { visibility: this.shown ? 'visible' : 'none' },
+      layout: { visibility: 'none' },
       paint: {
         'fill-extrusion-height': rising('render_height'),
         'fill-extrusion-base': rising('render_min_height'),
@@ -70,7 +67,6 @@ export class BuildingsLayer extends MapLayer {
    * @param shown - Whether they stand.
    */
   public show(shown: boolean): void {
-    this.shown = shown;
     if (this.map.getLayer(LAYERS.buildings)) this.map.setLayoutProperty(LAYERS.buildings, 'visibility', shown ? 'visible' : 'none');
   }
 }

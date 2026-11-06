@@ -1,11 +1,13 @@
+import { NetworkFacts } from '@railtime/network/facts.service';
 import type { CoverageInfo } from '@railtime/network/facts.types';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
-import { stationId } from '@railtime/schema/testing/ids';
+import type { StationId } from '@railtime/schema/network.types';
+import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { openExplorer } from '@test/support/factories/explorer.utils';
 import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
-import { useNetworkStore } from '~/features/explorer/network.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
+import type { RouteEnds } from '~/features/explorer/tools.types';
 import {
   foundCoverageOf,
   foundReachOf,
@@ -14,6 +16,7 @@ import {
   mapPickHint,
   overlayRequestOf,
   routeAimOf,
+  stationIn,
   stationPickOf,
 } from '~/features/explorer/tools.utils';
 
@@ -34,8 +37,8 @@ describe('ToolsUtils', () => {
   });
 
   describe('overlayRequestOf', () => {
-    const bank = { id: stationId('bank'), name: 'Bank' };
-    const oval = { id: stationId('oval'), name: 'Oval' };
+    const bank = stationId('bank');
+    const oval = stationId('oval');
     const none = { overlay: null, routeEnds: { from: bank, to: oval }, routeOption: 0, reachFrom: bank, coverageMetres: 400 as const };
 
     test("asks for the section's overlay once it has what it needs", () => {
@@ -52,8 +55,8 @@ describe('ToolsUtils', () => {
   });
 
   describe('routeAimOf', () => {
-    const bank = { id: stationId('bank'), name: 'Bank' };
-    const oval = { id: stationId('oval'), name: 'Oval' };
+    const bank = stationId('bank');
+    const oval = stationId('oval');
 
     test('aims at where the route starts until it has one, then at where it ends', () => {
       expect(routeAimOf({ from: null, to: null })).toBe('from');
@@ -64,12 +67,12 @@ describe('ToolsUtils', () => {
   });
 
   describe('stationPickOf', () => {
-    const bank = { id: stationId('bank'), name: 'Bank' };
-    const oval = { id: stationId('oval'), name: 'Oval' };
-    const kennington = { id: stationId('kennington'), name: 'Kennington' };
+    const bank = stationId('bank');
+    const oval = stationId('oval');
+    const kennington = stationId('kennington');
     const empty = { from: null, to: null };
-    const pick = (routeEnds: { from: typeof bank | null; to: typeof bank | null }, routeAim: 'from' | 'to', stop: typeof bank) =>
-      stationPickOf({ section: 'route', picking: true, routeEnds, routeAim }, stop);
+    const pick = (routeEnds: RouteEnds, routeAim: 'from' | 'to', station: StationId) =>
+      stationPickOf({ section: 'route', picking: true, routeEnds, routeAim }, station);
 
     test('fills the end of the route aimed at, picked or not', () => {
       expect(pick(empty, 'from', bank)).toEqual({ kind: 'route', ends: { from: bank, to: null } });
@@ -92,6 +95,14 @@ describe('ToolsUtils', () => {
       expect(stationPickOf({ section: 'lines', picking: true, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
       expect(stationPickOf({ section: 'route', picking: false, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
       expect(stationPickOf({ section: 'reach', picking: false, routeEnds: empty, routeAim: 'from' }, bank)).toEqual({ kind: 'open' });
+    });
+  });
+
+  describe('stationIn', () => {
+    test('takes a station of the network shown, and nothing else', () => {
+      const facts = NetworkFacts.create(tinyNetwork());
+      expect(stationIn(facts, 'a')).toBe('a');
+      expect([stationIn(facts, 'e'), stationIn(facts, null), stationIn(facts, undefined), stationIn(null, 'a')]).toEqual([null, null, null, null]);
     });
   });
 
@@ -135,47 +146,75 @@ describe('ToolsStore', () => {
   test('opens on the route and reach the address names, leaving out a station the network has not', () => {
     openExplorer({ route: 'a,nowhere,1', reach: 'b', walk: '800' });
     const tools = useToolsStore();
-    expect(tools.routeEnds).toEqual({ from: { id: stationId('a'), name: 'A' }, to: null });
+    expect(tools.routeEnds).toEqual({ from: 'a', to: null });
     expect(tools.routeOption).toBe(1);
-    expect(tools.reachFrom).toEqual({ id: stationId('b'), name: 'B' });
+    expect(tools.reachFrom).toBe('b');
     expect(tools.coverageMetres).toBe(800);
   });
 
-  test("keeps only the ends the network made again has: a plan's station goes with the plan", () => {
-    openExplorer({ plan: 'extension', route: 'a,e' });
+  test('keeps an end through a network without it, drawing what the network shown has, and has it back', () => {
+    const explorer = openExplorer({ plan: 'extension', route: 'a,e', reach: 'e', tab: 'route' });
     const tools = useToolsStore();
-    expect(tools.routeEnds.to?.id).toBe('e');
-    useNetworkStore().SHOW_PLAN(undefined);
-    tools.KEEP_ON();
-    expect(tools.routeEnds).toEqual({ from: { id: stationId('a'), name: 'A' }, to: null });
+    expect(explorer.mapProps?.overlay).toEqual({ kind: 'route', from: 'a', to: 'e', option: 0 });
+    explorer.SHOW_PLAN(undefined);
+    expect(tools.routeEnds).toEqual({ from: 'a', to: 'e' });
+    expect(tools.routeEndsShown).toEqual({ from: 'a', to: null });
+    expect(tools.reachFromShown).toBeNull();
+    expect(explorer.mapProps?.overlay).toBeNull();
+    explorer.SHOW_PLAN(planId('extension'));
+    expect(tools.routeEndsShown).toEqual({ from: 'a', to: 'e' });
+    expect(explorer.mapProps?.overlay).toEqual({ kind: 'route', from: 'a', to: 'e', option: 0 });
+  });
+
+  test('keeps an end on a line hidden and shown again', () => {
+    const explorer = openExplorer({ route: 'a,d', tab: 'route' });
+    const tools = useToolsStore();
+    const lines = [lineId('red'), lineId('green')];
+    explorer.SHOW_LINES(lines, false);
+    expect(tools.routeEndsShown.to).toBeNull();
+    explorer.SHOW_LINES(lines, true);
+    expect(tools.routeEndsShown).toEqual({ from: 'a', to: 'd' });
+  });
+
+  test('aims at the next end to fill, on what the network shown has, until another is chosen and the ends change', () => {
+    const explorer = openExplorer({ plan: 'extension', route: 'e,a' });
+    const tools = useToolsStore();
     expect(tools.routeAim).toBe('to');
+    explorer.SHOW_PLAN(undefined);
+    expect(tools.routeAim).toBe('from');
+    tools.AIM_ROUTE('to');
+    expect(tools.routeAim).toBe('to');
+    tools.SET_ROUTE_END('from', stationId('b'));
+    expect(tools.routeAim).toBe('to');
+    tools.CLEAR_ROUTE();
+    expect(tools.routeAim).toBe('from');
   });
 
   test('fetches the outline once, and says so when there is none', async () => {
-    openExplorer();
-    const tools = useToolsStore();
     const outline = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } };
-    await tools.LOAD_BOUNDARY(servedAt(JSON.stringify(outline)));
+    openExplorer({}, tinyNetwork(), servedAt(JSON.stringify(outline)));
+    const tools = useToolsStore();
+    await tools.LOAD_BOUNDARY();
     expect(tools.boundaryState).toBe('ready');
     expect(tools.boundary).toEqual(outline);
-    await tools.LOAD_BOUNDARY(servedAt('not an outline'));
+    await tools.LOAD_BOUNDARY();
     expect(tools.boundaryState).toBe('ready');
-    openExplorer();
-    await useToolsStore().LOAD_BOUNDARY(servedAt('not an outline'));
+    openExplorer({}, tinyNetwork(), servedAt('not an outline'));
+    await useToolsStore().LOAD_BOUNDARY();
     expect(useToolsStore().boundaryState).toBe('missing');
   });
 
   test('drops an outline that comes once another city is open, which then fetches its own', async () => {
-    const explorer = openExplorer();
-    const tools = useToolsStore();
     const outline = (name: string) => ({ type: 'Feature', properties: { name }, geometry: { type: 'Polygon', coordinates: [] } });
-    const first = tools.LOAD_BOUNDARY(servedAt(JSON.stringify(outline('first'))));
+    const explorer = openExplorer({}, tinyNetwork(), servedAt(JSON.stringify(outline('first'))));
+    const tools = useToolsStore();
+    const first = tools.LOAD_BOUNDARY();
     // Another city opens on the same stores, as the page does, before the first outline comes.
-    explorer.OPEN({ stored: tinyNetwork(), asked: parseExplorerQuery({}), outline: servedAt('') });
+    explorer.OPEN({ stored: tinyNetwork(), asked: parseExplorerQuery({}), outline: servedAt(JSON.stringify(outline('second'))) });
     await first;
     expect(tools.boundaryState).toBe('idle');
     expect(tools.boundary).toBeNull();
-    await tools.LOAD_BOUNDARY(servedAt(JSON.stringify(outline('second'))));
+    await tools.LOAD_BOUNDARY();
     expect(tools.boundary).toEqual(outline('second'));
   });
 });

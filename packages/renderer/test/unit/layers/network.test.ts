@@ -18,7 +18,7 @@ describe('NetworkLayer', () => {
     layer.install();
     const playback = playbackOf(tinyNetwork());
     playback.player.seek(playback.facts.playheads.on(toTimestamp('1955-01-01')));
-    const snapshot = buildNetworkSnapshot(renderStateOf(playback), false);
+    const snapshot = buildNetworkSnapshot(renderStateOf(playback));
     layer.update(snapshot);
     expect(fake.data.get(SOURCES.lines)).toBe(snapshot.lines);
     expect(fake.data.get(SOURCES.ghosts)).toBe(snapshot.ghosts);

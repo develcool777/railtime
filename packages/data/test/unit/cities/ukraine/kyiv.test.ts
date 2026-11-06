@@ -21,7 +21,7 @@ describe('Kyiv', () => {
     const { facts } = playbackOf(cityNetwork('kyiv'));
     let km = 0;
     let seconds = 0;
-    for (const { run, tripSeconds } of facts.engine.trainService(facts.playheads.end().cursor).timetables) {
+    for (const { run, tripSeconds } of facts.asOf(facts.playheads.end()).trains().timetables) {
       km += run.lengthKm;
       seconds += tripSeconds;
     }
@@ -31,8 +31,9 @@ describe('Kyiv', () => {
 
   test('runs a train the whole way to each end of a fork, in the 2070 concept', () => {
     const { facts } = playbackOf(cityNetwork('kyiv'), { plan: planId('kyiv-2070') });
-    const runs = facts.engine
-      .trainService(facts.playheads.end().cursor)
+    const runs = facts
+      .asOf(facts.playheads.end())
+      .trains()
       .timetables.map(({ run }) => run)
       .filter(run => run.line === lineId('m2'));
     expect(runs.map(run => run.ends.toSorted(byCodeUnits).join('–')).toSorted(byCodeUnits)).toEqual([

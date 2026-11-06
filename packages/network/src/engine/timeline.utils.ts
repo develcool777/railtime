@@ -1,6 +1,7 @@
 import { pushTo } from '@railtime/core/collection.utils';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { distanceKm } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { Growth, LineSegment, TrackSegment } from './engine.types';
 
@@ -52,12 +53,11 @@ const collectStretch = (
   const queue = [start];
   const lineSegments: LineSegment[] = [];
   let distanceToCentre = Infinity;
-  while (queue.length > 0) {
-    const segment = queue.pop()!;
-    lineSegments.push(...bySegment.get(segment)!);
+  for (let segment = queue.pop(); segment; segment = queue.pop()) {
+    lineSegments.push(...required(bySegment.get(segment), "a segment's line segments"));
     for (const station of [segment.stationA, segment.stationB]) {
       distanceToCentre = Math.min(distanceToCentre, distanceToCentreOf(station));
-      for (const next of segmentsAt.get(station)!) {
+      for (const next of required(segmentsAt.get(station), `segments at ${station}`)) {
         if (seen.has(next)) continue;
         seen.add(next);
         queue.push(next);
@@ -188,7 +188,7 @@ export const planGrowth = (
   const settled = new Set<StationId>();
   for (let current = nearestUnsettled(distances, settled); current !== null; current = nearestUnsettled(distances, settled)) {
     settled.add(current);
-    const currentKm = distances.get(current)!;
+    const currentKm = required(distances.get(current), `how far ${current} is`);
     for (const segment of segmentsAt.get(current) ?? []) {
       const other = segment.stationA === current ? segment.stationB : segment.stationA;
       if (currentKm + segment.lengthKm < (distances.get(other) ?? Infinity)) distances.set(other, currentKm + segment.lengthKm);

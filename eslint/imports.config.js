@@ -7,7 +7,14 @@ const ACROSS_PACKAGES = {
   message: "Import another package by its exports (`@railtime/<package>/…`, its tests' helpers from `@railtime/<package>/testing/…`).",
 };
 
-/** What `@railtime/network/engine.*` is for: the renderer's, never the app's or the data commands'. */
+/**
+ * What `@railtime/network/engine.*` is for: the renderer's, never the app's or the data commands', and
+ * `engineOf` is the only way to it from a network's facts. It covers their tests too, with one exception
+ * it cannot see: the renderer's `@railtime/renderer/testing/playback` hands the raw `index` and
+ * `timeline` over, and `data`'s `london.test.ts` and `lineSplits` read them, for what no fact says: which
+ * stretch a step opens, a segment's direction, a line's track holding together past a junction its
+ * trains pass.
+ */
 const NETWORK_ENGINE = {
   group: ['@railtime/network/engine.*'],
   message: "Ask NetworkFacts (@railtime/network/facts.service): NetworkEngine is the renderer's.",
@@ -104,7 +111,7 @@ export const importsConfig = [
     rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NO_VUE] }] },
   },
   {
-    files: ['web/src/**/*.{ts,vue}'],
+    files: ['web/**/*.{ts,vue}', 'packages/{data,video}/test/**/*.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [ACROSS_PACKAGES, NETWORK_ENGINE] }] },
   },
   {

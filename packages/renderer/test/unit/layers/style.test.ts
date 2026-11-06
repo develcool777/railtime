@@ -3,6 +3,7 @@ import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { lineId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { byZoom, highlightedOpacity, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
+import { UNTOUCHED_BASE } from '../../../src/steps/animation.constants';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
 describe('LayerStyleUtils', () => {
@@ -43,7 +44,7 @@ describe('LineStyleUtils', () => {
       // Pink's own colour fades in from red's as its identity step plays.
       const identity = playback.timeline.steps.find(step => step.kind === 'identity')!;
       playback.player.seek(playback.facts.playheads.before(identity.index));
-      const blended = (progress: number) => resolveLine({ ...renderStateOf(playback), identityProgress: progress }, lineId('pink')).color;
+      const blended = (progress: number) => resolveLine({ ...renderStateOf(playback), base: { ...UNTOUCHED_BASE, blend: progress } }, lineId('pink')).color;
       expect([blended(0), blended(0.5), blended(1)]).toEqual(['#ff0000', '#ff4466', '#ff88cc']);
     });
   });

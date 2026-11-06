@@ -30,14 +30,6 @@ describe('BuildingsLayer', () => {
     expect(buildings?.layout.visibility).toBe('none');
   });
 
-  test('stands them as it is installed if the map is already seen in 3D', () => {
-    const fake = fakeMap(WITH_BUILDINGS);
-    const layer = new BuildingsLayer(fake.map);
-    layer.show(true);
-    layer.install(['Font']);
-    expect(fake.layers.get(LAYERS.buildings)?.layout.visibility).toBe('visible');
-  });
-
   test('has none on a basemap without buildings, and asks nothing of it', () => {
     const fake = fakeMap();
     const layer = new BuildingsLayer(fake.map);

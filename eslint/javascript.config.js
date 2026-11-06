@@ -1,5 +1,5 @@
 import globals from 'globals';
-import { NO_CLASS_OUTSIDE_SERVICE, SHARED_SYNTAX, TOOL_CONFIGS } from './shared.js';
+import { CLI_FILES, NO_CLASS_OUTSIDE_SERVICE, SHARED_SYNTAX, TOOL_CONFIGS } from './shared.js';
 
 /** What a composable may not make: a value of its own, which belongs in a store. */
 const NO_STATE_IN_COMPOSABLE = {
@@ -139,6 +139,10 @@ export const javascriptConfig = [
       'unicorn/prefer-number-coercion': 'off',
       // `void promise` is how a promise left to run on its own is written (`no-floating-promises`).
       'sonarjs/void-use': 'off',
+      // An array is never sorted or reversed in place, a statement of its own included (which the rules
+      // let by unless told).
+      'unicorn/no-array-sort': ['error', { allowExpressionStatement: false }],
+      'unicorn/no-array-reverse': ['error', { allowExpressionStatement: false }],
       // A `shift` or `unshift` copies the whole array: a queue built on them is O(n²). Read a queue from
       // its head; build backwards, then `toReversed()`.
       'unicorn/no-array-front-mutation': 'error',
@@ -151,8 +155,11 @@ export const javascriptConfig = [
   // The data and video commands drive one browser page, or a service that asks for a pause between
   // requests, and a recorder steps its page a frame at a time: their awaits wait in turn on purpose.
   { files: ['packages/{data,video}/src/**/*.ts'], rules: { 'no-await-in-loop': 'off' } },
-  // A command says what it did on the console, and the test setup watches it, failing a test that warns.
-  { files: ['packages/{data,video,tooling}/src/**/*.ts', 'vitest.setup.ts'], rules: { 'no-console': 'off' } },
+  // A command says what it did on the console, a feature through what the command gives it (`report`);
+  // and the test setup watches it, failing a test that warns.
+  { files: [...CLI_FILES, 'vitest.setup.ts'], rules: { 'no-console': 'off' } },
+  // A page's script (`*.entry.ts`) offers the command driving it what it can do on `window`: that is its contract.
+  { files: ['packages/*/src/**/*.entry.ts'], rules: { 'unicorn/no-global-object-property-assignment': 'off' } },
   // A class outside a service file is in the wrong place.
   {
     files: ['**/*.ts'],

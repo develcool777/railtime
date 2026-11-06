@@ -1,3 +1,4 @@
+import { INSIGHTS_CLEAR_VW } from '~/features/video/insights/insights.constants';
 import type { VideoFraming, VideoPadding, VideoScene } from '~/features/video/video.types';
 
 /** How fast the history plays: a little slower than the explorer's does at first, each change given time to be read. */
@@ -23,6 +24,21 @@ export const WHOLE_FIT_MS = 2000;
 /** How long anything takes to fade in or out, ms. */
 export const FADE_MS = 600;
 
+/** How far the minimap stands from the top of the frame, in `vmin`. */
+export const MINIMAP_TOP_VMIN = 4;
+
+/** How tall the minimap is, in `vmin`. */
+export const MINIMAP_HEIGHT_VMIN = 22;
+
+/** How far a plan's name stands from the top of the frame, in `vmin`: under the minimap, clear of it. */
+export const PLAN_INTRO_TOP_VMIN = MINIMAP_TOP_VMIN + MINIMAP_HEIGHT_VMIN + 2;
+
+/** How wide a plan's end card is, in `vw`: as it is laid out, and what the map keeps clear of. */
+export const PLAN_END_VW = 30;
+
+/** How far the network keeps from the edge beside a plan's end card, in `vw`: the card, the margin it stands at and some room. */
+const PLAN_END_CLEAR_VW = PLAN_END_VW + 7;
+
 /** Room kept clear at the map's edges while it plays, or shows the whole network: the year at the top, the caption at the bottom. */
 const OPEN_MAP_PADDING_SHARES = { top: 0.16, bottom: 0.26, left: 0.08, right: 0.08 };
 
@@ -34,6 +50,6 @@ const OPEN_MAP_PADDING_SHARES = { top: 0.16, bottom: 0.26, left: 0.08, right: 0.
 export const VIDEO_PADDING_SHARES: Record<VideoFraming, VideoPadding> = {
   playing: OPEN_MAP_PADDING_SHARES,
   whole: OPEN_MAP_PADDING_SHARES,
-  insights: { top: 0.08, bottom: 0.22, left: 0.3, right: 0.3 },
-  ending: { top: 0.06, bottom: 0.06, left: 0.37, right: 0.05 },
+  insights: { top: 0.08, bottom: 0.22, left: INSIGHTS_CLEAR_VW / 100, right: INSIGHTS_CLEAR_VW / 100 },
+  ending: { top: 0.06, bottom: 0.06, left: PLAN_END_CLEAR_VW / 100, right: 0.05 },
 };

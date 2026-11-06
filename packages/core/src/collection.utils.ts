@@ -12,6 +12,19 @@ export const pushTo = <Key, Value>(map: Map<Key, Value[]>, key: Key, value: Valu
 };
 
 /**
+ * Each item of a list with the one after it.
+ *
+ * @param list - The list.
+ * @returns The pairs, in order; none for fewer than two items.
+ */
+export const pairsOf = <Item>(list: readonly Item[]): [Item, Item][] => {
+  const pairs: [Item, Item][] = [];
+  // Within bounds: the loop starts past the first item, and stops at the last.
+  for (let index = 1; index < list.length; index++) pairs.push([list[index - 1]!, list[index]!]);
+  return pairs;
+};
+
+/**
  * A sort's comparisons, in order of weight: the first that tells two apart decides, as `a - b || …`
  * would, but with each a number compared, never one taken for true or false.
  *

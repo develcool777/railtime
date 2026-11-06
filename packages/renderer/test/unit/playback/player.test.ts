@@ -1,4 +1,5 @@
 import { YEAR_MS, toTimestamp } from '@railtime/core/date.utils';
+import { engineOf } from '@railtime/network/engine.utils';
 import { planOnlyNetwork } from '@railtime/network/testing/planOnlyNetwork';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { lineId, planId } from '@railtime/schema/testing/ids';
@@ -79,9 +80,13 @@ describe('Player', () => {
 
   test('builds the change playing again as the map is now seen, as far through each phase as it was', () => {
     const facts = playbackOf(tinyNetwork()).facts;
-    const { index, timeline } = facts.engine;
+    const { index, timeline } = engineOf(facts);
     let view: ViewMode = '2d';
-    const player = new Player(facts.engine, step => new StepAnimation(step, { index, timeline, view }));
+    const player = new Player(
+      engineOf(facts),
+      step => new StepAnimation(step, { index, timeline, view }),
+      () => ({ speed: 1 }),
+    );
     player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
     player.skip();
     player.play();
@@ -185,22 +190,31 @@ describe('Player', () => {
     expect([player.phase, player.progress, player.holdProgress, player.cursor]).toEqual([null, 0, 0, 2]);
   });
 
-  test('plays faster at a higher speed, and not at all while paused', () => {
-    const { facts, player } = playbackOf(tinyNetwork());
-    player.seek(facts.playheads.on(toTimestamp('1905-01-01')));
+  test('plays faster at a higher speed, read as it runs, and not at all while paused', () => {
+    const { facts } = playbackOf(tinyNetwork());
+    const { index, timeline } = engineOf(facts);
+    const settings = { speed: 1 };
+    const playerAt = (date: string) => {
+      const player = new Player(
+        engineOf(facts),
+        step => new StepAnimation(step, { index, timeline, view: '2d' }),
+        () => settings,
+      );
+      player.seek(facts.playheads.on(toTimestamp(date)));
+      return player;
+    };
+    const player = playerAt('1905-01-01');
     player.skip();
     expect(player.tick(5)).toEqual([]);
     expect(player.active?.elapsed).toBe(0);
     player.play();
-    player.setSpeed(2);
+    settings.speed = 2;
+    expect(player.speed).toBe(2);
     player.tick(0.25);
     expect(player.active?.elapsed).toBe(0.5);
-    // Between steps, the clock runs twice as fast too.
-    const { facts: betweenFacts, player: between } = playbackOf(tinyNetwork());
-    // Nine quiet years before green opens in 1970: the clock runs at its fastest.
-    between.seek(betweenFacts.playheads.on(toTimestamp('1961-01-01')));
+    // Between steps, the clock runs twice as fast too: nine quiet years before green opens in 1970, it runs at its fastest.
+    const between = playerAt('1961-01-01');
     between.play();
-    between.setSpeed(2);
     const before = between.clock;
     between.tick(0.01);
     expect((between.clock - before) / YEAR_MS).toBeCloseTo(2 * FAST_YEARS_PER_SECOND * 0.01);

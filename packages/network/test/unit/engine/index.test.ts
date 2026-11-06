@@ -118,4 +118,25 @@ describe('NetworkIndex', () => {
     expect(index.lineIds).toEqual(['red', 'blue', 'pink', 'green']);
     expect(['green', 'pink', 'red', 'blue'].map(lineId).toSorted(index.compareLines)).toEqual(['red', 'blue', 'pink', 'green']);
   });
+
+  test('colours a line in both themes, by its id', () => {
+    const network = tinyNetwork();
+    network.lines[lineId('red')] = { ...network.lines[lineId('red')]!, darkColor: '#ff6666' };
+    const colored = new NetworkIndex(network);
+    expect(colored.colorOf(lineId('red'))).toEqual({ light: '#ff0000', dark: '#ff6666' });
+    expect(colored.colorOf(lineId('blue'))).toEqual({ light: '#0000ff', dark: '#0000ff' });
+  });
+
+  test("keeps each line's line segments, one per period, and none for a line it does not have", () => {
+    const blue = new NetworkIndex(tinyNetwork()).lineSegmentsOf(lineId('blue'));
+    expect(blue.map(lineSegment => lineSegment.segment.index)).toEqual([1, 1]);
+    expect(new NetworkIndex(tinyNetwork()).lineSegmentsOf(lineId('nowhere'))).toEqual([]);
+  });
+
+  test('opens a line that exists only to be drawn as with the first line drawn as it', () => {
+    const network = tinyNetwork();
+    network.lines[lineId('shared')] = { name: 'Shared', network: network.lines[lineId('red')]!.network, mode: 'metro', color: '#123456', pseudo: true };
+    network.lines[lineId('blue')] = { ...network.lines[lineId('blue')]!, aliases: [{ until: '1948-01-01', as: lineId('shared'), text: 'Blue on its own' }] };
+    expect(new NetworkIndex(network).lineOpens(lineId('shared'))).toBe(Date.UTC(1930, 0, 1));
+  });
 });

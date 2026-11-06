@@ -1,15 +1,18 @@
+import { toTimestamp } from '@railtime/core/date.utils';
 import { required } from '@railtime/core/required.utils';
 import { slugOf } from '@railtime/core/text.utils';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { CityIndex, CityIndexEntry } from '@railtime/schema/cityIndex.types';
 import type { Network } from '@railtime/schema/network.types';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import type { City } from '../city.types.ts';
+import { SUMMARY_DAY } from './summary.constants.ts';
+import type { City, Report } from '../city.types.ts';
 import { SUMMARIES_PATH, cities, readNetwork } from '../city.utils.ts';
 
 /**
  * One city, summed up for the landing page: its name and country, and its network's summary
- * (`NetworkFacts.summary`). Its picture is drawn apart, by `pnpm data:previews`.
+ * (`NetworkFacts.summary`), as of `SUMMARY_DAY`, whatever the clock says. Its picture is drawn apart,
+ * by `pnpm data:previews`.
  *
  * @param network - The city's network.
  * @returns The city's entry.
@@ -17,7 +20,7 @@ import { SUMMARIES_PATH, cities, readNetwork } from '../city.utils.ts';
 export const summaryOf = (network: Network): CityIndexEntry => ({
   name: network.meta.city,
   country: network.meta.country,
-  ...NetworkFacts.create(network).summary(),
+  ...NetworkFacts.create(network, { today: toTimestamp(SUMMARY_DAY) }).summary(),
 });
 
 /**
@@ -52,12 +55,13 @@ export const formatSummaries = (summaries: CityIndex): string =>
 /**
  * Sums up every city and writes `cities/cities.json`, the list the site shows, keeping its order.
  *
+ * @param report - Says what was written.
  * @param found - The cities: every city kept, unless given.
  * @param path - Where the list is kept: `cities/cities.json`, unless given.
  * @throws Zod's error, if the schema refuses a city's network.
  * @throws {Error} If a city is not in its country's folder.
  */
-export const writeSummaries = (found: City[] = cities(), path = SUMMARIES_PATH): void => {
+export const writeSummaries = (report: Report, found: City[] = cities(), path = SUMMARIES_PATH): void => {
   const summaries = Object.fromEntries(
     found.map(city => {
       const network = readNetwork(city);
@@ -67,5 +71,5 @@ export const writeSummaries = (found: City[] = cities(), path = SUMMARIES_PATH):
   );
   const previous = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as CityIndex) : {};
   writeFileSync(path, formatSummaries(inListOrder(summaries, previous)));
-  console.log(`${path}: ${Object.keys(summaries).length} cities`);
+  report(`${path}: ${Object.keys(summaries).length} cities`);
 };

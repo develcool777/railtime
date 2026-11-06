@@ -2,7 +2,7 @@ import { keysOf } from '@railtime/core/collection.utils';
 import { turnDegrees } from '@railtime/core/geometry.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
 import { describe, expect, test } from 'vitest';
-import { buildPlan, firstPlanOf, isPlanOnly } from '../../../src/plan/build.utils';
+import { buildPlan } from '../../../src/plan/build.utils';
 import { plannedNetwork } from '../../support/factories/plannedNetwork.utils';
 import { asNetwork, lineId, networkId, planId, stationId } from '../../support/ids.utils';
 
@@ -145,29 +145,31 @@ describe('PlanBuildUtils', () => {
       expect(built.sections[1]!.infills).toEqual([]);
     });
 
+    test('reports the track it lays: nothing for a station splitting track already there, which only bends it to the station', () => {
+      const network = asNetwork(plannedNetwork());
+      const { laidKm } = buildPlan(network, planId('extension'));
+      // C – D alone: 0.01° of longitude at 51.5° north.
+      expect(laidKm).toBeCloseTo(0.69, 2);
+      network.plans![planId('extension')]!.sections = [{ line: lineId('red'), stations: [stationId('a'), stationId('b'), stationId('c')] }];
+      expect(buildPlan(network, planId('extension')).laidKm).toBe(0);
+    });
+
+    test('counts new track a later section splits once, however it is cut', () => {
+      const network = asNetwork(plannedNetwork());
+      const plan = network.plans![planId('extension')]!;
+      plan.stations![stationId('e')] = { name: 'E', coordinate: [0.025, 51.5] };
+      plan.sections = [
+        { line: lineId('red'), stations: [stationId('c'), stationId('d')] },
+        { line: lineId('red'), stations: [stationId('c'), stationId('e'), stationId('d')] },
+      ];
+      expect(buildPlan(network, planId('extension')).laidKm).toBeCloseTo(0.69, 2);
+    });
+
     test('builds nothing for a plan the network does not have, and leaves the network as it was', () => {
       const network = asNetwork(plannedNetwork());
-      expect(buildPlan(network, planId('nowhere'))).toEqual({ network: { ...network, plans: undefined }, sections: [] });
+      expect(buildPlan(network, planId('nowhere'))).toEqual({ network: { ...network, plans: undefined }, sections: [], laidKm: 0 });
       buildPlan(network, planId('extension'));
       expect(network.segments).toHaveLength(1);
-    });
-  });
-
-  describe('isPlanOnly', () => {
-    test('is a network with plans and no track', () => {
-      expect(isPlanOnly(asNetwork(plannedNetwork()))).toBe(false);
-      expect(isPlanOnly({ ...asNetwork(plannedNetwork()), segments: [] })).toBe(true);
-      expect(isPlanOnly({ ...asNetwork(plannedNetwork()), segments: [], plans: {} })).toBe(false);
-      const { plans: _plans, ...withoutPlans } = asNetwork(plannedNetwork());
-      expect(isPlanOnly({ ...withoutPlans, segments: [] })).toBe(false);
-    });
-  });
-
-  describe('firstPlanOf', () => {
-    test("is a network's first plan, and none without plans", () => {
-      expect(firstPlanOf(asNetwork(plannedNetwork()))).toBe(keysOf(asNetwork(plannedNetwork()).plans ?? {})[0]);
-      const { plans: _plans, ...withoutPlans } = asNetwork(plannedNetwork());
-      expect(firstPlanOf(withoutPlans)).toBeUndefined();
     });
   });
 });

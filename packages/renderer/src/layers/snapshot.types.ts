@@ -1,10 +1,9 @@
 import type { LngLat } from '@railtime/core/geometry.types';
-import type { NetworkStats } from '@railtime/network/facts.types';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { SideBySide } from './style.types';
 import type { RouteStopKind } from '../overlay/overlay.types';
 
-/** Everything already on the map at a cursor. Rebuilt only when the cursor or theme change. */
+/** Everything already on the map at a cursor. Rebuilt only when the cursor, the theme or what the step playing asks of it change. */
 export type NetworkSnapshot = {
   sideBySide: SideBySide;
   lines: FeatureCollection<LineFeature>;
@@ -20,16 +19,15 @@ export type NetworkSnapshot = {
   linked: Set<StationId>;
   /** Stations on the map that only a plan's track reaches: drawn as rings. */
   plannedStations: Set<StationId>;
-  /** Stations all of whose lines are closing in the step playing now: they fade out with it. */
+  /** Stations all of whose lines the step playing has taken from the network: they fade out with it. */
   closingOnly: Set<StationId>;
-  stats: NetworkStats;
 };
 
 /** The stations on the map as a snapshot gathers them: each with its lines, and those staying and built. */
 export type StationsFound = {
   /** Each station on the map and the lines serving it. */
   stations: Map<StationId, StationLines>;
-  /** Stations a line serves that the step playing does not close. */
+  /** Stations a line serves that the step playing leaves in the network. */
   staying: Set<StationId>;
   /** Stations built track reaches, not only a plan's. */
   built: Set<StationId>;
@@ -44,11 +42,11 @@ export type FeatureCollection<Item> = { type: 'FeatureCollection'; features: Ite
 /** Properties of a drawn line. */
 type LineProperties = {
   color: string;
-  /** Side-by-side slot on shared track: …-1, -0.5, 0, 0.5, 1… (see `lineStyle.utils.ts`). */
+  /** Side-by-side slot on shared track: …-1, -0.5, 0, 0.5, 1… (see `style.utils.ts`). */
   offset: number;
   /** 1 for new track while its step plays, fading to 0. Draws it wider. */
   highlight: number;
-  /** The line it is drawn for, so the app can bring some lines forward (`focusLines`); empty for a transfer's link. */
+  /** The line as drawn at this moment (`resolveLine`), so some lines can be brought forward (`focusedLines`); empty for a transfer's link. */
   line: LineId | '';
   /** A plan's track, not built: drawn dashed, growing as it stands. */
   planned: boolean;

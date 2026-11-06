@@ -2,13 +2,17 @@
   <div ref="explorer" class="bg-page flex h-dvh w-full flex-col">
     <SiteHeader v-if="chrome.header" wide>
       <template #context>
-        <CitySelect v-model:open="citiesOpen" :city @city="emit('city', $event)" />
+        <CitySelect
+          :open="dialog === 'cities'"
+          :city
+          @update:open="$event ? store.OPEN_DIALOG('cities') : store.CLOSE_DIALOG('cities')"
+          @city="emit('city', $event)" />
       </template>
       <template #center>
         <!-- Opens the search, as ⌘K and / do. -->
-        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.SET_DIALOG('search')" />
+        <UDashboardSearchButton label="Find a station or line…" color="neutral" class="w-full max-w-[420px]" @click="store.OPEN_DIALOG('search')" />
       </template>
-      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.SET_DIALOG('search')" />
+      <UButton v-if="phone" icon="i-lucide-search" color="neutral" variant="ghost" square aria-label="Search" @click="store.OPEN_DIALOG('search')" />
     </SiteHeader>
 
     <div class="relative flex min-h-0 flex-1">
@@ -28,7 +32,7 @@
           :sections
           :section="railSection"
           :marks
-          @update:snap="store.SET_SHEET"
+          @update:snap="layout.SET_SHEET"
           @pick="store.PICK_SECTION"
           @resize="startResize">
           <PanelTop
@@ -49,7 +53,13 @@
               @station="store.PICK_STATION"
               @pickChange="timeStore.PICK({ kind: 'change', index: $event })" />
             <StationsSection v-else-if="section === 'stations'" :stations @open="store.PICK_STATION" />
-            <LinesSection v-else-if="section === 'lines'" :lines :choices="networkChoices" :date="shownDate" @show="store.SHOW_LINES" @open="store.PUSH_LINE" />
+            <LinesSection
+              v-else-if="section === 'lines'"
+              :lines
+              :choices="networkChoices"
+              :opened="linesOpened"
+              @show="store.SHOW_LINES"
+              @open="store.PUSH_LINE" />
             <ChangesSection
               v-else-if="section === 'changes'"
               :changes
@@ -59,7 +69,7 @@
             <RouteSection
               v-else-if="section === 'route'"
               :stations
-              :ends="tools.routeEnds"
+              :ends="routeStops"
               :aim="tools.routeAim"
               :found="foundRoutes"
               @end="tools.SET_ROUTE_END"
@@ -71,7 +81,7 @@
             <ReachSection
               v-else-if="section === 'reach'"
               :stations
-              :from="tools.reachFrom"
+              :from="reachStop"
               :reach="foundReach"
               @from="tools.SET_REACH_FROM"
               @station="store.PICK_STATION" />
@@ -125,7 +135,7 @@
             @streetNames="store.SET_STREET_NAMES"
             @viewMode="store.SET_VIEW_MODE"
             @mapOnly="store.SET_MAP_ONLY(true)"
-            @help="store.SET_DIALOG('help')" />
+            @help="store.OPEN_DIALOG('help')" />
           <UButton
             v-else
             icon="i-lucide-minimize-2"
@@ -195,24 +205,34 @@
       </div>
     </div>
 
-    <ExplorerSearch v-model:open="searchOpen" :stations :lines :city @station="store.PICK_STATION" @line="store.PUSH_LINE" @city="emit('city', $event)" />
-    <ExplorerHelp v-model:open="helpOpen" :sections :phone />
+    <ExplorerSearch
+      :open="dialog === 'search'"
+      :stations
+      :lines
+      :city
+      @update:open="$event ? store.OPEN_DIALOG('search') : store.CLOSE_DIALOG('search')"
+      @station="store.PICK_STATION"
+      @line="store.PUSH_LINE"
+      @city="emit('city', $event)" />
+    <ExplorerHelp :open="dialog === 'help'" :sections :phone @update:open="$event ? store.OPEN_DIALOG('help') : store.CLOSE_DIALOG('help')" />
   </div>
 </template>
 
 <script setup lang="ts">
   import type { Network } from '@railtime/schema/network.types';
   import { storeToRefs } from 'pinia';
-  import { useTemplateRef, watch } from 'vue';
-  import { useRoute, useRuntimeConfig } from '#imports';
+  import { useTemplateRef } from 'vue';
+  import { useRoute, useRouter, useRuntimeConfig } from '#imports';
   import { useExplorerAddress } from '~/features/explorer/address/address.composable';
   import { parseExplorerQuery } from '~/features/explorer/address/address.utils';
   import { useExplorerStore } from '~/features/explorer/explorer.store';
   import { useExplorerLayout } from '~/features/explorer/layout.composable';
+  import { useLayoutStore } from '~/features/explorer/layout.store';
   import { useMapStore } from '~/features/explorer/map/map.store';
   import { useTransitMap } from '~/features/explorer/map/transitMap.composable';
   import { useNetworkStore } from '~/features/explorer/network.store';
   import { usePanelStore } from '~/features/explorer/panel/panel.store';
+  import { useRecordedExplorer } from '~/features/explorer/recorded.composable';
   import { useExplorerShortcuts } from '~/features/explorer/shortcuts.composable';
   import { useTimeStore } from '~/features/explorer/time/time.store';
   import { useToolsStore } from '~/features/explorer/tools.store';
@@ -230,44 +250,27 @@
   const mapElement = useTemplateRef<HTMLElement>('mapElement');
   const minimapElement = useTemplateRef<HTMLElement>('minimapElement');
 
-  // The stores open on the city's network and on what the address says, as the view is given it; from
-  // then on they are the page's one source of truth, and what follows only lays out what they hold.
+  // The stores open on the city's network and on what the address says, once: the page makes the view
+  // afresh for each city (its `key`). From then on they are its one source of truth, and what follows
+  // only lays out what they hold.
   const store = useExplorerStore();
   const networkStore = useNetworkStore();
   const mapStore = useMapStore();
+  const layout = useLayoutStore();
   const timeStore = useTimeStore();
   const tools = useToolsStore();
   const panel = usePanelStore();
   const route = useRoute();
+  const router = useRouter();
   const baseURL = useRuntimeConfig().app.baseURL;
-  watch(
-    () => [props.network, props.city] as const,
-    ([network, city]) => {
-      store.OPEN({ stored: network, asked: parseExplorerQuery(route.query), outline: `${baseURL}${boundaryUrlOf(city)}` });
-    },
-    { immediate: true },
-  );
+  const opening = () => ({ stored: props.network, asked: parseExplorerQuery(route.query), outline: `${baseURL}${boundaryUrlOf(props.city)}` });
+  store.OPEN(opening());
 
-  const {
-    section,
-    railSection,
-    phone,
-    tabLabels,
-    sheet,
-    sheetHeight,
-    panelOpen,
-    panelWidth,
-    resizing,
-    panelCover,
-    viewMode,
-    stationNames,
-    trains,
-    streetNames,
-    chrome,
-  } = storeToRefs(store);
+  const { section, railSection, dialog, panelOpen, panelCover, viewMode, stationNames, trains, streetNames, chrome } = storeToRefs(store);
+  const { phone, tabLabels, sheet, sheetHeight, panelWidth, resizing } = storeToRefs(layout);
   const { lines, changes, plans, pickedPlan, planOnly, networkChoices, growth, hasHistory, range } = storeToRefs(networkStore);
   const { credits } = storeToRefs(mapStore);
-  const { timeMode, player, time, step, shownDate, shownYear } = storeToRefs(timeStore);
+  const { timeMode, player, time, step, shownYear } = storeToRefs(timeStore);
   const { foundRoutes, foundReach, coverage, coverageHistory, boundaryState } = storeToRefs(tools);
   const {
     sections,
@@ -277,6 +280,9 @@
     stations,
     stationColors,
     stationDirections,
+    linesOpened,
+    routeStops,
+    reachStop,
     currentChange,
     panelTop,
     records,
@@ -285,13 +291,11 @@
     builtFacts,
     marks,
   } = storeToRefs(panel);
-  const searchOpen = store.dialogOpen('search');
-  const helpOpen = store.dialogOpen('help');
-  const citiesOpen = store.dialogOpen('cities');
 
   // The effects: the browser, the map, the address bar and the keys, each tied to the stores.
   const { startResize } = useExplorerLayout(explorer);
   useTransitMap({ container: mapElement, minimapContainer: minimapElement });
-  useExplorerAddress();
+  useExplorerAddress({ query: () => route.query, replace: query => void router.replace({ query }) });
   useExplorerShortcuts();
+  useRecordedExplorer();
 </script>

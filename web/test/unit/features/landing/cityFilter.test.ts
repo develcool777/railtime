@@ -30,9 +30,11 @@ describe('CityFilterUtils', () => {
       expect(matchesFilter(kyiv, { ...summary, plans: 0 }, { ...all, withPlans: true })).toBe(false);
     });
 
-    test('shows a city while the index loads only when no filter needs it', () => {
-      expect(matchesFilter(kyiv, null, all)).toBe(true);
-      expect(matchesFilter(kyiv, null, { ...all, kind: 'history' })).toBe(false);
+    test('shows every city with no filter, and a kind with a city of that kind alone', () => {
+      expect(matchesFilter(kyiv, summary, all)).toBe(true);
+      expect(matchesFilter(kyiv, { ...summary, planOnly: true }, all)).toBe(true);
+      expect(matchesFilter(kyiv, { ...summary, planOnly: true }, { ...all, kind: 'history' })).toBe(false);
+      expect(matchesFilter(kyiv, { ...summary, planOnly: true }, { ...all, kind: 'never-built' })).toBe(true);
     });
   });
 

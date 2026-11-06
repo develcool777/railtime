@@ -7,8 +7,8 @@
         :dark="previewUrlOf(city, 'dark')"
         :alt="`Map of the ${name} network`"
         class="h-[170px] w-full object-cover"
-        :width="PREVIEW_WIDTH"
-        :height="PREVIEW_HEIGHT"
+        :width="PREVIEW_SIZE.width"
+        :height="PREVIEW_SIZE.height"
         :loading="eager ? 'eager' : 'lazy'"
         :fetchpriority="eager ? 'high' : 'auto'"
         decoding="async" />
@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+  import { PREVIEW_SIZE } from '@railtime/data/preview.constants';
   import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
   import { computed } from 'vue';
   import { cityNameOf, previewUrlOf } from '~/utils/city.utils';
@@ -41,9 +42,5 @@
     /** Among the first cards on the page: its picture loads at once, not when scrolled to. */
     eager?: boolean;
   }>();
-  /** A preview's size, as it was drawn: the box it fills crops it. */
-  const PREVIEW_WIDTH = 400;
-  const PREVIEW_HEIGHT = 170;
-
   const name = computed(() => cityNameOf(props.city));
 </script>

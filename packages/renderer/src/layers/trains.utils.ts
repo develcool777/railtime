@@ -70,7 +70,7 @@ export const trainsAt = (places: TrainPlace[], state: RenderState, sideBySide: S
     const [fromKm, toKm] = trainStretchOf(place);
     for (const leg of place.run.legs) {
       const stretch = onLeg(leg, fromKm, toKm);
-      if (stretch) features.push(lineFeature(stretchOf(leg.segment, ...stretch), color, offsetFor(sideBySide, leg.segment, id), 0, place.run.line));
+      if (stretch) features.push(lineFeature(stretchOf(leg.segment, ...stretch), color, offsetFor(sideBySide, leg.segment, id), 0, id));
     }
   }
   return { type: 'FeatureCollection', features };

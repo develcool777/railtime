@@ -37,7 +37,7 @@ export type Chrome = {
   credits: 'line' | 'button' | null;
 };
 
-/** How playback is set up: its speed, its camera, and whether the minimap shows; kept in a cookie. */
+/** How playback is set up: its speed, its camera, and whether the minimap shows; kept in the address. */
 export type PlayerSettings = {
   speed: number;
   camera: CameraMode;

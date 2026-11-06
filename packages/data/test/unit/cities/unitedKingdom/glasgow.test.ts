@@ -1,12 +1,12 @@
 import { playbackOf } from '@railtime/renderer/testing/playback';
-import { lineId, planId } from '@railtime/schema/testing/ids';
+import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
 
 describe('Glasgow', () => {
   describe('trains', () => {
     const { facts } = playbackOf(cityNetwork('glasgow'));
-    const service = facts.engine.trainService(facts.playheads.end().cursor);
+    const service = facts.asOf(facts.playheads.end()).trains();
 
     test('takes about the 24 minutes a real train takes round the circle', () => {
       const laps = service.timetables.map(({ tripSeconds }) => tripSeconds / 60);
@@ -22,10 +22,23 @@ describe('Glasgow', () => {
           const [toX, toY] = points[place + 1] ?? points[0] ?? [fromX, fromY];
           area += fromX * toY - toX * fromY;
         }
-        return Math.sign(area) * (run.oneWay ?? 0);
+        return run.oneWay ? Math.sign(area) : 0;
       };
       expect(swept('outer')).toBe(-1);
       expect(swept('inner')).toBe(1);
+    });
+
+    test('rides each circle only its own way: the neighbour one way by the Inner, the other way by the Outer', () => {
+      const today = facts.today();
+      const ridden = (from: string, to: string) => today.routes(stationId(from), stationId(to))[0]?.legs.map(leg => (leg.kind === 'ride' ? leg.line : 'walk'));
+      expect(ridden('hillhead', 'kelvinhall')).toEqual(['inner']);
+      expect(ridden('kelvinhall', 'hillhead')).toEqual(['outer']);
+    });
+
+    test('says only the stop each circle goes on to, not the one it came from', () => {
+      const directions = facts.today().directions(stationId('hillhead'));
+      expect(directions.get(lineId('outer'))).toMatchObject([{ previous: null, next: { id: 'kelvinbridge' } }]);
+      expect(directions.get(lineId('inner'))).toMatchObject([{ previous: null, next: { id: 'kelvinhall' } }]);
     });
 
     test('never takes a train out of sight, there being no terminus', () => {

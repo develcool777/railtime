@@ -13,7 +13,8 @@
     "previews": "node src/preview/cli.ts"
   },
   "exports": {
-    "./cities.json": "./cities/cities.json"
+    "./cities.json": "./cities/cities.json",
+    "./preview.constants": "./src/preview/preview.constants.ts"
   },
   "dependencies": {
     "@railtime/core": "workspace:*",

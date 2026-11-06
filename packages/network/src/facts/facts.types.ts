@@ -1,10 +1,10 @@
 import type { IsoDate } from '@railtime/core/date.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
-import type { LineId, Network, NetworkId, PlanId, PlanStatus, StationId } from '@railtime/schema/network.types';
-import type { LineGap, Step } from '../engine/engine.types';
-import type { NetworkIndex } from '../engine/index.service';
-import type { Timeline } from '../engine/timeline.service';
+import type { LineId, NetworkId, PlanId, PlanStatus, StationId } from '@railtime/schema/network.types';
+
+// The shapes of the answers: what the engine works out and everyone reads. Nothing here imports the
+// engine, so the engine can say what it answers with.
 
 /** The map's colour theme. */
 export type Theme = 'dark' | 'light';
@@ -21,9 +21,12 @@ export type LineSketch = { line: LineId; color: LineColor; paths: LngLat[][]; da
 /** What is on the map. */
 export type NetworkStats = { stations: number; km: number; lines: number };
 
+/** What kind of change a step is. */
+export type StepKind = 'open' | 'close' | 'infill' | 'stationClose' | 'rename' | 'identity';
+
 /** The change playing now, for a caption. */
 export type StepInfo = {
-  kind: Step['kind'];
+  kind: StepKind;
   /** Its date; `null` for a planned step, which has none. */
   time: number | null;
   title: string;
@@ -79,7 +82,7 @@ export type LineInfo = {
   network: NetworkId;
   networkName: string;
   color: LineColor;
-  /** When it first opened, as a timestamp; `null` for a line only a plan builds. */
+  /** When it first opened as itself, as a timestamp; `null` for a line only a plan builds. */
   opened: number | null;
 };
 
@@ -289,7 +292,8 @@ export type NetworkSummary = Omit<CityIndexEntry, 'name' | 'country'>;
 /**
  * A position in the network's history, as a video's playhead is one in the video: the changes done, the
  * clock, and how far the next change has been drawn. The same in 2D and 3D and at any speed, which change
- * only how fast it moves: the map reports one (`TimeState`), seeks one and the app's address holds one.
+ * only how fast it moves: the map reports one (`TimeState`) and seeks one. It means something only to
+ * the facts it came from: what outlives them, as an address does, holds a `Moment`.
  */
 export type Playhead = {
   /** Changes done, a plan's too: the sequence number, as exact as a day is not (many changes share one). */
@@ -299,8 +303,25 @@ export type Playhead = {
    * a plan's change has none and plays at the end of the range.
    */
   time: number;
-  /** How far the next change has been drawn, 0 to 1: 0 between changes. The facts count only the changes done. */
+  /** How far the next change has been drawn, 0 to 1: 0 between changes. What is on the map is answered for the changes done; only its size (`FactsAt.stats`) counts the one drawn in part. */
   progress: number;
+};
+
+/**
+ * A moment of a network's history that means the same whatever facts it is read against: a day, where a
+ * cursor counts changes that hiding a line or editing a city shifts. What outlives one set of facts holds
+ * this, not a `Playhead`: `Playheads.moment` gives one, `Playheads.atMoment` takes it back.
+ */
+export type Moment = {
+  /** The day, as a UTC timestamp at its start; `null` for a plan's changes, which have no date. */
+  day: number | null;
+  /** How far through that day's changes, if not all of them are done: left out, they are. */
+  partway?: {
+    /** How many of them are done. */
+    done: number;
+    /** How far the next has been drawn, 0 to 1, to the hundredth (`Playheads.toHundredth`) in a link. */
+    progress: number;
+  };
 };
 
 /** What `NetworkFacts` is made with besides the network. */
@@ -317,13 +338,6 @@ export type NetworkFactsOptions = {
   today?: number;
 };
 
-/** The network with some lines hidden, and the stretches of time each line left is out with them: what the engine is made from. */
-export type ShownNetwork = {
-  network: Network;
-  /** The years each line was drawn as a line hidden (an alias), by line. */
-  gaps: Map<LineId, LineGap[]>;
-};
-
 /** A network with the lines a person may show or hide, for a list to do it. */
 export type NetworkChoice = {
   id: NetworkId;
@@ -331,34 +345,5 @@ export type NetworkChoice = {
   lines: { id: LineId; name: string; color: LineColor; shown: boolean }[];
 };
 
-/** The network at one moment: every question about it then. */
-export type FactsAt = {
-  /** The stations on the map, for a search: each with its names and its lines' colours. */
-  stations: () => StationSummary[];
-  /** A station's lines, with when each opened there and, if it has, closed. */
-  station: (id: StationId) => StationInfo;
-  /** A line's stops in order, by branch, its length, and the changes that made it. */
-  line: (id: LineId) => LineDetails;
-  /** The stations open longest, those most lines call at, and the longest lines: so many of each. */
-  records: (count: number) => NetworkRecords;
-  /** The ways between two stations, up to three, fastest first; none if there is none at this moment. */
-  routes: (from: StationId, to: StationId) => RouteInfo[];
-  /** How long it takes from a station to every other; `null` if no line calls there at this moment. */
-  reach: (from: StationId) => ReachInfo | null;
-  /** How many stations, km of track and lines are open. */
-  stats: () => NetworkStats;
-  /** The stops either side of a station, on each of its lines that calls there, by line. */
-  directions: (station: StationId) => Map<LineId, LineDirection[]>;
-};
-
 /** A segment of track a reach colours, timed by its ends. */
 export type ReachedSegment = { segment: number; minutes: number };
-
-/** What the records are worked out from: the network, its history, and each line's colour. */
-export type RecordsSource = {
-  index: NetworkIndex;
-  timeline: Timeline;
-  /** The year each station was first on the map, by id. */
-  firstYears: Map<StationId, number>;
-  colorOf: (line: LineId) => LineColor;
-};

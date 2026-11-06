@@ -1,24 +1,13 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { required } from '@railtime/core/required.utils';
+import { NetworkFacts } from '@railtime/network/facts.service';
 import { parseBoundary } from '@railtime/schema/boundary.schema';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
-import type { Network, Station } from '@railtime/schema/network.types';
-import { planId } from '@railtime/schema/testing/ids';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, test, vi } from 'vitest';
 import { MIN_STATIONS_HELD, USER_AGENT } from '../../../src/boundary/boundary.constants.ts';
 import type { NominatimPlace } from '../../../src/boundary/boundary.types.ts';
-import {
-  boundaryArgsOf,
-  boundaryOf,
-  fetchBoundary,
-  fetchBoundaries,
-  formatBoundary,
-  holds,
-  lookupUrlOf,
-  relationOf,
-  stationsHeld,
-} from '../../../src/boundary/boundary.utils.ts';
+import { boundaryArgsOf, boundaryOf, fetchBoundary, fetchBoundaries, formatBoundary, lookupUrlOf, relationOf } from '../../../src/boundary/boundary.utils.ts';
 import { cities, citiesNamed, readNetwork } from '../../../src/city.utils.ts';
 import { cityApart } from '../../support/folders.utils.ts';
 
@@ -45,60 +34,7 @@ const CITY: CityBoundary = {
   polygons: [[square(0, 0, 10), square(4, 4, 2)], [square(20, 0, 1)]],
 };
 
-/**
- * Stations at points.
- *
- * @param points - Where they stand.
- * @returns The stations, by id.
- */
-const stationsAt = (...points: LngLat[]): Record<string, Station> =>
-  Object.fromEntries(points.map((coordinate, position) => [`s${position}`, { name: `S${position}`, coordinate }]));
-
-/**
- * A network of stations built, and a plan's.
- *
- * @param built - The stations built.
- * @param planned - A plan's stations.
- * @returns The network.
- */
-const networkOf = (built: Record<string, Station>, planned: Record<string, Station> = {}): Network => ({
-  meta: { city: 'Test', country: 'Testland', start: '1900-01-01', built: '2026-01-01', attribution: 'test' },
-  networks: {},
-  lines: {},
-  stations: built,
-  segments: [],
-  plans: { [planId('plan')]: { name: 'Plan', status: 'proposed', stations: planned, sections: [] } },
-});
-
 describe('BoundaryUtils', () => {
-  describe('holds', () => {
-    test('holds a point in a polygon, not one in its hole or between polygons', () => {
-      expect(
-        [
-          [1, 1],
-          [5, 5],
-          [15, 5],
-          [20.5, 0.5],
-          [-1, 5],
-        ].map(point => holds(CITY, point as LngLat)),
-      ).toEqual([true, false, false, true, false]);
-    });
-  });
-
-  describe('stationsHeld', () => {
-    test('shares out the stations built, else the plans’, and none of no stations', () => {
-      expect(stationsHeld(CITY, networkOf(stationsAt([1, 1], [2, 2], [5, 5], [30, 30])))).toBe(0.5);
-      expect(stationsHeld(CITY, networkOf({}, stationsAt([1, 1], [30, 30], [31, 31], [32, 32])))).toBe(0.25);
-      expect(stationsHeld(CITY, networkOf({}))).toBe(0);
-    });
-
-    test('counts none for a network with no plans, or a plan with no stations of its own', () => {
-      const { plans: _plans, ...withoutPlans } = networkOf({});
-      expect(stationsHeld(CITY, withoutPlans)).toBe(0);
-      expect(stationsHeld(CITY, { ...networkOf({}), plans: { [planId('plan')]: { name: 'Plan', status: 'proposed', sections: [] } } })).toBe(0);
-    });
-  });
-
   describe('relationOf', () => {
     test('reads the relation an outline names, or none', () => {
       expect(relationOf(CITY)).toBe(42);
@@ -191,14 +127,10 @@ describe('BoundaryUtils', () => {
       expect(boundaryArgsOf(['london', '175342'])).toEqual({ city: 'london', relation: 175_342 });
     });
 
-    test('refuses a relation that is not a whole number above 0, and more than two arguments, with the usage', () => {
-      for (const args of [
-        ['london', 'x1'],
-        ['london', '0'],
-        ['london', '1.5'],
-        ['london', '1', 'more'],
-      ])
-        expect(() => boundaryArgsOf(args)).toThrow('usage: pnpm data:boundary [city [relation]]');
+    test('refuses a relation that is not a whole number above 0, and more than two arguments', () => {
+      for (const relation of ['x1', '0', '1.5'])
+        expect(() => boundaryArgsOf(['london', relation])).toThrow(`a relation is a whole number above 0, not ${relation}`);
+      expect(() => boundaryArgsOf(['london', '1', 'more'])).toThrow('more arguments than a city and its relation');
     });
   });
 
@@ -245,27 +177,26 @@ describe('BoundaryUtils', () => {
     test('writes the outline of the relation the kept one names, as the project asks, keeping the name it was given, and says so', async () => {
       const { city, written } = kyivApart({ ...KYIV_OUTLINE, name: 'Kyiv city', polygons: [[square(30, 50, 1)]] });
       const answer = nominatimAnswering([KYIV_PLACE]);
-      const said = vi.spyOn(console, 'log').mockImplementation(() => {});
-      await fetchBoundary(city, null);
+      const said = vi.fn();
+      await fetchBoundary(city, null, said);
       expect(answer).toHaveBeenCalledExactlyOnceWith(lookupUrlOf(KYIV_PLACE.osm_id), { headers: { 'User-Agent': USER_AGENT } });
       expect(written()).toBe(formatBoundary({ ...KYIV_OUTLINE, name: 'Kyiv city' }));
       expect(said).toHaveBeenCalledWith(expect.stringMatching(/^kyiv: Kyiv city, relation \d+, \d+ points, \d+% of its stations, written$/));
-      await fetchBoundary(city, null);
+      await fetchBoundary(city, null, said);
       expect(said).toHaveBeenLastCalledWith(expect.stringMatching(/, unchanged$/));
     });
 
     test('names a new outline as OpenStreetMap does in English, for another relation or none kept', async () => {
       const { city, written } = kyivApart();
       nominatimAnswering([KYIV_PLACE]);
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      await fetchBoundary(city, KYIV_PLACE.osm_id);
+      await fetchBoundary(city, KYIV_PLACE.osm_id, vi.fn());
       expect(parseBoundary(JSON.parse(written() ?? ''))).toMatchObject({ name: 'Kyiv' });
     });
 
     test('asks for a relation for a city with no outline yet, asking Nominatim nothing', async () => {
       const { city } = kyivApart();
       const answer = nominatimAnswering([KYIV_PLACE]);
-      await expect(fetchBoundary(city, null)).rejects.toThrow('no outline yet: give its relation, pnpm data:boundary kyiv <relation>');
+      await expect(fetchBoundary(city, null, vi.fn())).rejects.toThrow('kyiv has no outline yet: give its relation');
       expect(answer).not.toHaveBeenCalled();
     });
 
@@ -288,7 +219,7 @@ describe('BoundaryUtils', () => {
       const { city, written } = kyivApart(KYIV_OUTLINE);
       const before = written();
       nominatimAnswering(body, status);
-      await expect(fetchBoundary(city, 9)).rejects.toThrow(reason);
+      await expect(fetchBoundary(city, 9, vi.fn())).rejects.toThrow(reason);
       expect(written()).toBe(before);
     });
   });
@@ -296,17 +227,16 @@ describe('BoundaryUtils', () => {
   describe('fetchBoundaries', () => {
     test('refuses a city it does not know, and a relation for every city, asking Nominatim nothing', async () => {
       const answer = nominatimAnswering([]);
-      await expect(fetchBoundaries('atlantis', null)).rejects.toThrow('no city atlantis: usage: pnpm data:boundary');
-      await expect(fetchBoundaries(undefined, 42)).rejects.toThrow('usage: pnpm data:boundary [city [relation]]');
+      await expect(fetchBoundaries('atlantis', null, vi.fn())).rejects.toThrow('no city atlantis');
+      await expect(fetchBoundaries(undefined, 42, vi.fn())).rejects.toThrow('a relation is of one city: name it');
       expect(answer).not.toHaveBeenCalled();
     });
 
     test('says why a city was not written, and names it', async () => {
       nominatimAnswering([], 503);
-      const said = vi.spyOn(console, 'error').mockImplementation(() => {});
-      await expect(fetchBoundaries('kyiv', null)).rejects.toThrow('outlines not written: kyiv');
+      const said = vi.fn();
+      await expect(fetchBoundaries('kyiv', null, said)).rejects.toThrow('outlines not written: kyiv');
       expect(said).toHaveBeenCalledExactlyOnceWith(`kyiv: not written: relation ${relationOf(KYIV_OUTLINE)} not fetched: Nominatim answered 503`);
-      said.mockClear();
     });
   });
 
@@ -321,7 +251,7 @@ describe('BoundaryUtils', () => {
         const text = readFileSync(city.boundaryPath, 'utf8');
         const boundary = parseBoundary(JSON.parse(text));
         expect(formatBoundary(boundary)).toBe(text);
-        expect(stationsHeld(boundary, readNetwork(city))).toBeGreaterThan(MIN_STATIONS_HELD);
+        expect(NetworkFacts.create(readNetwork(city)).coverage(boundary).stationsHeld()).toBeGreaterThan(MIN_STATIONS_HELD);
       },
     );
   });

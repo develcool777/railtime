@@ -7,13 +7,14 @@ import type { RouteLayer } from './route.service';
 import type { CameraDirector } from '../playback/camera.service';
 import type { OverlayResult } from '../transitMap.types';
 
-/** What the overlay controller draws with, and where it reads the moment and theme. */
+/** What the overlay controller draws with, and where it reads the network, the moment and the theme. */
 export type OverlayParts = {
-  facts: NetworkFacts;
-  route: Pick<RouteLayer, 'update' | 'shown'>;
-  reach: Pick<ReachLayer, 'update' | 'shown'>;
+  route: Pick<RouteLayer, 'update'>;
+  reach: Pick<ReachLayer, 'update'>;
   coverage: Pick<CoverageLayer, 'update'>;
   camera: Pick<CameraDirector, 'fit'>;
+  /** The network drawn now. */
+  facts: () => NetworkFacts;
   /** The moment the map shows. */
   moment: () => Playhead;
   /** The theme it is drawn in. */

@@ -7,9 +7,9 @@ import { createRequire } from 'node:module';
 import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { type Browser, chromium, type Page } from 'playwright-core';
-import type { City } from '../city.types.ts';
+import type { City, Report } from '../city.types.ts';
 import { citiesNamed, readNetwork } from '../city.utils.ts';
-import { PREVIEW_PAGE_SCRIPT, PREVIEW_SIZE, PREVIEW_THEMES, PREVIEW_TIMEOUT_MS, SOCIAL_SIZE, SOCIAL_THEME } from './preview.constants.ts';
+import { PREVIEW_SIZE, PREVIEW_THEMES, PREVIEW_TIMEOUT_MS, SOCIAL_SIZE, SOCIAL_THEME } from './preview.constants.ts';
 import type { PreviewOptions, PreviewWindow, Served } from './preview.types.ts';
 import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.ts';
 
@@ -24,6 +24,8 @@ import { previewPathOf, previewRequestOf, socialPathOf } from './preview.utils.t
 export class PreviewRenderer {
   /** Starts the browser. */
   private readonly launch: () => Promise<Browser>;
+  /** What it says as it goes. */
+  private readonly report: Report;
   /** The local server the page loads from. */
   private server: Server | null = null;
   /** The browser, once started. */
@@ -31,7 +33,8 @@ export class PreviewRenderer {
   /** The page the previews are drawn in. */
   private page: Page | null = null;
 
-  public constructor(options: PreviewOptions = {}) {
+  public constructor(options: PreviewOptions) {
+    this.report = options.report;
     this.launch = options.launch ?? (() => chromium.launch({ channel: 'chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] }));
   }
 
@@ -43,7 +46,7 @@ export class PreviewRenderer {
    */
   public async draw(cityId: string | undefined): Promise<void> {
     const chosen = citiesNamed(cityId);
-    if (chosen.length === 0) throw new Error(`no city ${cityId}: usage: pnpm data:previews [city]`);
+    if (chosen.length === 0) throw new Error(`no city ${cityId}`);
     await this.drawCities(chosen);
   }
 
@@ -63,13 +66,13 @@ export class PreviewRenderer {
           if (!request) continue;
           const picture = await this.render(theme, request);
           writeFileSync(previewPathOf(city.networkPath, theme), picture);
-          console.log(`${city.id} ${theme}: ${Math.round(picture.length / 1024)} KB`);
+          this.report(`${city.id} ${theme}: ${Math.round(picture.length / 1024)} KB`);
         }
         const social = previewRequestOf(network, SOCIAL_THEME, SOCIAL_SIZE);
         if (!social) continue;
         const card = await this.render(SOCIAL_THEME, { ...social, format: 'image/jpeg' });
         writeFileSync(socialPathOf(city.networkPath), card);
-        console.log(`${city.id} social: ${Math.round(card.length / 1024)} KB`);
+        this.report(`${city.id} social: ${Math.round(card.length / 1024)} KB`);
       }
     } finally {
       // Whatever started, Chrome or only the server, is closed, or the command would never end.
@@ -84,9 +87,9 @@ export class PreviewRenderer {
     this.page = await this.browser.newPage();
     this.page.setDefaultTimeout(PREVIEW_TIMEOUT_MS);
     // What goes wrong in the page is said here: a preview drawn without its tiles looks blank.
-    this.page.on('pageerror', error => console.error(`preview page: ${error.message}`));
+    this.page.on('pageerror', error => this.report(`preview page: ${error.message}`));
     this.page.on('console', message => {
-      if (message.type() === 'error') console.error(`preview page: ${message.text()}`);
+      if (message.type() === 'error') this.report(`preview page: ${message.text()}`);
     });
     await this.page.goto(`${origin}/`);
     await this.page.waitForFunction(() => 'takePreview' in window);
@@ -128,11 +131,7 @@ export class PreviewRenderer {
    */
   private async pageFiles(): Promise<Served> {
     const bundled = await build({
-      stdin: {
-        contents: PREVIEW_PAGE_SCRIPT,
-        resolveDir: fileURLToPath(new URL('.', import.meta.url)),
-        loader: 'ts',
-      },
+      entryPoints: [fileURLToPath(new URL('page.entry.ts', import.meta.url))],
       bundle: true,
       format: 'iife',
       write: false,

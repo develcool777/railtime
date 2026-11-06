@@ -13,15 +13,16 @@ rail, used by more than one package: dates, geometry, `required`; a helper is ne
 here), `packages/schema` (the format: `format/` its
 types, `validation/` the Zod shape and the checks between parts, `plan/` building a plan on a network),
 `packages/network` (the facts: `NetworkFacts` for everyone, every answer about the network, its history
-and its plans; `NetworkEngine`, `facts.engine`, the raw network the renderer plays and draws),
+and its plans; `NetworkEngine`, `engineOf(facts)`, the raw network the renderer plays and draws),
 `packages/renderer` (drawing: the MapLibre engine, `TransitMap`), `packages/data` (storage: every
 city's files in `cities/<country>/<city>/`, its network `<city>.json`, outline and pictures; the index
 of them, `cities/cities.json`; and the commands that keep them, a folder each in `src/`: `summary/`,
 `boundary/`, `preview/`), `packages/tooling` (the repo's own tools: `pnpm test-mutation`, and the house's typed lint rules),
 `packages/video` (videos of the app: `pnpm video:record <city>` records its video page frame by frame,
 on a clock only it moves, into an MP4 with ffmpeg, after a rehearsal that fetches every map tile the
-camera will look at into Chrome's own cache; a frame waits for what it draws, never for a stream open
-as long as the page; what a video shows stays in `web`) and `web` (the app: the Nuxt 4 + Nuxt UI
+camera will look at into Chrome's own cache; it knows a page by its handle alone, which starts it, says
+when it is over, and says a frame is drawn, the map answering: the tiles in view, never motion, which
+stands still with the clock; what a video shows stays in `web`) and `web` (the app: the Nuxt 4 + Nuxt UI
 explorer, and the video page, `/video/<city>`, in 3D or flat with `?view=2d`, under `pnpm dev` only;
 `pnpm video:record <city> --query "plan=<id>"` records a plan of the city's as its ending).
 `README.md` has the commands; `ARCHITECTURE.md` the contract between the parts;
@@ -52,12 +53,14 @@ landing page's pictures in Chrome).
   computed; `// ---- Actions`, named in capitals (`OPEN`, `SET_TIME`, `RESET` where it needs one), so a
   call reads as one wherever it is made; then what it returns, in the same order, all its state among
   it (`house/store-returns-state`): Pinia keeps only what a setup store returns, and a ref left out is
-  invisible to its devtools and plugins, and lost in server rendering. Its state changes
-  only by its actions: a component or composable reads it and calls them. An action is a block,
+  invisible to its devtools and plugins, and lost in server rendering. The headings' order, each part
+  under its own, what it returns in that order and an action's capitals are `house/store-shape`'s. Its
+  state changes only by its actions: a component or composable reads it and calls them, which no rule
+  can see, as Pinia hands out its refs. An action is a block,
   `(next) => { time.value = next; }`: it returns nothing (`jsdoc/require-returns` asks a `@returns` of
   one that does).
 - **Loops say what they loop over.** No `for (;;)` or `while (true)`;
-  `for (const [place, stop] of run.entries())`, never `forEach` (`unicorn/no-array-for-each`), nor
+  `for (const [place, stop] of run.entries())`, never `forEach` (`unicorn/no-for-each`), nor
   `reduce` (`unicorn/no-array-reduce`): a sum or a fold is a loop and a `let`. A queue is read from its
   head, never `shift`ed, and a list built from its end is pushed then `toReversed()`, never
   `unshift`ed: each copies the whole array, so the loop is O(n²) (`unicorn/no-array-front-mutation`).
@@ -67,8 +70,9 @@ landing page's pictures in Chrome).
   among them, then the app's own (`#imports`, `~/`, `@test/`), then relative, each group alphabetical,
   no blank lines. No module imports itself round a circle (`import-x/no-cycle`), and a module's exports
   are constants (`import-x/no-mutable-exports`).
-- **Modern JavaScript** (`unicorn`): an array is never sorted or reversed in place: `toSorted`,
-  `toReversed` (`unicorn/no-array-sort`, `no-array-reverse`), with a comparator always
+- **Modern JavaScript** (`unicorn`): an array is never sorted or reversed in place, as a statement of its
+  own either: `toSorted`, `toReversed` (`unicorn/no-array-sort`, `no-array-reverse`, `allowExpressionStatement`
+  off), with a comparator always
   (`require-array-sort-compare`, strings' sorts too: `byCodeUnits` from
   `@railtime/core/text.utils` for ids and ISO dates, `localeCompare` for a name a reader sees);
   `list.at(-1)`, `replaceAll`, `Number.isSafeInteger`, `Set` methods (`difference`); a callback that does
@@ -100,7 +104,10 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `schema`'s format): a line's id where a station's goes does not compile, and a map or set of them
   says which (`Map<StationId, number>`). A string becomes an id only where it is checked: `parseNetwork`
   for a city's file, `isStationIn`/`isLineIn`/`isPlanIn` (`facts.findStation`, `findLine`, `planToOpen`)
-  for an address; never by `as` elsewhere (`house/checked-ids`). A record keyed by ids is walked with
+  for an address; never by `as` elsewhere, a template's expressions included (`house/checked-ids`). A
+  city's file becomes a `Network` or a `CityBoundary` at a door: `parseNetwork`/`parseBoundary`, which
+  check it, or in the browser `servedNetwork`/`servedBoundary` (`@railtime/schema/served.utils`), which
+  trust what CI checked; never by `as` or a fetch's type argument elsewhere (`house/served-files`). A record keyed by ids is walked with
   `keysOf`/`entriesOf` and made with `fromEntriesOf` (`@railtime/core/collection.utils`), which keep the
   key's kind, where `Object.keys` makes it `string` (`house/branded-record-keys`). An id key beside a
   spread, `{ ...plans, [id]: plan }`, is one TypeScript checks nothing under: copy, then set it by key
@@ -121,8 +128,9 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
 - **Classes live in `*.service.ts`**, helpers in `*.utils.ts`; a file may hold several classes of
   one subject (a base and its kinds). Types and constants keep files of their own, beside the code
   they belong to (`camera.types.ts` next to `camera.service.ts`): when code merges, its types and
-  constants merge into the merged file's. No `types/` folders, no barrels (`check-file`). No file passes ~500
-  lines: a subject that big splits by job, never by role. A `*.utils.ts` is pure: it takes no store,
+  constants merge into the merged file's. No `types/` folders, no barrels (`check-file`). No source file
+  passes 500 lines, comments counted (`max-lines`; a test may): a subject that big splits by job, never by role.
+  A page's script bundled for the browser is a `*.entry.ts` (`preview/page.entry.ts`), typed as any other. A `*.utils.ts` is pure: it takes no store,
   composable, Vue or map at run time (`house/pure-utils`), only their types.
 - **Every class member has an access modifier** (`public`, `protected`, `private`), and every class,
   member, function, constant and type at a module's top has a JSDoc comment (`jsdoc/require-jsdoc`).
@@ -133,26 +141,36 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `no-undefined-types`): a `@throws` says what in words, `@throws Zod's error, if …`.
 - **Names say what they hold**: three letters at least, but for `id`, `x`, `y`, `km`, `on`, `to` (`id-length`).
 - **Strict indexing** (`noUncheckedIndexedAccess`): a lookup by an id the network supplied goes
-  through `required()` (or `NetworkIndex.stationOf`/`lineOf`), which fails loudly; `!` only inside a
-  loop whose bounds guarantee the element, with a comment saying so.
+  through `required()` (or `NetworkIndex.stationOf`/`lineOf`), which fails loudly; in source, `!` only on a
+  numeric index a loop's head bounds, with a `// Within bounds:` comment saying why (`house/bounded-assertion`);
+  anything else is restructured so the types see it. A test may: a `!` that is wrong fails it.
 - **A command is a feature's `cli.ts`** (`packages/data/src/boundary/cli.ts`, `pnpm data:boundary`): it
-  reads its arguments, calls the feature in a `try`, and on an error says it and sets
-  `process.exitCode = 1`. The feature knows nothing of the command: it takes typed arguments, throws
-  what went wrong, and closes what it opened. A function in the feature's utils, or a service where it
+  reads its arguments, calls the feature in a `try`, and on an error says it, with its usage, and sets
+  `process.exitCode = 1`. The feature knows nothing of the command: it takes typed arguments, says how it
+  goes through the `report` it is given, throws what went wrong, and closes what it opened; only a
+  `cli.ts` touches the console (`no-console`). A function in the feature's utils, or a service where it
   holds state (`PreviewRenderer`: a server, Chrome, a page); beside it one types and one constants file.
 - **Erasable TypeScript only** (`erasableSyntaxOnly`): scripts run directly under Node's type
   stripping, so no enums or constructor parameter properties; and in the code they run (`core`,
   `schema`, `network`, `data/src`) a runtime import names its file, `.ts` included (ESLint).
 - **A package through its door**: another package is imported by its `exports` (`@railtime/<package>/…`),
   never by a path into its folders (ESLint); what its tests share, from `@railtime/<package>/testing/…`.
+  `@railtime/network/engine.*` is the renderer's alone, `web`'s and `data`'s code and tests kept out (ESLint):
+  `engineOf(facts)` is the one way from a network's facts to the engine. One exception the fence does not
+  see: `data`'s `london.test.ts` and `lineSplits` read the raw `index` and `timeline` that `playbackOf`
+  (`@railtime/renderer/testing/playback`) hands over, for what no fact says: which stretch a step opens, a
+  segment's direction, a line's track holding together past a junction its trains pass. Else they ask the facts.
   No package takes Vue (its stores, Nuxt), and `core`, `schema` and `network` take no map either: the
   renderer is the one that draws (ESLint).
 
 ## Architecture
 
 - **A fact is `network`'s.** A count, a length, a station's neighbours, a route, a caption: a method
-  on `NetworkFacts` (or the `FactsAt` its `asOf` gives), tested in `packages/network`; `web` and `data`
-  ask it, never work it out, and never import its `engine.*` (`NetworkEngine`, ESLint), which is the renderer's. No
+  on `NetworkFacts` (or the `FactsAt` its `asOf` gives, `facts/moment.service.ts`), tested in `packages/network`; `web` and `data`
+  ask it, never work it out, and never import its `engine.*` (`NetworkEngine`, `engineOf`, ESLint), which is the
+  renderer's: a city's test reads the raw network only as the renderer's playback hands it over.
+  Every answer at a moment says what the map draws then: a line drawn as another (`LineAlias`) is that line, in a
+  station, a route (with no change between them), a line and the records (`Timeline.drawnAs`). No
   answer takes a theme: a line's colour is a `LineColor` in both, and what shows it picks one. `web` keeps presentation: formatting, grouping, the search.
 - **The renderer has no UI and no facts.** Controls, captions and panels are Nuxt UI components in
   `web`; the renderer takes props, commands and listeners (`transitMap.types.ts`, `ARCHITECTURE.md`)
@@ -166,14 +184,16 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   files named for what they are, not the folder again (`overlay/route.service.ts`, `RouteLayer`),
   but for the folder's main class and its one shared types, constants or utils file, which take
   its name (`engine/engine.service.ts`, `overlay/overlay.utils.ts`). Classes keep their full names.
-- **A new kind of step** is its times in `STEP_TIMES` and a case in `StepAnimation`'s `cameraPoints`
-  and `draw` (`steps/animation.service.ts`): one class for every kind, its pure parts in
+- **A new kind of step** is its times in `STEP_TIMES` and a case in `StepAnimation`'s `cameraPoints`,
+  `baseAt` and `draw` (`steps/animation.service.ts`): one class for every kind, its pure parts in
   `animation.utils.ts`.
-- **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
+- **A new group of map layers** is a `MapLayer` subclass installed by `MapLayers` (`layers/stack.service.ts`).
 - **Trains on the map are an illustration, run by what real lines do.** The network keeps no timetable, so
   `network`'s `trains/` works one out as an operator does, the same way for any city, and never a number
-  tuned for one. `TRAIN_PROFILES` says how each `Mode` runs, in real units, each figure from a published source
-  (`trains.constants.ts`): a city's test holds them to its real times (Kyiv's average speed, Glasgow's lap).
+  tuned for one. `TRAIN_PROFILES` says how each `Mode` runs, in real units: a figure from a published source where one
+  exists, cited, and the rest fitted, each saying so (`trains.constants.ts`); a city's test holds them to its
+  real times (Kyiv's average speed, Glasgow's lap, the Victoria line end to end). A route's ride is timed from them too,
+  by the same motion rules (`RouteFinder`), so a route and the trains agree.
   Every way along a line from end to end (`routes.utils.ts`): a branch goes on past its fork towards the core,
   the side more lines meet, never doubling back. A train pulls away, runs and brakes (`motion.utils.ts`).
   `schedule.utils.ts`: a route runs at its kind's headway, branches adding up along their trunk, in turn,
@@ -192,7 +212,7 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   pages/  css/            routes, styles
   components/ui/          components every surface uses (SiteHeader, MapCredits, the charts: GrowthChart,
                           DecadeChart, CoverageChart, on YearChart's round years…; a number on rolling reels: ReelNumber draws a count,
-                          CountingNumber counts to each value on the browser's clock, the video keeping its own)
+                          CountingNumber counts to each value on the page's clock, which a recorder moves)
   constants/  utils/      what more than one surface needs: the city catalogue (CITIES, city.utils,
                           its outline fetched), plans' statuses, how a number, a share, a walk or
                           what a plan adds is written, a measure's growth
@@ -225,11 +245,12 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   functions in `*.utils.ts`, tested, and each store is tested (`test/unit/…/<name>.test.ts`, on a
   stand-in map, `@test/support/factories/transitMap.utils`). Stores read one another one way only,
   never in a circle. The explorer's: `network.store.ts` (the network shown, its facts, the plan and
-  the lines hidden) and `map/map.store.ts` (the map, its credits, where it looks, its camera's
-  commands) read none; `time/time.store.ts` (the time control, playback, every command through time)
-  reads those two; `tools.store.ts` (a route, a reach, coverage and the city's outline) the network;
+  the lines hidden), `map/map.store.ts` (the map, its credits, where it looks, its camera's commands)
+  and `layout.store.ts` (how the page fits the screen: a phone's or not, the panel's width, the sheet)
+  read none; `time/time.store.ts` (the time control, playback, every command through time) reads the
+  network and the map; `tools.store.ts` (a route, a reach, coverage and the city's outline) the network;
   `explorer.store.ts` (what is open, how the map is seen, `mapProps`, `address`, and the actions that
-  span the others: a page opening, a plan or lines shown, the map arriving, a station clicked) reads
+  span the others: a page opening, a plan or lines shown, a station clicked) reads
   them all; `panel/panel.store.ts` (getters only: what the panel shows) reads the rest, and nothing
   reads it.
 - **A composable is an effect, and nothing else**: it ties something outside Vue to the stores (the
@@ -238,7 +259,8 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `map/transitMap.composable.ts` makes the map and takes it down;
   `layout.composable.ts` gives the stores the screen and the theme, and drags the panel;
   `shortcuts.composable.ts` the keys; `address/address.composable.ts` writes the explorer's `address`
-  to the address bar, its only writer. A component lays out what stores hold and calls their actions.
+  to the address bar, its only writer; `recorded.composable.ts` gives a recorder its handle, under
+  `pnpm dev`. A component lays out what stores hold and calls their actions.
 - What is looked at and how it is set goes in the address; dark or light, the one preference, in the browser (`features/explorer/_README.md`).
 
 - Vue: `<script setup lang="ts">`, block order template → script → style, a blank line between
@@ -266,15 +288,15 @@ Each package keeps its tests beside its code, as dataroom-ui does inside its one
 packages/network/
   vitest.config.ts          the package's project (`pnpm --filter @railtime/network test-unit`)
   test/unit/                mirrors src/: test/unit/engine/timeline.test.ts tests src/engine/timeline.*.ts
-  test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries:
-                            exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
+  test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries,
+                            hiddenNetwork: exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
 packages/renderer/
   test/unit/                mirrors src/, as network's; transitMap.spec.ts tests the contract whole
   test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it, and what
                             the map draws: `@railtime/renderer/testing/playback` for data's city tests)
 packages/data/
-  test/unit/<feature>/      mirrors src/<feature>/: city/ (finding the cities and reading their files),
-                            format/, boundary/, preview/ (a command each)
+  test/unit/<feature>/      mirrors src/<feature>/: summary/, boundary/, preview/ (a command each)
+  test/unit/city.test.ts    finding the cities and reading their files
   test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
                             cities/united-kingdom/london/london.json, played through the renderer
   test/bench/               the work a visitor waits on, timed on the largest city (`pnpm test-bench`)
@@ -292,8 +314,8 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
   `vitest.shared.ts`: mocks reset between tests, random order, node.
 - **A test file's name picks its environment**, as in dataroom-ui: `*.test.ts` runs in node, `*.spec.ts`
   in happy-dom, for code that makes elements of its own (the minimap's box, `BasemapStill`'s hidden
-  container); each is a project of its own (`projectsOf` in `vitest.shared.ts`). Never a
-  `@vitest-environment` comment.
+  container); each is a project of its own (`projectsOf` in `vitest.shared.ts`), in every package and
+  `web` (ESLint refuses `defineProject` there). Never a `@vitest-environment` comment.
 - **Tests run the real code.** No `vi.mock` (ESLint): build the input with a factory in `test/support/`.
 - A test mirrors one source file, or Vitest refuses to start; `*.test.ts` and `*.spec.ts` only in `test/unit/`,
   helpers only in `test/support/` (ESLint).

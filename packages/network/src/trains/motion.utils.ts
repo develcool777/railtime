@@ -20,13 +20,13 @@ const rideOf = ({ topKmh, rateMetresPerSecondSquared }: TrainProfile, km: number
 };
 
 /**
- * How long a ride takes.
+ * How long a ride takes: none, over no track.
  *
  * @param profile - How the train runs.
  * @param km - How long the stretch is.
  * @returns How long, seconds.
  */
-export const rideSeconds = (profile: TrainProfile, km: number): number => rideOf(profile, km).seconds;
+export const rideSeconds = (profile: TrainProfile, km: number): number => (km > 0 ? rideOf(profile, km).seconds : 0);
 
 /**
  * How far along a ride a train is, a time into it.

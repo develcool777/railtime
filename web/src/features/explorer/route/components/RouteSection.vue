@@ -104,26 +104,26 @@
 </template>
 
 <script setup lang="ts">
-  import type { RouteInfo, Stop, StationSummary } from '@railtime/network/facts.types';
+  import type { RouteInfo, StationSummary } from '@railtime/network/facts.types';
   import type { StationId } from '@railtime/schema/network.types';
   import { computed } from 'vue';
   import { ROUTE_ENDS } from '~/features/explorer/route/route.constants';
   import { routeDifference, routeStrengths, routeSummary, routeVia } from '~/features/explorer/route/route.utils';
-  import type { RouteEnds } from '~/features/explorer/tools.types';
+  import type { RouteEnds, RouteStops } from '~/features/explorer/tools.types';
   import { lineColor } from '~/utils/format.utils';
 
   const props = defineProps<{
     /** The stations on the map on the date shown, to pick from. */
     stations: StationSummary[];
     /** Where the route starts and ends, once picked. */
-    ends: RouteEnds;
+    ends: RouteStops;
     /** The end a station clicked on the map fills. */
     aim: keyof RouteEnds;
     /** The ways between them on the date shown, fastest first, and the one drawn; `null` while none is drawn. */
     found: { routes: RouteInfo[]; shown: number | null } | null;
   }>();
   const emit = defineEmits<{
-    end: [end: keyof RouteEnds, stop: Stop | null];
+    end: [end: keyof RouteEnds, station: StationId | null];
     aim: [end: keyof RouteEnds];
     clear: [];
     swap: [];

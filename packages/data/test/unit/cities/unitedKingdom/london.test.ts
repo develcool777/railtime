@@ -1,13 +1,15 @@
 import { toTimestamp } from '@railtime/core/date.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
-import type { TrackSegment } from '@railtime/network/engine.types';
 import { NetworkFacts } from '@railtime/network/facts.service';
 import { tightestHeadway } from '@railtime/network/testing/trains';
-import { playbackOf, snapshotOf } from '@railtime/renderer/testing/playback';
+import { playbackOf } from '@railtime/renderer/testing/playback';
 import type { StationId } from '@railtime/schema/network.types';
 import { lineId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { cityNetwork, lineSplits, playPlan, playWholeHistory } from '../../../support/history.utils';
+
+/** A stretch of track and which way along it the line is drawn: the raw network, which no fact says (`CLAUDE.md`, the engine's fence). */
+type TrackSegment = { stationA: StationId; stationB: StationId; travel: number };
 
 const london = cityNetwork('london');
 // London as it opens: National Rail hidden.
@@ -19,8 +21,9 @@ const endOf = (segment: TrackSegment) => (segment.travel === 1 ? segment.station
 describe('London', () => {
   test("runs the Northern line's real services: each branch through the core, none from one branch out along another", () => {
     const { facts } = playbackOf(cityNetwork('london'));
-    const ends = facts.engine
-      .trainService(facts.playheads.end().cursor)
+    const ends = facts
+      .asOf(facts.playheads.end())
+      .trains()
       .timetables.filter(({ run }) => run.line === lineId('northern'))
       .map(({ run }) => run.ends.toSorted(byCodeUnits).join('–'))
       .toSorted(byCodeUnits);
@@ -29,7 +32,50 @@ describe('London', () => {
 
   test('runs its branches evenly through their shared track: no two of a line closer than a line may run them', () => {
     const { facts } = playbackOf(cityNetwork('london'));
-    expect(tightestHeadway(facts.engine.trainService(facts.playheads.end().cursor))).toBeGreaterThan(170);
+    expect(tightestHeadway(facts.asOf(facts.playheads.end()).trains())).toBeGreaterThan(170);
+  });
+
+  test('counts on its card what is open, not every station it ever had', () => {
+    const facts = NetworkFacts.create(cityNetwork('london'), { today: toTimestamp('2026-11-01') });
+    expect(facts.summary()).toMatchObject({ lines: 21, stations: 462 });
+  });
+
+  test('sketches a line where it runs today, not one that left that track', () => {
+    const lines = NetworkFacts.create(cityNetwork('london'), { today: toTimestamp('2026-11-01') })
+      .sketch()
+      .map(sketch => sketch.line);
+    expect(lines).not.toContain('east-london');
+  });
+
+  test('takes the Victoria line end to end in about the 30 to 32 minutes it is timetabled', () => {
+    const facts = NetworkFacts.create(cityNetwork('london'), { today: toTimestamp('2026-11-01') });
+    const [route] = facts.today().routes(stationId('brixton'), stationId('walthamstow-central'));
+    expect(route?.changes).toBe(0);
+    expect(route?.minutes).toBeGreaterThan(29);
+    expect(route?.minutes).toBeLessThan(35);
+  });
+
+  test('says what the map draws in 1985: the Hammersmith & City is the Metropolitan, in a station, a line and a route', () => {
+    const facts = NetworkFacts.create(cityNetwork('london'), { today: toTimestamp('2026-11-01') });
+    const then = facts.asOf(facts.playheads.on(toTimestamp('1985-01-01')));
+    expect(then.station(stationId('aldgate-east')).lines.map(line => line.id)).toEqual(['metropolitan', 'district']);
+    expect(then.line(lineId('hammersmith-city')).id).toBe('metropolitan');
+  });
+
+  test("says the Overground's lines as one before 2024, a change between them no change, and as themselves after", () => {
+    const facts = NetworkFacts.create(cityNetwork('london'), { today: toTimestamp('2026-11-01') });
+    const lines = (date: string) => {
+      const then = facts.asOf(facts.playheads.on(toTimestamp(date)));
+      return then
+        .station(stationId('highbury-and-islington'))
+        .lines.filter(line => line.calls)
+        .map(line => line.id);
+    };
+    expect(lines('2020-01-01')).toContain('london-overground');
+    expect(lines('2020-01-01')).not.toContain('windrush');
+    expect(lines('2025-01-01')).toEqual(expect.arrayContaining(['windrush', 'mildmay']));
+    const then = facts.asOf(facts.playheads.on(toTimestamp('2020-01-01')));
+    expect(then.routes(stationId('west-croydon'), stationId('hampstead-heath'))[0]).toMatchObject({ changes: 0 });
   });
 
   test('keeps each line in one piece, but where its history parts it', () => {
@@ -58,7 +104,7 @@ describe('London', () => {
   test('suspends the District past the future Hounslow East in 1905 without a stop there: it opened only in 1909', () => {
     const suspended = stepsOn('1905-06-13').find(step => step.kind === 'close');
     if (suspended?.kind !== 'close') throw new Error('the District leaves its direct Hounslow line on 13 June 1905');
-    expect(timeline.retreatOf(suspended).reach.filter(reached => reached.isNew)).toEqual([]);
+    expect(timeline.growths.retreatOf(suspended).reach.filter(reached => reached.isNew)).toEqual([]);
   });
 
   test('opens the Hampstead tube in 1907 a branch at a time: to Golders Green, then from Camden Town to Highgate', () => {
@@ -82,7 +128,7 @@ describe('London', () => {
     const facts = NetworkFacts.create(london, { today: toTimestamp('2026-01-01') });
     const extended = stepsOn('1920-08-03').find(step => step.kind === 'open' && step.line === 'central');
     if (extended?.kind !== 'open') throw new Error('the Central line reaches Ealing Broadway on 3 August 1920');
-    expect(timeline.growthOf(extended).reach[0]?.station).toBe('white-city');
+    expect(timeline.growths.growthOf(extended).reach[0]?.station).toBe('white-city');
     expect(facts.change(extended.index).subtitle).toBe('Wood Lane – Ealing Broadway');
   });
 
@@ -155,8 +201,9 @@ describe('London', () => {
 
   test('opens the cable car across the Thames in 2012, a change from North Greenwich and Royal Victoria', () => {
     expect(stepsOn('2012-06-28').some(step => step.kind === 'open' && step.line === 'cable-car')).toBe(true);
-    expect(index.transfersAt(stationId('greenwich-peninsula'))).toEqual(['north-greenwich']);
-    expect(index.transfersAt(stationId('royal-docks'))).toEqual(['royal-victoria']);
+    const today = playbackOf(london).facts.today();
+    expect(today.station(stationId('greenwich-peninsula')).transfers.map(transfer => transfer.id)).toEqual(['north-greenwich']);
+    expect(today.station(stationId('royal-docks')).transfers.map(transfer => transfer.id)).toEqual(['royal-victoria']);
   });
 
   test('turns the Stanmore branch from Bakerloo to Jubilee before the 1979 tunnel opens', () => {
@@ -188,9 +235,10 @@ describe('London', () => {
   });
 
   test('ends with every line open but the two that closed for good', () => {
-    const open = new Set(index.lineSegments.filter(lineSegment => timeline.isOpen(lineSegment, timeline.steps.length)).map(lineSegment => lineSegment.line));
-    const closed = new Set(['east-london', 'northern-city']);
-    expect([...open].toSorted(byCodeUnits)).toEqual(index.lineIds.filter(line => !closed.has(line)).toSorted(byCodeUnits));
+    const { facts } = playbackOf(london);
+    const atEnd = facts.asOf(facts.playheads.end());
+    const closed = facts.lines().filter(line => atEnd.line(line.id).branches.length === 0);
+    expect(closed.map(line => line.id).toSorted(byCodeUnits)).toEqual(['east-london', 'northern-city']);
   });
 
   test('suspends the Aldwych branch through the war', () => {
@@ -232,9 +280,9 @@ describe('London', () => {
   });
 
   test('is at its known size today', () => {
-    const snapshot = snapshotOf(playbackOf(london));
-    expect(snapshot.stats.stations).toBe(462);
-    expect(snapshot.stats.lines).toBe(21);
+    const stats = playbackOf(london).facts.today().stats();
+    expect(stats.stations).toBe(462);
+    expect(stats.lines).toBe(21);
   });
 
   // Every frame of the biggest city: over a second on a laptop, near Vitest's default 5 s on a CI runner.
@@ -311,9 +359,9 @@ describe('London', () => {
     });
 
     test('is at its known size today, National Rail with it', () => {
-      const snapshot = snapshotOf(playbackOf(london, { hidden: shown }));
-      expect(snapshot.stats.stations).toBe(601);
-      expect(snapshot.stats.lines).toBe(24);
+      const stats = playbackOf(london, { hidden: shown }).facts.today().stats();
+      expect(stats.stations).toBe(601);
+      expect(stats.lines).toBe(24);
     });
 
     test('plays its whole history, every step, drawing frames without errors', () => {
@@ -332,7 +380,7 @@ describe('London', () => {
 
   test('plays its whole history with the Metropolitan hidden, the years other lines were drawn as it gone with it', () => {
     const hidden = playbackOf(london, { hidden: ['national-rail', 'metropolitan'] });
-    expect(hidden.index.lineSegments.some(lineSegment => lineSegment.line === 'metropolitan')).toBe(false);
+    expect(hidden.facts.lines().map(line => line.id)).not.toContain('metropolitan');
     expect(hidden.timeline.steps.some(step => step.kind === 'open' && step.line === 'metropolitan')).toBe(false);
     // The Circle, drawn as the Metropolitan until 1949, comes only then, as itself.
     const circle = hidden.timeline.steps.find(step => step.kind === 'open' && step.line === 'circle');

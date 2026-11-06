@@ -1,8 +1,8 @@
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { recordedPageOf } from './recordedPage.utils.ts';
-import { FFMPEG_LOCATIONS, RECORD_USAGE, RECORDING_DEFAULTS, STREAM_REQUESTS, VIDEOS_FOLDER } from './recorder.constants.ts';
-import type { RecordedPageKind, Recording, RecordingScope } from './recorder.types.ts';
+import type { BrowserType } from 'playwright-core';
+import { FFMPEG_LOCATIONS, RECORDING_DEFAULTS, VIDEOS_FOLDER } from './recorder.constants.ts';
+import type { DrawnScope, RecordedPageKind, Recording, RecordingScope } from './recorder.types.ts';
 
 /**
  * A whole number at least 1, from an argument.
@@ -16,7 +16,7 @@ import type { RecordedPageKind, Recording, RecordingScope } from './recorder.typ
 const countOf = (name: string, text: string | undefined, fallback: number): number => {
   if (text === undefined) return fallback;
   const count = Number(text);
-  if (!Number.isSafeInteger(count) || count < 1) throw new Error(`--${name} takes a whole number, not ${text}: ${RECORD_USAGE}`);
+  if (!Number.isSafeInteger(count) || count < 1) throw new Error(`--${name} takes a whole number, not ${text}`);
   return count;
 };
 
@@ -39,7 +39,7 @@ const originOf = (text: string): string => {
   try {
     return new URL(text).origin;
   } catch (error) {
-    throw new Error(`--origin takes an address (http://localhost:5180), not ${text}: ${RECORD_USAGE}`, { cause: error });
+    throw new Error(`--origin takes an address (http://localhost:5180), not ${text}`, { cause: error });
   }
 };
 
@@ -48,36 +48,30 @@ const originOf = (text: string): string => {
  *
  * @param args - The arguments after the command: the city, then its options.
  * @returns The recording, its defaults filled in.
- * @throws {Error} For no city, an option it does not know, or a value it cannot read; with how to call it.
+ * @throws {Error} For no city, an option it does not know, or a value it cannot read.
  */
 export const recordingOf = (args: string[]): Recording => {
-  const { values, positionals } = (() => {
-    try {
-      return parseArgs({
-        args,
-        allowPositionals: true,
-        allowNegative: true,
-        options: {
-          page: { type: 'string' },
-          rehearse: { type: 'boolean' },
-          fps: { type: 'string' },
-          size: { type: 'string' },
-          seconds: { type: 'string' },
-          query: { type: 'string' },
-          origin: { type: 'string' },
-          out: { type: 'string' },
-        },
-      });
-    } catch (error) {
-      throw new Error(`${error instanceof Error ? error.message : String(error)}: ${RECORD_USAGE}`, { cause: error });
-    }
-  })();
+  const { values, positionals } = parseArgs({
+    args,
+    allowPositionals: true,
+    allowNegative: true,
+    options: {
+      page: { type: 'string' },
+      rehearse: { type: 'boolean' },
+      fps: { type: 'string' },
+      size: { type: 'string' },
+      seconds: { type: 'string' },
+      query: { type: 'string' },
+      origin: { type: 'string' },
+      out: { type: 'string' },
+    },
+  });
   const [city] = positionals;
-  if (!city || positionals.length > 1) throw new Error(RECORD_USAGE);
+  if (!city || positionals.length > 1) throw new Error('name one city');
   const size = /^(\d+)x(\d+)$/.exec(values.size ?? `${RECORDING_DEFAULTS.width}x${RECORDING_DEFAULTS.height}`);
-  if (!size) throw new Error(`--size takes width x height (1920x1080), not ${values.size}: ${RECORD_USAGE}`);
+  if (!size) throw new Error(`--size takes width x height (1920x1080), not ${values.size}`);
   const page = values.page ?? RECORDING_DEFAULTS.page;
-  if (!isPageKind(page)) throw new Error(`--page takes video or explorer, not ${page}: ${RECORD_USAGE}`);
+  if (!isPageKind(page)) throw new Error(`--page takes video or explorer, not ${page}`);
   return {
     city,
     page,
@@ -99,7 +93,8 @@ export const recordingOf = (args: string[]): Recording => {
  * @returns The city's video page or explorer, with the query given.
  */
 export const pageUrlOf = (recording: Recording): string => {
-  const url = new URL(recordedPageOf(recording.page).pathOf(recording.city), recording.origin);
+  const city = encodeURIComponent(recording.city);
+  const url = new URL(recording.page === 'video' ? `/video/${city}` : `/${city}`, recording.origin);
   url.search = recording.query;
   return url.href;
 };
@@ -182,10 +177,41 @@ export const installRecordingClock = (scope: RecordingScope): void => {
 };
 
 /**
- * Whether a frame waits for a request to be answered before it is taken: any but a stream, which stays
- * open as long as the page.
+ * Draws the page again at the moment it is held at, and says whether that is all of it: the frames it
+ * asked for run first, as what came meanwhile is drawn by them or asks for more, and the question is
+ * asked in the same turn, so nothing can land between the drawing and the answer. A page with no handle
+ * yet has nothing to wait for. Run in the page, so it uses nothing from outside itself.
  *
- * @param resourceType - The request's kind, as the browser says it (`fetch`, `image`, `eventsource`…).
- * @returns Whether a frame waits for it.
+ * @param scope - The page's globals: its `window`.
+ * @returns Whether a frame can be taken.
  */
-export const awaitedByFrame = (resourceType: string): boolean => !STREAM_REQUESTS.has(resourceType);
+export const drawnOnceHeld = (scope: DrawnScope): boolean => {
+  scope.railtimeRecorder?.advance(0);
+  return scope.railtimeVideo?.drawn() ?? true;
+};
+
+/**
+ * Waits for a frame to be drawn, or for as long as a frame may wait.
+ *
+ * @param drawn - Draws the frame again, saying whether it is whole.
+ * @param wait - Waits a little.
+ * @param timedOut - Whether the frame has waited as long as it may.
+ */
+export const untilDrawn = async (drawn: () => Promise<boolean>, wait: () => Promise<unknown>, timedOut: () => boolean): Promise<void> => {
+  while (!(await drawn()) && !timedOut()) await wait();
+};
+
+/**
+ * How Chrome is started for a recording: the one installed, at the video's size, a pixel to a pixel, and
+ * asking for all the motion there is, whatever the machine's own setting: what rolls in the video
+ * follows the preference (`CountingNumber`), and the recording says what it wants.
+ *
+ * @param recording - The recording.
+ * @returns The options.
+ */
+export const launchOptionsOf = (recording: Recording): Parameters<BrowserType['launchPersistentContext']>[1] => ({
+  channel: 'chrome',
+  viewport: { width: recording.width, height: recording.height },
+  deviceScaleFactor: 1,
+  reducedMotion: 'no-preference',
+});

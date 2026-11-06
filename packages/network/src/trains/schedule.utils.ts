@@ -87,10 +87,14 @@ export const timetableOf = (run: TrainRun, everySeconds: number): RouteTimetable
  */
 const outSeconds = ({ run, times, kms }: RouteTimetable, km: number, last: boolean): number => {
   const place = last ? kms.findLastIndex(each => each <= km) : kms.findIndex(each => each >= km);
-  // Within bounds: `km` is on the route, and `kms` runs from its start to its end.
-  if (kms[place] === km) return times[place]!;
+  // `km` is on the route, and `kms` runs from its start to its end.
+  if (kms[place] === km) return required(times[place], 'a time at a stop');
   const from = last ? place : place - 1;
-  return times[from]! + rideSecondsTo(TRAIN_PROFILES[run.mode], kms[from + 1]! - kms[from]!, km - kms[from]!);
+  const fromKm = required(kms[from], 'a stop along the route');
+  return (
+    required(times[from], 'a time at a stop') +
+    rideSecondsTo(TRAIN_PROFILES[run.mode], required(kms[from + 1], 'the next stop along the route') - fromKm, km - fromKm)
+  );
 };
 
 /**
@@ -232,8 +236,7 @@ export const timetablesOf = (runs: TrainRun[]): RouteTimetable[] => {
  * @param timetable - The route's timetable.
  * @returns How many.
  */
-export const trainsOn = ({ run, roundSeconds, everySeconds }: RouteTimetable): number =>
-  (roundSeconds / everySeconds) * (isLoop(run) && run.oneWay === undefined ? 2 : 1);
+export const trainsOn = ({ run, roundSeconds, everySeconds }: RouteTimetable): number => (roundSeconds / everySeconds) * (isLoop(run) && !run.oneWay ? 2 : 1);
 
 /**
  * How far along a route a train is, a time into a trip.
@@ -245,8 +248,12 @@ export const trainsOn = ({ run, roundSeconds, everySeconds }: RouteTimetable): n
 const kmAt = ({ run, times, kms }: RouteTimetable, seconds: number): number => {
   const after = times.findIndex(time => time > seconds);
   if (after <= 0) return kms.at(-1) ?? 0;
-  // Within bounds: `after` is a place in `times`, past its first, and `kms` is as long.
-  const [fromTime, fromKm, toKm] = [times[after - 1]!, kms[after - 1]!, kms[after]!];
+  // `after` is a place in `times`, past its first, and `kms` is as long.
+  const [fromTime, fromKm, toKm] = [
+    required(times[after - 1], 'a time at a stop'),
+    required(kms[after - 1], 'a stop along the route'),
+    required(kms[after], 'the next stop'),
+  ];
   if (fromKm === toKm) return fromKm;
   return fromKm + rideKmAt(TRAIN_PROFILES[run.mode], toKm - fromKm, seconds - fromTime);
 };
@@ -282,7 +289,7 @@ const lapPlacesAt = (timetable: RouteTimetable, into: number): TrainPlace[] => {
     { run, km: kmAt(timetable, ridden), heading: 1 },
     { run, km: kmAt(timetable, tripSeconds - ridden), heading: -1 },
   ];
-  return places.filter(({ heading }) => (run.oneWay ?? heading) === heading);
+  return places.filter(({ heading }) => heading === 1 || !run.oneWay);
 };
 
 /**

@@ -1,11 +1,11 @@
-import type { Theme } from '@railtime/network/facts.types';
+import { boundsOf } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
 import { type GeoJSONSource, type LineLayerSpecification, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl';
+import { STILL_FORMAT, STILL_LINE_WIDTH, STILL_PIXEL_RATIO, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from './basemap.constants';
+import type { BasemapStillOptions, StillRequest, StillTrack } from './basemap.types';
 import { recolorBasemap } from '../layers/basemap.utils';
 import { LINE_LAYOUT } from '../layers/ids.constants';
 import { DEFAULT_BASEMAP, PALETTES } from '../layers/theme.constants';
-import type { Credit } from '../transitMap.types';
-import { STILL_CREDITS, STILL_FORMAT, STILL_LINE_WIDTH, STILL_PIXEL_RATIO, STILL_QUALITY, STILL_TIMEOUT_MS, STILL_TRACK } from './basemap.constants';
-import type { BasemapStillOptions, StillRequest, StillTrack } from './basemap.types';
 
 /**
  * Still pictures of the basemap, for previews: one hidden map, moved to each view in turn and
@@ -14,15 +14,13 @@ import type { BasemapStillOptions, StillRequest, StillTrack } from './basemap.ty
  * Browser only.
  */
 export class BasemapStill {
-  /** What a page showing stills of the default basemap owes credit to. */
-  public static readonly credits: Credit[] = STILL_CREDITS;
   /** The hidden map. */
   private readonly map: MapLibreMap;
   /** Its container, off screen. */
   private readonly container: HTMLDivElement;
   /** The style has loaded and been recoloured. */
   private readonly loaded: Promise<void>;
-  /** The last still or theme asked for, settled: each waits for the one before. */
+  /** The last still asked for, settled: each waits for the one before. */
   private queue: Promise<void> = Promise.resolve();
 
   public constructor(options: BasemapStillOptions = {}) {
@@ -35,7 +33,7 @@ export class BasemapStill {
     const createMap = options.createMap ?? (mapOptions => new MapLibreMap(mapOptions));
     this.map = createMap({
       container: this.container,
-      style: options.basemap ?? DEFAULT_BASEMAP,
+      style: DEFAULT_BASEMAP,
       interactive: false,
       attributionControl: false,
       fadeDuration: 0,
@@ -52,22 +50,9 @@ export class BasemapStill {
   }
 
   /**
-   * Recolours the basemap for a theme: stills taken from now on are in it.
-   *
-   * @param theme - The theme.
-   */
-  public setTheme(theme: Theme): void {
-    // In the queue: a still asked for before the change is taken in the old colours.
-    void this.inTurn(async () => {
-      await this.loaded;
-      recolorBasemap(this.map, PALETTES[theme], { labels: true });
-    });
-  }
-
-  /**
    * Takes a still of the basemap, after every one asked for before it.
    *
-   * @param request - Where to look, and the size of the picture.
+   * @param request - What to frame, and the size of the picture.
    * @returns The picture, as a data URL.
    */
   public take(request: StillRequest): Promise<string> {
@@ -120,14 +105,17 @@ export class BasemapStill {
   /**
    * Moves the map, waits for its tiles, and photographs it.
    *
-   * @param request - Where to look, and the size of the picture.
+   * @param request - What to frame, and the size of the picture.
    * @returns The picture, as a data URL.
    */
   private async shoot(request: StillRequest): Promise<string> {
     await this.loaded;
     Object.assign(this.container.style, { width: `${request.width}px`, height: `${request.height}px` });
     this.map.resize();
-    this.map.jumpTo({ center: request.view.center, zoom: request.view.zoom });
+    const { points, padding, maxZoom } = request;
+    this.map.jumpTo(
+      required(this.map.cameraForBounds(required(boundsOf(points) ?? undefined, 'points to frame'), { padding, maxZoom }), 'a view of the points'),
+    );
     this.drawTrack(request.track ?? []);
     await this.settled();
     return this.map.getCanvas().toDataURL(request.format ?? STILL_FORMAT, STILL_QUALITY);

@@ -2,8 +2,8 @@
   <!-- Along the foot, under the network: what it is, its size, and where to see it for yourself. -->
   <div
     v-if="shown > 0"
-    class="absolute inset-x-[30vw] bottom-[3vmin] flex flex-col items-center gap-[0.8vmin] text-center"
-    :style="{ opacity: shown, transform: `translateY(${(1 - shown) * 2}vmin)` }">
+    class="absolute bottom-[3vmin] flex flex-col items-center gap-[0.8vmin] text-center"
+    :style="{ insetInline: `${INSIGHTS_CLEAR_VW}vw`, opacity: shown, transform: `translateY(${(1 - shown) * 2}vmin)` }">
     <h2 class="text-[6vmin] leading-none font-extrabold tracking-tight">{{ name }} today</h2>
     <p v-if="stats" class="text-[2.6vmin] font-medium text-white/85">
       <ReelNumber :count="countOf(0, stats.lines, counted)" /> {{ pluralOf(stats.lines, 'line') }} · <ReelNumber :count="countOf(0, stats.stations, counted)" />
@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
   import type { NetworkStats } from '@railtime/network/facts.types';
+  import { INSIGHTS_CLEAR_VW } from '~/features/video/insights/insights.constants';
   import { countOf } from '~/utils/count.utils';
   import { pluralOf } from '~/utils/format.utils';
 

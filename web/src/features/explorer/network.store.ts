@@ -45,15 +45,16 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
    * Makes the facts again from the network as stored.
    *
    * @param shownPlan - The plan to show built on it; none for the network as built.
-   * @param hiddenLines - The lines to leave out.
+   * @param hiddenLines - The lines to leave out; without them, those the network hides at first.
    */
-  const MAKE = (shownPlan: PlanId | undefined, hiddenLines: readonly LineId[]) => {
+  const MAKE = (shownPlan: PlanId | undefined, hiddenLines?: readonly LineId[]) => {
     if (!stored.value) return;
-    facts.value = markRaw(NetworkFacts.create(stored.value, { ...(shownPlan && { plan: shownPlan }), hidden: hiddenLines }));
+    facts.value = markRaw(NetworkFacts.create(stored.value, { ...(shownPlan && { plan: shownPlan }), ...(hiddenLines && { hidden: hiddenLines }) }));
   };
   /**
    * Opens a city's network, with the plan asked for: a network never built shows its first plan
-   * unless another is asked for (`NetworkFacts.planToOpen`).
+   * unless another is asked for (`NetworkFacts.planToOpen`). The lines hidden are those it hides at
+   * first: no address names any.
    *
    * @param network - The network, as stored.
    * @param asked - The plan the address asks for, if any.
@@ -61,7 +62,7 @@ export const useNetworkStore = defineStore(STORE_IDS.EXPLORER_NETWORK, () => {
   const OPEN = (network: Network, asked: string | undefined) => {
     stored.value = markRaw(network);
     pickedPlan.value = NetworkFacts.planToOpen(network, asked);
-    MAKE(pickedPlan.value, []);
+    MAKE(pickedPlan.value);
   };
   /**
    * Shows another plan, or the network as built, with the same lines hidden.

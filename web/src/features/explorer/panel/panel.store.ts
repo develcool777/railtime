@@ -1,5 +1,5 @@
-import type { LineDirection } from '@railtime/network/facts.types';
-import type { LineId } from '@railtime/schema/network.types';
+import type { LineDirection, Stop } from '@railtime/network/facts.types';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import { defineStore } from 'pinia';
 import { computed } from 'vue';
 import { STORE_IDS } from '~/constants/store.constants';
@@ -12,6 +12,7 @@ import { useNetworkStore } from '~/features/explorer/network.store';
 import { lineTop, marksOf, planLegendOf, planSummaryOf, sectionLabelOf, sectionTop, sectionsOf, stationTop } from '~/features/explorer/panel/panel.utils';
 import { useTimeStore } from '~/features/explorer/time/time.store';
 import { useToolsStore } from '~/features/explorer/tools.store';
+import type { RouteStops } from '~/features/explorer/tools.types';
 
 /**
  * What the panel and the page around the map show: the sections, the line or station open, the
@@ -30,6 +31,10 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
   const sections = computed(() => sectionsOf(network.plans.length));
   /** The network at the moment the map shows: every question answered for then. */
   const now = computed(() => (network.facts && timeStore.time ? network.facts.asOf(timeStore.time) : null));
+  /** The changes done: all that the stations on the map change with. */
+  const changesDone = computed(() => timeStore.time?.cursor ?? null);
+  /** The network as the last change left it, as it stands until the next: asked again at a change, never at every frame of the clock. */
+  const settled = computed(() => (network.facts && changesDone.value !== null ? network.facts.asOf(network.facts.playheads.after(changesDone.value)) : null));
   /** The line whose view is open, or under the station's, at the moment shown. */
   const lineDetails = computed(() => (explorer.openLine && now.value ? now.value.line(explorer.openLine) : null));
   /** That line's changes. */
@@ -43,10 +48,23 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
   const stationDirections = computed(() =>
     explorer.openStation && now.value ? now.value.directions(explorer.openStation) : new Map<LineId, LineDirection[]>(),
   );
-  /** The stations on the map at the moment shown; none while the map moves, when the panel follows the changes. */
-  const stations = computed(() => (now.value && !timeStore.time?.playing ? now.value.stations() : []));
+  /** The lines opened by the moment shown; `null` with no network open. */
+  const linesOpened = computed(() => now.value?.linesOpened() ?? null);
+  /** The stations on the map at the moment shown, for the sections and the search, playing too. */
+  const stations = computed(() => settled.value?.stations() ?? []);
   /** Each station's lines' colours, to mark a line's interchanges. */
   const stationColors = computed(() => new Map(stations.value.map(entry => [entry.id, entry.colors])));
+  /**
+   * A station named on the date shown.
+   *
+   * @param id - The station, on the network shown, if there is one.
+   * @returns It and its name then, or `null`.
+   */
+  const stopOf = (id: StationId | null): Stop | null => (id && settled.value ? { id, name: settled.value.station(id).name } : null);
+  /** The route's ends on the network shown, named on the date shown. */
+  const routeStops = computed((): RouteStops => ({ from: stopOf(tools.routeEndsShown.from), to: stopOf(tools.routeEndsShown.to) }));
+  /** The reach's start on the network shown, named on the date shown. */
+  const reachStop = computed(() => stopOf(tools.reachFromShown));
   /** The change the map is at, for the Changes list. */
   const currentChange = computed(() => currentChangeIndex(network.changes, timeStore.time, timeStore.playerShown && timeStore.step !== null));
   /**
@@ -90,7 +108,7 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
   /** The network built today, to set beside a plan; with a plan shown the facts are the plan's, and the card goes without. */
   const builtFacts = computed(() => (network.facts && !network.plan ? formatStats(network.facts.today().stats()) : ''));
   /** A dot on each section whose choice is in force while another is open. */
-  const marks = computed(() => marksOf({ planShown: network.plan !== undefined, routeEnds: tools.routeEnds, reachFrom: tools.reachFrom }));
+  const marks = computed(() => marksOf({ planShown: network.plan !== undefined, routeEnds: routeStops.value, reachFrom: reachStop.value }));
 
   return {
     // Getters
@@ -99,8 +117,11 @@ export const usePanelStore = defineStore(STORE_IDS.EXPLORER_PANEL, () => {
     lineChanges,
     station,
     stationDirections,
+    linesOpened,
     stations,
     stationColors,
+    routeStops,
+    reachStop,
     currentChange,
     panelTop,
     records,

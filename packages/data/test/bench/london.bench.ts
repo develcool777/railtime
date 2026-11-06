@@ -44,7 +44,7 @@ describe('London', () => {
   test('moves its trains: what a frame sends the map, thirty times a second while they run', async ({ bench }) => {
     const playback = playbackOf(LONDON.network);
     const snapshot = snapshotOf(playback);
-    const service = playback.facts.engine.trainService(playback.player.cursor);
+    const service = playback.facts.asOf(playback.player.playhead).trains();
     expect(trainsOf(playback, snapshot, service, 60).features.length).toBeGreaterThan(40);
     await benchAgainstLastRun(bench, 'London trains', () => {
       trainsOf(playback, snapshot, service, 60);
@@ -53,9 +53,9 @@ describe('London', () => {
 
   test('works out the trains it runs: once each time the date changes', async ({ bench }) => {
     const playback = playbackOf(LONDON.network);
-    expect(playback.facts.engine.trainService(playback.player.cursor).fleet).toBeGreaterThan(40);
+    expect(playback.facts.asOf(playback.player.playhead).trains().fleet).toBeGreaterThan(40);
     await benchAgainstLastRun(bench, 'London train service', () => {
-      playback.facts.engine.trainService(playback.player.cursor);
+      playback.facts.asOf(playback.player.playhead).trains();
     });
   });
 

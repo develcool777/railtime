@@ -1,4 +1,5 @@
 import { boundsOf } from '@railtime/core/geometry.utils';
+import { engineOf } from '@railtime/network/engine.utils';
 import type { Playhead } from '@railtime/network/facts.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import { coverageDrawing, reachStops, reachTrack, routeStops, routeTrack } from './overlay.utils';
@@ -10,10 +11,12 @@ import type { PointFeature, ReachStopProperties, RouteFeature } from '../layers/
 /**
  * What is drawn over the network: a route, a reach or the city's coverage, as the props ask. Works it
  * out at the moment shown, draws it (clearing the others), frames it when it is of something new, and
- * reports what it came to; again whenever the moment moves on, the theme or the outline changes.
+ * reports what it came to; again whenever the moment moves on, the theme, the outline or the network
+ * changes. There is one for the map's life, as there is one camera: what it last framed outlasts a
+ * network, and the same overlay on another is left where it is.
  */
 export class OverlayController {
-  /** The layers, the camera, the network's facts, and where the moment and theme are read. */
+  /** The layers, the camera, and where the network's facts, the moment and the theme are read. */
   private readonly parts: OverlayParts;
   /** The cursor it was last worked out at: it is worked out again when the moment moves on. */
   private drawnAt = -1;
@@ -21,6 +24,8 @@ export class OverlayController {
   private framed: string | null = null;
   /** The outline it was last drawn with: a new one frames coverage again. */
   private boundary: CityBoundary | null = null;
+  /** The network is a backdrop behind what is drawn: a route or a reach. */
+  private overNetwork = false;
 
   public constructor(parts: OverlayParts) {
     this.parts = parts;
@@ -28,7 +33,7 @@ export class OverlayController {
 
   /** Whether the network is a backdrop behind the overlay: a route or a reach is drawn. */
   public get backdrop(): boolean {
-    return this.parts.route.shown || this.parts.reach.shown;
+    return this.overNetwork;
   }
 
   /**
@@ -38,7 +43,7 @@ export class OverlayController {
    * @param boundary - The city's outline, for coverage.
    */
   public draw(request: OverlayRequest | null, boundary: CityBoundary | null): void {
-    const { facts, route: routeLayer, reach: reachLayer, coverage: coverageLayer } = this.parts;
+    const { route: routeLayer, reach: reachLayer, coverage: coverageLayer } = this.parts;
     const moment = this.parts.moment();
     const theme = this.parts.theme();
     this.drawnAt = moment.cursor;
@@ -46,10 +51,11 @@ export class OverlayController {
     this.boundary = boundary;
     const drawing = this.workOut(request, boundary, moment);
 
-    const { index } = facts.engine;
+    const { index } = engineOf(this.parts.facts());
     const { route, reach, coverage } = drawing;
     const routeLine = routeTrack(index, route, theme);
     const reachStations = reachStops(index, reach);
+    this.overNetwork = routeLine.length > 0 || reachStations.length > 0;
     routeLayer.update(routeLine, routeStops(index, route, theme));
     reachLayer.update(reachTrack(index, reach), reachStations);
     coverageLayer.update(coverage ? coverageDrawing(coverage.measure.cells(moment.cursor, coverage.metres), coverage.measure.boundary) : null);
@@ -76,7 +82,7 @@ export class OverlayController {
    * @returns The routes, the one shown, the reach and the coverage.
    */
   private workOut(request: OverlayRequest | null, boundary: CityBoundary | null, moment: Playhead): OverlayDrawing {
-    const { facts } = this.parts;
+    const facts = this.parts.facts();
     const then = facts.asOf(moment);
     const routes = request?.kind === 'route' ? then.routes(request.from, request.to) : [];
     // The option asked for, or the last there is on this date.

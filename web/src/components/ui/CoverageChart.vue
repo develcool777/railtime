@@ -1,5 +1,5 @@
 <template>
-  <YearChart :points label="Covered" :format="(value: number) => formatShare(value / 100)" :axisFormat :height :summary @pick="emit('pick', $event)" />
+  <YearChart :points label="Covered" :format :axisFormat :height :summary @pick="emit('pick', $event)" />
 </template>
 
 <script setup lang="ts">
@@ -15,6 +15,14 @@
   }>();
 
   const emit = defineEmits<{ pick: [year: number] }>();
+
+  /**
+   * A percentage as the readout writes it.
+   *
+   * @param value - The percentage.
+   * @returns "34%", "4.2%".
+   */
+  const format = (value: number): string => formatShare(value / 100);
 
   /**
    * A round percentage as the axis writes it: no decimal it does not need, where `formatShare` keeps one under 10.

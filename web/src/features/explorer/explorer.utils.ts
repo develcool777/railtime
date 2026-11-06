@@ -1,8 +1,10 @@
 import type { NetworkFacts } from '@railtime/network/facts.service';
 import type { Theme } from '@railtime/network/facts.types';
+import type { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { MapProps, OverlayRequest, Padding, ViewMode } from '@railtime/renderer/transitMap.types';
 import type { CityBoundary } from '@railtime/schema/boundary.types';
 import type { LineId, PlanId, StationId } from '@railtime/schema/network.types';
+import type { VideoPageState } from '@railtime/video/videoPage.types';
 import type { Chrome, PanelView, PlayerSettings, Section, SheetSnap, TimeMode } from '~/features/explorer/explorer.types';
 
 /**
@@ -118,6 +120,7 @@ type MapPropsInput = {
   /** Whether trains are turned on. */
   trains: boolean;
   streetNames: boolean;
+  arrival: MapProps['arrival'];
   timeMode: TimeMode;
   openStation: StationId | null;
   openLine: LineId | null;
@@ -138,6 +141,7 @@ type MapPropsInput = {
  */
 export const mapPropsOf = (input: MapPropsInput): MapProps => ({
   facts: input.facts,
+  arrival: input.arrival,
   theme: input.theme,
   viewMode: input.viewMode,
   stationLabels: input.stationNames,
@@ -161,3 +165,21 @@ export const mapPropsOf = (input: MapPropsInput): MapProps => ({
  * @returns The section.
  */
 export const openingSectionOf = (plan: PlanId | undefined): Section => (plan ? 'plans' : 'lines');
+
+/**
+ * Where the explorer is, as it tells a recorder: ready once its map is, playing from when it is started,
+ * and over once it has played to its end and the camera has come to rest on the whole network.
+ *
+ * @param input - The map's status and whether it has come to rest; whether history plays, and has played out.
+ * @param input.status - The map's status; `loading` before it is mounted.
+ * @param input.settled - The map is drawn and nothing moves.
+ * @param input.playing - History plays.
+ * @param input.playedOut - History has played to its end.
+ * @returns Where it is.
+ */
+export const recordedStateOf = (input: { status: TransitMap['status']; settled: boolean; playing: boolean; playedOut: boolean }): VideoPageState => {
+  if (input.status !== 'ready') return 'loading';
+  if (input.playing) return 'playing';
+  if (!input.playedOut) return 'ready';
+  return input.settled ? 'done' : 'playing';
+};

@@ -6,7 +6,7 @@
       "project": ["vitest.*.ts", "eslint/*.js"]
     },
     "packages/data": {
-      "entry": ["src/*/cli.ts", "test/**/*.@(test|spec|bench).ts"],
+      "entry": ["src/*/cli.ts", "src/*/*.entry.ts", "test/**/*.@(test|spec|bench).ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/core": {

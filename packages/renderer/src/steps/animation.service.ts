@@ -1,21 +1,21 @@
 import type { LngLat } from '@railtime/core/geometry.types';
 import { sliceAlong } from '@railtime/core/geometry.utils';
 import { clamp } from '@railtime/core/number.utils';
-import type { SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
+import type { LineSegment, SegmentPlan, StationCloseStep, Step } from '@railtime/network/engine.types';
 import type { LineId, StationId } from '@railtime/schema/network.types';
-import { CLOSE_HOLD_SECONDS, GROWTH_PACE, MIN_DRAW_SECONDS, OPEN_HOLD_SECONDS, STEP_TIMES } from './animation.constants';
-import type { StepContext, StepDrawing, StepFrame, Stretch } from './animation.types';
+import { CLOSE_HOLD_SECONDS, GROWTH_PACE, MIN_DRAW_SECONDS, OPEN_HOLD_SECONDS, STEP_TIMES, UNTOUCHED_BASE } from './animation.constants';
+import type { BaseNetwork, Phase, StepContext, StepDrawing, StepFrame, Stretch } from './animation.types';
 import { arrivalSeconds, chaseAlong, frontKmAt, growthSeconds, stretchOf } from './animation.utils';
 import { lineFeature, pointFeature } from '../layers/snapshot.utils';
 import { offsetFor, resolveLine } from '../layers/style.utils';
 import { easeInOut } from '../support/drawing.utils';
 
 /**
- * How a step plays, whatever its kind: how long it takes, what the camera frames, and what it draws
- * each frame. A stretch opening grows along its track as a train runs, linking its interchanges as it
- * gets there; a stretch closing retracts the same way, back to the network that stays; a station
- * appears, fades, or pulses under a new name; lines blend into their own colours. Each kind's times
- * are `STEP_TIMES`'s, a stretch's its length's and stations'.
+ * How a step plays, whatever its kind: how long it takes, what the camera frames, what it asks of the
+ * network under it at each phase, and what it draws each frame. A stretch opening grows along its track
+ * as a train runs, linking its interchanges as it gets there; a stretch closing retracts the same way,
+ * back to the network that stays; a station appears, fades, or pulses under a new name; lines blend
+ * into their own colours. Each kind's times are `STEP_TIMES`'s, a stretch's its length's and stations'.
  */
 export class StepAnimation {
   /** The step being played. */
@@ -28,12 +28,15 @@ export class StepAnimation {
   public readonly stretch: Stretch | null;
   /** The network as it stood when the step started. */
   private readonly context: StepContext;
+  /** The track a stretch opens or closes: one set for the whole step, so a frame sees the same answer. */
+  private readonly track: ReadonlySet<LineSegment>;
 
   public constructor(step: Step, context: StepContext) {
     this.step = step;
     this.context = context;
+    this.track = new Set(step.kind === 'open' || step.kind === 'close' ? step.lineSegments : []);
     if (step.kind === 'open' || step.kind === 'close') {
-      const growth = step.kind === 'open' ? context.timeline.growthOf(step) : context.timeline.retreatOf(step);
+      const growth = step.kind === 'open' ? context.timeline.growths.growthOf(step) : context.timeline.growths.retreatOf(step);
       this.stretch = stretchOf(growth, step.lineSegments, step.kind === 'close');
       this.drawSeconds = Math.max(MIN_DRAW_SECONDS, growthSeconds(this.stretch.stops, growth.totalKm, GROWTH_PACE[context.view]));
       this.holdSeconds = step.kind === 'open' ? OPEN_HOLD_SECONDS : CLOSE_HOLD_SECONDS;
@@ -44,9 +47,32 @@ export class StepAnimation {
     }
   }
 
-  /** Whether the step changes what lines are drawn as: the map then redraws every frame while it plays. */
-  public get changesIdentity(): boolean {
-    return this.step.kind === 'identity';
+  /**
+   * What the step asks of the network under it at a phase. An opening has what is on the map make room
+   * from the start, so the track is ready for it before it draws in. A closure takes its stretch from
+   * the network only as it starts retracting it: while the camera gets there the stretch stands whole.
+   * Lines blend as the step draws, and stay blended while it is held.
+   *
+   * @param phase - The phase it is in.
+   * @param progress - How far through its drawing time it is, linear: 0 before it draws, 1 once drawn.
+   * @returns The network under it.
+   */
+  public baseAt(phase: Phase, progress: number): BaseNetwork {
+    switch (this.step.kind) {
+      case 'open': {
+        return { ...UNTOUCHED_BASE, makesRoom: this.track };
+      }
+      case 'close': {
+        return phase === 'pre' ? UNTOUCHED_BASE : { ...UNTOUCHED_BASE, leavesOut: this.track };
+      }
+      case 'identity': {
+        return phase === 'pre' ? UNTOUCHED_BASE : { ...UNTOUCHED_BASE, blend: easeInOut(progress) };
+      }
+      default: {
+        // A station's change: the track stays as it is.
+        return UNTOUCHED_BASE;
+      }
+    }
   }
 
   /**
@@ -130,7 +156,7 @@ export class StepAnimation {
         return;
       }
       case 'identity': {
-        // The network layer draws the blend, redrawing every frame while `changesIdentity`.
+        // Nothing of its own: the lines blend in the network under it (`baseAt`).
         return;
       }
     }

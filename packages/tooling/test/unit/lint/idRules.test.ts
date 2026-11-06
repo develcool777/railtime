@@ -1,7 +1,9 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import { fileURLToPath } from 'node:url';
+import tseslint from 'typescript-eslint';
 import { afterAll, describe, test } from 'vitest';
-import { brandedRecordKeys, brandedSpreadKey, checkedIds } from '../../../src/lint/idRules.utils';
+import vueParser from 'vue-eslint-parser';
+import { brandedRecordKeys, brandedSpreadKey, checkedIds, servedFiles } from '../../../src/lint/idRules.utils';
 
 // The rule tester runs its cases as Vitest's tests.
 RuleTester.afterAll = afterAll;
@@ -15,8 +17,9 @@ RuleTester.it = test;
 const tester = new RuleTester({
   languageOptions: {
     parserOptions: {
-      projectService: { allowDefaultProject: ['*.ts'], defaultProject: 'tsconfig.json' },
+      projectService: { allowDefaultProject: ['*.ts', '*.vue'], defaultProject: 'tsconfig.json' },
       tsconfigRootDir: fileURLToPath(new URL('../../..', import.meta.url)),
+      extraFileExtensions: ['.vue'],
     },
   },
 });
@@ -42,7 +45,83 @@ declare const names: Record<string, string>;
  */
 const withBrands = (code: string): string => `${BRANDS}\n${code}`;
 
+/** A city's files' types, and things to try them on. */
+const FILES = `
+type Network = { stations: Record<string, number> };
+type CityBoundary = { name: string };
+type Summary = { name: string };
+declare const json: unknown;
+declare const useFetch: <Data>(url: string) => Data;
+declare const elsewhere: <Data>(url: string) => Data;
+`;
+
+/** Each case is a component of its own, read as ESLint reads one: its script's types, its template parsed apart. */
+const vueTester = new RuleTester({
+  languageOptions: {
+    parser: vueParser,
+    parserOptions: {
+      parser: tseslint.parser,
+      projectService: { allowDefaultProject: ['*.ts', '*.vue'], defaultProject: 'tsconfig.json' },
+      tsconfigRootDir: fileURLToPath(new URL('../../..', import.meta.url)),
+      extraFileExtensions: ['.vue'],
+    },
+  },
+});
+
+/**
+ * A component whose template handles an event with an expression.
+ *
+ * @param expression - The expression.
+ * @returns The component's case: its code, as a `.vue` file.
+ */
+const component = (expression: string) => ({
+  filename: 'file.vue',
+  name: expression,
+  code: `<template><button @click="handle(${expression})">Go</button></template>
+<script setup lang="ts">
+${BRANDS}
+type Network = { stations: Record<string, number> };
+type Summary = { name: string };
+declare const handle: (value: unknown) => void;
+</script>`,
+});
+
 describe('IdRules', () => {
+  describe('checkedIds in a template', () => {
+    vueTester.run('checked-ids', checkedIds, {
+      valid: [component('$event as string'), component('$event as Summary'), component('$event')],
+      invalid: [
+        { ...component('$event as StationId'), errors: [{ messageId: 'asserted' }] },
+        { ...component('$event as LineId[]'), errors: [{ messageId: 'asserted' }] },
+        { ...component('$event as Map<StationId, number>'), errors: [{ messageId: 'asserted' }] },
+      ],
+    });
+  });
+
+  describe('servedFiles in a template', () => {
+    vueTester.run('served-files', servedFiles, {
+      valid: [component('$event as Summary')],
+      invalid: [{ ...component('$event as Network'), errors: [{ messageId: 'asserted' }] }],
+    });
+  });
+
+  describe('servedFiles', () => {
+    tester.run('served-files', servedFiles, {
+      valid: [
+        { name: 'another type', code: `${FILES}\nconst summary = json as Summary;` },
+        { name: 'a fetch told another type', code: `${FILES}\nconst summary = useFetch<Summary>('/summary');` },
+        { name: 'a type argument that is no fetch', code: `${FILES}\nconst network = elsewhere<Network>('/network');` },
+        { name: 'its type written, not asserted', code: `${FILES}\ndeclare const network: Network;\nconst same: Network = network;` },
+      ],
+      invalid: [
+        { name: 'a network asserted', code: `${FILES}\nconst network = json as Network;`, errors: [{ messageId: 'asserted' }] },
+        { name: 'an outline asserted', code: `${FILES}\nconst outline = <CityBoundary>json;`, errors: [{ messageId: 'asserted' }] },
+        { name: 'one or nothing, asserted', code: `${FILES}\nconst outline = json as CityBoundary | null;`, errors: [{ messageId: 'asserted' }] },
+        { name: 'a fetch told a network', code: `${FILES}\nconst network = useFetch<Network>('/network');`, errors: [{ messageId: 'asserted' }] },
+      ],
+    });
+  });
+
   describe('checkedIds', () => {
     tester.run('checked-ids', checkedIds, {
       valid: [

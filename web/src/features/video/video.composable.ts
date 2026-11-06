@@ -1,3 +1,4 @@
+import { required } from '@railtime/core/required.utils';
 import { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { RecordedWindow } from '@railtime/video/videoPage.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
@@ -7,14 +8,16 @@ import type { VideoOpening } from '~/features/video/video.types';
 import type { TransitMapMount } from '~/utils/transitMap.types';
 
 /**
- * The video's map and its frames, and the only code that touches them: on mount, the store opens the
- * network at the frame's size, the map is made with the store's props and listeners that call its
- * actions, and given its props again as they change (a plan laid on, the overview); each frame gives
- * the store the page's clock (`performance.now`, which a recorder moves
- * itself), and the page's handle tells a recorder where the video is (`VideoPageHandle`). Recorded,
- * the video waits for the recorder to start it; watched, it starts once the map is ready. Everything
- * on the page that moves is worked out from that clock, never left to a CSS transition, which runs on
- * a clock no recorder moves. Client only.
+ * The video's map and its frames: on mount, the store opens the network at the frame's size, and the
+ * map is made with the store's props and listeners that call its actions, and handed to the store.
+ * Two things give the map its props. The store sends a beat's before the command it follows them with
+ * (`ADVANCE`), since a command acts on the props the map has; the watch here delivers what changes
+ * between commands (its outline coming), and repeats a beat's as Vue flushes, which does nothing. Each
+ * frame gives the store the page's clock (`performance.now`, which a recorder moves itself), and the
+ * page's handle tells a recorder where the video is and whether its frame is drawn (`VideoPageHandle`).
+ * Recorded, the video waits for the recorder to start it; watched, it starts once the map is ready.
+ * Everything on the page that moves is worked out from that clock, never left to a CSS transition,
+ * which runs on a clock no recorder moves. Client only.
  *
  * @param mount - Where the map and the minimap go.
  * @param opening - The city's network, how the map is seen, where its outline is served and the plan named, read as the map is made.
@@ -32,7 +35,8 @@ export const useVideoMap = (mount: TransitMapMount, opening: MaybeRefOrGetter<Om
   };
 
   onMounted(() => {
-    const element = mount.container.value!;
+    // `onMounted`: its element is in the page.
+    const element = required(mount.container.value ?? undefined, "the map's element");
     store.OPEN({ ...toValue(opening), size: { width: element.clientWidth, height: element.clientHeight } });
     const props = store.mapProps;
     if (!props) return;
@@ -55,7 +59,7 @@ export const useVideoMap = (mount: TransitMapMount, opening: MaybeRefOrGetter<Om
       },
     });
     store.ATTACH(map);
-    page.railtimeVideo = { state: () => store.pageState, start: () => store.START() };
+    page.railtimeVideo = { state: () => store.pageState, start: () => store.START(), drawn: () => map?.drawn ?? false };
     frame = requestAnimationFrame(tick);
   });
 

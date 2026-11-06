@@ -1,13 +1,15 @@
+import { SOCIAL_SIZE } from '@railtime/data/preview.constants';
+import { STILL_PIXEL_RATIO } from '@railtime/renderer/basemapStill.constants';
 import type { CityIndexEntry } from '@railtime/schema/cityIndex.types';
-import { cityNameOf, networkUrlOf } from '~/utils/city.utils';
+import { cityNameOf, socialUrlOf } from '~/utils/city.utils';
 import { counted } from '~/utils/format.utils';
 import type { PageSeo } from './seo.types';
 
 /** The site's name, as titles end with it. */
 const SITE_NAME = 'RailTime';
 
-/** A social card's size, as `pnpm data:previews` draws it. */
-const SOCIAL_CARD = { width: 1200, height: 630 };
+/** A social card's size in the picture's own pixels, as `pnpm data:previews` draws it. */
+const SOCIAL_CARD = { width: SOCIAL_SIZE.width * STILL_PIXEL_RATIO, height: SOCIAL_SIZE.height * STILL_PIXEL_RATIO };
 
 /**
  * A page's absolute address, as the site serves it: a page with a slash (a static host serves its
@@ -67,7 +69,7 @@ export const citySeo = (city: string, entry: CityIndexEntry): PageSeo => {
     path: city,
     title,
     description,
-    image: { path: networkUrlOf(city).replace(/\.json$/, '.social.jpg'), ...SOCIAL_CARD, alt: `Map of the ${name} network` },
+    image: { path: socialUrlOf(city), ...SOCIAL_CARD, alt: `Map of the ${name} network` },
     jsonLd: { '@context': 'https://schema.org', '@type': 'Map', name: `${name} metro`, description, mapType: 'https://schema.org/TransitMap' },
   };
 };

@@ -74,7 +74,7 @@
     /** Every station reached from it, if any. */
     reach: ReachInfo | null;
   }>();
-  const emit = defineEmits<{ from: [stop: Stop | null]; station: [station: StationId] }>();
+  const emit = defineEmits<{ from: [station: StationId | null]; station: [station: StationId] }>();
 
   const groups = computed(() => (props.reach ? reachGroups(props.reach) : []));
   const farthest = computed(() => props.reach?.stations.at(-1));

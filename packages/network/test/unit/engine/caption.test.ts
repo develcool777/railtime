@@ -3,6 +3,7 @@ import type { Network } from '@railtime/schema/network.types';
 import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { captionOf } from '../../../src/engine/caption.utils';
+import { engineOf } from '../../../src/engine/engine.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
 import { factsOf } from '../../support/facts.utils';
 
@@ -15,8 +16,8 @@ import { factsOf } from '../../support/facts.utils';
  */
 const captionAfter = (network: Network, date: string) => {
   const facts = factsOf(network);
-  const step = facts.engine.timeline.steps[facts.engine.timeline.cursorAt(toTimestamp(date))]!;
-  return captionOf(step, { index: facts.engine.index, timeline: facts.engine.timeline, colorOf: line => facts.colorOf(line) });
+  const step = engineOf(facts).timeline.steps[engineOf(facts).timeline.cursorAt(toTimestamp(date))]!;
+  return captionOf(step, { index: engineOf(facts).index, timeline: engineOf(facts).timeline });
 };
 
 describe('CaptionUtils', () => {

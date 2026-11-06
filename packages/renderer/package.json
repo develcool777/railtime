@@ -11,10 +11,12 @@
   "exports": {
     "./transitMap.service": "./src/transitMap.service.ts",
     "./transitMap.types": "./src/transitMap.types.ts",
+    "./transitMap.utils": "./src/transitMap.utils.ts",
     "./transitMap.css": "./src/transitMap.css",
+    "./basemapStill.constants": "./src/still/basemap.constants.ts",
     "./basemapStill.service": "./src/still/basemap.service.ts",
     "./basemapStill.types": "./src/still/basemap.types.ts",
-    "./basemapStill.constants": "./src/still/basemap.constants.ts",
+    "./testing/fakeMap": "./test/support/factories/fakeMap.utils.ts",
     "./testing/playback": "./test/support/playback.utils.ts"
   },
   "dependencies": {

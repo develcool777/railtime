@@ -1,9 +1,11 @@
-import { entriesOf, keysOf, pushTo } from '@railtime/core/collection.utils';
+import { entriesOf, keysOf, pairsOf, pushTo } from '@railtime/core/collection.utils';
+import type { IsoDate } from '@railtime/core/date.types';
 import type { LngLat } from '@railtime/core/geometry.types';
 import { cumulativeDistances, distanceKm, sliceAlong, turnDegrees } from '@railtime/core/geometry.utils';
+import { required } from '@railtime/core/required.utils';
 import { CURVE_SPAN_METRES, MAX_TURN_DEGREES, MIN_CURVE_RADIUS_METRES, STATION_GAP_METRES } from './checks.constants.ts';
 import type { TrackOut } from './checks.types';
-import type { LineId, Mode, Network, Segment, SegmentLine, Station, StationId, Suspension } from '../format/network.types';
+import type { Line, LineId, Mode, Network, Segment, SegmentLine, Station, StationId, Suspension } from '../format/network.types';
 
 /**
  * The sharpest a line of a mode may turn over `CURVE_SPAN_METRES` either side of a point: as much as
@@ -22,7 +24,15 @@ const maxTurnOf = (mode: Mode): number => Math.min(MAX_TURN_DEGREES, ((2 * CURVE
  * @param atKm - How far along.
  * @returns The point.
  */
-const pointAt = (track: LngLat[], distances: number[], atKm: number): LngLat => sliceAlong(track, distances, atKm).at(-1) ?? track[0]!;
+const pointAt = (track: LngLat[], distances: number[], atKm: number): LngLat => required(sliceAlong(track, distances, atKm).at(-1), 'a point on the track');
+
+/**
+ * Whether dates that should each come after the last do not.
+ *
+ * @param dates - The dates, as written.
+ * @returns True if one is on or before the one ahead of it.
+ */
+const outOfOrder = (dates: readonly IsoDate[]): boolean => pairsOf(dates).some(([before, date]) => date <= before);
 
 /**
  * The sharpest turn along a track, each point's measured from `CURVE_SPAN_METRES` before it to as far
@@ -89,12 +99,12 @@ const suspensionProblems = (network: Network, stationId: StationId, station: Sta
   const opened = station.infill?.[lineId];
   const closed = station.closed?.[lineId];
   return spells.flatMap(({ from, until }, position) => {
+    const ahead = spells[position - 1];
     const spell = `${from} – ${until}`;
     const running = periods.some(dates => dates.open < from && !(dates.close && dates.close < until));
     return [
       ...(until <= from ? [`${spell}, ending before it starts`] : []),
-      // Within bounds: only past the first spell, which has one before it.
-      ...(position > 0 && from <= spells[position - 1]!.until ? [`${spell}, before the spell ahead of it ends`] : []),
+      ...(ahead && from <= ahead.until ? [`${spell}, before the spell ahead of it ends`] : []),
       ...(running ? [] : [`${spell}, when it doesn't run there`]),
       ...((opened && from <= opened) || (closed && until >= closed) ? [`${spell}, outside when the station is open on it`] : []),
     ];
@@ -174,7 +184,7 @@ const checkStation = (network: Network, stationId: StationId, station: Station, 
   checkStationLines(network, stationId, station, problem);
   for (const lineId of station.reverses ?? []) if (!network.lines[lineId]) problem(`station ${stationId}: reverses unknown line ${lineId}`);
   const until = (station.formerNames ?? []).map(former => former.until);
-  if (until.some((date, position) => position > 0 && date <= until[position - 1]!)) problem(`station ${stationId}: former names out of order`);
+  if (outOfOrder(until)) problem(`station ${stationId}: former names out of order`);
 };
 
 /**
@@ -263,7 +273,7 @@ const checkSegmentLine = (network: Network, name: string, lineId: LineId, dates:
   if (dates.close && dates.close <= dates.open) problem(`${name}: ${lineId} closes before it opens`);
   // Open, then each spell's start and end, then close: each after the one before.
   const changes = [dates.open, ...(dates.suspended ?? []).flatMap(spell => [spell.from, spell.until]), ...(dates.close ? [dates.close] : [])];
-  if (changes.some((date, order) => order > 0 && date <= changes[order - 1]!)) problem(`${name}: ${lineId} suspended out of order`);
+  if (outOfOrder(changes)) problem(`${name}: ${lineId} suspended out of order`);
 };
 
 /**
@@ -288,7 +298,7 @@ const overlap = (first: SegmentLine | null, second: SegmentLine | null): boolean
 const turnThrough = (into: LngLat[], out: LngLat[]): number => {
   const [intoKm, outKm] = [cumulativeDistances(into), cumulativeDistances(out)];
   const spanKm = Math.min(CURVE_SPAN_METRES / 1000, intoKm.at(-1) ?? 0, outKm.at(-1) ?? 0);
-  return turnDegrees(pointAt(into, intoKm, spanKm), out[0]!, pointAt(out, outKm, spanKm));
+  return turnDegrees(pointAt(into, intoKm, spanKm), required(out[0], 'the track leaving a station'), pointAt(out, outKm, spanKm));
 };
 
 /** Each line's tracks leaving each station: by station, then by line. */
@@ -373,6 +383,21 @@ const sharpestThrough = (tracks: TrackOut[], checks: (out: TrackOut) => boolean)
 };
 
 /**
+ * Checks a line: its network and what it is drawn as exist, and its aliases come in the order they end.
+ *
+ * @param network - The network, its shape already valid.
+ * @param lineId - The line id.
+ * @param line - The line.
+ * @param problem - Reports one problem.
+ */
+const checkLine = (network: Network, lineId: LineId, line: Line, problem: (message: string) => void): void => {
+  if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
+  for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
+  const until = (line.aliases ?? []).map(alias => alias.until);
+  if (outOfOrder(until)) problem(`line ${lineId}: aliases out of order`);
+};
+
+/**
  * Checks the references between a network's parts, and its dates.
  *
  * @param network - The network, its shape already valid.
@@ -384,10 +409,7 @@ export const checkNetwork = (network: Network, problem: (message: string) => voi
     if (info.start && (!info.hidden || info.start >= network.meta.start))
       problem(`network ${networkId}: a start of its own, ${info.start}, but it is not a network hidden at first, older than the city`);
   }
-  for (const [lineId, line] of entriesOf(network.lines)) {
-    if (!network.networks[line.network]) problem(`line ${lineId}: unknown network ${line.network}`);
-    for (const alias of line.aliases ?? []) if (!network.lines[alias.as]) problem(`line ${lineId}: alias to unknown line ${alias.as}`);
-  }
+  for (const [lineId, line] of entriesOf(network.lines)) checkLine(network, lineId, line, problem);
   checkStations(network, problem);
   for (const segment of network.segments) checkSegment(network, segment, problem);
   for (const message of throughStationProblems(network, datedTracksOut(network))) problem(message);

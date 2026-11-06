@@ -254,6 +254,19 @@ describe('NetworkSchema', () => {
     expect(problemsOf(network)).toEqual(['line red: unknown network tram', 'line red: alias to unknown line blue']);
   });
 
+  test('refuses aliases out of order: what a line is drawn as reads them by when they end', () => {
+    const network = plannedNetwork();
+    network.networks.metro = { name: 'Metro' };
+    network.lines.blue = { name: 'Blue', network: 'metro', mode: 'metro', color: '#0000ff' };
+    network.lines.red!.aliases = [
+      { until: '1950-01-01', as: 'blue', text: 'Red goes back to Blue' },
+      { until: '1940-01-01', as: 'blue', text: 'Red becomes its own line' },
+    ];
+    expect(problemsOf(network)).toEqual(['line red: aliases out of order']);
+    network.lines.red!.aliases = network.lines.red!.aliases.toReversed();
+    expect(problemsOf(network)).toEqual([]);
+  });
+
   test('refuses a line opening before its timeline starts, and a start of its own on a network not hidden at first or no older than the city', () => {
     const network = plannedNetwork();
     network.segments[0]!.lines.red = { open: '1890-01-01' };

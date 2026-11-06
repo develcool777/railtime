@@ -65,8 +65,25 @@ export const testsConfig = [
       'max-nested-callbacks': ['error', 6],
       // A test's helper sits in the `describe` that uses it, beside its tests.
       'unicorn/consistent-function-scoping': 'off',
+      // A test builds and reads made-up networks it knows the shape of: a `!` that is wrong fails the test
+      // as a `required()` would, where the failure is read.
+      'house/bounded-assertion': 'off',
       // A test's checks may sit in a helper of `test/support/` (`expectPlays`, `checkHistory`).
       'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'expect*', 'check*'] }],
+    },
+  },
+  // A file's name picks its environment in every package: its projects come from `projectsOf`.
+  {
+    files: ['packages/*/vitest.config.ts', 'web/vitest.config.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...SHARED_SYNTAX,
+        {
+          selector: "ImportSpecifier[imported.name='defineProject']",
+          message: "A package's tests are `projectsOf`'s: `*.test.ts` in node, `*.spec.ts` in happy-dom.",
+        },
+      ],
     },
   },
   // A lint rule's tests are its tester's cases: `tester.run` makes each a test.
