@@ -34,7 +34,7 @@ export type VideoMoment = {
 };
 
 /** How much of each piece over the map shows, 0 to 1. */
-export type VideoLayers = { title: number; planIntro: number; year: number; caption: number; end: number };
+export type VideoLayers = { title: number; planIntro: number; minimap: number; year: number; caption: number; end: number };
 
 /** What a video opens with: the city's network, the frame's size, how the map is seen, where its outline is served, and the plan its address names. */
 export type VideoOpening = {

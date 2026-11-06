@@ -1,6 +1,6 @@
 import type { ShallowRef } from 'vue';
 
-/** Where `useTransitMap` mounts the map. */
+/** Where a surface mounts its map. */
 export type TransitMapMount = {
   /** Where the main map goes. */
   container: Readonly<ShallowRef<HTMLElement | null>>;

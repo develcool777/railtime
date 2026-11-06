@@ -9,10 +9,12 @@ export const MINIMAP_SOURCES = {
 export const MINIMAP_LAYERS = {
   lines: 'mm-lines',
   planned: 'mm-planned',
-  activeGlow: 'mm-active-glow',
   active: 'mm-active',
   activePlanned: 'mm-active-planned',
 } as const;
+
+/** How wide the minimap draws every line, pixels: a line growing as wide as it stays, so it never swells and shrinks back. */
+export const MINIMAP_LINE_WIDTH = 1.2;
 
 /** Room around the city in the minimap, pixels. */
 export const MINIMAP_PADDING = 8;

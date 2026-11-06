@@ -1,9 +1,10 @@
 import { TransitMap } from '@railtime/renderer/transitMap.service';
 import type { RecordedWindow } from '@railtime/video/videoPage.types';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import { onBeforeUnmount, onMounted, toValue, watch, type MaybeRefOrGetter, type ShallowRef } from 'vue';
+import { onBeforeUnmount, onMounted, toValue, watch, type MaybeRefOrGetter } from 'vue';
 import { useVideoStore } from '~/features/video/video.store';
 import type { VideoOpening } from '~/features/video/video.types';
+import type { TransitMapMount } from '~/utils/transitMap.types';
 
 /**
  * The video's map and its frames, and the only code that touches them: on mount, the store opens the
@@ -15,10 +16,10 @@ import type { VideoOpening } from '~/features/video/video.types';
  * on the page that moves is worked out from that clock, never left to a CSS transition, which runs on
  * a clock no recorder moves. Client only.
  *
- * @param container - Where the map goes.
+ * @param mount - Where the map and the minimap go.
  * @param opening - The city's network, how the map is seen, where its outline is served and the plan named, read as the map is made.
  */
-export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>, opening: MaybeRefOrGetter<Omit<VideoOpening, 'size'>>): void => {
+export const useVideoMap = (mount: TransitMapMount, opening: MaybeRefOrGetter<Omit<VideoOpening, 'size'>>): void => {
   const store = useVideoStore();
   const page = window as Window & RecordedWindow;
   let map: TransitMap | null = null;
@@ -31,12 +32,13 @@ export const useVideoMap = (container: Readonly<ShallowRef<HTMLElement | null>>,
   };
 
   onMounted(() => {
-    const element = container.value!;
+    const element = mount.container.value!;
     store.OPEN({ ...toValue(opening), size: { width: element.clientWidth, height: element.clientHeight } });
     const props = store.mapProps;
     if (!props) return;
     map = new TransitMap({
       container: element,
+      minimapContainer: mount.minimapContainer.value ?? undefined,
       props,
       // The page shows the credits itself, in a corner.
       attributionControl: false,
