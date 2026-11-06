@@ -177,6 +177,14 @@ describe('VideoUtils', () => {
       expect(videoLayersOf({ ...still, scene: 'overview', elapsed: PLAN_INTRO_MS / 2 }).planIntro).toBe(0);
     });
 
+    test('shows the minimap while the history and the plan play, and takes it out as the whole network comes', () => {
+      expect(videoLayersOf({ ...still, scene: 'history', elapsed: FADE_MS / 2 }).minimap).toBe(0.5);
+      expect(videoLayersOf({ ...still, scene: 'plan', elapsed: FADE_MS }).minimap).toBe(1);
+      expect(videoLayersOf({ ...still, scene: 'overview', elapsed: FADE_MS / 2 }).minimap).toBe(0.5);
+      expect(videoLayersOf({ ...still, scene: 'overview', elapsed: FADE_MS }).minimap).toBe(0);
+      expect(['title', 'insights', 'end'].map(scene => videoLayersOf({ ...still, scene: scene as 'end' }).minimap)).toEqual([0, 0, 0]);
+    });
+
     test('brings the year in with the history and keeps it to the end, the end card fading in beside it', () => {
       expect(videoLayersOf({ ...still, scene: 'history', elapsed: FADE_MS / 2 }).year).toBe(0.5);
       expect(['insights', 'plan', 'overview', 'end', 'done'].map(scene => videoLayersOf({ ...still, scene: scene as 'plan' }).year)).toEqual([1, 1, 1, 1, 1]);

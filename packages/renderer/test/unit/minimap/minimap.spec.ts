@@ -3,6 +3,8 @@ import { describe, expect, test, vi } from 'vitest';
 import type { FeatureCollection } from '../../../src/layers/snapshot.types';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import {
+  MINIMAP_LAYERS,
+  MINIMAP_LINE_WIDTH,
   MINIMAP_SOURCES,
   MINIMAP_UPDATE_MS,
   MINIMAP_VIEWPORT_CLASS,
@@ -104,6 +106,13 @@ describe('Minimap', () => {
     expect(fake.data.size).toBe(0);
     fake.fire('style.load');
     expect([MINIMAP_SOURCES.lines, MINIMAP_SOURCES.planned, MINIMAP_SOURCES.active].map(source => fake.featuresIn(source).length)).toEqual([2, 1, 1]);
+  });
+
+  test('draws a line growing as wide as the rest, so it never swells and shrinks back', () => {
+    const { fake } = minimapOf();
+    fake.fire('style.load');
+    const widths = Object.values(MINIMAP_LAYERS).map(id => fake.layers.get(id)?.paint['line-width']);
+    expect(widths).toEqual(Object.values(MINIMAP_LAYERS).map(() => MINIMAP_LINE_WIDTH));
   });
 
   test('sends the change playing at most once in so long, and the latest when due', () => {

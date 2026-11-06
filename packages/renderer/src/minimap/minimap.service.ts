@@ -1,6 +1,14 @@
 import type { Bounds } from '@railtime/core/geometry.types';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import { MINIMAP_LAYERS, MINIMAP_PADDING, MINIMAP_SOURCES, MINIMAP_UPDATE_MS, MINIMAP_VIEWPORT_CLASS, MINIMAP_VIEWPORT_COLOR } from './minimap.constants';
+import {
+  MINIMAP_LAYERS,
+  MINIMAP_LINE_WIDTH,
+  MINIMAP_PADDING,
+  MINIMAP_SOURCES,
+  MINIMAP_UPDATE_MS,
+  MINIMAP_VIEWPORT_CLASS,
+  MINIMAP_VIEWPORT_COLOR,
+} from './minimap.constants';
 import type { MinimapOptions } from './minimap.types';
 import { viewportBox } from './minimap.utils';
 import { recolorBasemap } from '../layers/basemap.utils';
@@ -129,34 +137,32 @@ export class Minimap {
   private install(): void {
     recolorBasemap(this.map, this.palette, { labels: false });
     for (const source of Object.values(MINIMAP_SOURCES)) this.map.addSource(source, { type: 'geojson', data: emptyCollection() });
-    this.map.addLayer({ id: MINIMAP_LAYERS.lines, type: 'line', source: MINIMAP_SOURCES.lines, paint: { 'line-color': ['get', 'color'], 'line-width': 1.2 } });
+    this.map.addLayer({
+      id: MINIMAP_LAYERS.lines,
+      type: 'line',
+      source: MINIMAP_SOURCES.lines,
+      paint: { 'line-color': ['get', 'color'], 'line-width': MINIMAP_LINE_WIDTH },
+    });
     this.map.addLayer({
       id: MINIMAP_LAYERS.planned,
       type: 'line',
       source: MINIMAP_SOURCES.planned,
-      paint: { 'line-color': ['get', 'color'], 'line-width': 1.2, 'line-dasharray': [2, 1.5] },
+      paint: { 'line-color': ['get', 'color'], 'line-width': MINIMAP_LINE_WIDTH, 'line-dasharray': [2, 1.5] },
     });
-    // The playing step's track: built track glowing, a plan's broken, as on the map.
-    this.map.addLayer({
-      id: MINIMAP_LAYERS.activeGlow,
-      type: 'line',
-      source: MINIMAP_SOURCES.active,
-      filter: ['!', ['get', 'planned']],
-      paint: { 'line-color': ['get', 'color'], 'line-width': 7, 'line-blur': 4, 'line-opacity': 0.8 },
-    });
+    // The playing step's track, drawn as the rest: built track whole, a plan's broken.
     this.map.addLayer({
       id: MINIMAP_LAYERS.active,
       type: 'line',
       source: MINIMAP_SOURCES.active,
       filter: ['!', ['get', 'planned']],
-      paint: { 'line-color': ['get', 'color'], 'line-width': 2.5 },
+      paint: { 'line-color': ['get', 'color'], 'line-width': MINIMAP_LINE_WIDTH },
     });
     this.map.addLayer({
       id: MINIMAP_LAYERS.activePlanned,
       type: 'line',
       source: MINIMAP_SOURCES.active,
       filter: ['get', 'planned'],
-      paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1.5] },
+      paint: { 'line-color': ['get', 'color'], 'line-width': MINIMAP_LINE_WIDTH, 'line-dasharray': [2, 1.5] },
     });
     this.ready = true;
     for (const [source, data] of this.pending) this.setData(source, data);

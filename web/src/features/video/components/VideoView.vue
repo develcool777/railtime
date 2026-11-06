@@ -3,6 +3,12 @@
   <div class="relative h-dvh w-full overflow-hidden bg-[#0b0d10] text-white">
     <!-- MapLibre makes the map's own element relative: it fills a frame of its own. -->
     <div class="absolute inset-0"><div ref="container" class="h-full w-full" /></div>
+    <!-- MapLibre makes the minimap's element relative too. Always laid out, so it is framed before it shows. -->
+    <div
+      class="absolute top-[4vmin] left-[5vmin] h-[22vmin] w-[36vmin] overflow-hidden rounded-[1.4vmin] ring-1 ring-white/20"
+      :style="{ opacity: store.layers.minimap }">
+      <div ref="minimapContainer" class="h-full w-full" aria-label="Overview of the whole city" />
+    </div>
     <VideoTitle :name="cityName" :networks="summary.networks" :span="store.span" :shown="store.layers.title" />
     <VideoPlanIntro v-if="store.plan" :plan="store.plan" :shown="store.layers.planIntro" />
     <VideoYear v-if="store.time" :time="store.time" :stats="store.stats" :plan="store.plan" :shown="store.layers.year" />
@@ -31,11 +37,12 @@
 
   const store = useVideoStore();
   const container = useTemplateRef<HTMLElement>('container');
+  const minimapContainer = useTemplateRef<HTMLElement>('minimapContainer');
   // The video opens on the city's network, as its address asks: in 3D, or flat (`?view=2d`); on past
   // today to a plan, if it names one (`?plan=<id>`).
   const route = useRoute();
   const baseURL = useRuntimeConfig().app.baseURL;
-  useVideoMap(container, () => ({
+  useVideoMap({ container, minimapContainer }, () => ({
     network: props.network,
     viewMode: videoViewOf(route.query.view),
     outline: `${baseURL}${boundaryUrlOf(props.city)}`,

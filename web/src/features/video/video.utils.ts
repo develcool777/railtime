@@ -97,6 +97,19 @@ export const easedOut = (share: number): number => 1 - (1 - share) ** 3;
 export const shownFor = (elapsed: number, length: number, fadeMs: number): number => Math.min(fadedIn(elapsed, fadeMs), fadedIn(length - elapsed, fadeMs));
 
 /**
+ * How much of the minimap shows in a scene: in while the history or a plan plays, the camera close in,
+ * and out as the whole network comes into view, which it has nothing to add to.
+ *
+ * @param scene - The scene shown.
+ * @param elapsed - How long it has shown, ms.
+ * @returns Its opacity, 0 to 1.
+ */
+const minimapShownIn = (scene: VideoScene, elapsed: number): number => {
+  if (scene === 'history' || scene === 'plan') return fadedIn(elapsed, FADE_MS);
+  return scene === 'overview' ? 1 - fadedIn(elapsed, FADE_MS) : 0;
+};
+
+/**
  * How much of the year and totals show in a scene: in with the history, and on to the video's end.
  *
  * @param scene - The scene shown.
@@ -125,7 +138,7 @@ const yearShownIn = (scene: VideoScene, elapsed: number): number => {
 
 /**
  * How much of each piece over the map shows at a moment: the title over its scene, and the plan's
- * name as it starts to play, fading in and out; the year and totals (`yearShownIn`); a caption in as its change starts,
+ * name as it starts to play, fading in and out; the minimap (`minimapShownIn`); the year and totals (`yearShownIn`); a caption in as its change starts,
  * out once it goes, and never more than the year; the end card in at its scene, staying when the video
  * is over.
  *
@@ -136,13 +149,14 @@ export const videoLayersOf = (moment: VideoMoment): VideoLayers => {
   const { scene, elapsed, sinceCaption, sinceCaptionGone } = moment;
   const title = scene === 'title' ? shownFor(elapsed, SCENE_MS.title ?? 0, FADE_MS) : 0;
   const planIntro = scene === 'plan' ? shownFor(elapsed, PLAN_INTRO_MS, FADE_MS) : 0;
+  const minimap = minimapShownIn(scene, elapsed);
   const year = yearShownIn(scene, elapsed);
   const captionGone = sinceCaptionGone === null ? 1 : 1 - fadedIn(sinceCaptionGone, FADE_MS);
   const caption = Math.min(fadedIn(sinceCaption, FADE_MS), captionGone, year);
   let end = 0;
   if (scene === 'done') end = 1;
   else if (scene === 'end') end = fadedIn(elapsed, FADE_MS);
-  return { title, planIntro, year, caption, end };
+  return { title, planIntro, minimap, year, caption, end };
 };
 
 /**
