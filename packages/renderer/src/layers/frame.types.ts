@@ -2,6 +2,7 @@ import type { NetworkEngine } from '@railtime/network/engine.service';
 import type { LineId } from '@railtime/schema/network.types';
 import type { ActiveStepLayer, NetworkLayer } from './network.service';
 import type { StationLayer } from './stations.service';
+import type { TrainLayer } from './trains.service';
 import type { Minimap } from '../minimap/minimap.service';
 import type { Player } from '../playback/player.service';
 import type { ChaseTarget } from '../steps/animation.types';
@@ -16,6 +17,11 @@ export type FrameParts = {
   network: NetworkLayer;
   activeStep: ActiveStepLayer;
   stations: StationLayer;
+  trains: TrainLayer;
+  /** The trains the network runs at a moment. */
+  trainService: NetworkEngine['trainService'];
+  /** Whether trains are to run. */
+  showTrains: () => boolean;
   /** The overview inset, if there is one: it shows the network and the change playing. */
   minimap: Pick<Minimap, 'setNetwork' | 'setActive'> | null;
   /** A line's own colour in the current theme. */

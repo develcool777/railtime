@@ -115,6 +115,8 @@ type MapPropsInput = {
   theme: Theme;
   viewMode: ViewMode;
   stationNames: boolean;
+  /** Whether trains are turned on. */
+  trains: boolean;
   streetNames: boolean;
   timeMode: TimeMode;
   openStation: StationId | null;
@@ -128,7 +130,8 @@ type MapPropsInput = {
 
 /**
  * The map's props: everything the map shows, as the store has it, in one place. The line open is
- * brought forward, but not under a station's view or while playing, when every line is alike.
+ * brought forward, but not under a station's view or while playing, when every line is alike; trains
+ * run, if turned on, but not while playing, when they would compete with the line being drawn.
  *
  * @param input - The store's state, and the theme.
  * @returns The props.
@@ -139,6 +142,7 @@ export const mapPropsOf = (input: MapPropsInput): MapProps => ({
   viewMode: input.viewMode,
   stationLabels: input.stationNames,
   streetLabels: input.streetNames,
+  trains: input.trains && input.timeMode !== 'playing',
   focusedLines: input.timeMode === 'playing' || input.openStation || !input.openLine ? null : [input.openLine],
   selectedStation: input.openStation,
   overlay: input.overlay,

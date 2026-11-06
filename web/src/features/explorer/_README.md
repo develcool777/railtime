@@ -65,6 +65,7 @@ way only (CLAUDE.md, Architecture):
 | What                                                          | Where                      | Kept                                                                       |
 | ------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------- |
 | What is looked at: tab, line, station, 3D, names, map only    | the explorer's store       | the address: `tab`, `line`, `station`, `view=3d`, `names=off`, `mapOnly=1` |
+| Trains running on the lines                                   | the explorer's store       | the address: `trains=on`                                                   |
 | The plan picked, the lines hidden                             | the network's store        | the visit                                                                  |
 | A route's ends and the way drawn, a reach's start             | the tools' store           | the address: `route=bank,oval` (`,1`: the second way), `reach=bank`        |
 | How far from a station coverage counts                        | the tools' store           | the address: `walk=400`, `1200`, `1600` or `2000` (800 m without)          |

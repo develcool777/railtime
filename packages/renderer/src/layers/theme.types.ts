@@ -21,4 +21,7 @@ export type Palette = {
   interchangeRing: string;
   /** Minimap viewport box. */
   viewport: string;
+  /** A train's body, over its line's colour, and the shadow under it. */
+  trainBody: string;
+  trainShadow: string;
 };

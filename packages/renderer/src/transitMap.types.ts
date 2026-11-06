@@ -38,6 +38,8 @@ export type MapProps = {
   stationLabels: boolean;
   /** Whether the basemap names its streets and places, or shows the city unnamed but for the stations. */
   streetLabels: boolean;
+  /** Whether trains run on the lines: an illustration, the network keeping no timetable. */
+  trains: boolean;
   /** The lines brought forward, the rest faded, as for a line's panel; `null` for every line alike. A route or a reach fades them all. */
   focusedLines: LineId[] | null;
   /** The station ringed, flown to when it changes; `null` for none. */

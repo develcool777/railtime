@@ -37,6 +37,8 @@ export type ExplorerUrlState = {
   stationNames?: false;
   /** The basemap's street and place names hidden; shown without one. */
   streetNames?: false;
+  /** Trains running on the lines; none without one. */
+  trains?: true;
   /** Only the map; the page around it without one. */
   mapOnly?: true;
   /** The panel folded; open without one. */
@@ -73,6 +75,7 @@ export type AddressInput = {
   viewMode: ViewMode;
   stationNames: boolean;
   streetNames: boolean;
+  trains: boolean;
   mapOnly: boolean;
   panelOpen: boolean;
   player: PlayerSettings;

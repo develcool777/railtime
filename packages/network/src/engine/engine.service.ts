@@ -4,6 +4,8 @@ import type { LineGap } from './engine.types';
 import { NetworkIndex } from './index.service.ts';
 import { Playheads } from './playheads.service.ts';
 import { Timeline } from './timeline.service.ts';
+import { trainRunsAt } from '../trains/routes.utils.ts';
+import { TrainService } from '../trains/trains.service.ts';
 
 /**
  * The raw network through time, as the renderer plays and draws it: its track and stations indexed
@@ -33,5 +35,15 @@ export class NetworkEngine {
     this.timeline = new Timeline(this.index);
     this.range = { start: this.timeline.start, end: Math.max(today, this.timeline.lastDate), today };
     this.playheads = new Playheads(this.timeline, this.range);
+  }
+
+  /**
+   * The trains the network runs at a moment.
+   *
+   * @param cursor - The cursor: the track open then.
+   * @returns Its trains.
+   */
+  public trainService(cursor: number): TrainService {
+    return new TrainService(trainRunsAt(this.index, this.timeline, cursor));
   }
 }

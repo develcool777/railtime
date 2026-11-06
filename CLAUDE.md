@@ -170,6 +170,17 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   and `draw` (`steps/animation.service.ts`): one class for every kind, its pure parts in
   `animation.utils.ts`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `TransitMap`.
+- **Trains on the map are an illustration, worked out from the network alone.** It keeps no timetable, so
+  `network`'s `trains/` makes one, the same way for any city: every way along a line from one end to
+  another (`routes.utils.ts`, a fork's branch going on past it to the far end), then how often trains come
+  (`schedule.utils.ts`: an interval from the network's own size, shared by a line's routes, so a line that
+  forks runs each no more often), and each route's start, clear of the others wherever they share track
+  or an end. Never a number tuned for a city: a test holds every city to the same rule. A train leaves each end of a route at the same moment, as on a real line, and a
+  loop's turn where it closes, so it runs both ways round. `TrainService` (`engine.trainService`) says
+  where each train is, from the clock alone, so a recorder can step them; a train turning at an end is
+  out of sight. The renderer only draws them: each a stretch of its line's
+  track, not a point, so it sits where its line is drawn on shared track. The map's `trains` prop turns
+  them on, the app takes them off while history plays, and where lines are brought forward only theirs run.
 - **The web app** follows the investors site's layout, in `web/src/`:
 
   ```text

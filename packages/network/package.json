@@ -15,10 +15,13 @@
     "./coverage.service": "./src/coverage/coverage.service.ts",
     "./engine.service": "./src/engine/engine.service.ts",
     "./engine.types": "./src/engine/engine.types.ts",
+    "./trains.service": "./src/trains/trains.service.ts",
+    "./trains.types": "./src/trains/trains.types.ts",
     "./testing/tinyNetwork": "./test/support/factories/tinyNetwork.utils.ts",
     "./testing/routeNetwork": "./test/support/factories/routeNetwork.utils.ts",
     "./testing/boundaries": "./test/support/factories/boundaries.utils.ts",
-    "./testing/planOnlyNetwork": "./test/support/factories/planOnlyNetwork.utils.ts"
+    "./testing/planOnlyNetwork": "./test/support/factories/planOnlyNetwork.utils.ts",
+    "./testing/trains": "./test/support/trains.utils.ts"
   },
   "dependencies": {
     "@railtime/core": "workspace:*",

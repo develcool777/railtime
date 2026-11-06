@@ -12,6 +12,7 @@ import { ActiveStepLayer, NetworkLayer } from './layers/network.service';
 import { emptyCollection } from './layers/snapshot.utils';
 import { StationLayer } from './layers/stations.service';
 import { DEFAULT_BASEMAP, DEFAULT_BASEMAP_CREDITS, OPENSTREETMAP_CREDIT, PALETTES } from './layers/theme.constants';
+import { TrainLayer } from './layers/trains.service';
 import { Minimap } from './minimap/minimap.service';
 import { OverlayController } from './overlay/controller.service';
 import { CoverageLayer } from './overlay/coverage.service';
@@ -61,6 +62,8 @@ export class TransitMap {
   private readonly networkLayer: NetworkLayer;
   /** What the playing step draws. */
   private readonly activeStepLayer: ActiveStepLayer;
+  /** Trains running on the lines, when turned on. */
+  private readonly trainLayer: TrainLayer;
   /** Stations, labels, pulses and the selection ring. */
   private readonly stationLayer: StationLayer;
   /** A route over the network. */
@@ -75,8 +78,6 @@ export class TransitMap {
   private readonly minimap: Minimap | null;
   /** The history played on the map, frame by frame. */
   private readonly playback: Playback;
-  /** Events raised since the last frame, delivered at its end. */
-  private queue: (() => void)[] = [];
   /** Where the map is in its life. */
   private life: 'loading' | 'ready' | 'destroyed' = 'loading';
   /** The pending frame. */
@@ -112,6 +113,7 @@ export class TransitMap {
     this.camera = new CameraDirector(this.map, () => this.props.current);
     this.networkLayer = new NetworkLayer(this.map);
     this.activeStepLayer = new ActiveStepLayer(this.map);
+    this.trainLayer = new TrainLayer(this.map);
     this.routeLayer = new RouteLayer(this.map);
     this.reachLayer = new ReachLayer(this.map);
     this.coverageLayer = new CoverageLayer(this.map);
@@ -135,14 +137,14 @@ export class TransitMap {
       stations: this.stationLayer,
       tilesLoaded: () => this.map.areTilesLoaded(),
       fitNetwork: durationMs => this.fitNetwork(durationMs),
-      notify: (event, payload) => this.notify(event, payload),
+      notify: (event, payload) => this.events.later(event, payload),
     });
 
     this.map.on('style.load', () => this.install());
     this.map.on('click', event => this.onMapClick(event));
     this.map.on('mouseenter', LAYERS.stations, () => (this.map.getCanvas().style.cursor = 'pointer'));
     this.map.on('mouseleave', LAYERS.stations, () => (this.map.getCanvas().style.cursor = ''));
-    this.map.on('moveend', () => this.notify('view', this.view()));
+    this.map.on('moveend', () => this.events.later('view', this.view()));
     this.frameRequest = this.scheduler.request(this.renderFrame);
   }
 
@@ -265,7 +267,6 @@ export class TransitMap {
     if (this.life === 'destroyed') return;
     this.life = 'destroyed';
     this.scheduler.cancel(this.frameRequest);
-    this.queue = [];
     this.minimap?.destroy();
     this.map.remove();
     this.events.clear();
@@ -309,7 +310,7 @@ export class TransitMap {
       camera: this.camera,
       moment: () => this.player.playhead,
       theme: () => this.props.current.theme,
-      report: result => this.notify('overlay', result),
+      report: result => this.events.later('overlay', result),
     });
     const frames = new FrameRenderer({
       index,
@@ -318,6 +319,9 @@ export class TransitMap {
       player,
       network: this.networkLayer,
       activeStep: this.activeStepLayer,
+      trains: this.trainLayer,
+      trainService: cursor => facts.engine.trainService(cursor),
+      showTrains: () => this.props.current.trains,
       stations: this.stationLayer,
       minimap: this.minimap,
       baseColor: line => facts.colorOf(line)[this.props.current.theme],
@@ -362,6 +366,8 @@ export class TransitMap {
       },
       stationLabels: () => this.stationLayer.showLabels(this.props.current.stationLabels),
       streetLabels: () => showBasemapLabels(this.map, this.props.current.streetLabels),
+      // Each frame reads it: they run on the frames' clock.
+      trains: () => {},
       focusedLines: () => this.applyBackdrop(),
       selectedStation: () => {
         const station = this.props.current.selectedStation;
@@ -390,24 +396,16 @@ export class TransitMap {
 
   /** The layer groups, bottom to top. */
   private get layers(): MapLayer[] {
-    return [this.coverageLayer, this.buildingsLayer, this.networkLayer, this.activeStepLayer, this.stationLayer, this.routeLayer, this.reachLayer];
-  }
-
-  /**
-   * Raises an event, delivered at the end of the frame: never inside a call.
-   *
-   * @param event - The event.
-   * @param payload - What it says.
-   */
-  private notify<Name extends keyof TransitMapEvents>(event: Name, payload: TransitMapEvents[Name]): void {
-    this.queue.push(() => this.events.emit(event, payload));
-  }
-
-  /** Delivers the events raised since the last frame, in order. */
-  private flush(): void {
-    const events = this.queue;
-    this.queue = [];
-    for (const deliver of events) deliver();
+    return [
+      this.coverageLayer,
+      this.buildingsLayer,
+      this.networkLayer,
+      this.activeStepLayer,
+      this.trainLayer,
+      this.stationLayer,
+      this.routeLayer,
+      this.reachLayer,
+    ];
   }
 
   /**
@@ -431,6 +429,7 @@ export class TransitMap {
   private applyBackdrop(): void {
     const backdrop = this.overlay.backdrop;
     this.networkLayer.focus(backdrop ? [] : this.props.current.focusedLines);
+    this.trainLayer.focus(backdrop ? [] : this.props.current.focusedLines);
     this.stationLayer.fade(backdrop);
   }
 
@@ -455,7 +454,7 @@ export class TransitMap {
     this.life = 'ready';
     this.props.start();
     this.frames.redraw(true);
-    this.notify('status', 'ready');
+    this.events.later('status', 'ready');
   }
 
   /**
@@ -464,7 +463,7 @@ export class TransitMap {
    * @param event - The map click.
    */
   private onMapClick(event: MapMouseEvent): void {
-    if (this.life === 'ready') this.notify('stationClick', this.stationLayer.stationAt(event.point));
+    if (this.life === 'ready') this.events.later('stationClick', this.stationLayer.stationAt(event.point));
   }
 
   /**
@@ -488,7 +487,7 @@ export class TransitMap {
     const seconds = Math.min(MAX_FRAME_SECONDS, (now - (this.lastFrameAt ?? now)) / 1000);
     this.lastFrameAt = now;
     this.playback.frame(now, seconds, this.life === 'ready');
-    this.flush();
+    this.events.flush();
     // A listener may have destroyed it.
     if (this.alive()) this.frameRequest = this.scheduler.request(this.renderFrame);
   };

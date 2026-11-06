@@ -10,6 +10,8 @@ import type { EventListener, Unsubscribe } from './eventEmitter.types';
 export class EventEmitter<Events extends object> {
   /** Listeners by event name. */
   private readonly listeners = new Map<keyof Events, Set<EventListener<never>>>();
+  /** What `later` holds back, until `flush`. */
+  private held: (() => void)[] = [];
 
   /**
    * Subscribes to an event.
@@ -35,8 +37,26 @@ export class EventEmitter<Events extends object> {
     for (const listener of this.listeners.get(event) ?? []) (listener as EventListener<Events[Name]>)(payload);
   }
 
-  /** Drops every listener of every event. */
+  /**
+   * Raises an event to be delivered at the next `flush`: never inside the call that raises it.
+   *
+   * @param event - The event's name.
+   * @param payload - What the listeners receive.
+   */
+  public later<Name extends keyof Events>(event: Name, payload: Events[Name]): void {
+    this.held.push(() => this.emit(event, payload));
+  }
+
+  /** Delivers the events held back, in the order they were raised; one raised meanwhile waits for the next. */
+  public flush(): void {
+    const held = this.held;
+    this.held = [];
+    for (const deliver of held) deliver();
+  }
+
+  /** Drops every listener of every event, and what is held back. */
   public clear(): void {
     this.listeners.clear();
+    this.held = [];
   }
 }

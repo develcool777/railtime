@@ -6,6 +6,9 @@ import type { NetworkIndex } from './index.service';
 import type { Timeline } from './timeline.service';
 import type { LineDetails, LineDirection, Stop, StopToward } from '../facts/facts.types';
 
+/** A run of a line's track: its stations, the track between each and the next, and the stops a list of them shows. */
+type LineRun = { stations: StationId[]; track: LineSegment[]; stops: StationId[] };
+
 /** A line's track at a cursor, as a graph: each station's neighbours on it, with the km between. */
 type LineGraph = Map<StationId, { to: StationId; km: number; edge: number }[]>;
 
@@ -53,21 +56,21 @@ const longestRun = (graph: LineGraph, start: StationId, used: Set<number>): { st
 };
 
 /**
- * A line's stations in the order it runs, as runs of track: the longest first, end to end, then
- * each branch from the station it leaves, longest first. A loop is one run, from any station.
+ * A line in the order it runs, as runs of track: the longest first, end to end, then each branch from
+ * the station it leaves, longest first. A loop is one run, from any station, closing where it began.
  *
  * @param index - The network.
  * @param timeline - Its timeline.
  * @param line - The line id.
  * @param cursor - The cursor: the track open then.
- * @returns Each run's stations, the line's stops only; a branch's first is the station it leaves from.
+ * @returns Each run: its stations and the track between them, in order, and its stops.
  */
-export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): StationId[][] => {
+export const lineRuns = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): LineRun[] => {
   const { graph, open } = lineGraph(index, timeline, line, cursor);
   const serves = (station: StationId) => timeline.servesStation(station, line, cursor);
   const used = new Set<number>();
   const listed = new Set<StationId>();
-  const runs: StationId[][] = [];
+  const runs: LineRun[] = [];
   while (used.size < open.length) {
     const unlisted = [...graph.keys()].filter(station => graph.get(station)?.some(next => !used.has(next.edge)));
     const ends = unlisted.filter(station => graph.get(station)?.length === 1);
@@ -89,16 +92,33 @@ export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: Line
     if (closing) {
       used.add(closing.edge);
       run.stations.push(closing.to);
+      run.edges.push(closing.edge);
     }
     const isNew = run.stations.some(station => !listed.has(station) && serves(station));
     for (const station of run.stations) listed.add(station);
     // Track that adds no stop (a second track between two stations listed) is not a branch to show.
     if (!isNew) continue;
     // A branch's first station is kept, though listed (and though perhaps no stop): where it leaves from.
-    runs.push(run.stations.filter((station, position) => (position === 0 && runs.length > 0) || serves(station)));
+    runs.push({
+      stations: run.stations,
+      track: run.edges.map(edge => required(open[edge], `edge ${edge}`)),
+      stops: run.stations.filter((station, position) => (position === 0 && runs.length > 0) || serves(station)),
+    });
   }
   return runs;
 };
+
+/**
+ * A line's stations in the order it runs, by run of track (`lineRuns`).
+ *
+ * @param index - The network.
+ * @param timeline - Its timeline.
+ * @param line - The line id.
+ * @param cursor - The cursor: the track open then.
+ * @returns Each run's stations, the line's stops only; a branch's first is the station it leaves from.
+ */
+export const lineBranches = (index: NetworkIndex, timeline: Timeline, line: LineId, cursor: number): StationId[][] =>
+  lineRuns(index, timeline, line, cursor).map(run => run.stops);
 
 /**
  * How long a line's open track is at a cursor.

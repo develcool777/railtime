@@ -11,6 +11,11 @@ export const HELP_TOPICS: { title: string; items: { icon?: string; text?: string
         label: 'Street names',
         description: 'Name the city’s streets and places, or leave only the stations named: crossed out while they are hidden',
       },
+      {
+        icon: 'i-lucide-train-front',
+        label: 'Trains',
+        description: 'Run trains on the lines, on any date, end to end: an illustration, evenly spaced, not a timetable. In its tunnel while they are off',
+      },
       { text: '3D', label: 'Flat or 3D', description: 'Tilt the map close up, over the city’s buildings; 2D lays it flat again' },
       { icon: 'i-lucide-maximize-2', label: 'Map only', description: 'Hide everything but the map, full screen' },
     ],

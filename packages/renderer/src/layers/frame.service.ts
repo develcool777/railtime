@@ -1,5 +1,6 @@
 import { DAY_MS } from '@railtime/core/date.utils';
 import { clamp } from '@railtime/core/number.utils';
+import type { TrainService } from '@railtime/network/trains.service';
 import type { LineId, StationId } from '@railtime/schema/network.types';
 import type { ChaseTarget, StepDrawing } from '../steps/animation.types';
 import { emptyDrawing } from '../steps/animation.utils';
@@ -7,8 +8,10 @@ import { NEW_LABEL_FADE_FRACTION } from '../transitMap.constants';
 import type { TimeState } from '../transitMap.types';
 import type { FrameOutcome, FrameParts } from './frame.types';
 import type { NetworkSnapshot, StationLines } from './snapshot.types';
-import { buildNetworkSnapshot } from './snapshot.utils';
+import { buildNetworkSnapshot, emptyCollection } from './snapshot.utils';
 import type { RenderState } from './style.types';
+import { TRAIN_UPDATE_MS } from './trains.constants';
+import { trainsAt } from './trains.utils';
 import { easeInOut } from '../support/drawing.utils';
 
 /**
@@ -29,6 +32,10 @@ export class FrameRenderer {
   private revealedCount = 0;
   /** The minimap was last sent a non-empty active drawing. */
   private minimapShowsActive = false;
+  /** The trains the network runs at the cursor, until it moves; `null` to ask again. */
+  private service: TrainService | null = null;
+  /** When trains were last drawn; `null` while none are. */
+  private trainsDrawnAt: number | null = null;
   /** Clock day, cursor, progress to a hundredth and playing state at the last time state, to give one only on change. */
   private lastTimeKey = '';
 
@@ -88,6 +95,7 @@ export class FrameRenderer {
     const drawingStep = active !== null && player.phase !== 'pre';
     activeStep.update(drawing);
     this.updateMinimapActive(drawing);
+    this.drawTrains(now, state, snapshot);
 
     if (refreshed || drawingStep || this.instant || stationLayer.animating) {
       const stations = new Map<StationId, StationLines>([...snapshot.stations].map(([station, lines]) => [station, new Map(lines)]));
@@ -174,8 +182,29 @@ export class FrameRenderer {
     this.snapshot = buildNetworkSnapshot(state, this.parts.player.active !== null);
     this.parts.network.update(this.snapshot);
     this.parts.minimap?.setNetwork(this.snapshot);
+    this.service = null;
     this.stale = false;
     this.lastTimeKey = '';
+  }
+
+  /**
+   * Draws the trains, on their own clock and at most so often, or clears them once they are turned off.
+   *
+   * @param now - The frame time.
+   * @param state - The render state.
+   * @param snapshot - The network on the map.
+   */
+  private drawTrains(now: number, state: RenderState, snapshot: NetworkSnapshot): void {
+    const { trains, trainService, showTrains } = this.parts;
+    if (!showTrains()) {
+      if (this.trainsDrawnAt !== null) trains.update(emptyCollection());
+      this.trainsDrawnAt = null;
+      return;
+    }
+    if (this.trainsDrawnAt !== null && now - this.trainsDrawnAt < TRAIN_UPDATE_MS) return;
+    this.service ??= trainService(state.cursor);
+    trains.update(trainsAt(this.service.placesAt(now / 1000), state, snapshot.sideBySide));
+    this.trainsDrawnAt = now;
   }
 
   /**
