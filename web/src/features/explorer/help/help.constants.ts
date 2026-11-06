@@ -14,7 +14,8 @@ export const HELP_TOPICS: { title: string; items: { icon?: string; text?: string
       {
         icon: 'i-lucide-train-front',
         label: 'Trains',
-        description: 'Run trains on the lines, on any date, end to end: an illustration, evenly spaced, not a timetable. In its tunnel while they are off',
+        description:
+          'Run trains on the lines, on any date, as a line of its kind runs, sped up: an illustration, not a timetable. In its tunnel while they are off',
       },
       { text: '3D', label: 'Flat or 3D', description: 'Tilt the map close up, over the city’s buildings; 2D lays it flat again' },
       { icon: 'i-lucide-maximize-2', label: 'Map only', description: 'Hide everything but the map, full screen' },

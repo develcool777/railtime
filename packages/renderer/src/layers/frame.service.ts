@@ -10,7 +10,7 @@ import type { FrameOutcome, FrameParts } from './frame.types';
 import type { NetworkSnapshot, StationLines } from './snapshot.types';
 import { buildNetworkSnapshot, emptyCollection } from './snapshot.utils';
 import type { RenderState } from './style.types';
-import { TRAIN_UPDATE_MS } from './trains.constants';
+import { TRAIN_TIME_LAPSE, TRAIN_UPDATE_MS } from './trains.constants';
 import { trainsAt } from './trains.utils';
 import { easeInOut } from '../support/drawing.utils';
 
@@ -203,7 +203,7 @@ export class FrameRenderer {
     }
     if (this.trainsDrawnAt !== null && now - this.trainsDrawnAt < TRAIN_UPDATE_MS) return;
     this.service ??= trainService(state.cursor);
-    trains.update(trainsAt(this.service.placesAt(now / 1000), state, snapshot.sideBySide));
+    trains.update(trainsAt(this.service.placesAt((now / 1000) * TRAIN_TIME_LAPSE), state, snapshot.sideBySide));
     this.trainsDrawnAt = now;
   }
 

@@ -1,4 +1,6 @@
+import { required } from '@railtime/core/required.utils';
 import { byCodeUnits } from '@railtime/core/text.utils';
+import type { Network } from '@railtime/schema/network.types';
 import { lineId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { NetworkIndex } from '../../../src/engine/index.service';
@@ -65,20 +67,55 @@ describe('RouteUtils', () => {
       ]);
     });
 
-    test('turns the first route to start where its branch does, so neither waits on shared track', () => {
+    /**
+     * The test network with a branch at B, and no line but red.
+     *
+     * @returns The network: red's way to A shorter than its way to D.
+     */
+    const forkedNetwork = () => {
       const network = tinyNetwork();
-      network.stations[stationId('e')] = { name: 'E', coordinate: [0.0144, 51.51] };
+      network.transfers = [];
+      for (const segment of network.segments) segment.lines = { [lineId('red')]: { open: '1900-01-01' } };
+      network.stations[stationId('e')] = { name: 'E', coordinate: [0.0144, 51.505] };
       network.segments.push({
         stationA: stationId('b'),
         stationB: stationId('e'),
         coordinates: [
           [0.0144, 51.5],
-          [0.0144, 51.51],
+          [0.0144, 51.505],
         ],
         lines: { [lineId('red')]: { open: '1900-01-01' } },
       });
-      const [first, branch] = runsIn(1930, network).filter(run => run.line === lineId('red'));
-      expect(first?.ends[0]).toBe(branch?.ends[0]);
+      return network;
+    };
+
+    /**
+     * Where red's routes run between.
+     *
+     * @param network - The network.
+     * @returns Each route's ends, in order.
+     */
+    const redEnds = (network: Network) =>
+      runsIn(1930, network)
+        .filter(run => run.line === lineId('red'))
+        .map(run => run.ends.toSorted(byCodeUnits).join('–'))
+        .toSorted(byCodeUnits);
+
+    test('runs a branch on towards the core, where other lines meet its line, never out along the longer way', () => {
+      const network = forkedNetwork();
+      network.segments[0] = {
+        ...required(network.segments[0], 'a segment'),
+        lines: { [lineId('red')]: { open: '1900-01-01' }, [lineId('blue')]: { open: '1900-01-01' } },
+      };
+      expect(redEnds(network)).toEqual(['a–d', 'a–e']);
+    });
+
+    test('runs a branch on along the longer way, with no other line to tell where the core is', () => {
+      expect(redEnds(forkedNetwork())).toEqual(['a–d', 'd–e']);
+    });
+
+    test('says what kind of railway a route is, which is how it runs', () => {
+      expect(runsIn(1930).find(each => each.line === lineId('red'))?.mode).toBe('metro');
     });
 
     test('takes each stretch the right way along a branch laid out backwards to the fork', () => {

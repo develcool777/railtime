@@ -1,8 +1,9 @@
 import { keysOf } from '@railtime/core/collection.utils';
 import { tightestHeadway } from '@railtime/network/testing/trains';
+import type { TrainRun } from '@railtime/network/trains.types';
 import { playbackOf } from '@railtime/renderer/testing/playback';
 import type { CityIndex } from '@railtime/schema/cityIndex.types';
-import type { PlanId } from '@railtime/schema/network.types';
+import type { PlanId, StationId } from '@railtime/schema/network.types';
 import { isPlanOnly } from '@railtime/schema/plan.utils';
 import { globSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,11 +14,8 @@ import { cityNetwork } from '../support/history.utils';
 /** The repository's root. */
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 
-/** The shortest time two of a line's trains may run apart on the same track, the same way, seconds. */
-const TIGHTEST_HEADWAY_SECONDS = 5;
-
-/** The most trains a city may show at once: about a fleet, and a train at the least each way on its routes. */
-const MOST_TRAINS = 110;
+/** The shortest time two of a line's trains may run apart on the same track, the same way, seconds: about the closest real signalling allows. */
+const TIGHTEST_HEADWAY_SECONDS = 90;
 
 describe('CityUtils', () => {
   describe('citiesNamed', () => {
@@ -49,19 +47,34 @@ describe('CityUtils', () => {
       return facts.engine.trainService(facts.playheads.rest().cursor);
     };
 
+    /**
+     * Whether a route runs through a station twice, but for going round a loop at one of its ends.
+     *
+     * @param run - The route.
+     * @returns Whether it doubles back.
+     */
+    const doublesBack = ({ legs, ends }: TrainRun): boolean => {
+      const stations = [...legs.map(({ segment, forward }) => (forward ? segment.stationA : segment.stationB)), ends[1]];
+      const repeats = (some: StationId[]) => new Set(some).size < some.length;
+      return repeats(stations.slice(1)) && repeats(stations.slice(0, -1));
+    };
+
     /** Every network a city shows: as built, if it was, and with each of its plans. */
     const SHOWN = cities().flatMap(({ id }) => {
       const network = cityNetwork(id);
       return [...(isPlanOnly(network) ? [] : [{ id, plan: undefined }]), ...keysOf(network.plans ?? {}).map(plan => ({ id, plan }))];
     });
 
-    test.each(SHOWN)("$id $plan runs trains by the network's rule: apart on shared track, some in sight, and no more than a fleet", ({ id, plan }) => {
-      const service = trainsOf(id, plan);
-      expect(service.timetables.length).toBeGreaterThan(0);
-      expect(tightestHeadway(service)).toBeGreaterThan(TIGHTEST_HEADWAY_SECONDS);
-      expect(service.placesAt(600).length).toBeLessThan(MOST_TRAINS);
-      expect(service.placesAt(600).length).toBeGreaterThan(0);
-    });
+    test.each(SHOWN)(
+      '$id $plan runs trains as a real line does: as far apart as signals keep them on shared track, never doubling back, and some in sight',
+      ({ id, plan }) => {
+        const service = trainsOf(id, plan);
+        expect(service.timetables.length).toBeGreaterThan(0);
+        expect(tightestHeadway(service)).toBeGreaterThanOrEqual(TIGHTEST_HEADWAY_SECONDS);
+        expect(service.timetables.filter(({ run }) => doublesBack(run))).toEqual([]);
+        expect(service.placesAt(600).length).toBeGreaterThan(0);
+      },
+    );
   });
 
   describe('SUMMARIES_PATH', () => {

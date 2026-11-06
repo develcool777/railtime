@@ -35,6 +35,7 @@ const lineSchema = z.object({
   darkColor: color.exactOptional(),
   aliases: z.array(z.object({ until: isoDate, as: lineId, text: z.string() })).exactOptional(),
   pseudo: z.boolean().exactOptional(),
+  way: z.enum(['clockwise', 'anticlockwise']).exactOptional(),
 });
 
 /** A spell a station or a stretch of track was closed, reopened after. */

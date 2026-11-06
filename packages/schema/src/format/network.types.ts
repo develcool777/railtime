@@ -30,6 +30,9 @@ export type Names = Record<string, string>;
 /** What kind of railway a line is: decides how it is classified and counted, not how it is drawn. */
 export type Mode = 'metro' | 'light-metro' | 'tram' | 'suburban-rail' | 'rail' | 'cable';
 
+/** Which way round a loop a line's trains go, seen on the map. */
+export type LoopWay = 'clockwise' | 'anticlockwise';
+
 /** A family of lines run as one brand. */
 export type NetworkInfo = {
   name: string;
@@ -67,6 +70,8 @@ export type Line = {
   aliases?: LineAlias[];
   /** Exists only as an alias target: never toggled or listed on its own. */
   pseudo?: boolean;
+  /** Its trains go only this way round its loop: a line that is one direction of a circle, another line being the other. Left out, a loop runs both ways. */
+  way?: LoopWay;
 };
 
 /** A name a station had until a date. */
