@@ -115,11 +115,13 @@
             class="absolute top-4 right-4 max-lg:top-3 max-lg:right-3"
             :stationNames
             :streetNames
+            :trains
             :viewMode
             @zoomIn="mapStore.ZOOM_IN"
             @zoomOut="mapStore.ZOOM_OUT"
             @fit="mapStore.FIT_NETWORK"
             @stationNames="store.SET_STATION_NAMES"
+            @trains="store.SET_TRAINS"
             @streetNames="store.SET_STREET_NAMES"
             @viewMode="store.SET_VIEW_MODE"
             @mapOnly="store.SET_MAP_ONLY(true)"
@@ -259,6 +261,7 @@
     panelCover,
     viewMode,
     stationNames,
+    trains,
     streetNames,
     chrome,
   } = storeToRefs(store);

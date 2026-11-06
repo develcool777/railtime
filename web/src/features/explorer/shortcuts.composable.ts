@@ -25,6 +25,7 @@ export const useExplorerShortcuts = (): void => {
     forward: () => timeStore.STEP_TIME(1),
     names: () => store.SET_STATION_NAMES(!store.stationNames),
     streets: () => store.SET_STREET_NAMES(!store.streetNames),
+    trains: () => store.SET_TRAINS(!store.trains),
     view3d: () => store.SET_VIEW_MODE(store.viewMode === '3d' ? '2d' : '3d'),
     mapOnly: () => store.SET_MAP_ONLY(!store.mapOnly),
   };

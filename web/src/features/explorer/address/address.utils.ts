@@ -170,7 +170,7 @@ const parseOpened = (query: ExplorerQuery): ExplorerUrlState => {
 };
 
 /**
- * How an address has the map seen: in 3D, names hidden, the map alone, the panel folded.
+ * How an address has the map seen: in 3D, names hidden, trains running, the map alone, the panel folded.
  *
  * @param query - The address's query.
  * @returns Each that is not the default.
@@ -179,6 +179,7 @@ const parseLook = (query: ExplorerQuery): ExplorerUrlState => ({
   ...(single(query.view) === '3d' && { viewMode: '3d' as const }),
   ...(single(query.names) === 'off' && { stationNames: false as const }),
   ...(single(query.streets) === 'off' && { streetNames: false as const }),
+  ...(single(query.trains) === 'on' && { trains: true as const }),
   ...(single(query.mapOnly) === '1' && { mapOnly: true as const }),
   ...(single(query.panel) === 'off' && { panelOpen: false as const }),
 });
@@ -202,7 +203,7 @@ const parsePlayer = (query: ExplorerQuery): ExplorerUrlState => {
 /**
  * Reads an explorer address. Anything malformed is left out, so a bad link opens the default.
  *
- * @param query - The address's query: `at`, `map`, `station`, `plan`, `tab`, `walk`, `route`, `reach`, `line`, `view`, `names`, `streets`, `mapOnly`, `panel`, `speed`, `camera`, `minimap`.
+ * @param query - The address's query: `at`, `map`, `station`, `plan`, `tab`, `walk`, `route`, `reach`, `line`, `view`, `names`, `streets`, `trains`, `mapOnly`, `panel`, `speed`, `camera`, `minimap`.
  * @returns What it asks for.
  */
 export const parseExplorerQuery = (query: ExplorerQuery): ExplorerUrlState => ({
@@ -255,17 +256,18 @@ const formatOpened = (state: ExplorerUrlState): Record<string, string> => {
 };
 
 /**
- * Writes how the map is seen: in 3D, names hidden, the map alone, the panel folded.
+ * Writes how the map is seen: in 3D, names hidden, trains running, the map alone, the panel folded.
  *
  * @param state - What the address shows.
  * @returns Their parameters, each where it is not the default.
  */
 const formatLook = (state: ExplorerUrlState): Record<string, string> => {
-  const { viewMode, stationNames, streetNames, mapOnly, panelOpen } = state;
+  const { viewMode, stationNames, streetNames, trains, mapOnly, panelOpen } = state;
   return {
     ...(viewMode === '3d' && { view: '3d' }),
     ...(stationNames === false && { names: 'off' }),
     ...(streetNames === false && { streets: 'off' }),
+    ...(trains && { trains: 'on' }),
     ...(mapOnly && { mapOnly: '1' }),
     ...(panelOpen === false && { panel: 'off' }),
   };
@@ -328,7 +330,7 @@ const openedOf = (input: AddressInput): ExplorerUrlState => {
 };
 
 /**
- * How the stores have the map seen, for the address: in 3D, names hidden, the map alone, the panel folded.
+ * How the stores have the map seen, for the address: in 3D, names hidden, trains running, the map alone, the panel folded.
  *
  * @param input - What the stores hold.
  * @returns Each that is not the default.
@@ -337,6 +339,7 @@ const lookOf = (input: AddressInput): ExplorerUrlState => ({
   ...(input.viewMode === '3d' && { viewMode: '3d' as const }),
   ...(!input.stationNames && { stationNames: false as const }),
   ...(!input.streetNames && { streetNames: false as const }),
+  ...(input.trains && { trains: true as const }),
   ...(input.mapOnly && { mapOnly: true as const }),
   ...(!input.panelOpen && { panelOpen: false as const }),
 });

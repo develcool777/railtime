@@ -34,4 +34,35 @@ describe('EventEmitter', () => {
     emitter.emit('tick', 3);
     expect(heard).toEqual([1]);
   });
+
+  test('holds an event back until flushed, in the order raised, and drops what is held on clear', () => {
+    const events = new EventEmitter<{ tick: number }>();
+    const heard: number[] = [];
+    events.on('tick', value => {
+      heard.push(value);
+    });
+    events.later('tick', 1);
+    events.later('tick', 2);
+    expect(heard).toEqual([]);
+    events.flush();
+    expect(heard).toEqual([1, 2]);
+    events.later('tick', 3);
+    events.clear();
+    events.flush();
+    expect(heard).toEqual([1, 2]);
+  });
+
+  test('keeps an event raised while flushing for the next flush', () => {
+    const events = new EventEmitter<{ tick: number }>();
+    const heard: number[] = [];
+    events.on('tick', value => {
+      heard.push(value);
+      if (value === 1) events.later('tick', 2);
+    });
+    events.later('tick', 1);
+    events.flush();
+    expect(heard).toEqual([1]);
+    events.flush();
+    expect(heard).toEqual([1, 2]);
+  });
 });

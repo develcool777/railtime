@@ -70,6 +70,8 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
   const viewMode = ref<ViewMode>('2d');
   const stationNames = ref(true);
   const streetNames = ref(true);
+  /** Trains running on the lines, an illustration: off until asked for. */
+  const trains = ref(false);
   /** Dark or light, as the browser keeps it. */
   const theme = ref<Theme>('dark');
   /** Where the city's outline is served, for coverage. */
@@ -103,6 +105,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
           viewMode: viewMode.value,
           stationNames: stationNames.value,
           streetNames: streetNames.value,
+          trains: trains.value,
           timeMode: timeStore.timeMode,
           openStation: openStation.value,
           openLine: openLine.value,
@@ -132,6 +135,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
         viewMode: viewMode.value,
         stationNames: stationNames.value,
         streetNames: streetNames.value,
+        trains: trains.value,
         mapOnly: mapOnly.value,
         panelOpen: panelOpen.value,
         player: timeStore.player,
@@ -197,6 +201,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     viewMode.value = asked.viewMode ?? '2d';
     stationNames.value = asked.stationNames ?? true;
     streetNames.value = asked.streetNames ?? true;
+    trains.value = asked.trains ?? false;
     boundaryUrl.value = outline;
     mapStore.OPEN(asked.view ?? null);
     timeStore.OPEN(asked);
@@ -402,6 +407,14 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     stationNames.value = shown;
   };
   /**
+   * Runs trains on the lines, or takes them off.
+   *
+   * @param shown - Running.
+   */
+  const SET_TRAINS = (shown: boolean) => {
+    trains.value = shown;
+  };
+  /**
    * Shows the basemap's street and place names, or the city unnamed.
    *
    * @param shown - Named.
@@ -425,6 +438,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     dialog,
     viewMode,
     stationNames,
+    trains,
     streetNames,
     theme,
     boundaryUrl,
@@ -465,6 +479,7 @@ export const useExplorerStore = defineStore(STORE_IDS.EXPLORER, () => {
     SET_MAP_ONLY,
     SET_VIEW_MODE,
     SET_STATION_NAMES,
+    SET_TRAINS,
     SET_STREET_NAMES,
   };
 });

@@ -28,6 +28,8 @@
   const props = defineProps<{
     /** Whether the map names its stations. */
     stationNames: boolean;
+    /** Whether trains run on the lines. */
+    trains: boolean;
     /** Whether the map names its streets and places. */
     streetNames: boolean;
     /** How the map is seen: flat, or in 3D. */
@@ -39,6 +41,7 @@
     fit: [];
     stationNames: [shown: boolean];
     streetNames: [shown: boolean];
+    trains: [shown: boolean];
     viewMode: [mode: ViewMode];
     mapOnly: [];
     help: [];
@@ -66,6 +69,15 @@
         kbds: ['S'],
         pressed: props.streetNames,
         run: () => emit('streetNames', !props.streetNames),
+      },
+      {
+        // Illustrative, and says so: the network keeps no timetable.
+        label: props.trains ? 'Hide trains' : 'Show trains (illustrative, not a timetable)',
+        // The icon says how the map is: trains out on the lines, or away in the tunnel.
+        icon: props.trains ? 'i-lucide-train-front' : 'i-lucide-train-front-tunnel',
+        kbds: ['T'],
+        pressed: props.trains,
+        run: () => emit('trains', !props.trains),
       },
       {
         label: props.viewMode === '3d' ? 'Flat map' : 'See in 3D',

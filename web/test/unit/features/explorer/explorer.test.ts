@@ -118,6 +118,18 @@ describe('ExplorerStore', () => {
     expect(explorer.viewMode).toBe('3d');
   });
 
+  test('runs no trains until asked, keeps them in the address, and takes them off the map while history plays', () => {
+    const explorer = openExplorer();
+    expect(explorer.mapProps?.trains).toBe(false);
+    explorer.SET_TRAINS(true);
+    expect(explorer.mapProps?.trains).toBe(true);
+    expect(explorer.address.trains).toBe('on');
+    useTimeStore().PLAY();
+    expect(explorer.mapProps?.trains).toBe(false);
+    expect(explorer.trains).toBe(true);
+    expect(openExplorer({ trains: 'on' }).trains).toBe(true);
+  });
+
   test('opens on Plans with a plan, on Lines without, and leaves the section it opens on out of the address', () => {
     expect(openExplorer({ plan: 'extension' }).section).toBe('plans');
     const explorer = openExplorer();

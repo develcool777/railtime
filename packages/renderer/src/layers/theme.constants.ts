@@ -21,6 +21,8 @@ export const PALETTES: Record<Theme, Palette> = {
     glowOpacity: 0.3,
     interchangeRing: '#11151b',
     viewport: '#ffffff',
+    trainBody: '#ffffff',
+    trainShadow: '#000000',
   },
   light: {
     background: '#f3f2ee',
@@ -39,6 +41,8 @@ export const PALETTES: Record<Theme, Palette> = {
     glowOpacity: 0.18,
     interchangeRing: '#1b1e22',
     viewport: '#1b1e22',
+    trainBody: '#ffffff',
+    trainShadow: '#000000',
   },
 };
 

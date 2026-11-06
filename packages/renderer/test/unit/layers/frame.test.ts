@@ -8,6 +8,8 @@ import { SOURCES } from '../../../src/layers/ids.constants';
 import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
 import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../../../src/layers/snapshot.types';
 import { StationLayer } from '../../../src/layers/stations.service';
+import { TRAIN_UPDATE_MS } from '../../../src/layers/trains.constants';
+import { TrainLayer } from '../../../src/layers/trains.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { playbackOf } from '../../support/playback.utils';
 
@@ -31,7 +33,9 @@ const framesOn = (date: string, plan?: PlanId) => {
     station => station,
     (first, second) => first.localeCompare(second),
   );
-  for (const layer of [network, activeStep, stations]) layer.install(['Font']);
+  const trains = new TrainLayer(fake.map);
+  for (const layer of [network, activeStep, trains, stations]) layer.install(['Font']);
+  const trainsOn = { shown: false };
   const minimap = { networks: [] as Pick<NetworkSnapshot, 'lines' | 'planned'>[], active: [] as FeatureCollection<LineFeature>[] };
   const frames = new FrameRenderer({
     ...playback,
@@ -39,6 +43,9 @@ const framesOn = (date: string, plan?: PlanId) => {
     network,
     activeStep,
     stations,
+    trains,
+    trainService: cursor => playback.facts.engine.trainService(cursor),
+    showTrains: () => trainsOn.shown,
     minimap: {
       setNetwork: snapshot => {
         minimap.networks.push(snapshot);
@@ -49,13 +56,35 @@ const framesOn = (date: string, plan?: PlanId) => {
     },
     baseColor: line => playback.index.lineOf(line).color,
   });
-  return { frames, fake, playback, minimap };
+  return { frames, fake, playback, minimap, trainsOn };
 };
 
 /** How many times each source was sent data, by source. */
 const sendsOf = (fake: ReturnType<typeof fakeMap>) => Object.fromEntries(fake.sends);
 
 describe('FrameRenderer', () => {
+  test('sends no trains until turned on, moves them at most so often, and clears them once turned off', () => {
+    const { frames, fake, trainsOn } = framesOn('1935-01-01');
+    frames.draw(0, null);
+    expect(fake.sends.get(SOURCES.trains)).toBeUndefined();
+
+    trainsOn.shown = true;
+    frames.draw(1000, null);
+    expect(fake.featuresIn(SOURCES.trains).length).toBeGreaterThan(0);
+    const sent = fake.sends.get(SOURCES.trains);
+    frames.draw(1000 + TRAIN_UPDATE_MS - 1, null);
+    expect(fake.sends.get(SOURCES.trains)).toBe(sent);
+    frames.draw(1000 + TRAIN_UPDATE_MS, null);
+    expect(fake.sends.get(SOURCES.trains)).toBe((sent ?? 0) + 1);
+
+    trainsOn.shown = false;
+    frames.draw(2000, null);
+    expect(fake.featuresIn(SOURCES.trains)).toEqual([]);
+    const cleared = fake.sends.get(SOURCES.trains);
+    frames.draw(3000, null);
+    expect(fake.sends.get(SOURCES.trains)).toBe(cleared);
+  });
+
   test('draws the network and its stations once, then sends the map nothing while nothing changes', () => {
     const { frames, fake, minimap } = framesOn('1935-01-01');
     frames.draw(0, null);

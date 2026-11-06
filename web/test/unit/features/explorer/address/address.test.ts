@@ -80,6 +80,11 @@ describe('ExplorerUrlUtils', () => {
       expect(parseExplorerQuery({ tab: 'trains', line: 'Central Line', view: '2d', names: 'on', streets: 'on', mapOnly: 'yes' })).toEqual({});
     });
 
+    test('reads trains running, and nothing else as asking for them', () => {
+      expect(parseExplorerQuery({ trains: 'on' })).toEqual({ trains: true });
+      expect(parseExplorerQuery({ trains: 'off' })).toEqual({});
+    });
+
     test('reads how playback is set, one of its own but the default, and the panel folded', () => {
       expect(parseExplorerQuery({ speed: '4', camera: 'free', minimap: 'off', panel: 'off' })).toEqual({
         speed: 4,
@@ -205,6 +210,7 @@ describe('ExplorerUrlUtils', () => {
       viewMode: '2d' as const,
       stationNames: true,
       streetNames: true,
+      trains: false,
       mapOnly: false,
       panelOpen: true,
       player: { speed: 2, camera: 'follow' as const, minimap: true },
@@ -212,6 +218,10 @@ describe('ExplorerUrlUtils', () => {
 
     test('says nothing of what is as a page opens', () => {
       expect(explorerAddressOf(asOpened)).toEqual({});
+    });
+
+    test('says trains are running', () => {
+      expect(explorerAddressOf({ ...asOpened, trains: true })).toEqual({ trains: true });
     });
 
     test('says what differs: the section, a route by its ends and way, the names hidden, 3D, playback', () => {

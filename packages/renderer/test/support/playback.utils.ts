@@ -1,10 +1,12 @@
 import { NetworkFacts } from '@railtime/network/facts.service';
 import type { FactsAt } from '@railtime/network/facts.types';
+import type { TrainService } from '@railtime/network/trains.service';
 import type { Network } from '@railtime/schema/network.types';
 import type { Playback, PlaybackOptions } from './playback.types';
 import type { NetworkSnapshot } from '../../src/layers/snapshot.types';
 import { buildNetworkSnapshot } from '../../src/layers/snapshot.utils';
 import type { RenderState } from '../../src/layers/style.types';
+import { trainsAt } from '../../src/layers/trains.utils';
 import { Player } from '../../src/playback/player.service';
 import { StepAnimation } from '../../src/steps/animation.service';
 import type { StepDrawing } from '../../src/steps/animation.types';
@@ -57,6 +59,18 @@ export const renderStateOf = (playback: Playback): RenderState => ({
  * @returns The snapshot.
  */
 export const snapshotOf = (playback: Playback, stepPlaying = false): NetworkSnapshot => buildNetworkSnapshot(renderStateOf(playback), stepPlaying);
+
+/**
+ * The trains on the map at the player's position, at a moment, as a frame draws them.
+ *
+ * @param playback - The pieces from `playbackOf`.
+ * @param snapshot - What the map has on it there.
+ * @param service - The trains, as the map keeps them while the cursor stays.
+ * @param seconds - The clock, seconds.
+ * @returns The trains' track.
+ */
+export const trainsOf = (playback: Playback, snapshot: NetworkSnapshot, service: TrainService, seconds: number): ReturnType<typeof trainsAt> =>
+  trainsAt(service.placesAt(seconds), renderStateOf(playback), snapshot.sideBySide);
 
 /**
  * Draws the step playing, at the player's progress through it, as the map would.
