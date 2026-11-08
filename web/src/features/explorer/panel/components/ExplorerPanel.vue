@@ -51,7 +51,7 @@
     :inert="!open"
     aria-label="Panel">
     <slot />
-    <!-- Drag to resize; the width is kept in a cookie. -->
+    <!-- Drag to resize. -->
     <div
       v-if="open"
       class="hover:bg-brand-200 dark:hover:bg-brand-800 absolute top-0 -right-[3px] bottom-0 z-10 w-1.5 cursor-col-resize transition-colors duration-150"

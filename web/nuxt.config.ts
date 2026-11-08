@@ -76,15 +76,18 @@ export default defineNuxtConfig({
   sitemap: { zeroRuntime: true, discoverImages: false },
   // Each city's dataset, packages/data/cities/<country>/<city>/<city>.json, served as it is kept
   // (/data/united-kingdom/london/london.json), with its pictures beside it.
-  // `nuxt generate` prerenders the landing page, About and every city's page.
+  // `nuxt generate` prerenders the landing page, About, Privacy, Terms and every city's page.
   nitro: {
     publicAssets: [{ dir: fileURLToPath(new URL('../packages/data/cities', import.meta.url)), baseURL: '/data' }],
     prerender: {
       // Every page is listed here, so nothing is found by following links.
       crawlLinks: false,
-      routes: ['/', '/about', ...CITIES.map(city => `/${city.value}`)],
+      routes: ['/', '/about', '/privacy', '/terms', ...CITIES.map(city => `/${city.value}`)],
     },
   },
+  // Icons come with the site, from @iconify-json/lucide: a visitor's browser never asks Iconify for one.
+  // The scan reads .ts too, where a panel's sections name theirs; an icon it missed would show blank.
+  icon: { provider: 'none', clientBundle: { scan: { globInclude: ['**/*.{vue,ts}'] } }, fallbackToApi: false },
   // Links end with a slash, as the pages' canonical addresses do: no redirect on the way.
   experimental: { defaults: { nuxtLink: { trailingSlash: 'append' } } },
   // The map's engine, found only through the renderer's source: bundled up front, so the dev server
