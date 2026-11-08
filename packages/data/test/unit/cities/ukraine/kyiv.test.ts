@@ -35,10 +35,10 @@ describe('Kyiv', () => {
       .asOf(facts.playheads.end())
       .trains()
       .timetables.map(({ run }) => run)
-      .filter(run => run.line === lineId('m2'));
+      .filter(run => run.line === lineId('m3'));
     expect(runs.map(run => run.ends.toSorted(byCodeUnits).join('–')).toSorted(byCodeUnits)).toEqual([
-      'heroiv-dnipra–odeska',
-      'heroiv-dnipra–vulytsia-dmytra-lutsenka',
+      'chervonyi-khutir–poliarna',
+      'chervonyi-khutir–selyshche-shevchenka',
     ]);
   });
 
