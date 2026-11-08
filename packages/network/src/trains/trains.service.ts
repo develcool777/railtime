@@ -19,7 +19,7 @@ export class TrainService {
   }
 
   /**
-   * How many trains run: those turning at an end too.
+   * How many trains run, those turning at an end among them.
    *
    * @returns The fleet.
    */
@@ -30,7 +30,7 @@ export class TrainService {
   }
 
   /**
-   * Where each train in sight is at a moment.
+   * Where each train is at a moment: running, standing at a platform or turning at an end.
    *
    * @param seconds - The clock, seconds.
    * @returns Their places.

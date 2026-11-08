@@ -203,7 +203,7 @@ TransitMap            facade: owns MapLibre, the frame loop and the event queue;
 
 One owner per value, inside as out; data flows one way: props and commands in, events out. What
 describes the map outlasts a network, so it lives with what lasts as long as the map: what the camera
-last framed in `OverlayController`, whether trains are on the map in `TrainLayer`, whether a change is on
+last framed in `OverlayController`, what moves on the map in `MotionLayer`, whether a change is on
 the inset in `Minimap`. Nothing outside `NetworkParts` is made again for another network. A layer is
 written to only once installed (`PropsReconciler` holds every effect until then), so it keeps nothing
 to draw later.

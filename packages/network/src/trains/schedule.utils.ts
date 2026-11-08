@@ -260,23 +260,25 @@ const kmAt = ({ run, times, kms }: RouteTimetable, seconds: number): number => {
 
 /**
  * Where a train is, a time into its round: out along the route, then back the same way. Between trips
- * it is turning at an end, and out of sight: past the platform, in a siding or at the other platform.
+ * it is turning at an end, and stands at its platform there until it sets off back, so no train ever
+ * goes out of sight: one that would wait in a siding stands in view, over the one that comes in after it.
  *
  * @param timetable - The route's timetable.
  * @param into - How long into its round.
- * @returns Its place, or `null` while it is out of sight.
+ * @returns Its place.
  */
-const placeAt = (timetable: RouteTimetable, into: number): TrainPlace | null => {
+const placeAt = (timetable: RouteTimetable, into: number): TrainPlace => {
   const { run, tripSeconds, backAfterSeconds } = timetable;
   if (into < tripSeconds) return { run, km: kmAt(timetable, into), heading: 1 };
   const back = into - backAfterSeconds;
-  if (back < 0 || back >= tripSeconds) return null;
-  return { run, km: kmAt(timetable, tripSeconds - back), heading: -1 };
+  if (back < 0) return { run, km: kmAt(timetable, tripSeconds), heading: -1 };
+  if (back < tripSeconds) return { run, km: kmAt(timetable, tripSeconds - back), heading: -1 };
+  return { run, km: kmAt(timetable, 0), heading: 1 };
 };
 
 /**
  * Where a loop's trains are, a time into a lap: one each way round, or the one way its line goes,
- * always in sight, a loop having nowhere to turn. Past a lap's time each is held at where it closes.
+ * never turning, a loop having nowhere to. Past a lap's time each is held at where it closes.
  *
  * @param timetable - The route's timetable.
  * @param into - How long into the lap.
@@ -298,7 +300,7 @@ const lapPlacesAt = (timetable: RouteTimetable, into: number): TrainPlace[] => {
  *
  * @param timetable - The route's timetable.
  * @param seconds - The clock, seconds.
- * @returns Each train in sight.
+ * @returns Each train.
  */
 export const placesOf = (timetable: RouteTimetable, seconds: number): TrainPlace[] => {
   const { run, everySeconds, roundSeconds, phaseSeconds } = timetable;
@@ -309,8 +311,7 @@ export const placesOf = (timetable: RouteTimetable, seconds: number): TrainPlace
       places.push(...lapPlacesAt(timetable, into));
       continue;
     }
-    const place = placeAt(timetable, into);
-    if (place) places.push(place);
+    places.push(placeAt(timetable, into));
   }
   return places;
 };

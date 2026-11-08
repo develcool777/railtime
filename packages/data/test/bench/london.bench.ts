@@ -41,11 +41,11 @@ describe('London', () => {
     });
   });
 
-  test('moves its trains: what a frame sends the map, thirty times a second while they run', async ({ bench }) => {
+  test('moves its trains: what a frame gives the map to draw, every frame while they run', async ({ bench }) => {
     const playback = playbackOf(LONDON.network);
     const snapshot = snapshotOf(playback);
     const service = playback.facts.asOf(playback.player.playhead).trains();
-    expect(trainsOf(playback, snapshot, service, 60).features.length).toBeGreaterThan(40);
+    expect(trainsOf(playback, snapshot, service, 60).length).toBeGreaterThan(40);
     await benchAgainstLastRun(bench, 'London trains', () => {
       trainsOf(playback, snapshot, service, 60);
     });

@@ -71,7 +71,7 @@ export const snapshotOf = (playback: Playback): NetworkSnapshot => buildNetworkS
  * @param snapshot - What the map has on it there.
  * @param service - The trains, as the map keeps them while the cursor stays.
  * @param seconds - The clock, seconds.
- * @returns The trains' track.
+ * @returns The trains, as movers.
  */
 export const trainsOf = (playback: Playback, snapshot: NetworkSnapshot, service: TrainService, seconds: number): ReturnType<typeof trainsAt> =>
   trainsAt(service.placesAt(seconds), renderStateOf(playback), snapshot.sideBySide);

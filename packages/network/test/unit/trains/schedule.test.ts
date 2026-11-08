@@ -125,10 +125,12 @@ describe('ScheduleUtils', () => {
       expect(placesOf(timetable, backAfterSeconds + tripSeconds / 2)).toContainEqual({ run, km: expect.closeTo(0.5) as number, heading: -1 });
     });
 
-    test('has a train out of sight while it turns at an end, for the next to come in behind it', () => {
+    test('stands a train at the end it has come to while it turns, never out of sight', () => {
       const long = timetableOf({ ...routeOf([segmentOf(0, 1)]), stopsKm: [] }, 3600);
-      expect(placesOf(long, long.tripSeconds + 1)).toEqual([]);
-      expect(placesOf(long, long.roundSeconds - 1)).toEqual([]);
+      expect(placesOf(long, long.tripSeconds + 1)).toContainEqual({ run: long.run, km: 1, heading: -1 });
+      expect(placesOf(long, long.roundSeconds - 1)).toContainEqual({ run: long.run, km: 0, heading: 1 });
+      const counts = Array.from({ length: 50 }, (_, moment) => placesOf(long, moment * 97).length);
+      expect(counts).toEqual(counts.map(() => trainsOn(long)));
     });
 
     test('sets a train off from each end at the same moment', () => {
@@ -141,7 +143,7 @@ describe('ScheduleUtils', () => {
       );
     });
 
-    test('runs a loop both ways round at once, and never takes a train out of sight', () => {
+    test('runs a loop both ways round at once, every train on the move', () => {
       const looped = timetableOf({ ...routeOf([segmentOf(0, 20)], { ends: ['a', 'a'] }), stopsKm: [0, 20] }, EVERY);
       const counts = Array.from({ length: 50 }, (_, moment) => placesOf(looped, moment * 97));
       expect(counts.map(places => places.length)).toEqual(counts.map(() => trainsOn(looped)));

@@ -1,5 +1,6 @@
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
-import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import type { CustomLayerInterface, CustomRenderMethodInput, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import { fakeGl } from './fakeGl.utils';
 import type { FakeLayer, FakeMap } from '../fakeMap.types';
 
 /** The GeoJSON geometries a source may hold. */
@@ -71,7 +72,11 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
   const moves: FakeMap['moves'] = [];
   const rendered: FakeMap['rendered'] = [];
   const handlers = new Map<string, ((payload: unknown) => void)[]>();
-  const life = { removed: false, resizes: 0 };
+  const life = { removed: false, resizes: 0, repaints: 0 };
+  const custom = new Map<string, CustomLayerInterface>();
+  const context = fakeGl();
+  // A projection taking the world's Mercator units straight to the screen's, as a frame's would at some view.
+  const frameArgs = { defaultProjectionData: { mainMatrix: [2, 0, 0, 0, 0, -2, 0, 0, 0, 0, 1, 0, -1, 1, 0, 1] } } as unknown as CustomRenderMethodInput;
   const canvas: FakeMap['canvas'] = { style: {}, toDataURL: (format, quality) => `data:${format};quality=${quality}` };
   // MapLibre refuses a layer the style spec does not allow (an expression it cannot read, a value not
   // among its options): checked as each is added or changed. A basemap layer's own tiles are a stand-in.
@@ -153,9 +158,17 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
         },
       };
     },
-    addLayer: (layer: LayerSpecification) => {
+    addLayer: (layer: LayerSpecification | CustomLayerInterface) => {
       if (layers.has(layer.id)) throw new Error(`layer ${layer.id} already added`);
-      const added = { paint: {}, layout: {}, ...layer } as FakeLayer;
+      // A layer that draws itself is no style's: MapLibre adds it to its context as it is added.
+      if (layer.type === 'custom') {
+        layers.set(layer.id, { id: layer.id, type: 'custom', paint: {}, layout: {} } as unknown as FakeLayer);
+        custom.set(layer.id, layer);
+        layer.onAdd?.(map as unknown as MapLibreMap, context.context);
+        return;
+      }
+      // MapLibre keeps its own copy of a layer's paint and layout: one layer's change never reaches another sharing a constant.
+      const added = { ...layer, paint: { ...('paint' in layer && layer.paint) }, layout: { ...('layout' in layer && layer.layout) } } as FakeLayer;
       assertValid(added);
       assertPropertiesHeld(added);
       layers.set(layer.id, added);
@@ -184,6 +197,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     queryRenderedFeatures: () => rendered,
     getZoom: () => view.zoom,
     getBearing: () => 0,
+    getPitch: () => 0,
     getPadding: () => view.cover,
     getContainer: () => ({ clientWidth: view.width, clientHeight: view.height }),
     project: ([lng, lat]: [number, number]) => {
@@ -237,6 +251,7 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     },
     // A repaint leaves the map idle once its tiles are in.
     triggerRepaint: () => {
+      life.repaints += 1;
       if (view.tilesLoaded) fire('idle');
     },
     resize: () => (life.resizes += 1),
@@ -255,7 +270,10 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     setPadding: (padding: FakeMap['view']['cover']) => (view.cover = padding),
     zoomIn: () => (view.zoom += 1),
     zoomOut: () => (view.zoom -= 1),
-    remove: () => (life.removed = true),
+    remove: () => {
+      life.removed = true;
+      for (const layer of custom.values()) layer.onRemove?.(map as unknown as MapLibreMap, context.context);
+    },
   };
   return {
     map: map as unknown as MapLibreMap,
@@ -265,6 +283,12 @@ export const fakeMap = (style: LayerSpecification[] = []): FakeMap => {
     sends,
     states,
     layers,
+    custom,
+    webgl: context,
+    paint: () => {
+      for (const layer of custom.values()) layer.render(context.context, frameArgs);
+    },
+    repaints: () => life.repaints,
     moves,
     rendered,
     view,

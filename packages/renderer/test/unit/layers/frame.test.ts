@@ -9,8 +9,9 @@ import { SOURCES } from '../../../src/layers/ids.constants';
 import { ActiveStepLayer, NetworkLayer } from '../../../src/layers/network.service';
 import type { FeatureCollection, LineFeature, NetworkSnapshot } from '../../../src/layers/snapshot.types';
 import { StationLayer } from '../../../src/layers/stations.service';
-import { TRAIN_UPDATE_MS } from '../../../src/layers/trains.constants';
-import { TrainLayer } from '../../../src/layers/trains.service';
+import { PALETTES } from '../../../src/layers/theme.constants';
+import { TRAIN_STYLE } from '../../../src/layers/trains.constants';
+import { MotionLayer } from '../../../src/motion/motion.service';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { playbackOf } from '../../support/playback.utils';
 
@@ -34,8 +35,9 @@ const framesOn = (date: string, plan?: PlanId) => {
     station => station,
     (first, second) => first.localeCompare(second),
   );
-  const trains = new TrainLayer(fake.map);
-  for (const layer of [network, activeStep, trains, stations]) layer.install(['Font']);
+  const motion = new MotionLayer(fake.map, { trains: TRAIN_STYLE });
+  for (const layer of [network, activeStep, motion, stations]) layer.install(['Font']);
+  motion.applyPalette(PALETTES.dark);
   const trainsOn = { shown: false };
   const minimap = { networks: [] as Pick<NetworkSnapshot, 'lines' | 'planned'>[], active: [] as FeatureCollection<LineFeature>[], flushes: [] as number[] };
   const frames = new FrameRenderer({
@@ -43,7 +45,7 @@ const framesOn = (date: string, plan?: PlanId) => {
     network,
     activeStep,
     stations,
-    trains,
+    motion,
     trainService: cursor => engineOf(playback.facts).trainService(cursor),
     showTrains: () => trainsOn.shown,
     minimap: {
@@ -87,26 +89,35 @@ const drawingStepOf = (kind: 'identity' | 'open', date: string) => {
 };
 
 describe('FrameRenderer', () => {
-  test('sends no trains until turned on, moves them at most so often, and clears them once turned off', () => {
+  test('moves no trains until turned on, then every frame, never a source sent the map; and takes them off once turned off', () => {
     const { frames, fake, trainsOn } = framesOn('1935-01-01');
+    /**
+     * What the map draws next, as many vertices as each stroke of the trains takes.
+     *
+     * @returns The trains' vertices.
+     */
+    const painted = () => {
+      fake.webgl.draws.length = 0;
+      fake.paint();
+      return fake.webgl.draws.at(0)?.count ?? 0;
+    };
     frames.draw(0, null);
-    expect(fake.sends.get(SOURCES.trains)).toBeUndefined();
+    expect(painted()).toBe(0);
 
     trainsOn.shown = true;
     frames.draw(1000, null);
-    expect(fake.featuresIn(SOURCES.trains).length).toBeGreaterThan(0);
-    const sent = fake.sends.get(SOURCES.trains);
-    frames.draw(1000 + TRAIN_UPDATE_MS - 1, null);
-    expect(fake.sends.get(SOURCES.trains)).toBe(sent);
-    frames.draw(1000 + TRAIN_UPDATE_MS, null);
-    expect(fake.sends.get(SOURCES.trains)).toBe((sent ?? 0) + 1);
+    const repaints = fake.repaints();
+    expect(painted()).toBeGreaterThan(0);
+    frames.draw(1016, null);
+    expect(fake.repaints()).toBe(repaints + 1);
+    expect([...fake.data.keys()].filter(source => source.includes('train'))).toEqual([]);
 
     trainsOn.shown = false;
     frames.draw(2000, null);
-    expect(fake.featuresIn(SOURCES.trains)).toEqual([]);
-    const cleared = fake.sends.get(SOURCES.trains);
+    expect(painted()).toBe(0);
+    const cleared = fake.repaints();
     frames.draw(3000, null);
-    expect(fake.sends.get(SOURCES.trains)).toBe(cleared);
+    expect(fake.repaints()).toBe(cleared);
   });
 
   test('draws the network and its stations once, then sends the map nothing while nothing changes', () => {

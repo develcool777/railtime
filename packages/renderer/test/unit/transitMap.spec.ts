@@ -142,9 +142,12 @@ describe('TransitMap', () => {
       expect(fake.layers.get(LAYERS.lines)?.paint['line-opacity']).toEqual(focusOn('green'));
     });
 
-    test('runs the trains of what is drawn', () => {
-      const { fake } = focusedThen([lineId('green')]);
-      expect(fake.layers.get(LAYERS.trains)?.filter).toEqual(['in', ['get', 'line'], ['literal', ['umbrella']]]);
+    test('runs the trains of what is drawn: a line brought forward runs its trains as the line it is drawn as', () => {
+      const { map, fake, frame } = focusedThen([lineId('green')]);
+      map.update({ trains: true });
+      frame();
+      fake.paint();
+      expect(fake.webgl.uploads.length).toBeGreaterThan(0);
     });
   });
 
@@ -345,10 +348,13 @@ describe('TransitMap', () => {
     const { map, fake, frame, ready } = mapOf({ trains: true });
     ready();
     frame();
-    expect(fake.featuresIn(SOURCES.trains).length).toBeGreaterThan(0);
+    fake.paint();
+    expect(fake.webgl.draws.length).toBeGreaterThan(0);
     map.update({ facts: NetworkFacts.create(tinyNetwork(), { plan: planId('extension'), today: toTimestamp('2026-01-01') }), trains: false });
     frame();
-    expect(fake.featuresIn(SOURCES.trains)).toEqual([]);
+    fake.webgl.draws.length = 0;
+    fake.paint();
+    expect(fake.webgl.draws).toEqual([]);
   });
 
   test('takes a change off the minimap as another network comes, however it was left drawn', () => {

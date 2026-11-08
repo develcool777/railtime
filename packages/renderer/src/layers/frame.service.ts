@@ -207,20 +207,19 @@ export class FrameRenderer {
   }
 
   /**
-   * Draws the trains, on their own clock and at most so often, or clears them once they are turned off.
+   * Moves the trains to where they are this frame, on their own clock, or takes them off once they are turned off.
    *
    * @param now - The frame time.
    * @param state - The render state.
    * @param snapshot - The network on the map.
    */
   private drawTrains(now: number, state: RenderState, snapshot: NetworkSnapshot): void {
-    const { trains, trainService, showTrains } = this.parts;
+    const { motion, trainService, showTrains } = this.parts;
     if (!showTrains()) {
-      trains.clear();
+      motion.show('trains', []);
       return;
     }
-    if (!trains.dueAt(now)) return;
     this.service ??= trainService(state.cursor);
-    trains.update(trainsAt(this.service.placesAt((now / 1000) * TRAIN_TIME_LAPSE), state, snapshot.sideBySide), now);
+    motion.show('trains', trainsAt(this.service.placesAt((now / 1000) * TRAIN_TIME_LAPSE), state, snapshot.sideBySide));
   }
 }

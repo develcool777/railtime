@@ -5,9 +5,11 @@ import { basemapFont, recolorBasemap, showBasemapLabels } from './basemap.utils'
 import { BuildingsLayer } from './buildings.service';
 import type { MapLayer } from './layer.service';
 import { ActiveStepLayer, NetworkLayer } from './network.service';
+import type { MoverKind } from './stack.types';
 import { StationLayer } from './stations.service';
 import type { Palette } from './theme.types';
-import { TrainLayer } from './trains.service';
+import { TRAIN_STYLE } from './trains.constants';
+import { MotionLayer } from '../motion/motion.service';
 import { CoverageLayer } from '../overlay/coverage.service';
 import { ReachLayer } from '../overlay/reach.service';
 import { RouteLayer } from '../overlay/route.service';
@@ -22,8 +24,8 @@ export class MapLayers {
   public readonly network: NetworkLayer;
   /** What the playing step draws. */
   public readonly activeStep: ActiveStepLayer;
-  /** Trains running on the lines, when turned on. */
-  public readonly trains: TrainLayer;
+  /** What moves on the map every frame: the trains, when turned on. */
+  public readonly motion: MotionLayer<MoverKind>;
   /** Stations, labels, pulses and the selection ring. */
   public readonly stations: StationLayer;
   /** A route over the network. */
@@ -41,7 +43,7 @@ export class MapLayers {
     this.map = map;
     this.network = new NetworkLayer(map);
     this.activeStep = new ActiveStepLayer(map);
-    this.trains = new TrainLayer(map);
+    this.motion = new MotionLayer(map, { trains: TRAIN_STYLE });
     this.route = new RouteLayer(map);
     this.reach = new ReachLayer(map);
     this.coverage = new CoverageLayer(map);
@@ -82,12 +84,13 @@ export class MapLayers {
   }
 
   /**
-   * Stands the buildings up, or lays them down.
+   * Stands the buildings and the trains up, as the map is seen in 3D, or lays them down.
    *
-   * @param shown - Whether they stand.
+   * @param standing - Whether they stand.
    */
-  public showBuildings(shown: boolean): void {
-    this.buildings.show(shown);
+  public stand(standing: boolean): void {
+    this.buildings.show(standing);
+    this.motion.stand(standing);
   }
 
   /**
@@ -98,12 +101,12 @@ export class MapLayers {
    */
   public applyBackdrop(backdrop: boolean, focusedLines: LineId[] | null): void {
     this.network.focus(backdrop ? [] : focusedLines);
-    this.trains.focus(backdrop ? [] : focusedLines);
+    this.motion.focus(backdrop ? [] : focusedLines);
     this.stations.fade(backdrop);
   }
 
   /** The groups, bottom to top. */
   private get stack(): MapLayer[] {
-    return [this.coverage, this.buildings, this.network, this.activeStep, this.trains, this.stations, this.route, this.reach];
+    return [this.coverage, this.buildings, this.network, this.activeStep, this.motion, this.stations, this.route, this.reach];
   }
 }

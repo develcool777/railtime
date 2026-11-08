@@ -73,6 +73,16 @@ street level in 3D, a score of them. So while a line grows:
 - as a step's camera move ends, it waits for the tiles where it arrived (`MAX_TILE_WAIT_SECONDS`), so
   the line grows over drawn streets, not a blank filling in.
 
+What moves every frame, the trains, is no source at all: a worker cutting tiles for every move would
+lag behind the frame and cost the most of anything on the map. `MotionLayer` (`motion/`) draws it in
+the map's own WebGL as MapLibre draws a frame, where it is that frame, each kind as its `MoverStyle`
+says: strokes laid on the ground in the map's pixels, as MapLibre lays a line, a shadow, its own colour
+and a light body; standing in 3D, its own colour darkened up its sides (as many strokes as keep them
+whole at the camera's tilt, `sideHeightsOf`) to its body as a roof. Each mover's strokes go in one
+instanced draw, an instance a stroke, from the bottom up; flat, every mover is one draw, and standing,
+each its own, the furthest from the camera first (`drawOrderOf`), so the nearer stands in front. It is
+drawn as a lines' layer over the buildings, so none hides it, and touches none of MapLibre's depth.
+
 ## Lines side by side
 
 Where several lines share a segment, each is drawn with a `line-offset` slot (…-1, -0.5, 0, 0.5, 1…)
@@ -108,6 +118,8 @@ src/
 ├── layers/                    MapLayers (`stack.service.ts`): the groups in their order, installed and themed together;
 │                              MapLayer; the network's layers and the active step, the stations, the buildings;
 │                              FrameRenderer, the snapshot, the line styles, the basemap
+├── motion/                    MotionLayer: what moves every frame, drawn in the map's own WebGL (StrokePainter, its shaders
+│                              in `motion.constants.ts`); the strokes, their order and their vertices (`motion.utils.ts`)
 ├── overlay/                   OverlayController, and what it draws over the network: RouteLayer, ReachLayer,
 │                              CoverageLayer, and their drawing (`overlay.utils.ts`)
 ├── support/                   EventEmitter (the map's listeners, held private), PropsReconciler (the props and the effect of each, in order), easing and colour
