@@ -238,7 +238,7 @@
       "name": "Kyiv 2070",
       "names": {"uk":"Схема 2070"},
       "status": "concept",
-      "description": "A concept for Kyiv's metro in 2070, not a city plan, grown from an unattributed concept map: the three lines extended, the Sviatoshynsko-Brovarska to Berkovetska and Bykivnia, the Obolonsko-Teremkivska to Odeska, the Syretsko-Pecherska into Vynohradar; and nine new lines, among them a half-ring from Vynohradar past the airport and across the Dnipro to Darnytsia, a line from Kurenivka by Shuliavka and the airport to Feofaniia, a diameter from Pyrohiv by Holosiiv, Solomianka and the Pivdennyi Vokzal to Obolon, and a line from Borshchahivka by Holosiiv and across the Darnytskyi Bridge to Darnytskyi Vokzal. The new lines' names are descriptive.",
+      "description": "A concept for Kyiv's metro in 2070, not a city plan, grown from an unattributed concept map: the three lines extended, the Sviatoshynsko-Brovarska to Berkovetska and Bykivnia, the Obolonsko-Teremkivska to Odeska, the Syretsko-Pecherska into Vynohradar; and nine new lines, among them a half-ring from Vynohradar past the airport and across the Dnipro to Darnytsia, a line from Bohatyrska by Kurenivka, Shuliavka and Chokolivka to Feofaniia, a diameter from Pyrohiv by Holosiiv, Solomianka and the Pivdennyi Vokzal to Obolon, and a line from Borshchahivka by Holosiiv and across the Darnytskyi Bridge to Darnytsia and Rembaza. The new lines' names are descriptive.",
       "lines": {
         "m4": {"name":"Podilsko-Vyhurivska","names":{"uk":"Подільсько-Вигурівська лінія"},"network":"metro","mode":"metro","color":"#F0AB00"},
         "m5": {"name":"Livoberezhna","names":{"uk":"Лівобережна лінія"},"network":"metro","mode":"metro","color":"#58C1F9"},
@@ -246,8 +246,8 @@
         "m7": {"name":"Borshchahivska","names":{"uk":"Борщагівська лінія"},"network":"metro","mode":"metro","color":"#7231BE","darkColor":"#9A63E6"},
         "m8": {"name":"Troieshchynsko-Bortnytska","names":{"uk":"Троєщинсько-Бортницька лінія"},"network":"metro","mode":"metro","color":"#E0479E"},
         "m9": {"name":"Osokorsko-Troieshchynska","names":{"uk":"Осокорсько-Троєщинська лінія"},"network":"metro","mode":"metro","color":"#8D5A3B"},
-        "m10": {"name":"Darnytsko-Novobilytska","names":{"uk":"Дарницько-Новобілицька лінія"},"network":"metro","mode":"metro","color":"#009E9E"},
-        "m11": {"name":"Kurenivsko-Feofanivska","names":{"uk":"Куренівсько-Феофанівська лінія"},"network":"metro","mode":"metro","color":"#9ACD32"},
+        "m10": {"name":"Troieshchynsko-Berkovetska","names":{"uk":"Троєщинсько-Берковецька лінія"},"network":"metro","mode":"metro","color":"#009E9E"},
+        "m11": {"name":"Bohatyrsko-Feofanivska","names":{"uk":"Богатирсько-Феофанівська лінія"},"network":"metro","mode":"metro","color":"#9ACD32"},
         "m12": {"name":"Pyrohivsko-Obolonska","names":{"uk":"Пирогівсько-Оболонська лінія"},"network":"metro","mode":"metro","color":"#8E1B3A","darkColor":"#CC4F72"}
       },
       "stations": {
@@ -343,6 +343,7 @@
         "vidradnyi-prospekt": {"name":"Vidradnyi Prospekt","names":{"uk":"Відрадний проспект"},"coordinate":[30.4249,50.4282]},
         "prospekt-yevropeiskoho-soiuzu": {"name":"Prospekt Yevropeiskoho Soiuzu","names":{"uk":"Проспект Європейського Союзу"},"coordinate":[30.4095,50.5071]},
         "kubanskoi-ukrainy": {"name":"Kubanskoi Ukrainy","names":{"uk":"Кубанської України"},"coordinate":[30.63196,50.48591]},
+        "sholom-aleikhema": {"name":"Sholom-Aleikhema","names":{"uk":"Шолом-Алейхема"},"coordinate":[30.63459,50.47324]},
         "prospekt-navoi": {"name":"Prospekt Navoi","names":{"uk":"Проспект Навої"},"coordinate":[30.60017,50.47225]},
         "navodnychi": {"name":"Navodnychi","names":{"uk":"Наводничі"},"coordinate":[30.5609,50.4248]},
         "kolektorna": {"name":"Kolektorna","names":{"uk":"Колекторна"},"coordinate":[30.66884,50.3922]},
@@ -433,7 +434,7 @@
         {"line":"m3","stations":["lukianivska","lvivska-brama","zoloti-vorota"]},
         {"line":"m3","stations":["vydubychi","telychka","slavutych"]},
         {"line":"m4","stations":["kiltseva-doroha-borshchahivka","mykilska-borshchahivka","prospekt-kurbasa","liubomyra-huzara","nau","industrialna","beresteiskyi-provulok","dovnar-zapolskoho","hlybochytska","podilska","sudnobudivna","trukhaniv-ostriv","zatoka-desenka","raiduzhna"]},
-        {"line":"m4","stations":["raiduzhna","voskresenka","bratyslavska","kubanskoi-ukrainy"]},
+        {"line":"m4","stations":["raiduzhna","voskresenka","bratyslavska","kubanskoi-ukrainy","sholom-aleikhema"]},
         {"line":"m5","stations":["onore-de-balzaka","maryny-tsvietaievoi","serzha-lyfaria","teodora-draizera","mykoly-zakrevskoho","ivana-mykytenka","prospekt-navoi","andriia-malyshka","sotsmisto","prazka","berezneva","zatyshna","drahomanova","anny-akhmatovoi","prospekt-hryhorenka","solomii-krushelnytskoi"]},
         {"line":"m6","stations":["prospekt-svobody","prospekt-yevropeiskoho-soiuzu","kvitnytstvo","vovcha-hora","halahany","kozeletska","vatslava-havela","vidradnyi-prospekt","volynska","aeroport","ivana-puliuia","kholodnoiarska","lybidska-ploshcha","zvirynets","navodnychi","berezniaky","prospekt-sobornosti","darnytska-ploshcha","azerbaidzhanska","lisky","dvrz"]},
         {"line":"m7","stations":["pidlisna","chornobylska","lvivska","zhmerynska","lesia-kurbasa","vasylia-kuchera","symyrenka","prospekt-akademika-korolova","povitroflotska","serhiia-kolosa","sumska","kozatska","demiivska-ploshcha","zaliznychne-shose","vydubytske-ozero","dniprovska-naberezhna","berezniakivska","teplovozna","pryvokzalna","holopuzivka","rembaza"]},
