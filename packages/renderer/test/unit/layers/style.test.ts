@@ -2,7 +2,7 @@ import { toTimestamp } from '@railtime/core/date.utils';
 import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
 import { lineId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
-import { byZoom, highlightedOpacity, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
+import { atZoom, byZoom, highlightedOpacity, highlightedWidth, offsetFor, resolveLine, sideBySideOffset } from '../../../src/layers/style.utils';
 import { UNTOUCHED_BASE } from '../../../src/steps/animation.constants';
 import { playbackOf, renderStateOf } from '../../support/playback.utils';
 
@@ -10,6 +10,13 @@ describe('LayerStyleUtils', () => {
   describe('byZoom', () => {
     test('interpolates from the whole city at zoom 10 to a neighbourhood at 14', () => {
       expect(byZoom(1, 3)).toEqual(['interpolate', ['linear'], ['zoom'], 10, 1, 14, 3]);
+    });
+  });
+
+  describe('atZoom', () => {
+    test('gives what byZoom draws: in between along the way, held at either end', () => {
+      expect(byZoom(1, 3)).toEqual(['interpolate', ['linear'], ['zoom'], 10, 1, 14, 3]);
+      expect([8, 10, 12, 14, 16].map(zoom => atZoom([1, 3], zoom))).toEqual([1, 1, 2, 3, 3]);
     });
   });
 

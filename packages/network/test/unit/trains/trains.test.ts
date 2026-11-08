@@ -12,7 +12,7 @@ describe('TrainService', () => {
     expect(service.fleet).toBeGreaterThanOrEqual(service.timetables.length);
   });
 
-  test('says where each train in sight is, on a route of the network, from the clock alone', () => {
+  test('says where each train is, on a route of the network, from the clock alone', () => {
     const places = service.placesAt(5);
     expect(places.length).toBeGreaterThan(0);
     expect(places.every(({ run, km }) => km >= 0 && km <= run.lengthKm)).toBe(true);

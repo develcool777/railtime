@@ -137,7 +137,7 @@ export class Playback {
   }
 
   /**
-   * The `viewMode` prop changed. Into 3D the buildings rise and the camera comes down to them; back, it
+   * The `viewMode` prop changed. Into 3D the buildings and the trains rise and the camera comes down to them; back, it
    * lies flat and faces north. The change playing goes on as now seen, from as far as it had got: in 3D
    * the camera rides along it from where it has grown to, or, still on its way there, flies to where it
    * starts. (Back flat, it only lies flat: framing it then would cut the tilt short.)
@@ -145,7 +145,7 @@ export class Playback {
   public showView(): void {
     const { player, frames } = this.parts;
     const { viewMode } = this.options.props();
-    this.options.layers.showBuildings(viewMode === '3d');
+    this.options.layers.stand(viewMode === '3d');
     player.rebuild();
     this.options.camera.tilt(frames.growing());
     if (viewMode === '3d' && player.phase === 'pre') this.focusActive();
@@ -219,7 +219,7 @@ export class Playback {
       player,
       network: layers.network,
       activeStep: layers.activeStep,
-      trains: layers.trains,
+      motion: layers.motion,
       stations: layers.stations,
       trainService: cursor => engine.trainService(cursor),
       showTrains: () => props().trains,

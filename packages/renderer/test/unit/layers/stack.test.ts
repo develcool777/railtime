@@ -6,7 +6,12 @@ import { describe, expect, test } from 'vitest';
 import { BASEMAP_BUILDINGS } from '../../../src/layers/buildings.constants';
 import { LAYERS } from '../../../src/layers/ids.constants';
 import { MapLayers } from '../../../src/layers/stack.service';
+import { atZoom } from '../../../src/layers/style.utils';
 import { PALETTES } from '../../../src/layers/theme.constants';
+import { TRAIN_STYLE } from '../../../src/layers/trains.constants';
+import { SEGMENT_CORNERS, STROKE_VERTEX_FLOATS } from '../../../src/motion/motion.constants';
+import type { Mover } from '../../../src/motion/motion.types';
+import { rgbOf } from '../../../src/motion/motion.utils';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
 import { LAND_LAYER } from '../../support/fakeMap.constants';
 import { playbackOf } from '../../support/playback.utils';
@@ -16,6 +21,17 @@ const BASEMAP: LayerSpecification[] = [
   LAND_LAYER,
   { id: 'building', type: 'fill', source: BASEMAP_BUILDINGS.source, 'source-layer': BASEMAP_BUILDINGS.sourceLayer, paint: {} },
 ];
+
+/** A train of one segment on the red line. */
+const TRAIN: Mover = {
+  path: [
+    [0, 51.5],
+    [0.001, 51.5],
+  ],
+  color: '#ff0000',
+  slot: 0,
+  group: 'red',
+};
 
 /**
  * The layer groups on a stand-in map, installed.
@@ -42,7 +58,7 @@ describe('MapLayers', () => {
       LAYERS.buildings,
       LAYERS.lines,
       LAYERS.activeLines,
-      LAYERS.trains,
+      LAYERS.motion,
       LAYERS.stations,
       LAYERS.routeLine,
       LAYERS.reachTrack,
@@ -56,27 +72,52 @@ describe('MapLayers', () => {
     layers.applyTheme(PALETTES.light, true);
     expect(fake.layers.get(LAND_LAYER.id)?.paint['background-color']).toBe(PALETTES.light.background);
     expect(fake.layers.get(LAYERS.buildings)?.paint['fill-extrusion-color']).toBe(PALETTES.light.landuse);
-    expect(fake.layers.get(LAYERS.trains)?.paint['line-color']).toBe(PALETTES.light.trainBody);
+    layers.motion.show('trains', [TRAIN]);
+    fake.paint();
+    expect((fake.webgl.draws.at(-1)?.uniforms.u_colors as number[]).slice(-3)).toEqual(rgbOf(PALETTES.light.trainBody));
   });
 
-  test('stands the buildings up and lays them down', () => {
+  test('stands the buildings and the trains up and lays them down', () => {
     const { fake, layers } = installed();
-    layers.showBuildings(true);
-    expect(fake.layers.get(LAYERS.buildings)?.layout.visibility).toBe('visible');
-    layers.showBuildings(false);
-    expect(fake.layers.get(LAYERS.buildings)?.layout.visibility).toBe('none');
+    layers.applyTheme(PALETTES.dark, true);
+    layers.motion.show('trains', [TRAIN]);
+    /**
+     * The buildings' visibility, and how high the trains' roofs are drawn next.
+     *
+     * @returns Both.
+     */
+    const stood = () => {
+      fake.webgl.draws.length = 0;
+      fake.paint();
+      return [fake.layers.get(LAYERS.buildings)?.layout.visibility, (fake.webgl.draws.at(-1)?.uniforms.u_rises as number[]).at(-1)];
+    };
+    layers.stand(true);
+    expect(stood()).toEqual(['visible', atZoom(TRAIN_STYLE.risePx, fake.view.zoom)]);
+    layers.stand(false);
+    expect(stood()).toEqual(['none', 0]);
   });
 
   test('fades the network and its stations behind what is over it, whatever the lines in focus; else brings those forward', () => {
     const { fake, layers } = installed();
     layers.applyTheme(PALETTES.dark, true);
+    layers.motion.show('trains', [TRAIN, { ...TRAIN, group: 'blue' }]);
+    /**
+     * How many trains the map draws next.
+     *
+     * @returns How many.
+     */
+    const trainsDrawn = () => {
+      fake.webgl.uploads.length = 0;
+      fake.paint();
+      return (fake.webgl.uploads[0] ?? 0) / (SEGMENT_CORNERS.length * STROKE_VERTEX_FLOATS);
+    };
     layers.applyBackdrop(true, [lineId('red')]);
-    expect(fake.layers.get(LAYERS.trains)?.filter).toEqual(['in', ['get', 'line'], ['literal', []]]);
+    expect(trainsDrawn()).toBe(0);
     expect(fake.layers.get(LAYERS.labels)?.paint['text-opacity']).toEqual(['*', 0, ['coalesce', ['feature-state', 'labelOpacity'], 1]]);
     layers.applyBackdrop(false, [lineId('red')]);
-    expect(fake.layers.get(LAYERS.trains)?.filter).toEqual(['in', ['get', 'line'], ['literal', ['red']]]);
+    expect(trainsDrawn()).toBe(1);
     expect(fake.layers.get(LAYERS.labels)?.paint['text-opacity']).toEqual(['*', 1, ['coalesce', ['feature-state', 'labelOpacity'], 1]]);
     layers.applyBackdrop(false, null);
-    expect(fake.layers.get(LAYERS.trains)?.filter).toEqual(['all']);
+    expect(trainsDrawn()).toBe(2);
   });
 });

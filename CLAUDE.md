@@ -188,6 +188,11 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `baseAt` and `draw` (`steps/animation.service.ts`): one class for every kind, its pure parts in
   `animation.utils.ts`.
 - **A new group of map layers** is a `MapLayer` subclass installed by `MapLayers` (`layers/stack.service.ts`).
+- **Something that moves every frame** (the trains, and whatever comes to move) is a kind of mover: a
+  `MoverKind` with its `MoverStyle`, its movers given each frame to `MotionLayer.show`
+  (`motion/motion.service.ts`), which the map draws itself, in its own WebGL, as it draws a frame. Never
+  a GeoJSON source sent each frame: MapLibre cuts a source's tiles again in a worker for every send, so
+  what moves would lag and stutter.
 - **Trains on the map are an illustration, run by what real lines do.** The network keeps no timetable, so
   `network`'s `trains/` works one out as an operator does, the same way for any city, and never a number
   tuned for one. `TRAIN_PROFILES` says how each `Mode` runs, in real units: a figure from a published source where one
@@ -202,9 +207,9 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   many trains a line needs comes out of it: a round over the headway. The fleet is never aimed at. A loop has no
   terminus: trains go on round, each way its own, or the one way a line's `way` says, where a circle's two
   directions are two lines. `TrainService` (`engine.trainService`) says where each train is, from the clock
-  alone, so a recorder can step them; a train turning at an end is out of sight. The clock is real time: how
+  alone, so a recorder can step them; a train turning at an end stands at its platform until it sets off back, never out of sight. The clock is real time: how
   much faster to show it is the map's (`TRAIN_TIME_LAPSE`). The renderer only draws them: each a stretch of its
-  line's track, not a point, so it sits where its line is drawn on shared track. The map's `trains` prop turns
+  line's track, not a point, so it sits where its line is drawn on shared track, a mover of `MotionLayer`'s. The map's `trains` prop turns
   them on, the app takes them off while history plays, and where lines are brought forward only theirs run.
 - **The web app** follows the investors site's layout, in `web/src/`:
 

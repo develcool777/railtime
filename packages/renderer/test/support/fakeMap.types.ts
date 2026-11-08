@@ -1,4 +1,5 @@
-import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import type { CustomLayerInterface, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
+import type { FakeGl } from './fakeGl.types';
 
 /** A layer on the stand-in map, as added, with every paint and layout property set on it since. */
 export type FakeLayer = LayerSpecification & { paint: Record<string, unknown>; layout: Record<string, unknown>; filter?: unknown };
@@ -17,8 +18,16 @@ export type FakeMap = {
   sends: Map<string, number>;
   /** Each feature's state, by `<source>|<id>`: how it looks this frame. */
   states: Map<string, Record<string, number>>;
-  /** The layers, by id, in the order added. */
+  /** The layers, by id, in the order added: a layer that draws itself among them, as its id and type. */
   layers: Map<string, FakeLayer>;
+  /** The layers that draw themselves, by id: added to the context as they are added to the map. */
+  custom: Map<string, CustomLayerInterface>;
+  /** The context they draw in. */
+  webgl: FakeGl;
+  /** Draws a frame, as MapLibre does once asked for a repaint: each layer that draws itself, in its context. */
+  paint: () => void;
+  /** How many repaints were asked for. */
+  repaints: () => number;
   /** Every `fitBounds`, `easeTo` and `jumpTo` asked of the camera, in order. */
   moves: { kind: 'fit' | 'ease' | 'jump'; target: unknown; options: Record<string, unknown> }[];
   /** The camera: where it looks, how close, the container's size and the panels over it (its padding), pixels. Set it to place the camera. */

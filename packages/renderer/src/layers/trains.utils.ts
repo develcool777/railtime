@@ -3,11 +3,10 @@ import { sliceAlong } from '@railtime/core/geometry.utils';
 import { required } from '@railtime/core/required.utils';
 import type { TrackSegment } from '@railtime/network/engine.types';
 import type { TrainLeg, TrainPlace } from '@railtime/network/trains.types';
-import type { FeatureCollection, LineFeature } from './snapshot.types';
-import { lineFeature } from './snapshot.utils';
 import type { RenderState, SideBySide } from './style.types';
 import { offsetFor, resolveLine } from './style.utils';
 import { TRAIN_LENGTH_KM } from './trains.constants';
+import type { Mover } from '../motion/motion.types';
 
 /**
  * A stretch of a segment's track, in its own direction.
@@ -56,22 +55,23 @@ export const trainStretchOf = ({ run, km, heading }: TrainPlace): [number, numbe
 
 /**
  * The trains as the map draws them, each a short stretch of its line's track behind it: a stretch of
- * track, and not a point, so it sits where its line is drawn on track shared with others (`offsetFor`).
+ * track, and not a point, so it sits where its line is drawn on track shared with others (`offsetFor`),
+ * a mover for each leg it is on.
  *
  * @param places - Where each train is.
  * @param state - The frame's render state.
  * @param sideBySide - The lines on each segment.
- * @returns The trains' track.
+ * @returns The trains, as movers.
  */
-export const trainsAt = (places: TrainPlace[], state: RenderState, sideBySide: SideBySide): FeatureCollection<LineFeature> => {
-  const features: LineFeature[] = [];
+export const trainsAt = (places: TrainPlace[], state: RenderState, sideBySide: SideBySide): Mover[] => {
+  const movers: Mover[] = [];
   for (const place of places) {
     const { id, color } = resolveLine(state, place.run.line);
     const [fromKm, toKm] = trainStretchOf(place);
     for (const leg of place.run.legs) {
       const stretch = onLeg(leg, fromKm, toKm);
-      if (stretch) features.push(lineFeature(stretchOf(leg.segment, ...stretch), color, offsetFor(sideBySide, leg.segment, id), 0, id));
+      if (stretch) movers.push({ path: stretchOf(leg.segment, ...stretch), color, slot: offsetFor(sideBySide, leg.segment, id), group: id });
     }
   }
-  return { type: 'FeatureCollection', features };
+  return movers;
 };

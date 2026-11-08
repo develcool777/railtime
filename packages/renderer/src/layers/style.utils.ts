@@ -1,6 +1,7 @@
 import type { TrackSegment } from '@railtime/network/engine.types';
 import type { LineId } from '@railtime/schema/network.types';
 import type { ExpressionSpecification } from 'maplibre-gl';
+import { CITY_ZOOM, SIDE_BY_SIDE_PX, STREET_ZOOM } from './style.constants';
 import type { RenderState, ResolvedLine, SideBySide } from './style.types';
 import { channelsOf } from '../support/drawing.utils';
 
@@ -15,11 +16,23 @@ export const byZoom = (atCityZoom: number | ExpressionSpecification, atStreetZoo
   'interpolate',
   ['linear'],
   ['zoom'],
-  10,
+  CITY_ZOOM,
   atCityZoom,
-  14,
+  STREET_ZOOM,
   atStreetZoom,
 ];
+
+/**
+ * What `byZoom` draws at a zoom, worked out here for what draws itself: held at its ends, as MapLibre holds it.
+ *
+ * @param values - The value at the city's zoom and the street's.
+ * @param zoom - The zoom.
+ * @returns The value.
+ */
+export const atZoom = ([atCityZoom, atStreetZoom]: readonly [number, number], zoom: number): number => {
+  const fraction = Math.min(Math.max((zoom - CITY_ZOOM) / (STREET_ZOOM - CITY_ZOOM), 0), 1);
+  return atCityZoom + (atStreetZoom - atCityZoom) * fraction;
+};
 
 /**
  * A line width that widens with the feature's `highlight` property: new track stands out until its
@@ -50,7 +63,8 @@ export const highlightedOpacity = (opacity: number, fade = 1): ExpressionSpecifi
  *
  * @returns A MapLibre expression.
  */
-export const sideBySideOffset = (): ExpressionSpecification => byZoom(['*', ['get', 'offset'], 2.4], ['*', ['get', 'offset'], 6]);
+export const sideBySideOffset = (): ExpressionSpecification =>
+  byZoom(['*', ['get', 'offset'], SIDE_BY_SIDE_PX[0]], ['*', ['get', 'offset'], SIDE_BY_SIDE_PX[1]]);
 
 /**
  * A colour part way between two colours.
