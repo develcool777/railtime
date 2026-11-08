@@ -45,8 +45,30 @@ export const landingSeo = (cities: number): PageSeo => ({
  */
 export const aboutSeo = (): PageSeo => ({
   path: 'about',
-  title: `About ${SITE_NAME}: where its maps and data come from`,
-  description: `What ${SITE_NAME} is, what you can do with it, where its data comes from and what is estimated.`,
+  title: `About ${SITE_NAME}: a city's rail network on any day since it opened`,
+  description: `What ${SITE_NAME} is, what you can do with it, and whose maps and data it is built on.`,
+});
+
+/**
+ * What the Privacy page says about itself.
+ *
+ * @returns Its SEO.
+ */
+export const privacySeo = (): PageSeo => ({
+  path: 'privacy',
+  title: `Privacy policy | ${SITE_NAME}`,
+  description: `What ${SITE_NAME} stores in your browser, which services see your visit, and how advertising cookies work.`,
+});
+
+/**
+ * What the Terms page says about itself.
+ *
+ * @returns Its SEO.
+ */
+export const termsSeo = (): PageSeo => ({
+  path: 'terms',
+  title: `Terms of use | ${SITE_NAME}`,
+  description: `What you can rely on when you use ${SITE_NAME}, and what is only an estimate.`,
 });
 
 /**

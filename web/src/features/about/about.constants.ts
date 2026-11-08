@@ -1,5 +1,8 @@
 import type { AboutFeature } from './about.types';
 
+/** When the Privacy and Terms pages last changed, as they say. */
+export const LEGAL_UPDATED = '8 November 2026';
+
 /** What a visitor can do with a city's network. */
 export const ABOUT_FEATURES: AboutFeature[] = [
   { name: 'See any day', text: 'Move through the timeline to see which lines and stations were open on that date.' },
