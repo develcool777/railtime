@@ -203,7 +203,7 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   the side more lines meet, never doubling back. A train pulls away, runs and brakes (`motion.utils.ts`).
   `schedule.utils.ts`: a route runs at its kind's headway, branches adding up along their trunk, in turn,
   until they would come closer than its trains may, when each runs less often. The turn at an end takes up
-  what is between a route's two ways, as a timetable's does, so a train leaves each end on its own beat, and how
+  what is between a route's two ways, as a timetable's does, so a train leaves each end on its own beat (where no other route meets it, the beat it is ready on), and how
   many trains a line needs comes out of it: a round over the headway. The fleet is never aimed at. A loop has no
   terminus: trains go on round, each way its own, or the one way a line's `way` says, where a circle's two
   directions are two lines. `TrainService` (`engine.trainService`) says where each train is, from the clock

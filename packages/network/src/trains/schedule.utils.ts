@@ -23,6 +23,18 @@ const within = (seconds: number, span: number): number => ((seconds % span) + sp
 const isLoop = ({ ends }: TrainRun): boolean => ends[0] === ends[1];
 
 /**
+ * How long after a train sets out it could set off back: its trip, and its turn at the far end. A trip
+ * stands at both its ends, and that standing is part of the turn.
+ *
+ * @param timetable - The route's timetable.
+ * @returns How long, seconds.
+ */
+const readySeconds = ({ run, tripSeconds }: RouteTimetable): number => {
+  const { turnSeconds, standSeconds } = TRAIN_PROFILES[run.mode];
+  return tripSeconds + Math.max(0, turnSeconds - 2 * standSeconds);
+};
+
+/**
  * A route's timetable with its trains' turns laid in, as a timetable's are: a train leaves each end on
  * the beat that end keeps, the turn at least as long as it takes and the wait for that beat on top of it.
  * So how many trains a route needs comes out of it, its round over `everySeconds`, and with both ends on
@@ -37,9 +49,7 @@ const isLoop = ({ ends }: TrainRun): boolean => ends[0] === ends[1];
 const turnedAt = (timetable: RouteTimetable, outPhase: number, backPhase: number): RouteTimetable => {
   const { run, tripSeconds, everySeconds } = timetable;
   if (isLoop(run)) return { ...timetable, backAfterSeconds: 0, roundSeconds: Math.ceil(tripSeconds / everySeconds) * everySeconds, phaseSeconds: outPhase };
-  const { turnSeconds, standSeconds } = TRAIN_PROFILES[run.mode];
-  // A trip stands at both its ends, and that standing is part of the turn.
-  const ready = tripSeconds + Math.max(0, turnSeconds - 2 * standSeconds);
+  const ready = readySeconds(timetable);
   const backAfterSeconds = ready + within(outPhase - backPhase - ready, everySeconds);
   return { ...timetable, backAfterSeconds, roundSeconds: Math.ceil((backAfterSeconds + ready) / everySeconds) * everySeconds, phaseSeconds: outPhase };
 };
@@ -132,15 +142,17 @@ const entriesOf = (timetable: RouteTimetable, heading: Heading): Map<string, num
 /**
  * The beat that keeps a route's trains furthest from those already placed, everywhere they can meet:
  * a whole number of slots on from a train, so a line's routes come in turn along the track they share,
- * as branches do. Trains of a line keep the gap they enter a stretch with.
+ * as branches do. Trains of a line keep the gap they enter a stretch with. With none to keep clear of,
+ * the beat it would keep on its own.
  *
  * @param offsets - How far each train already placed is from this route's where they can meet, seconds.
  * @param slotSeconds - How long after one train the next comes along the track they share.
  * @param everySeconds - How long after one of the route's trains the next comes.
+ * @param ownPhase - The beat it keeps on its own, seconds.
  * @returns The beat, seconds.
  */
-const clearestPhase = (offsets: number[], slotSeconds: number, everySeconds: number): number => {
-  let best = 0;
+const clearestPhase = (offsets: number[], slotSeconds: number, everySeconds: number, ownPhase: number): number => {
+  let best = ownPhase;
   let widest = -1;
   for (const offset of offsets) {
     for (let slot = slotSeconds; slot < everySeconds; slot += slotSeconds) {
@@ -182,16 +194,18 @@ const everySecondsOf = (runs: TrainRun[]): number => {
 const serviceTimetablesOf = (runs: TrainRun[]): RouteTimetable[] => {
   const everySeconds = everySecondsOf(runs);
   const placed = new Map<string, number[]>();
-  const place = (timetable: RouteTimetable, heading: Heading): number => {
+  const place = (timetable: RouteTimetable, heading: Heading, ownPhase: number): number => {
     const entries = entriesOf(timetable, heading);
     const offsets = [...entries].flatMap(([where, seconds]) => (placed.get(where) ?? []).map(other => within(seconds - other, everySeconds)));
-    const phase = clearestPhase([...new Set(offsets.map(offset => Math.round(offset)))], everySeconds / runs.length, everySeconds);
+    const phase = clearestPhase([...new Set(offsets.map(offset => Math.round(offset)))], everySeconds / runs.length, everySeconds, ownPhase);
     for (const [where, seconds] of entries) pushTo(placed, where, within(seconds - phase, everySeconds));
     return phase;
   };
   return runs.map(run => {
     const timetable = timetableOf(run, everySeconds);
-    return turnedAt(timetable, place(timetable, 1), place(timetable, -1));
+    const outPhase = place(timetable, 1, 0);
+    // On its own, a train sets off back as soon as it has turned.
+    return turnedAt(timetable, outPhase, place(timetable, -1, within(outPhase - readySeconds(timetable), everySeconds)));
   });
 };
 

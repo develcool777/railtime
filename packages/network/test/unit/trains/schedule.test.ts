@@ -226,6 +226,12 @@ describe('ScheduleUtils', () => {
       expect(timetablesOf([routeOf([trunk])]).map(timetable => timetable.phaseSeconds)).toEqual([0]);
     });
 
+    test('sets a route that shares nothing off back from its far end as soon as it has turned', () => {
+      const [timetable] = timetablesOf([routeOf([trunk])]);
+      const { tripSeconds, backAfterSeconds } = timetable!;
+      expect(backAfterSeconds - tripSeconds).toBeCloseTo(METRO.turnSeconds - 2 * METRO.standSeconds);
+    });
+
     test('keeps each line to itself', () => {
       const lines = timetablesOf([routeOf([trunk]), routeOf([segmentOf(1, 3)], { line: 'blue' }), routeOf([segmentOf(2, 3)])]).map(({ run }) => run.line);
       expect(lines).toEqual([lineId('red'), lineId('red'), lineId('blue')]);
