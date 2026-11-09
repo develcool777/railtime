@@ -24,15 +24,15 @@ describe('London', () => {
     const ends = facts
       .asOf(facts.playheads.end())
       .trains()
-      .timetables.filter(({ run }) => run.line === lineId('northern'))
+      .routes.filter(({ run }) => run.line === lineId('northern'))
       .map(({ run }) => run.ends.toSorted(byCodeUnits).join('–'))
       .toSorted(byCodeUnits);
     expect(ends).toEqual(['battersea-power-station–high-barnet', 'edgware–morden', 'high-barnet–morden', 'mill-hill-east–morden']);
   });
 
-  test('runs its branches evenly through their shared track: no two of a line closer than a line may run them', () => {
+  test('runs the lines sharing its tracks in turn: no two trains on one track, whichever lines, as close as the trams squeezed through Croydon', () => {
     const { facts } = playbackOf(cityNetwork('london'));
-    expect(tightestHeadway(facts.asOf(facts.playheads.end()).trains())).toBeGreaterThan(170);
+    expect(tightestHeadway(facts.asOf(facts.playheads.end()).trains())).toBeGreaterThan(80);
   });
 
   test('counts on its card what is open, not every station it ever had', () => {

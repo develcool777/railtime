@@ -87,11 +87,12 @@ src/
 │   └── lineDetails.utils.ts   a line's track: its runs, the way they go, its hops from stop to stop, the stops either side of a station
 ├── route/finder.service.ts    RouteFinder: Dijkstra at a cursor, on its own priority queue, over the lines as drawn; a reach too
 ├── trains/                    the trains a network runs: an illustration, worked out as an operator does
-│   ├── trains.service.ts      TrainService: where each train is, from the clock alone
-│   ├── trains.constants.ts    TRAIN_PROFILES: how each kind of railway runs, published or fitted; a route's ride is timed from them too
+│   ├── trains.service.ts      TrainService: the trains' turns at each end of a line, the fleet, where each train is, from the clock alone
+│   ├── tracks.service.ts      TrackTimetable: the tracks as a timetable fills them: each route's trains a cycle, and when each sets out, clear of the others
+│   ├── trains.utils.ts        a route's ride, where its trains meet others, the clear times on a track, the turns at an end, the cycle's clock
+│   ├── trains.constants.ts    TRAIN_PROFILES: how each kind of railway runs, published or fitted; the cycle, and the margin a track keeps
 │   ├── motion.utils.ts        a ride from stop to stop: pulling away, running, braking
-│   ├── routes.utils.ts        every way along a line from end to end
-│   └── schedule.utils.ts      a route's timetable: headways, turns, branches in turn, loops
+│   └── routes.utils.ts        every way along a line from end to end
 └── coverage/                  CoverageGrid and CoverageMeasure (one file): a city's outline in cells, its share near a station
 ```
 

@@ -201,16 +201,18 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   by the same motion rules (`RouteFinder`), so a route and the trains agree.
   Every way along a line from end to end (`routes.utils.ts`): a branch goes on past its fork towards the core,
   the side more lines meet, never doubling back. A train pulls away, runs and brakes (`motion.utils.ts`).
-  `schedule.utils.ts`: a route runs at its kind's headway, branches adding up along their trunk, in turn,
-  until they would come closer than its trains may, when each runs less often. Lines on the same track (a segment's,
-  unless its `tracks` part them) are timed together, each at its own headway, the most frequent first: a line's own
-  trains kept apart first, then midway between other lines' where one headway is a whole number of the other's (else no
-  beat keeps them apart); an end's platforms are its line's own. The turn at an end takes up
-  what is between a route's two ways, as a timetable's does, so a train leaves each end on its own beat (where no other route meets it, the beat it is ready on), and how
-  many trains a line needs comes out of it: a round over the headway. The fleet is never aimed at. A loop has no
-  terminus: trains go on round, each way its own, or the one way a line's `way` says, where a circle's two
+  The timetable repeats each hour (`CYCLE_SECONDS`), and is the tracks' (`TrackTimetable`, `tracks.service.ts`): a
+  track is a segment's, any line's on it unless its `tracks` part them, and has room for as many trains an hour as its
+  most cautious kind's signals let come (`closestSeconds`), but for a margin (`TRACK_USE`). A route runs at its kind's
+  headway where its tracks have room; where one has not, its routes share it evenly, the leftover a train at a time to
+  the line running fewest. The busiest routes are placed first, each train out as near its even time as is clear of
+  every train already on each track it takes, whichever line's, and back as soon as it has turned; a train with no
+  clear time is squeezed in least close. A line's platforms at an end are its own. `TrainService` turns the trains: at
+  each end of a line every train coming in takes the next one out, whichever route, first in first out, standing at
+  its platform until then, never out of sight; so how many trains run comes out of the timetable, never aimed at. A
+  loop has no terminus: trains go on round, each way its own, or the one way a line's `way` says, where a circle's two
   directions are two lines. `TrainService` (`engine.trainService`) says where each train is, from the clock
-  alone, so a recorder can step them; a train turning at an end stands at its platform until it sets off back, never out of sight. The clock is real time: how
+  alone, so a recorder can step them. The clock is real time: how
   much faster to show it is the map's (`TRAIN_TIME_LAPSE`). The renderer only draws them: each a stretch of its
   line's track, not a point, so it sits where its line is drawn on shared track, a mover of `MotionLayer`'s. The map's `trains` prop turns
   them on, the app takes them off while history plays, and where lines are brought forward only theirs run.

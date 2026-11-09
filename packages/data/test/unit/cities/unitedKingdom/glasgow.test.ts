@@ -9,13 +9,13 @@ describe('Glasgow', () => {
     const service = facts.asOf(facts.playheads.end()).trains();
 
     test('takes about the 24 minutes a real train takes round the circle', () => {
-      const laps = service.timetables.map(({ tripSeconds }) => tripSeconds / 60);
+      const laps = service.routes.map(({ ride }) => ride.seconds / 60);
       expect(laps).toEqual([expect.closeTo(24, 0), expect.closeTo(24, 0)]);
     });
 
     test('runs the Outer Circle clockwise and the Inner anticlockwise, each one way only', () => {
       const swept = (line: string) => {
-        const { run } = service.timetables.find(timetable => timetable.run.line === lineId(line))!;
+        const { run } = service.routes.find(route => route.run.line === lineId(line))!;
         const points = run.legs.map(({ segment, forward }) => (forward ? segment.coordinates : segment.reversedCoordinates)[0]!);
         let area = 0;
         for (const [place, [fromX, fromY]] of points.entries()) {

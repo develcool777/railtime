@@ -14,10 +14,10 @@ import type { TrainProfile } from './trains.types';
  *
  * Fitted: its speed and rate. The manual's are a line's limits, 100 km/h and 1.3 m/s² (exhibit 8-53);
  * these are what a train averages from stop to stop, under them, set so that with the stand they come
- * to real metros' times, which cities' tests hold them to. Fitted too: its headway, and that a line's
- * branches come together no closer than 3 minutes.
+ * to real metros' times, which cities' tests hold them to. Fitted too: its headway, and that trains on one
+ * track come no closer than 2 minutes, 30 an hour, under the 36 the busiest metro lines run.
  */
-const METRO: TrainProfile = { topKmh: 70, rateMetresPerSecondSquared: 1, standSeconds: 40, turnSeconds: 180, headwaySeconds: 300, closestSeconds: 180 };
+const METRO: TrainProfile = { topKmh: 70, rateMetresPerSecondSquared: 1, standSeconds: 40, turnSeconds: 180, headwaySeconds: 300, closestSeconds: 120 };
 
 /**
  * Main-line trains out to the suburbs.
@@ -26,10 +26,10 @@ const METRO: TrainProfile = { topKmh: 70, rateMetresPerSecondSquared: 1, standSe
  * and 1.0 m/s² (https://en.wikipedia.org/wiki/DBAG_Class_481).
  *
  * Fitted: all the rest, with nothing published to check them by: its speed, a train's between stations
- * and far under what it is built for, its stand, its headway, and how close branches come. Its turn is
+ * and far under what it is built for, its stand, its headway, and how close trains on a track come. Its turn is
  * fitted too: timetable planning rules, seen only as quoted second-hand, give 4 to 6 minutes.
  */
-const SUBURBAN: TrainProfile = { topKmh: 80, rateMetresPerSecondSquared: 0.8, standSeconds: 40, turnSeconds: 300, headwaySeconds: 900, closestSeconds: 300 };
+const SUBURBAN: TrainProfile = { topKmh: 80, rateMetresPerSecondSquared: 0.8, standSeconds: 40, turnSeconds: 300, headwaySeconds: 900, closestSeconds: 150 };
 
 /**
  * A tram.
@@ -41,7 +41,7 @@ const SUBURBAN: TrainProfile = { topKmh: 80, rateMetresPerSecondSquared: 0.8, st
  * (https://threadreaderapp.com/thread/1466475215865716736.html); its rate, its turn, its headway and how
  * close its routes come have nothing published behind them.
  */
-const TRAM: TrainProfile = { topKmh: 30, rateMetresPerSecondSquared: 1, standSeconds: 20, turnSeconds: 180, headwaySeconds: 600, closestSeconds: 270 };
+const TRAM: TrainProfile = { topKmh: 30, rateMetresPerSecondSquared: 1, standSeconds: 20, turnSeconds: 180, headwaySeconds: 600, closestSeconds: 120 };
 
 /**
  * An urban cable car.
@@ -52,6 +52,22 @@ const TRAM: TrainProfile = { topKmh: 30, rateMetresPerSecondSquared: 1, standSec
  * every 10 minutes stands for them.
  */
 const CABLE: TrainProfile = { topKmh: 22.5, rateMetresPerSecondSquared: 0.5, standSeconds: 60, turnSeconds: 120, headwaySeconds: 600, closestSeconds: 600 };
+
+/**
+ * How long a timetable takes to come round again, seconds: an hour, as timetables repeat, so a route's
+ * trains are a whole number of it, and those of routes sharing track fit together in it.
+ */
+export const CYCLE_SECONDS = 3600;
+
+/**
+ * How much of what its signals allow a track is timetabled to: the rest is margin, as timetables leave
+ * it, so trains of routes meeting the track at different places each find their turn on it.
+ * Fitted: chosen so trains come out evenly, without waiting long at their ends.
+ */
+export const TRACK_USE = 0.75;
+
+/** How near two times count as one, seconds: far below what any clock shows, so sums that meet exactly do. */
+export const SAME_MOMENT_SECONDS = 1e-6;
 
 /**
  * How each kind of railway runs: the network keeps no timetable, and says only what kind of railway a

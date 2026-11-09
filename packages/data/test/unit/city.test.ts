@@ -16,8 +16,12 @@ import { cityNetwork } from '../support/history.utils';
 /** The repository's root. */
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 
-/** The shortest time two of a line's trains may run apart on the same track, the same way, seconds: about the closest real signalling allows. */
-const TIGHTEST_HEADWAY_SECONDS = 90;
+/**
+ * The shortest time two trains, whichever lines', may run apart on the same track, the same way,
+ * seconds: under what the signals ask only where a track is too full for every train's path, and the
+ * timetable squeezes them.
+ */
+const TIGHTEST_HEADWAY_SECONDS = 80;
 
 describe('CityUtils', () => {
   describe('citiesNamed', () => {
@@ -71,9 +75,9 @@ describe('CityUtils', () => {
       '$id $plan runs trains as a real line does: as far apart as signals keep them on shared track, never doubling back, and some in sight',
       ({ id, plan }) => {
         const service = trainsOf(id, plan);
-        expect(service.timetables.length).toBeGreaterThan(0);
+        expect(service.routes.length).toBeGreaterThan(0);
         expect(tightestHeadway(service)).toBeGreaterThanOrEqual(TIGHTEST_HEADWAY_SECONDS);
-        expect(service.timetables.filter(({ run }) => doublesBack(run))).toEqual([]);
+        expect(service.routes.filter(({ run }) => doublesBack(run))).toEqual([]);
         expect(service.placesAt(600).length).toBeGreaterThan(0);
       },
     );

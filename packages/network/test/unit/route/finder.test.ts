@@ -9,8 +9,8 @@ import { PriorityQueue, RouteFinder } from '../../../src/route/finder.service';
 import type { Route } from '../../../src/route/finder.types';
 import { rideSeconds } from '../../../src/trains/motion.utils';
 import { trainRunsAt } from '../../../src/trains/routes.utils';
-import { passSeconds, timetableOf } from '../../../src/trains/schedule.utils';
 import { TRAIN_PROFILES } from '../../../src/trains/trains.constants';
+import { passSeconds, rideOf } from '../../../src/trains/trains.utils';
 import { loopNetwork } from '../../support/factories/loopNetwork.utils';
 import { routeNetwork } from '../../support/factories/routeNetwork.utils';
 import { tinyNetwork } from '../../support/factories/tinyNetwork.utils';
@@ -80,9 +80,9 @@ describe('RouteFinder', () => {
     test("takes a ride's minutes from the timetable its line's trains keep, stops included", () => {
       const { finder, index, timeline, today } = finderOf(routeNetwork());
       const run = trainRunsAt(index, timeline, today).find(each => each.line === lineId('red'))!;
-      const timetable = timetableOf(run, 300);
+      const ride = rideOf(run);
       const [route] = finder.options(...run.ends, today);
-      expect(route?.minutes).toBeCloseTo((passSeconds(timetable, run.lengthKm, 1) - passSeconds(timetable, 0, 1)) / 60, 5);
+      expect(route?.minutes).toBeCloseTo((passSeconds(ride, run.lengthKm, 1) - passSeconds(ride, 0, 1)) / 60, 5);
     });
 
     test("times a ride by its own line's kind of railway", () => {

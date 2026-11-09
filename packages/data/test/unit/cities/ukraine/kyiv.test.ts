@@ -21,9 +21,9 @@ describe('Kyiv', () => {
     const { facts } = playbackOf(cityNetwork('kyiv'));
     let km = 0;
     let seconds = 0;
-    for (const { run, tripSeconds } of facts.asOf(facts.playheads.end()).trains().timetables) {
+    for (const { run, ride } of facts.asOf(facts.playheads.end()).trains().routes) {
       km += run.lengthKm;
-      seconds += tripSeconds;
+      seconds += ride.seconds;
     }
     expect((km / seconds) * 3600).toBeGreaterThan(36.11 * 0.95);
     expect((km / seconds) * 3600).toBeLessThan(36.11 * 1.05);
@@ -34,7 +34,7 @@ describe('Kyiv', () => {
     const runs = facts
       .asOf(facts.playheads.end())
       .trains()
-      .timetables.map(({ run }) => run)
+      .routes.map(({ run }) => run)
       .filter(run => run.line === lineId('m3'));
     expect(runs.map(run => run.ends.toSorted(byCodeUnits).join('–')).toSorted(byCodeUnits)).toEqual([
       'chervonyi-khutir–poliarna',

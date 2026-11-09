@@ -11,9 +11,12 @@ export type TrainProfile = {
   standSeconds: number;
   /** The least time from reaching an end to leaving it again, seconds: its passengers off and on, its driver to the other cab. */
   turnSeconds: number;
-  /** How long after one train the next comes along a route, seconds. */
+  /** How long after one train the next comes along a route, seconds, where its track has room. */
   headwaySeconds: number;
-  /** How close a line's routes may bring their trains where they share track, seconds: past that, each runs less often. */
+  /**
+   * How close trains may come on one track, any line's, seconds, as signals keep them: where the routes
+   * on a track would bring theirs closer, each runs less often.
+   */
   closestSeconds: number;
 };
 
@@ -38,38 +41,57 @@ export type TrainRun = {
   oneWay?: true;
 };
 
-/** How trains run along a route: at each time, seconds, as far along it, km, one way; riding between two places, standing where they are the same. */
-export type RouteTimetable = {
+/**
+ * How a route's trains ride it one way, out from its first end: at each time after setting out,
+ * seconds, as far along it, km; riding between two places, standing where they are the same. The way
+ * back is the way out run backwards.
+ */
+export type Ride = {
   run: TrainRun;
   times: number[];
   kms: number[];
-  /** How long one way takes, seconds; a loop's, once round. */
-  tripSeconds: number;
-  /** How long after one train the next comes along this route, seconds. */
-  everySeconds: number;
-  /** How long after setting out a train sets back from the far end, seconds; 0 on a loop, where each way has trains of its own. */
-  backAfterSeconds: number;
-  /** How long a train's whole round takes, turns included: a whole number of `everySeconds`, its trains being that many. */
-  roundSeconds: number;
-  /** How far on the route's clock is, seconds: what times it against the line's other routes. */
-  phaseSeconds: number;
+  /** How long it takes, end to end; a loop's, once round. */
+  seconds: number;
 };
 
-/** A route's trains where they meet others': when they pass, on the clock, how often, and the service they run in. */
-export type Passing = {
-  /** When one passes, seconds, within `everySeconds`. */
-  clockSeconds: number;
-  everySeconds: number;
-  /** Which service, among every line's. */
-  service: number;
-};
+/**
+ * A place a route's trains meet others, one way: entering a stretch of one track (any line's on it), or
+ * coming to its line's platforms at an end; how long after setting out they reach it, and how far
+ * behind another train they may.
+ */
+export type Meeting = { place: string; seconds: number; separation: number };
 
-/** The beats that would bring a route's trains onto others already placed where they meet, seconds. */
-export type TakenBeats = {
-  /** Its own line's. */
-  own: number[];
-  /** Other lines'. */
-  others: number[];
+/** A train placed through a place: when, seconds into the cycle, and how far behind it another may come. */
+export type Passing = { seconds: number; separation: number };
+
+/** A time a train placed would come too close to others: from how far either side of it it is clear, seconds. */
+export type Conflict = { center: number; reach: number };
+
+/** How many trains a cycle a place has room for, and the routes on it, by their place among the routes. */
+export type TrackRoom = { room: number; routes: number[] };
+
+/** The place a route's trains share with the most others, and how many trains a cycle pass it. */
+export type Bottleneck = { place: string; trains: number };
+
+/** A train coming in to an end: when, seconds into the cycle, on which route (its place among the routes), and as what it stands there. */
+export type Arrival = { seconds: number; route: number; km: number; heading: Heading };
+
+/** An end of a line where trains turn: those coming in, when those setting out do, seconds into the cycle, and how long after coming in one is ready. */
+export type TrainEnd = { arrivals: Arrival[]; departures: number[]; readySeconds: number };
+
+/** A train standing at an end between trips: when it comes in, seconds into the cycle, how long it stands, and as what it is drawn. */
+export type Layover = { fromSeconds: number; seconds: number; km: number; heading: Heading };
+
+/** When a route's trains set out each way, seconds into the cycle: out from its first end, and back; none back on a loop run one way. */
+export type Departures = { out: number[]; back: number[] };
+
+/** How a route is run through the cycle: its ride, when its trains set out, and how they turn at its ends. */
+export type RouteSchedule = {
+  run: TrainRun;
+  ride: Ride;
+  departures: Departures;
+  /** Every train standing at an end it came in to on this route, until it sets out again, on whichever of its line's routes. */
+  layovers: Layover[];
 };
 
 /** Where a train is at a moment: on which run, how far along it, km, and which way it is heading. */
