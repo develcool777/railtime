@@ -202,7 +202,10 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   Every way along a line from end to end (`routes.utils.ts`): a branch goes on past its fork towards the core,
   the side more lines meet, never doubling back. A train pulls away, runs and brakes (`motion.utils.ts`).
   `schedule.utils.ts`: a route runs at its kind's headway, branches adding up along their trunk, in turn,
-  until they would come closer than its trains may, when each runs less often. The turn at an end takes up
+  until they would come closer than its trains may, when each runs less often. Lines on the same track (a segment's,
+  unless its `tracks` part them) are timed together, each at its own headway, the most frequent first: a line's own
+  trains kept apart first, then midway between other lines' where one headway is a whole number of the other's (else no
+  beat keeps them apart); an end's platforms are its line's own. The turn at an end takes up
   what is between a route's two ways, as a timetable's does, so a train leaves each end on its own beat (where no other route meets it, the beat it is ready on), and how
   many trains a line needs comes out of it: a round over the headway. The fleet is never aimed at. A loop has no
   terminus: trains go on round, each way its own, or the one way a line's `way` says, where a circle's two
@@ -383,7 +386,9 @@ says the line never called there); its `closed` while the line runs there; its `
 closed for a while and reopened, each while the line runs there and calls, in order. The schema refuses
 any other. A line's fast track beside another's stopping one runs on the same segments, drawn side
 by side, and each station it runs through without calling says so (`passes`): never a segment of
-its own laid over theirs, which draws one line on top of the other.
+its own laid over theirs, which draws one line on top of the other. A segment's lines share one track, their trains
+timed round one another's, unless it says which run on tracks of their own beside each other (`tracks`, each of its
+lines on one): lines in tunnels of their own between the same two stations, a fast pair beside a stopping one.
 
 Any line, or a network's lines at once, can be hidden (the Lines panel's eyes, for the visit). Hidden, it is as if it were not there:
 `NetworkFacts.create(network, { hidden })` leaves out the line, the track and stations only it has,

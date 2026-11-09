@@ -342,6 +342,7 @@ const track = (index: number, stationA: StationId, stationB: StationId, lengthKm
   reversedCoordinates: [],
   distances: [],
   reversedDistances: [],
+  tracks: [],
   lengthKm,
   travel: 1,
 });

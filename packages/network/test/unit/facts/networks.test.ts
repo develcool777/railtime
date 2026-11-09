@@ -1,5 +1,6 @@
 import { keysOf } from '@railtime/core/collection.utils';
 import { toTimestamp } from '@railtime/core/date.utils';
+import type { LineId } from '@railtime/schema/network.types';
 import { lineId, networkId, planId, stationId } from '@railtime/schema/testing/ids';
 import { describe, expect, test } from 'vitest';
 import { firstPlanOf, isPlanOnly, linesHiddenAtFirst, linesNamed, networkChoicesOf, withLinesHidden } from '../../../src/facts/networks.utils';
@@ -54,6 +55,16 @@ describe('NetworksUtils', () => {
       });
       expect(shown.transfers?.some(transfer => transfer.stationB === 'x')).toBe(false);
       expect(keysOf(shown.plans ?? {})).toEqual(['extension']);
+    });
+
+    test("keeps a segment's tracks to the lines left on it, saying none where they are left on one", () => {
+      const tracksOf = (tracks: LineId[][]) => {
+        const network = hiddenNetwork();
+        network.segments.find(segment => segment.stationA === 'c' && segment.stationB === 'd')!.tracks = tracks;
+        return withLinesHidden(network, [lineId('grey')]).network.segments.find(segment => segment.stationA === 'c' && segment.stationB === 'd');
+      };
+      expect(tracksOf([[lineId('red'), lineId('green')], [lineId('grey')]])).not.toHaveProperty('tracks');
+      expect(tracksOf([[lineId('red')], [lineId('green')], [lineId('grey')]])?.tracks).toEqual([['red'], ['green']]);
     });
 
     test('takes the years another line was drawn as one hidden with it: its gaps, which the engine cuts its runs at', () => {

@@ -22,6 +22,8 @@ export type TrackSegment = {
   /** Distance along `reversedCoordinates` to each point, km. */
   reversedDistances: number[];
   lengthKm: number;
+  /** Its lines on each track, where they do not all share one (`Segment.tracks`); none where they do. */
+  tracks: readonly (readonly LineId[])[];
   /** The segment's direction along its route, consistent with its neighbours': see `orientation.utils.ts`. */
   travel: Travel;
 };

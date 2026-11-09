@@ -55,5 +55,22 @@ export type RouteTimetable = {
   phaseSeconds: number;
 };
 
+/** A route's trains where they meet others': when they pass, on the clock, how often, and the service they run in. */
+export type Passing = {
+  /** When one passes, seconds, within `everySeconds`. */
+  clockSeconds: number;
+  everySeconds: number;
+  /** Which service, among every line's. */
+  service: number;
+};
+
+/** The beats that would bring a route's trains onto others already placed where they meet, seconds. */
+export type TakenBeats = {
+  /** Its own line's. */
+  own: number[];
+  /** Other lines'. */
+  others: number[];
+};
+
 /** Where a train is at a moment: on which run, how far along it, km, and which way it is heading. */
 export type TrainPlace = { run: TrainRun; km: number; heading: Heading };

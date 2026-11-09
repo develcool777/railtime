@@ -1,9 +1,11 @@
-import { pushTo } from '@railtime/core/collection.utils';
+import { firstDifference, pushTo } from '@railtime/core/collection.utils';
 import { required } from '@railtime/core/required.utils';
-import type { LineId } from '@railtime/schema/network.types';
+import { byCodeUnits } from '@railtime/core/text.utils';
+import type { LineId, StationId } from '@railtime/schema/network.types';
 import { rideKmAt, rideSeconds, rideSecondsTo } from './motion.utils.ts';
 import { TRAIN_PROFILES } from './trains.constants.ts';
-import type { Heading, RouteTimetable, TrainPlace, TrainRun } from './trains.types';
+import type { Heading, Passing, RouteTimetable, TakenBeats, TrainPlace, TrainRun } from './trains.types';
+import type { TrackSegment } from '../engine/engine.types';
 
 /**
  * A time as far into a repeating span.
@@ -121,8 +123,37 @@ export const passSeconds = (timetable: RouteTimetable, km: number, heading: Head
 };
 
 /**
+ * Which of a segment's tracks a line runs on: the one naming it; where the segment names none, or not
+ * this line, the one its lines share.
+ *
+ * @param segment - The segment.
+ * @param line - The line.
+ * @returns The track, by its place among the segment's; -1 for the one its lines share.
+ */
+const trackOf = ({ tracks }: TrackSegment, line: LineId): number => tracks.findIndex(track => track.includes(line));
+
+/**
+ * A way along a track, where the trains of every line on it meet.
+ *
+ * @param segment - The segment the track is on.
+ * @param line - A line running on it.
+ * @param forward - Whether the way is from the segment's station A to its station B.
+ * @returns The place.
+ */
+const trackPlace = (segment: TrackSegment, line: LineId, forward: boolean): string => `track ${segment.index}.${trackOf(segment, line)} ${forward ? '+' : '-'}`;
+
+/**
+ * A line's platforms at a station it ends at, where its own trains meet: another line ending there has its own.
+ *
+ * @param line - The line.
+ * @param station - The station.
+ * @returns The place.
+ */
+const platformsPlace = (line: LineId, station: StationId): string => `platforms ${line} ${station}`;
+
+/**
  * When a route's trains going one way take each place they can meet another's: entering each stretch of
- * track, and reaching the end they head for.
+ * track, and reaching its line's platforms at the end they head for.
  *
  * @param timetable - The route's timetable.
  * @param heading - Which way.
@@ -132,43 +163,110 @@ const entriesOf = (timetable: RouteTimetable, heading: Heading): Map<string, num
   const { run, tripSeconds, backAfterSeconds } = timetable;
   const entries = new Map<string, number>();
   for (const { segment, forward, startKm } of run.legs) {
-    if (heading === 1) entries.set(`${segment.index}${forward ? '+' : '-'}`, passSeconds(timetable, startKm, 1));
-    else entries.set(`${segment.index}${forward ? '-' : '+'}`, passSeconds(timetable, startKm + segment.lengthKm, -1) - backAfterSeconds);
+    if (heading === 1) entries.set(trackPlace(segment, run.line, forward), passSeconds(timetable, startKm, 1));
+    else entries.set(trackPlace(segment, run.line, !forward), passSeconds(timetable, startKm + segment.lengthKm, -1) - backAfterSeconds);
   }
-  entries.set(`at ${run.ends[heading === 1 ? 1 : 0]}`, tripSeconds);
+  entries.set(platformsPlace(run.line, run.ends[heading === 1 ? 1 : 0]), tripSeconds);
   return entries;
 };
 
 /**
- * The beat that keeps a route's trains furthest from those already placed, everywhere they can meet:
- * a whole number of slots on from a train, so a line's routes come in turn along the track they share,
- * as branches do. Trains of a line keep the gap they enter a stretch with. With none to keep clear of,
- * the beat it would keep on its own.
+ * The greatest whole number of seconds two spans are each a whole number of: trains on one, every so
+ * often, and on the other meet once in each such span, wherever their beats are.
  *
- * @param offsets - How far each train already placed is from this route's where they can meet, seconds.
- * @param slotSeconds - How long after one train the next comes along the track they share.
+ * @param first - A span, whole seconds.
+ * @param second - Another.
+ * @returns Their greatest common divisor.
+ */
+const commonSpan = (first: number, second: number): number => (second === 0 ? first : commonSpan(second, first % second));
+
+/**
+ * How far a beat is from the nearest of others, round a route's span, to the second.
+ *
+ * @param phase - The beat.
+ * @param taken - The others.
+ * @param everySeconds - The span.
+ * @returns How far, seconds; `Infinity` with none.
+ */
+const clearanceOf = (phase: number, taken: readonly number[], everySeconds: number): number => {
+  let narrowest = Infinity;
+  for (const other of taken) {
+    const apart = within(other - phase, everySeconds);
+    narrowest = Math.min(narrowest, apart, everySeconds - apart);
+  }
+  return Math.round(narrowest);
+};
+
+/**
+ * The beats midway between others, round a route's span.
+ *
+ * @param taken - The others.
+ * @param everySeconds - The span.
+ * @returns A beat midway between each and the next.
+ */
+const midwaysOf = (taken: readonly number[], everySeconds: number): number[] => {
+  const beats = [...new Set(taken)].toSorted((first, second) => first - second);
+  return beats.map((beat, place) => within((beat + (beats[place + 1] ?? (beats[0] ?? 0) + everySeconds)) / 2, everySeconds));
+};
+
+/**
+ * The beat for a route's trains, given those already placed where they can meet. Its own line's are
+ * kept apart first, as signals keep them: a whole number of slots on from one of them, so a line's
+ * routes come in turn along the track they share, as branches do, trains of a line keeping the gap
+ * they enter a stretch with. Of the beats that keep them as far apart, the one furthest from other
+ * lines'. With none of its own line's, midway between other lines', or the beat it keeps on its own
+ * where that is as clear of them.
+ *
+ * @param taken - The beats that would bring it onto a train already placed.
+ * @param slotSeconds - How long after one train the next comes along the track its line's routes share.
  * @param everySeconds - How long after one of the route's trains the next comes.
  * @param ownPhase - The beat it keeps on its own, seconds.
  * @returns The beat, seconds.
  */
-const clearestPhase = (offsets: number[], slotSeconds: number, everySeconds: number, ownPhase: number): number => {
+const clearestPhase = ({ own, others }: TakenBeats, slotSeconds: number, everySeconds: number, ownPhase: number): number => {
+  const candidates = own.length > 0 ? [] : [ownPhase, ...midwaysOf(others, everySeconds)];
+  for (const offset of own) for (let slot = slotSeconds; slot < everySeconds; slot += slotSeconds) candidates.push(within(offset + slot, everySeconds));
   let best = ownPhase;
-  let widest = -1;
-  for (const offset of offsets) {
-    for (let slot = slotSeconds; slot < everySeconds; slot += slotSeconds) {
-      const phase = within(offset + slot, everySeconds);
-      let narrowest = Infinity;
-      for (const other of offsets) {
-        const apart = within(other - phase, everySeconds);
-        narrowest = Math.min(narrowest, apart, everySeconds - apart);
-      }
-      if (narrowest <= widest) continue;
+  let ownWidest = -1;
+  let othersWidest = -1;
+  for (const phase of candidates) {
+    const ownClear = clearanceOf(phase, own, everySeconds);
+    const othersClear = clearanceOf(phase, others, everySeconds);
+    if (ownClear < ownWidest || (ownClear === ownWidest && othersClear <= othersWidest)) continue;
 
-      widest = narrowest;
-      best = phase;
-    }
+    best = phase;
+    ownWidest = ownClear;
+    othersWidest = othersClear;
   }
   return best;
+};
+
+/**
+ * The beats that would bring a route's trains onto others already placed where they meet, its own
+ * line's apart. Trains on two lines meet once in each span both their headways are a whole number of:
+ * unless one is a whole number of the other, that is more often than either runs, and they pass through
+ * each other whatever their beats, as lines on unrelated headways do, and keep clear of none.
+ *
+ * @param entries - Where the route's trains meet others, with how long after they set out.
+ * @param placed - Where trains already placed pass.
+ * @param service - The route's service.
+ * @param everySeconds - How long after one of the route's trains the next comes.
+ * @returns The beats.
+ */
+const takenBeatsOf = (entries: Map<string, number>, placed: Map<string, Passing[]>, service: number, everySeconds: number): TakenBeats => {
+  const own: number[] = [];
+  const others: number[] = [];
+  for (const [where, seconds] of entries)
+    for (const passing of placed.get(where) ?? []) {
+      if (passing.service === service) {
+        own.push(Math.round(within(seconds - passing.clockSeconds, everySeconds)));
+        continue;
+      }
+      const span = commonSpan(everySeconds, passing.everySeconds);
+      if (span < Math.min(everySeconds, passing.everySeconds)) continue;
+      for (let beat = within(seconds - passing.clockSeconds, span); beat < everySeconds; beat += span) others.push(Math.round(beat));
+    }
+  return { own: [...new Set(own)], others: [...new Set(others)] };
 };
 
 /**
@@ -185,20 +283,21 @@ const everySecondsOf = (runs: TrainRun[]): number => {
 };
 
 /**
- * A line's routes that share track, timed as one: their trains come in turn along it, evenly. Each way
- * is placed on its own: the turn at an end takes up what is between them.
+ * A line's routes that share track, timed as one: their trains come in turn along it, evenly, and clear
+ * of the trains of other lines already placed on the same track. Each way is placed on its own: the turn
+ * at an end takes up what is between them.
  *
  * @param runs - The routes.
+ * @param service - Which service they are, among every line's.
+ * @param placed - Where trains already placed pass, every service's: added to.
  * @returns Their timetables.
  */
-const serviceTimetablesOf = (runs: TrainRun[]): RouteTimetable[] => {
+const serviceTimetablesOf = (runs: TrainRun[], service: number, placed: Map<string, Passing[]>): RouteTimetable[] => {
   const everySeconds = everySecondsOf(runs);
-  const placed = new Map<string, number[]>();
   const place = (timetable: RouteTimetable, heading: Heading, ownPhase: number): number => {
     const entries = entriesOf(timetable, heading);
-    const offsets = [...entries].flatMap(([where, seconds]) => (placed.get(where) ?? []).map(other => within(seconds - other, everySeconds)));
-    const phase = clearestPhase([...new Set(offsets.map(offset => Math.round(offset)))], everySeconds / runs.length, everySeconds, ownPhase);
-    for (const [where, seconds] of entries) pushTo(placed, where, within(seconds - phase, everySeconds));
+    const phase = clearestPhase(takenBeatsOf(entries, placed, service, everySeconds), everySeconds / runs.length, everySeconds, ownPhase);
+    for (const [where, seconds] of entries) pushTo(placed, where, { clockSeconds: within(seconds - phase, everySeconds), everySeconds, service });
     return phase;
   };
   return runs.map(run => {
@@ -232,15 +331,26 @@ const servicesOf = (runs: TrainRun[]): TrainRun[][] => {
 };
 
 /**
- * Every route's timetable, worked out from the routes alone, whatever the network.
+ * Every route's timetable, worked out from the routes alone, whatever the network: each line's
+ * services at its own headway, placed the most frequent first, as an operator gives way, each clear of
+ * those before it on the track they share.
  *
  * @param runs - Every line's routes.
- * @returns Their timetables.
+ * @returns Their timetables, each line's together, in the order given.
  */
 export const timetablesOf = (runs: TrainRun[]): RouteTimetable[] => {
   const lines = new Map<LineId, TrainRun[]>();
   for (const run of runs) pushTo(lines, run.line, run);
-  return [...lines.values()].flatMap(line => servicesOf(line).flatMap(serviceTimetablesOf));
+  const services = [...lines.values()].flatMap(servicesOf);
+  const busiestFirst = services
+    .map((routes, service) => ({ routes, service, everySeconds: everySecondsOf(routes), line: required(routes[0], 'a service is never empty').line }))
+    .toSorted((first, second) =>
+      firstDifference(first.everySeconds - second.everySeconds, byCodeUnits(first.line, second.line), first.service - second.service),
+    );
+  const placed = new Map<string, Passing[]>();
+  const timed = new Map<number, RouteTimetable[]>();
+  for (const { routes, service } of busiestFirst) timed.set(service, serviceTimetablesOf(routes, service, placed));
+  return services.flatMap((_routes, service) => timed.get(service) ?? []);
 };
 
 /**

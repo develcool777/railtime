@@ -251,6 +251,7 @@ export class NetworkIndex {
       distances,
       reversedDistances: cumulativeDistances(reversedCoordinates),
       lengthKm: distances.at(-1) ?? 0,
+      tracks: segment.tracks ?? [],
       travel: 1,
     };
     for (const [line, dates] of entriesOf(segment.lines)) this.indexLineOnSegment(trackSegment, line, dates);

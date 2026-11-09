@@ -12,6 +12,9 @@ const METRO = TRAIN_PROFILES.metro;
 /** How long after one train the next comes, seconds, where it makes no odds. */
 const EVERY = 300;
 
+/** A segment's tracks where its lines share one. */
+const ONE_TRACK: TrackSegment['tracks'] = [];
+
 /**
  * A stretch of track.
  *
@@ -19,7 +22,7 @@ const EVERY = 300;
  * @param lengthKm - How long it is.
  * @returns The stretch.
  */
-const segmentOf = (index: number, lengthKm: number) => ({ index, lengthKm }) as TrackSegment;
+const segmentOf = (index: number, lengthKm: number) => ({ index, lengthKm, tracks: ONE_TRACK }) as TrackSegment;
 
 /**
  * A route along stretches of track, stopping at each end.
@@ -230,6 +233,38 @@ describe('ScheduleUtils', () => {
       const [timetable] = timetablesOf([routeOf([trunk])]);
       const { tripSeconds, backAfterSeconds } = timetable!;
       expect(backAfterSeconds - tripSeconds).toBeCloseTo(METRO.turnSeconds - 2 * METRO.standSeconds);
+    });
+
+    test("keeps a line's trains midway between another's on the track they share", () => {
+      const [red, blue] = timetablesOf([routeOf([trunk]), routeOf([trunk], { line: 'blue', ends: ['c', 'd'] })]);
+      const apart = Math.abs(beatAt(red, 0, 1) - beatAt(blue, 0, 1));
+      expect(Math.min(apart, EVERY - apart)).toBeCloseTo(EVERY / 2, 0);
+    });
+
+    test('leaves a line on a headway unrelated to another sharing its track on its own clock', () => {
+      const forked = [1, 2, 3].map(branch => routeOf([trunk, segmentOf(branch, 2)], { ends: ['a', `end${branch}`] }));
+      const [first] = timetablesOf([...forked, routeOf([trunk], { line: 'blue', ends: ['c', 'd'] })]);
+      expect(first?.everySeconds).toBe(METRO.closestSeconds * 3);
+      expect(first?.phaseSeconds).toBe(0);
+    });
+
+    test('places the most frequent line first, the other round it, and gives them back in the order given', () => {
+      const suburban = { ...routeOf([trunk], { line: 'blue', ends: ['c', 'd'] }), mode: 'suburban-rail' as const };
+      const [blue, red] = timetablesOf([suburban, routeOf([trunk])]);
+      expect([blue?.run.line, red?.run.line]).toEqual([lineId('blue'), lineId('red')]);
+      expect(red?.phaseSeconds).toBe(0);
+      expect(blue?.phaseSeconds).not.toBe(0);
+    });
+
+    test('leaves lines on tracks of their own beside each other on their own clocks', () => {
+      const besides = { ...trunk, tracks: [[lineId('red')], [lineId('blue')]] };
+      const timetables = timetablesOf([routeOf([besides]), routeOf([besides], { line: 'blue', ends: ['c', 'd'] })]);
+      expect(timetables.map(({ phaseSeconds }) => phaseSeconds)).toEqual([0, 0]);
+    });
+
+    test('lets lines ending at one station on track of their own keep their own clocks', () => {
+      const timetables = timetablesOf([routeOf([segmentOf(0, 8)], { ends: ['a', 'z'] }), routeOf([segmentOf(1, 8)], { line: 'blue', ends: ['b', 'z'] })]);
+      expect(timetables.map(({ phaseSeconds }) => phaseSeconds)).toEqual([0, 0]);
     });
 
     test('keeps each line to itself', () => {

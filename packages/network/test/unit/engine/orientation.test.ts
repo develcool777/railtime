@@ -36,6 +36,7 @@ const track = (index: number, stationA: StationId, stationB: StationId): TrackSe
     reversedCoordinates: [...coordinates].toReversed(),
     distances: [0, 1],
     reversedDistances: [0, 1],
+    tracks: [],
     lengthKm: 1,
     travel: 1,
   };
