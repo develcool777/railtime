@@ -397,6 +397,23 @@ describe('NetworkSchema', () => {
     ]);
   });
 
+  test('refuses tracks that do not hold each of a segment’s lines once, and only its lines', () => {
+    const twice = plannedNetwork();
+    twice.segments[0]!.tracks = [['red', 'red'], ['blue']];
+    // The plan splits the segment, its halves saying so again.
+    expect(problemsOf(twice).slice(0, 2)).toEqual([
+      'segment a – c: red on more than one of its tracks',
+      'segment a – c: blue on its tracks, not among its lines',
+    ]);
+    const missing = plannedNetwork();
+    missing.segments[0]!.tracks = [['blue'], ['green']];
+    expect(problemsOf(missing)).toContain('segment a – c: red on none of its tracks');
+    const one = plannedNetwork();
+    one.segments[0]!.tracks = [['red']];
+    // One track for all is said by saying nothing.
+    expect(problemsOf(one)).toEqual(['Too small: expected array to have >=2 items']);
+  });
+
   test("refuses a plan whose network would be unsound: one of its lines in a network that isn't", () => {
     const network = plannedNetwork();
     network.plans!.extension!.lines = { green: { name: 'Green', network: 'tram', mode: 'tram', color: '#00aa00' } };

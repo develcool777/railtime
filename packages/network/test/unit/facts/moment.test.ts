@@ -71,7 +71,7 @@ describe('FactsAt', () => {
       new Set(
         questionsOn(facts, toTimestamp(date))
           .trains()
-          .timetables.map(({ run }) => run.line),
+          .routes.map(({ run }) => run.line),
       );
     expect(linesThen('1899-06-01').size).toBe(0);
     expect([...linesThen('1935-01-01')]).toContain('blue');

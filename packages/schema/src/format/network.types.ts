@@ -118,13 +118,22 @@ export type SegmentLine = {
   suspended?: Suspension[];
 };
 
-/** Track between two adjacent stations, shared by every line that runs over it. */
+/**
+ * The way between two adjacent stations, and its lines: on one track, unless it says which run on
+ * tracks of their own beside each other (`tracks`). Either way drawn as one, its lines side by side.
+ */
 export type Segment = {
   stationA: StationId;
   stationB: StationId;
   /** From station A to station B. */
   coordinates: LngLat[];
   lines: Record<LineId, SegmentLine>;
+  /**
+   * Its lines on each track, where they do not all share one: a group a track (a pair, one each way),
+   * each of its lines in one. Left out, every line runs on the same track, its trains timed round one
+   * another's.
+   */
+  tracks?: LineId[][];
 };
 
 /** Two stations, each its own stop with its own name, that passengers change between. */

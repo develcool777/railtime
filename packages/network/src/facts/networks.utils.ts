@@ -82,6 +82,18 @@ const stationWithLines = (station: Station, kept: (line: LineId) => boolean): St
 };
 
 /**
+ * A segment with only some of its lines: its tracks with only theirs, and none said where they are left on one.
+ *
+ * @param segment - The segment.
+ * @param lines - The lines left on it.
+ * @returns The segment.
+ */
+const segmentWithLines = ({ tracks, ...segment }: Segment, lines: Segment['lines']): Segment => {
+  const left = (tracks ?? []).map(track => track.filter(line => Object.hasOwn(lines, line))).filter(track => track.length > 0);
+  return { ...segment, lines, ...(left.length > 1 && { tracks: left }) };
+};
+
+/**
  * The lines left with some hidden: those drawn, without their aliases to lines hidden, and the pseudo
  * lines one of them is still drawn as.
  *
@@ -155,7 +167,7 @@ export const withLinesHidden = (network: Network, hidden: readonly LineId[]): Sh
   const runsLeft = (segment: Segment) => entriesOf(segment.lines).filter(([line, run]) => drawn(line) && runsOutside(run, gapsOfLine(line)));
   const segments = network.segments.flatMap(segment => {
     const left = runsLeft(segment);
-    return left.length > 0 ? [{ ...segment, lines: fromEntriesOf(left) }] : [];
+    return left.length > 0 ? [segmentWithLines(segment, fromEntriesOf(left))] : [];
   });
   const trackGone = network.segments.filter(segment => runsLeft(segment).length === 0);
   const servedBefore = new Set(network.segments.flatMap(segment => [segment.stationA, segment.stationB]));

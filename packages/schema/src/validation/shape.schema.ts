@@ -60,6 +60,7 @@ const segmentSchema = z.object({
   stationB: stationId,
   coordinates: z.array(lngLat).min(2),
   lines: z.record(lineId, z.object({ open: isoDate, close: isoDate.exactOptional(), suspended: z.array(suspension).exactOptional() })),
+  tracks: z.array(z.array(lineId).min(1)).min(2).exactOptional(),
 });
 
 /** Two stations a change walks between. */

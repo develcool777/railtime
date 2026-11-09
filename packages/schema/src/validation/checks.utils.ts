@@ -233,6 +233,26 @@ const checkSegment = (network: Network, segment: Segment, problem: (message: str
   );
   if (turn) problem(turn);
   for (const [lineId, dates] of entriesOf(segment.lines)) checkSegmentLine(network, name, lineId, dates, problem);
+  for (const wrong of tracksProblems(segment)) problem(`${name}: ${wrong}`);
+};
+
+/**
+ * What is wrong with a segment's tracks: each of its lines on one of them, and only its lines.
+ *
+ * @param segment - The segment.
+ * @returns Each problem; none where it says nothing of its tracks.
+ */
+const tracksProblems = ({ lines, tracks }: Segment): string[] => {
+  if (!tracks) return [];
+  const listed = tracks.flat();
+  const twice = listed.filter((lineId, place) => listed.indexOf(lineId) !== place);
+  return [
+    ...[...new Set(twice)].map(lineId => `${lineId} on more than one of its tracks`),
+    ...listed.filter(lineId => !Object.hasOwn(lines, lineId)).map(lineId => `${lineId} on its tracks, not among its lines`),
+    ...keysOf(lines)
+      .filter(lineId => !listed.includes(lineId))
+      .map(lineId => `${lineId} on none of its tracks`),
+  ];
 };
 
 /**

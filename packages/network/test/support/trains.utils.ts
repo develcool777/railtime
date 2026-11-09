@@ -1,43 +1,28 @@
 import { pushTo } from '@railtime/core/collection.utils';
-import { passSeconds } from '../../src/trains/schedule.utils';
+import { CYCLE_SECONDS } from '../../src/trains/trains.constants';
 import type { TrainService } from '../../src/trains/trains.service';
-import type { RouteTimetable } from '../../src/trains/trains.types';
+import { passSeconds } from '../../src/trains/trains.utils';
 
 /**
- * When a route's trains enter each stretch of track, each way, as far into their share of the interval.
- *
- * @param timetable - The route's timetable.
- * @returns Each stretch, by its line, segment and way, with when.
- */
-const entriesOf = (timetable: RouteTimetable): [string, number][] => {
-  const { run, everySeconds, phaseSeconds } = timetable;
-  const within = (seconds: number) => (((seconds - phaseSeconds) % everySeconds) + everySeconds) % everySeconds;
-  return run.legs.flatMap(({ segment, forward, startKm }): [string, number][] => [
-    [`${run.line} ${segment.index} ${forward}`, within(passSeconds(timetable, startKm, 1))],
-    [`${run.line} ${segment.index} ${!forward}`, within(passSeconds(timetable, startKm + segment.lengthKm, -1))],
-  ]);
-};
-
-/**
- * The shortest time between two of a line's trains on any stretch of track, going the same way: exact,
- * every route of a line coming round on the same beat, so it holds whenever the trains are watched.
+ * The shortest time between two trains entering the same track the same way, whichever lines': exact,
+ * the timetable coming round each cycle, so it holds whenever the trains are watched.
  *
  * @param service - The trains.
- * @returns The shortest headway, seconds; `Infinity` where no routes share track.
+ * @returns The shortest, seconds; `Infinity` where no two trains share a track.
  */
 export const tightestHeadway = (service: TrainService): number => {
-  const onTrack = new Map<string, { seconds: number; every: number }[]>();
-  for (const timetable of service.timetables) {
-    for (const [stretch, seconds] of entriesOf(timetable)) pushTo(onTrack, stretch, { seconds, every: timetable.everySeconds });
-  }
-  let tightest = Infinity;
-  for (const trains of onTrack.values()) {
-    for (const [place, { seconds, every }] of trains.entries()) {
-      for (const other of trains.slice(place + 1)) {
-        const apart = Math.abs(seconds - other.seconds);
-        tightest = Math.min(tightest, apart, every - apart);
-      }
+  const onTrack = new Map<string, number[]>();
+  for (const { ride, departures } of service.routes)
+    for (const { segment, forward, startKm } of ride.run.legs) {
+      const track = `${segment.index} ${segment.tracks.findIndex(lines => lines.includes(ride.run.line))}`;
+      const into = (departure: number, seconds: number) => (((departure + seconds) % CYCLE_SECONDS) + CYCLE_SECONDS) % CYCLE_SECONDS;
+      for (const departure of departures.out) pushTo(onTrack, `${track} ${forward}`, into(departure, passSeconds(ride, startKm, 1)));
+      for (const departure of departures.back) pushTo(onTrack, `${track} ${!forward}`, into(departure, passSeconds(ride, startKm + segment.lengthKm, -1)));
     }
+  let tightest = Infinity;
+  for (const entries of onTrack.values()) {
+    const sorted = entries.toSorted((first, second) => first - second);
+    for (const [place, entry] of sorted.entries()) tightest = Math.min(tightest, (sorted[place + 1] ?? (sorted[0] ?? 0) + CYCLE_SECONDS) - entry);
   }
   return tightest;
 };
