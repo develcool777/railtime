@@ -1,10 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { assertTestsMirrorCities, assertTestsMirrorSource, projectsOf } from '../../vitest.shared.ts';
+import { assertTestsMirrorCities, projectsOf } from '../../vitest.shared.ts';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 
-for (const feature of ['summary', 'boundary', 'preview']) assertTestsMirrorSource(ROOT, `test/unit/${feature}`, `src/${feature}`);
 assertTestsMirrorCities(ROOT);
 
 /**

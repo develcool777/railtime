@@ -252,7 +252,7 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
 
 - **Stores are the one source of truth.** Every value lives in exactly one store, with all that is
   worked out from it (its getters), and changes only by that store's actions; their rules are pure
-  functions in `*.utils.ts`, tested, and each store is tested (`test/unit/…/<name>.test.ts`, on a
+  functions in `*.utils.ts`, tested, and each store is tested (`test/unit/…/<name>.store.test.ts`, on a
   stand-in map, `@test/support/factories/transitMap.utils`). Stores read one another one way only,
   never in a circle. The explorer's: `network.store.ts` (the network shown, its facts, the plan and
   the lines hidden), `map/map.store.ts` (the map, its credits, where it looks, its camera's commands)
@@ -297,27 +297,28 @@ Each package keeps its tests beside its code, as dataroom-ui does inside its one
 ```text
 packages/network/
   vitest.config.ts          the package's project (`pnpm --filter @railtime/network test-unit`)
-  test/unit/                mirrors src/: test/unit/engine/timeline.test.ts tests src/engine/timeline.*.ts
+  test/unit/                mirrors src/, a test a file, named for it: test/unit/engine/timeline.service.test.ts
+                            tests src/engine/timeline.service.ts, timeline.utils.test.ts its utils
   test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries,
                             hiddenNetwork: exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
 packages/renderer/
-  test/unit/                mirrors src/, as network's; transitMap.spec.ts tests the contract whole
+  test/unit/                mirrors src/, as network's; transitMap.service.spec.ts tests the contract whole
   test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it, and what
                             the map draws: `@railtime/renderer/testing/playback` for data's city tests)
 packages/data/
   test/unit/<feature>/      mirrors src/<feature>/: summary/, boundary/, preview/ (a command each)
-  test/unit/city.test.ts    finding the cities and reading their files
+  test/unit/city.utils.test.ts  finding the cities and reading their files
   test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
                             cities/united-kingdom/london/london.json, played through the renderer
   test/bench/               the work a visitor waits on, timed on the largest city (`pnpm test-bench`)
-web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts); components are checked in the browser;
+web/test/unit/              mirrors web/src/ for its helpers (*.utils.ts) and stores; components are checked in the browser;
                             they import as the app does, from ~/, and test/support/ from @test/
 ```
 
 - `network` and the renderer know no city: their tests use made-up networks (`tinyNetwork`). A check of a city's
   history (the Victoria line's three stages, London's size today) goes in
   `packages/data/test/unit/cities/<country>/<city>.test.ts`. Nor do `core`, `schema`, `network` or the
-  renderer name one, in their code, comments or tests: `data`'s `city.test.ts` reads every city's
+  renderer name one, in their code, comments or tests: `data`'s `city.utils.test.ts` reads every city's
   name in `cities.json` and fails on any it finds there.
 
 - `pnpm test-unit` at the root runs every project (`vitest.config.ts`); options shared by all are in
@@ -327,8 +328,10 @@ web/test/unit/              mirrors web/src/ for its plain helpers (*.utils.ts);
   container); each is a project of its own (`projectsOf` in `vitest.shared.ts`), in every package and
   `web` (ESLint refuses `defineProject` there). Never a `@vitest-environment` comment.
 - **Tests run the real code.** No `vi.mock` (ESLint): build the input with a factory in `test/support/`.
-- A test mirrors one source file, or Vitest refuses to start; `*.test.ts` and `*.spec.ts` only in `test/unit/`,
-  helpers only in `test/support/` (ESLint).
+- **A test and its file are named for each other**, suffix and all, as in dataroom-ui: `trains.service.ts` is
+  tested in `trains.service.test.ts`, `trains.utils.ts` in `trains.utils.test.ts`. A test names a source file that
+  is there, and every service, utils and store has its test (`house/mirrored-tests`); a city's test names its
+  city (`vitest.shared.ts`). `*.test.ts` and `*.spec.ts` only in `test/unit/`, helpers only in `test/support/` (ESLint).
 - `describe('<Module>')` (`Timeline`, `GrowthUtils`), a nested `describe` per function for a utils
   module, then `test('does what, when')`; never `it`, nor a test left `.only`, `.skip` or `.todo`, nor
   one only some runs make (`@vitest/eslint-plugin`, `vitest/no-conditional-tests`). A throw is

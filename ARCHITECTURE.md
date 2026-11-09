@@ -208,7 +208,7 @@ the inset in `Minimap`. Nothing outside `NetworkParts` is made again for another
 written to only once installed (`PropsReconciler` holds every effect until then), so it keeps nothing
 to draw later.
 `TransitMap` takes its MapLibre map and frame scheduler from factories, so its contract is tested
-whole on the stand-in map (`test/unit/transitMap.spec.ts`).
+whole on the stand-in map (`test/unit/transitMap.service.spec.ts`).
 
 ## `web`: stores, and effects
 

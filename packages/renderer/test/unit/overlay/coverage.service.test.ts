@@ -1,15 +1,11 @@
-import { toTimestamp } from '@railtime/core/date.utils';
 import type { CoverageCells } from '@railtime/network/facts.types';
-import { SQUARE, TINY_WITH_HOLE as CITY } from '@railtime/network/testing/boundaries';
-import { tinyNetwork } from '@railtime/network/testing/tinyNetwork';
+import { SQUARE } from '@railtime/network/testing/boundaries';
 import { describe, expect, test } from 'vitest';
 import { LAYERS, SOURCES } from '../../../src/layers/ids.constants';
 import { PALETTES } from '../../../src/layers/theme.constants';
 import { CoverageLayer } from '../../../src/overlay/coverage.service';
-import { COVERAGE_ALPHA, UNCOVERED_ALPHA } from '../../../src/overlay/overlay.constants';
-import { coverageDrawing, coverageImage } from '../../../src/overlay/overlay.utils';
+import { coverageDrawing } from '../../../src/overlay/overlay.utils';
 import { fakeMap } from '../../support/factories/fakeMap.utils';
-import { playbackOf } from '../../support/playback.utils';
 
 /** A city of 2 × 2 cells: one in each of two bands, one beyond them, one outside. */
 const CELLS: CoverageCells = {
@@ -51,29 +47,5 @@ describe('CoverageLayer', () => {
     layer.update(null);
     expect([LAYERS.coverageHeat, LAYERS.coverageOutline].map(id => fake.layers.get(id)?.layout.visibility)).toEqual(['none', 'none']);
     expect(pictures).toHaveLength(1);
-  });
-});
-
-describe('CoverageLayerUtils', () => {
-  describe('coverageImage', () => {
-    test("colours each cell in its band's colour, tints the rest of the city, and leaves outside it clear", () => {
-      const pixels = coverageImage(CELLS);
-      const pixelAt = (cell: number) => [...pixels.slice(cell * 4, cell * 4 + 4)];
-      expect(pixelAt(0)).toEqual([0x0b, 0x7a, 0x75, COVERAGE_ALPHA]);
-      expect(pixelAt(1)).toEqual([0x1f, 0xa8, 0x9f, COVERAGE_ALPHA]);
-      expect(pixelAt(2)).toEqual([0x80, 0x80, 0x80, UNCOVERED_ALPHA]);
-      expect(pixelAt(3)).toEqual([0, 0, 0, 0]);
-    });
-  });
-
-  describe('coverageDrawing', () => {
-    test("draws the city's picture where it lies, and every ring of the outline", () => {
-      const { facts, timeline } = playbackOf(tinyNetwork());
-      const cells = facts.coverage(CITY).cells(timeline.cursorAt(toTimestamp('1915-01-01')), 1200);
-      const drawing = coverageDrawing(cells, CITY);
-      expect(drawing.image).toEqual({ width: cells.columns, height: cells.rows, pixels: coverageImage(cells) });
-      expect(drawing.corners).toEqual(cells.corners);
-      expect(drawing.outline.map(feature => feature.geometry.coordinates)).toEqual(CITY.polygons[0]);
-    });
   });
 });
