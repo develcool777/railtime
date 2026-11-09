@@ -9,7 +9,6 @@ import {
   MINIMAP_UPDATE_MS,
   MINIMAP_VIEWPORT_CLASS,
   MINIMAP_VIEWPORT_COLOR,
-  MINIMAP_VIEWPORT_MIN_PX,
 } from '../../../src/minimap/minimap.constants';
 import { Minimap } from '../../../src/minimap/minimap.service';
 import { viewportBox } from '../../../src/minimap/minimap.utils';
@@ -80,23 +79,6 @@ const minimapOf = () => {
   const box = () => container.querySelector<HTMLElement>(`.${MINIMAP_VIEWPORT_CLASS}`);
   return { minimap, fake, main, container, size, watcher, box };
 };
-
-describe('MinimapUtils', () => {
-  describe('viewportBox', () => {
-    test("outlines the view's projected corners", () => {
-      expect(viewportBox({ x: 10, y: 20 }, { x: 50, y: 45 })).toEqual({ left: 10, top: 20, width: 40, height: 25 });
-    });
-
-    test('keeps a view closer in than a few pixels visible, centred where it is', () => {
-      expect(viewportBox({ x: 30, y: 30 }, { x: 31, y: 30.5 })).toEqual({
-        left: 30.5 - MINIMAP_VIEWPORT_MIN_PX / 2,
-        top: 30.25 - MINIMAP_VIEWPORT_MIN_PX / 2,
-        width: MINIMAP_VIEWPORT_MIN_PX,
-        height: MINIMAP_VIEWPORT_MIN_PX,
-      });
-    });
-  });
-});
 
 describe('Minimap', () => {
   test('keeps what it is sent before its style loads, and shows it once loaded: the network, a plan, the change playing', () => {

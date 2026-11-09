@@ -1,5 +1,5 @@
 import checkFile from 'eslint-plugin-check-file';
-import { CLI_FILES, TEST_FILES, TOOL_CONFIGS } from './shared.js';
+import { CLI_FILES, house, TEST_FILES, TOOL_CONFIGS } from './shared.js';
 
 /**
  * What a source file may be called: `<camelName>.<role>.ts`, or `<camelName>.<role>.types.ts` for the
@@ -7,11 +7,11 @@ import { CLI_FILES, TEST_FILES, TOOL_CONFIGS } from './shared.js';
  */
 const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store)).@(service|utils|constants|types|schema|composable|store|entry)';
 /**
- * What a test file may be called: `<camelName>.test.ts`, run in node, `.spec.ts`, in happy-dom
- * (`vitest.shared.ts`), `.bench.ts`, timed (`pnpm test-bench`), or a support file's
- * `.utils.ts`/`.types.ts`/`.constants.ts`.
+ * What a test file may be called: the source file it tests, `<camelName>.<role>`, then `.test.ts`, run
+ * in node, or `.spec.ts`, in happy-dom (`vitest.shared.ts`); a benchmark's `<camelName>.bench.ts`,
+ * timed (`pnpm test-bench`); or a support file's `.utils.ts`/`.types.ts`/`.constants.ts`.
  */
-const TEST_FILE = '+([a-z])*([a-zA-Z0-9]).@(test|spec|bench|utils|types|constants)';
+const TEST_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|constants|schema|composable|store|entry)).@(test|spec|bench|utils|types|constants)';
 /** A command's file name. */
 const SCRIPT_FILE = 'cli?(.+([a-zA-Z0-9]))';
 /** What files and folders are called, and where each kind lives. */
@@ -47,6 +47,20 @@ export const filesConfig = [
         { '*.test.ts': '**/test/unit/**', '*.spec.ts': '**/test/unit/**', '*.bench.ts': '**/test/bench/**', '*.utils.ts': '**/test/support/**' },
       ],
     },
+  },
+  // A test and the file it tests are named for each other, suffix and all, as in dataroom-ui
+  // (`house/mirrored-tests`): every test names a source file that is there, and each service, utils
+  // and store, where the logic is, has its test. A rename or a delete that leaves either behind fails.
+  {
+    files: ['packages/*/src/**/*.{service,utils,store}.ts', 'web/src/**/*.{service,utils,store}.ts', 'packages/*/test/unit/**/*.ts', 'web/test/unit/**/*.ts'],
+    ignores: [
+      ...CLI_FILES,
+      // A city's test checks the city's network, not code: the data package's Vitest config finds each
+      // one's city (`assertTestsMirrorCities`).
+      'packages/data/test/unit/cities/**',
+    ],
+    plugins: { house },
+    rules: { 'house/mirrored-tests': 'error' },
   },
   {
     files: CLI_FILES,

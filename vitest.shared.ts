@@ -44,24 +44,6 @@ export const projectsOf = (name: string, extra: TestProjectInlineConfiguration =
 ];
 
 /**
- * Refuses to start while a test file has no source file to mirror: `test/unit/model/timeline.test.ts`
- * tests `src/model/timeline.*.ts`, so a test is found where its code is, and one left behind by a
- * rename or a delete is caught.
- *
- * @param root - The project's folder.
- * @param testDir - Its tests, relative to `root`.
- * @param sourceDir - The code they mirror, relative to `root`.
- */
-export const assertTestsMirrorSource = (root: string, testDir: string, sourceDir: string): void => {
-  const orphans = globSync('**/*.@(test|spec).ts', { cwd: join(root, testDir) }).filter(
-    testPath => globSync(`${testPath.replace(/\.(test|spec)\.ts$/, '')}.*.ts`, { cwd: join(root, sourceDir) }).length === 0,
-  );
-  if (orphans.length > 0) {
-    throw new Error(`A test mirrors the source file it tests; these have none in ${join(root, sourceDir)}:\n${orphans.join('\n')}`);
-  }
-};
-
-/**
  * A camelCase name in kebab case: `tyneAndWear` as `tyne-and-wear`.
  *
  * @param name - The name.

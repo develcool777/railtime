@@ -1,6 +1,7 @@
 import { dirname } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { ASSERTION_RULES } from '../packages/tooling/src/lint/assertionRules.utils.ts';
+import { FILE_RULES } from '../packages/tooling/src/lint/fileRules.utils.ts';
 import { ID_RULES } from '../packages/tooling/src/lint/idRules.utils.ts';
 import { STORE_RULES } from '../packages/tooling/src/lint/storeRules.utils.ts';
 
@@ -35,13 +36,15 @@ export const TOOL_CONFIGS = ['**/*.config.{js,ts,mjs}', '**/nuxt.config.ts', '**
  * config keeps one setting per rule per file, the last block's, so a second `no-restricted-imports`
  * would silently replace the package fences; named apart, each holds alone, and its name says which
  * convention a report is about (as in dataroom-ui). And the rules about assertions and ids, which
- * read types, and about stores (`packages/tooling/src/lint/`, tested there).
+ * read types, about stores, and about a test and its file named for each other (`packages/tooling/src/lint/`,
+ * tested there).
  */
 export const house = {
   rules: {
     'pure-utils': tseslint.plugin.rules['no-restricted-imports'],
     'test-helpers': tseslint.plugin.rules['no-restricted-imports'],
     ...ASSERTION_RULES,
+    ...FILE_RULES,
     ...ID_RULES,
     ...STORE_RULES,
   },

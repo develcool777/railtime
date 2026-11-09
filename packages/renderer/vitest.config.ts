@@ -1,10 +1,5 @@
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { assertTestsMirrorSource, projectsOf } from '../../vitest.shared.ts';
-
-const ROOT = fileURLToPath(new URL('.', import.meta.url));
-
-assertTestsMirrorSource(ROOT, 'test/unit', 'src');
+import { projectsOf } from '../../vitest.shared.ts';
 
 /**
  * The renderer's tests (`test/unit/` mirrors `src/`): its pure logic and its layers on the stand-in map
