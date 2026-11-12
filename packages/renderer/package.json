@@ -23,10 +23,10 @@
     "@railtime/core": "workspace:*",
     "@railtime/network": "workspace:*",
     "@railtime/schema": "workspace:*",
-    "maplibre-gl": "^6.16.0"
+    "maplibre-gl": "^6.17.0"
   },
   "devDependencies": {
-    "@maplibre/maplibre-gl-style-spec": "^26.5.1",
+    "@maplibre/maplibre-gl-style-spec": "^26.6.0",
     "@types/geojson": "7946.0.16",
     "happy-dom": "^21.0.4",
     "vitest": "^5.1.0"
