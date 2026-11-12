@@ -13,7 +13,7 @@
     "./videoPage.types": "./src/recorder/videoPage.types.ts"
   },
   "devDependencies": {
-    "playwright-core": "^1.60.0",
+    "playwright-core": "^1.65.0",
     "vitest": "^5.1.0"
   }
 }
