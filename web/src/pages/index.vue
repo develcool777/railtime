@@ -53,7 +53,7 @@
 
   // Links from before city pages (`/?city=tyne-and-wear`) still land on the city.
   const route = useRoute();
-  if (isCity(route.query.city)) await navigateTo(`/${route.query.city}`, { replace: true });
+  if (isCity(route.query.city)) await navigateTo(`/${route.query.city}/`, { replace: true });
 
   /** The first row's cards: their pictures load at once, the rest as they are scrolled to. */
   const EAGER_CITIES = new Set(CITIES.slice(0, 4).map(city => city.value));

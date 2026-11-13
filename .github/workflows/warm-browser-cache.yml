@@ -1,0 +1,51 @@
+name: Warm browser cache
+
+# Saves Playwright's Chromium to the Actions cache from `main`, so every pull request's end-to-end job
+# restores it instead of downloading it (as in dataroom-ui).
+#
+# Its own workflow, because a cache is seen by the branch that saved it and by those reading the default
+# branch's, and nothing else: `test.yml` runs on pull requests only, so a copy saved there would serve
+# that pull request alone. Runs when the browser could have changed (the lockfile pins Playwright, whose
+# version is the key), when this file changes, weekly so a quiet fortnight does not let the entry be
+# evicted, and on demand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - pnpm-lock.yaml
+      - .github/workflows/warm-browser-cache.yml
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    name: Warm the Chromium cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      # The key test.yml restores with, from the installed package, so the two never disagree on it.
+      - name: Resolve the Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @railtime/web exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore or reserve the browser cache
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # The cache action's post step saves what this installs.
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @railtime/web exec playwright install chromium
