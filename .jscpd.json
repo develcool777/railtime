@@ -1,0 +1,19 @@
+{
+  "path": [
+    "packages/core/src",
+    "packages/schema/src",
+    "packages/network/src",
+    "packages/renderer/src",
+    "packages/data/src",
+    "packages/tooling/src",
+    "packages/video/src",
+    "web/src",
+    "web/server"
+  ],
+  "gitignore": true,
+  "absolute": false,
+  "minTokens": 75,
+  "threshold": 1,
+  "reporters": ["console"],
+  "ignore": ["**/*.d.ts", "**/*.md"]
+}

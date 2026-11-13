@@ -56,6 +56,11 @@ jobs:
       - name: Setup project
         uses: ./.github/actions/setup
 
+      # One lockfile, so one audit covers every package. An advisory with no fix to take is listed
+      # under `auditConfig` in pnpm-workspace.yaml, with its reason.
+      - name: Run security checks
+        run: pnpm audit
+
       - name: Run code formatting checks
         run: pnpm format-check
 
@@ -66,16 +71,67 @@ jobs:
       - name: Run dead-code checks
         run: pnpm code-quality:dead-code
 
+      # A copy within or between packages. The budget is `threshold` in .jscpd.json, not a number here.
+      - name: Run duplication checks
+        run: pnpm code-quality:duplication
+
       # The static site, as deploy.yml builds it.
       - name: Test Build
         run: pnpm --filter @railtime/web generate
+
+  # The built site in a real Chromium (`web/playwright.config.ts`): what a unit test cannot show, as a
+  # city opening on its map, the address read back after a reload, playback, the layout on a phone.
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    # A stalled browser download would otherwise hold the runner for the six-hour default.
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      - name: Resolve the Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @railtime/web exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
+
+      # Saved from `main` by warm-browser-cache.yml: a cache saved by a pull request is its alone.
+      - name: Restore the browser cache
+        id: playwright-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @railtime/web exec playwright install --with-deps chromium
+
+      # The system libraries Chromium needs, which the cache does not hold.
+      - name: Install Chromium's system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @railtime/web exec playwright install-deps chromium
+
+      - name: Run end-to-end tests
+        run: pnpm --filter @railtime/web test-e2e
+
+      # A trace is the whole point of a browser in CI: without it a red run says very little.
+      - name: Upload the report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: web/test-reports/e2e/html/
+          retention-days: 7
 
   # The single required status check on `main`, and the only one that should ever be named in the
   # branch ruleset. Requiring the individual jobs instead would pin their names: renaming one deletes
   # its required check, which never reports again and blocks every open PR indefinitely.
   ci-ok:
     name: CI
-    needs: [test, lint, checks]
+    needs: [test, lint, checks, e2e]
     # Without always(), a failed dependency skips this job, and a skipped required check reads as
     # pending rather than failing — the PR would sit unmergeable instead of showing a red X.
     if: always()

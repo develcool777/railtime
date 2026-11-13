@@ -9,9 +9,10 @@ const SOURCE_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|composable|store))
 /**
  * What a test file may be called: the source file it tests, `<camelName>.<role>`, then `.test.ts`, run
  * in node, or `.spec.ts`, in happy-dom (`vitest.shared.ts`); a benchmark's `<camelName>.bench.ts`,
- * timed (`pnpm test-bench`); or a support file's `.utils.ts`/`.types.ts`/`.constants.ts`.
+ * timed (`pnpm test-bench`); the site's in a browser, `<camelName>.e2e.ts` (`web/playwright.config.ts`),
+ * named for the surface it opens; or a support file's `.utils.ts`/`.types.ts`/`.constants.ts`.
  */
-const TEST_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|constants|schema|composable|store|entry)).@(test|spec|bench|utils|types|constants)';
+const TEST_FILE = '+([a-z])*([a-zA-Z0-9])?(.@(service|utils|constants|schema|composable|store|entry)).@(test|spec|bench|e2e|utils|types|constants)';
 /** A command's file name. */
 const SCRIPT_FILE = 'cli?(.+([a-zA-Z0-9]))';
 /** What files and folders are called, and where each kind lives. */
@@ -40,11 +41,17 @@ export const filesConfig = [
     rules: {
       'check-file/filename-naming-convention': ['error', { '**/*.ts': TEST_FILE }],
       'check-file/folder-naming-convention': ['error', { '**/': 'CAMEL_CASE' }],
-      // A test is in `test/unit/` (beside the code it mirrors), a benchmark in `test/bench/`, and what
-      // they share in `test/support/`.
+      // A test is in `test/unit/` (beside the code it mirrors), a benchmark in `test/bench/`, the site's
+      // in a browser in `test/e2e/`, and what they share in `test/support/`.
       'check-file/folder-match-with-fex': [
         'error',
-        { '*.test.ts': '**/test/unit/**', '*.spec.ts': '**/test/unit/**', '*.bench.ts': '**/test/bench/**', '*.utils.ts': '**/test/support/**' },
+        {
+          '*.test.ts': '**/test/unit/**',
+          '*.spec.ts': '**/test/unit/**',
+          '*.bench.ts': '**/test/bench/**',
+          '*.e2e.ts': '**/test/e2e/**',
+          '*.utils.ts': '**/test/support/**',
+        },
       ],
     },
   },

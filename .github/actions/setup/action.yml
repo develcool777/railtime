@@ -11,10 +11,12 @@ runs:
       with:
         run_install: false
 
+    # The Node version lives in .nvmrc, which a local `nvm use` reads too; `engines` in package.json
+    # holds its floor.
     - name: Set up Node.js
       uses: actions/setup-node@v7
       with:
-        node-version: 24.x
+        node-version-file: .nvmrc
         cache: pnpm
 
     - name: Install dependencies

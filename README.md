@@ -19,11 +19,14 @@ pnpm dev                 # http://localhost:5180
 ```bash
 pnpm dev                 # the web app
 pnpm build               # production build of the Nuxt app
-pnpm type-check          # every package
+pnpm type-check          # every package (each its own `type-check`, run by pnpm -r)
 pnpm test-unit           # Vitest, every package, watch mode (pnpm test-unit-ci: once; pnpm test-unit-coverage)
 pnpm eslint-check        # pnpm eslint-fix to fix
 pnpm format              # Prettier (pnpm format-check to check)
 pnpm code-quality:dead-code   # knip
+pnpm code-quality:duplication # jscpd: a copy within or between packages
+pnpm audit               # known advisories in the dependencies (exemptions in pnpm-workspace.yaml)
+pnpm --filter @railtime/web test-e2e   # the built site in Chromium (Playwright; test-e2e-ui to watch)
 pnpm test-mutation packages/schema   # Stryker: which deliberate bugs the folder's tests miss (no folder: the list, with scores)
 pnpm test-bench          # how long opening London, a route, coverage and a frame take, beside the last run
 
@@ -51,7 +54,7 @@ railtime/
 │   ├── renderer/    the engine, TransitMap: draws a network on MapLibre and plays its history; no UI
 │   ├── data/        every city's network, by country (cities/<country>/<city>/), their summaries
 │                    (cities/cities.json), pnpm data:summaries, and a test per city
-│   ├── tooling/     the repo's own tools: pnpm test-mutation
+│   ├── tooling/     the repo's own tools: the house's lint rules, pnpm test-mutation
 │   └── video/       videos of the app: pnpm video:record, a page recorded frame by frame into an MP4
 ├── web/             the app: Nuxt 4 and Nuxt UI around the renderer; src/ by surface (features/explorer,
 │                    features/landing, features/seo), shared code at its top
@@ -66,10 +69,13 @@ controls around it. The landing page reads only the small index; a city's page l
 | App          | Nuxt 4 (Vue 3), Nuxt UI 4, Tailwind CSS 4; built static with `nuxt generate` |
 | Map          | MapLibre GL, OpenFreeMap vector tiles, OpenStreetMap data                    |
 | Data         | JSON networks, validated with Zod                                            |
-| Code quality | TypeScript (strict), Vitest, ESLint, Prettier, knip                          |
+| Code quality | TypeScript (strict), Vitest, Playwright, ESLint, Prettier, knip, jscpd       |
 
-More: [the renderer's README](packages/renderer/_README.md) (steps, cursors, frames) and
-[the data's](packages/data/README.md) (the network format and each city).
+More: each package's README: [schema](packages/schema/_README.md) (the format and its doors),
+[network](packages/network/_README.md) (the facts, steps and cursors),
+[renderer](packages/renderer/_README.md) (frames), [data](packages/data/README.md) (each city and its
+commands), [tooling](packages/tooling/_README.md) (the house's lint rules, mutation testing) and
+[video](packages/video/_README.md) (recording).
 
 ## Licence
 

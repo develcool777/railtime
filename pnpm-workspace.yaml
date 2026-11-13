@@ -21,15 +21,34 @@ overrides:
   # TypeScript 7 (the native compiler) has no JavaScript API, which vue-tsc and `nuxt typecheck` need:
   # every package stays on 6 until vue-tsc supports 7. Dependabot skips its major versions too.
   typescript: ^6.0.3
-  # Security patches for build and test tools (Dependabot's alerts), where the patched version takes
-  # its callers' API: Stryker's HTTP client's `qs`, Nitro's file tracer's `glob`, Nuxt Fonts'
-  # `esbuild`. None of them ships in the site. (`minimatch` 11 does not: ESLint's plugins import what
-  # it dropped.)
+  # Security patches for build and test tools (Dependabot's alerts, `pnpm audit`), where the patched
+  # version takes its callers' API: Stryker's HTTP client's `qs`, Nitro's file tracer's `glob`, Nuxt
+  # Fonts' `esbuild`, Nitro's dev server's `node-forge` (its self-signed HTTPS certificate),
+  # the sitemap module's `fast-xml-parser`. None of them ships in the site.
   qs@<6.16.1: ^6.16.1
   glob@>=13 <14.0.2: ^14.0.2
   esbuild@>=0.27.3 <0.28.1: ^0.28.1
+  node-forge@<1.4.3: ^1.4.3
+  fast-xml-parser@<5.11.3: ^5.11.3
+  # The static server the browser tests serve the build with (`serve`): GHSA-vc2v-76pw-4v95.
+  compression@<1.8.2: ^1.8.2
+  # GHSA-g3hv-75wg-m249, patched in 11.0.1 with no 9.x or 10.x backport: ESLint's glob matching. 11
+  # dropped the named `makeRe` import-x reads, which the patch below gives back (as in dataroom-ui).
+  minimatch@>=7 <11.0.1: ^11.0.1
 
 patchedDependencies:
   # Static mutants switched on before any test imports their module, also when a run names its tests
   # (stryker-js#6144), as in dataroom-ui.
   '@stryker-mutator/core@10.1.1': patches/@stryker-mutator__core@10.1.1.patch
+  # import-x asks for minimatch ^10 and imports its `makeRe`, which 11 (the override above) dropped;
+  # every rule loads at startup, so the plugin failed to load. The patch builds `makeRe` from 11's
+  # `Minimatch`, which is what 10's was.
+  eslint-plugin-import-x@4.17.1: patches/eslint-plugin-import-x@4.17.1.patch
+
+# Security: GHSA-gcqx-w48m-w2h4 (deepmerge, low) names 4.3.2 as patched, but npm's latest is 4.3.1:
+# there is nothing to override to. Reached only through Nitro's bundler, `@rollup/plugin-node-resolve`,
+# merging its own options at build time; never shipped. Remove this once deepmerge 4.3.2 is published,
+# and override to it instead.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-gcqx-w48m-w2h4

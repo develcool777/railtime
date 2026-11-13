@@ -30,9 +30,13 @@ explorer, and the video page, `/video/<city>`, in 3D or flat with `?view=2d`, un
 
 ## Checks
 
-`pnpm type-check`, `pnpm test-unit-ci`, `pnpm eslint-check`, `pnpm format-check` and
-`pnpm code-quality:dead-code` (knip) must all pass; CI runs them on every pull request. Node 24.15 or
-later and pnpm 11.9 (`engines`, `packageManager` in `package.json`; CI reads the same), required, not
+`pnpm type-check` (each package's own, by `pnpm -r`: a new package gives itself one), `pnpm test-unit-ci`,
+`pnpm eslint-check`, `pnpm format-check`, `pnpm code-quality:dead-code` (knip),
+`pnpm code-quality:duplication` (jscpd: a helper copied rather than moved to `core` fails it),
+`pnpm audit` and `pnpm --filter @railtime/web test-e2e` (the built site in Chromium, `web/test/e2e/`) must
+all pass; CI runs them on every pull request. An advisory with no fix to take is listed under
+`auditConfig` in `pnpm-workspace.yaml` with its reason, never left failing. Node 24.15 or later
+(`.nvmrc` the line CI installs, `engines` its floor) and pnpm 11.9 (`packageManager`), required, not
 warned of (`engineStrict`): on an older Node, pnpm runs nothing.
 ESLint reads every file with its package's types (web's from `.nuxt/`, which `pnpm install` writes),
 so the rules that need them hold too; `pnpm eslint-fix` sorts imports and fixes what a rule can.
@@ -176,7 +180,7 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
   `web`; the renderer takes props, commands and listeners (`transitMap.types.ts`, `ARCHITECTURE.md`)
   and never imports Vue. A setting it shows is a prop, never a `setX` method.
 - **Pure first.** All of `packages/network`, the renderer's player, `steps/` and every `*.utils.ts`
-  take no map: keep new logic there and test it (see Tests). A layer
+  take no map: keep new logic there and test it (docs/TESTING.md). A layer
   group is tested on the stand-in map (`test/support/factories/fakeMap.utils.ts`), which refuses what
   MapLibre would: a layer the style spec does not allow, data that is not GeoJSON features, and a
   layer reading (`['get', name]`) a property no feature of its source has.
@@ -292,135 +296,31 @@ nameCompare)` (`@railtime/core/collection.utils`), not `a - b || nameCompare`.
 
 ## Tests
 
-Each package keeps its tests beside its code, as dataroom-ui does inside its one app:
-
-```text
-packages/network/
-  vitest.config.ts          the package's project (`pnpm --filter @railtime/network test-unit`)
-  test/unit/                mirrors src/, a test a file, named for it: test/unit/engine/timeline.service.test.ts
-                            tests src/engine/timeline.service.ts, timeline.utils.test.ts its utils
-  test/support/             what tests share: factories/ (tinyNetwork, planOnlyNetwork, boundaries,
-                            hiddenNetwork: exported as `@railtime/network/testing/*` for the other packages' tests), facts.utils.ts
-packages/renderer/
-  test/unit/                mirrors src/, as network's; transitMap.service.spec.ts tests the contract whole
-  test/support/             fakeMap, playback.utils.ts (a player wired as the map wires it, and what
-                            the map draws: `@railtime/renderer/testing/playback` for data's city tests)
-packages/data/
-  test/unit/<feature>/      mirrors src/<feature>/: summary/, boundary/, preview/ (a command each)
-  test/unit/city.utils.test.ts  finding the cities and reading their files
-  test/unit/cities/         one test per city: unitedKingdom/london.test.ts checks
-                            cities/united-kingdom/london/london.json, played through the renderer
-  test/bench/               the work a visitor waits on, timed on the largest city (`pnpm test-bench`)
-web/test/unit/              mirrors web/src/ for its helpers (*.utils.ts) and stores; components are checked in the browser;
-                            they import as the app does, from ~/, and test/support/ from @test/
-```
-
-- `network` and the renderer know no city: their tests use made-up networks (`tinyNetwork`). A check of a city's
-  history (the Victoria line's three stages, London's size today) goes in
-  `packages/data/test/unit/cities/<country>/<city>.test.ts`. Nor do `core`, `schema`, `network` or the
-  renderer name one, in their code, comments or tests: `data`'s `city.utils.test.ts` reads every city's
-  name in `cities.json` and fails on any it finds there.
-
-- `pnpm test-unit` at the root runs every project (`vitest.config.ts`); options shared by all are in
-  `vitest.shared.ts`: mocks reset between tests, random order, node.
-- **A test file's name picks its environment**, as in dataroom-ui: `*.test.ts` runs in node, `*.spec.ts`
-  in happy-dom, for code that makes elements of its own (the minimap's box, `BasemapStill`'s hidden
-  container); each is a project of its own (`projectsOf` in `vitest.shared.ts`), in every package and
-  `web` (ESLint refuses `defineProject` there). Never a `@vitest-environment` comment.
-- **Tests run the real code.** No `vi.mock` (ESLint): build the input with a factory in `test/support/`.
-- **A test and its file are named for each other**, suffix and all, as in dataroom-ui: `trains.service.ts` is
-  tested in `trains.service.test.ts`, `trains.utils.ts` in `trains.utils.test.ts`. A test names a source file that
-  is there, and every service, utils and store has its test (`house/mirrored-tests`); a city's test names its
-  city (`vitest.shared.ts`). `*.test.ts` and `*.spec.ts` only in `test/unit/`, helpers only in `test/support/` (ESLint).
-- `describe('<Module>')` (`Timeline`, `GrowthUtils`), a nested `describe` per function for a utils
-  module, then `test('does what, when')`; never `it`, nor a test left `.only`, `.skip` or `.todo`, nor
-  one only some runs make (`@vitest/eslint-plugin`, `vitest/no-conditional-tests`). A throw is
-  checked for what it says, `toThrow('Missing step 9')`: `toThrow()` passes for any error
-  (`vitest/require-to-throw-message`). Each check says what it checks, so a failure says what went wrong:
-  `toHaveLength(n)`, `toBeNull()`, `toContain`, `toBeGreaterThan` (`vitest/prefer-to-*`). No `expect`
-  inside an `if` (`vitest/no-conditional-expect`): gather what a loop finds, then check it once
-  (`expect(far).toEqual(far.map(() => Infinity))`).
-- A `console.warn` or `console.error` during a test fails it (`vitest.setup.ts`).
-- Coverage: `pnpm test-unit-coverage`, into `test-reports/coverage/`.
-- Mutation testing, by hand, as in dataroom-ui: `pnpm test-mutation packages/network/src/route` has
-  Stryker break the folder's code one small change at a time and run its own tests against each; a
-  change no test notices is code run but not checked. The report is in `test-reports/mutation/`;
-  each run's score goes in `test-reports/mutation-scores.json`, which is committed. With no folder,
-  it lists the folders with their last scores. Coverage says a line ran; this says a test would fail
-  if it were wrong. A rerun reuses what it can: after adding tests for code that runs as its module
-  loads (a Zod schema, a constant built from others), run with `--fresh`, or those mutants keep their
-  old result. A survivor that changes nothing (`i >= 0` where `i > 0` and `list[-1]` is `undefined`)
-  or only how the map looks (a halo width) is left; one that changes behaviour gets a test.
-- Benchmarks, by hand: `pnpm test-bench` times the work a visitor waits on, on London, the largest
-  network (in `packages/data/test/bench/`, with the cities: `network` and the renderer know none):
-  opening a city, a route, a reach, coverage's history, a frame's snapshot. Each is set beside its last
-  run on this machine (kept in `packages/data/test-reports/bench/`, never committed): run it on main,
-  then on a branch, to see what the branch changed; a few per cent either way is noise. Each first
-  checks its work does its job, so a slip cannot pass for speed. Work a visitor waits on gets one. Lint
-  cannot see how much data a loop runs over; this does.
+[docs/TESTING.md](docs/TESTING.md): where each package's tests live, a file's name picking its
+environment, the rules a test keeps (no `vi.mock`, `describe('<Module>')`, `test`, a matcher that says
+what it checks), the browser tests, coverage, mutation testing and benchmarks. Read it before writing a
+test.
 
 ## Data
 
-`packages/data/cities/<country>/<city>/<city>.json` is the city's network and its source of truth: edit
-it directly (a date, a station name), keeping its layout (one station or segment per line), never
-regenerate it. The tests read every city through the schema, so one it refuses fails them;
-`pnpm data:summaries` rewrites `cities/cities.json`, the site's one list of cities (the app's `CITIES`
-is read from it), in its own order: a new city goes after the last of its country, and a city's
-folder is its `meta.country` as a slug. A test fails while it is out of date.
-A segment's track starts and ends on its stations' coordinates, within 15 m (`STATION_GAP_METRES` in
-`packages/schema/src/validation/checks.constants.ts`), or the schema refuses it: the line would miss the station's dot.
-Nor does track turn sharper than its trains can: measured over `CURVE_SPAN_METRES` either side of each
-point, a turn is held to its mode's tightest curve (`MIN_CURVE_RADIUS_METRES`: a metro's 50 m, a
-tram's 15 m), inside a segment and through a station, from one of a line's segments into another it
-runs on at the same time. A corner, or a point run past a station and pulled back to it, is plain up
-close in 3D. A station sits on its lines' track: where it does not, move the station onto the track,
-never the track out to the station. Where an interchange's lines run apart underground, each line's
-track curves gently to the one station point. Where a line's trains end at a station from two
-directions and go back the way they came, the station says so (`reverses`); nowhere else may a line
-turn back through it. A plan's station on track already built sits on that track: the plan splits it there.
-A plan's new track runs where its `track` says, between two stations a section links (over a bridge,
-round a curve), as a segment's, one per line; where it says nothing, the plan curves it through its
-line's stations, on from the track the line already has. Either way the schema holds it as it holds
-built track: its ends on its stations, no turn sharper than its trains can, inside it or through a station.
-A plan plays in its order, line by line: a line's sections go together and play as one, the line
-growing from an end, never from its middle one way and back, a branch after the way it leaves, built whole
-before the next, and its track unbroken, a section adding only stations on it before or after the
-sections laying it, never between (the schema refuses either).
-A station's `infill` on a line is dated once the line runs there (dated after the line has left, it
-says the line never called there); its `closed` while the line runs there; its `suspended`, spells it
-closed for a while and reopened, each while the line runs there and calls, in order. The schema refuses
-any other. A line's fast track beside another's stopping one runs on the same segments, drawn side
-by side, and each station it runs through without calling says so (`passes`): never a segment of
-its own laid over theirs, which draws one line on top of the other. A segment's lines share one track, their trains
-timed round one another's, unless it says which run on tracks of their own beside each other (`tracks`, each of its
-lines on one): lines in tunnels of their own between the same two stations, a fast pair beside a stopping one.
+[docs/DATA.md](docs/DATA.md): a city's network as its source of truth (edited directly, never
+regenerated), what the schema holds its track, stations and plans to, hidden lines and networks, the
+dates each city's test lists, and its outline. Read it before editing anything in `packages/data/cities/`.
 
-Any line, or a network's lines at once, can be hidden (the Lines panel's eyes, for the visit). Hidden, it is as if it were not there:
-`NetworkFacts.create(network, { hidden })` leaves out the line, the track and stations only it has,
-and a plan's sections on it (the plan with none left), so every count, the history, the coverage and the routes are without
-it; a station only it has that a plan builds on is the plan's own again, and so is the track only it has
-between two stations a plan's section links: the plan runs on it still, never laying its own beside it; the years another line was
-drawn as it (an alias) go too: that line's gap, which the engine cuts its runs at, the line going as
-what it was drawn as and coming back as itself, with no step saying it changed. There is no other hiding: the map
-draws what the facts have. A network beside the city's own (main-line suburban trains beside a
-metro) is `hidden` at first: in the city's data, with its history, but hidden until shown, so the
-city list counts the city's own. One older than the city gives its own `start`, where the timeline
-starts while one of its lines shows; the schema refuses a line opening before its timeline starts,
-which would never play.
+## Traps
 
-Each city's test lists every date a line comes apart (`lineSplits` in `test/support/history.utils.ts`),
-with a comment saying why: a works closure, a stretch that opened on its own. A wrong date looks just
-the same and fails the test: fix the date, or, if history really parted the line, add it with its reason.
+- `typescript` resolves to 6 through the override in `pnpm-workspace.yaml`: vue-tsc and `nuxt typecheck`
+  do not load on 7 yet. `overrides`, `patchedDependencies` and `auditConfig` are read from that file only.
+- `minimatch` is 11 throughout (a security override), and `eslint-plugin-import-x` is patched to run on it
+  (`patches/`): a new version of either needs the patch checked again, or ESLint fails to load.
+- The required check on `main` is named `CI`: the gate job in `.github/workflows/test.yml` keeps that
+  name. Requiring a job by its own name pins it: renamed, its check never reports again.
+- Run Prettier from the root: inside a package it misses the root's `.prettierignore` and rewrites the
+  cities' files, which keep a line per station and segment.
+- A city's page is published at its address with a slash (`/kyiv/`): a link or a navigation the app
+  makes says it so, as the site redirects to it.
 
-Each city has its outline beside its network, `<city>.boundary.json` (`CityBoundary`, from
-OpenStreetMap's administrative boundary, simplified): what the Coverage section measures within. It is
-the city's limits, or the county a network spans (Greater Manchester, Tyne and Wear), never a wider
-region: a plan running out to the next towns stays outside. `pnpm data:boundary <city> [relation]`
-fetches it (`src/boundary/`): again from the relation its `source` names, or from the OpenStreetMap
-relation given, for a new city; it writes nothing the schema refuses or that holds half the city's
-stations or fewer (its plans' where nothing is built). A test checks every city has one, in its
-layout, holding more than half its stations.
+## Pull requests
 
-There is no importer: London was imported from OpenStreetMap once and is curated from here. Its
-dates are checked against Wikipedia's line, station and railway-company articles; a correction
-goes in the network with that source in mind.
+One small PR per change, branched from `main`. Never force-push: fix with a follow-up commit. No
+`Co-Authored-By` trailers or tool footers.

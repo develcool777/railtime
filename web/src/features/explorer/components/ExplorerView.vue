@@ -295,7 +295,8 @@
   // The effects: the browser, the map, the address bar and the keys, each tied to the stores.
   const { startResize } = useExplorerLayout(explorer);
   useTransitMap({ container: mapElement, minimapContainer: minimapElement });
-  useExplorerAddress({ query: () => route.query, replace: query => void router.replace({ query }) });
+  // On the page's own path: the router's own would drop its slash, which the site redirects back to.
+  useExplorerAddress({ query: () => route.query, replace: query => void router.replace({ path: route.path, query }) });
   useExplorerShortcuts();
   useRecordedExplorer();
 </script>

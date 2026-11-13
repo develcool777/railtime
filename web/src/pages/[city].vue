@@ -49,5 +49,6 @@
   // A plan is shown in place, on the same map, by the explorer's stores, which read it from the
   // address as the page opens: the explorer is keyed on the city alone.
 
-  const selectCity = (next: string) => navigateTo(`/${next}`);
+  // A city's page, as its address is published: with a slash, which the site redirects to without one.
+  const selectCity = (next: string) => navigateTo(`/${next}/`);
 </script>

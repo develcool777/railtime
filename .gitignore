@@ -10,8 +10,9 @@ dist
 # Local, but the mutation score history, which is shared.
 test-reports/*
 !test-reports/mutation-scores.json
-# Each benchmark's last run, on this machine (`pnpm test-bench`).
+# Each benchmark's last run, on this machine (`pnpm test-bench`), and the site's browser tests' report.
 packages/*/test-reports/
+web/test-reports/
 .stryker-tmp/
 # The videos recorded (`pnpm video:record`): uploaded, not kept here; and the browser profile it
 # records in, which caches the map's tiles.
